@@ -285,7 +285,11 @@ class Patient {
 
   // Create ADL file for complex cases
   async createADLFile(clinicalProformaId, createdBy) {
+    const client = await db.getClient();
+    
     try {
+      await client.query('BEGIN');
+      
       if (this.has_adl_file) {
         throw new Error('Patient already has an ADL file');
       }
@@ -293,24 +297,44 @@ class Patient {
       const adl_no = Patient.generateADLNo();
 
       // Update patient record
-      await this.update({
-        adl_no,
-        has_adl_file: true,
-        file_status: 'created',
-        case_complexity: 'complex'
-      });
-
-      // Create ADL file record
-      const adlResult = await db.query(
-        `INSERT INTO adl_files (patient_id, adl_no, created_by, clinical_proforma_id, file_created_date) 
-         VALUES ($1, $2, $3, $4, CURRENT_DATE) 
-         RETURNING *`,
-        [this.id, adl_no, createdBy, clinicalProformaId]
+      await client.query(
+        `UPDATE patients 
+         SET adl_no = $1, has_adl_file = true, file_status = $2, case_complexity = $3
+         WHERE id = $4`,
+        [adl_no, 'created', 'complex', this.id]
       );
 
-      return adlResult.rows[0];
+      // Update the instance
+      this.adl_no = adl_no;
+      this.has_adl_file = true;
+      this.file_status = 'created';
+      this.case_complexity = 'complex';
+
+      // Create ADL file record
+      const adlResult = await client.query(
+        `INSERT INTO adl_files (patient_id, adl_no, created_by, clinical_proforma_id, file_status, file_created_date, total_visits) 
+         VALUES ($1, $2, $3, $4, $5, CURRENT_DATE, 1) 
+         RETURNING *`,
+        [this.id, adl_no, createdBy, clinicalProformaId, 'created']
+      );
+
+      const adlFile = adlResult.rows[0];
+
+      // Log file creation movement
+      await client.query(
+        `INSERT INTO file_movements (adl_file_id, patient_id, moved_by, movement_type, from_location, to_location, notes) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [adlFile.id, this.id, createdBy, 'created', 'Doctor Office', 'Record Room', 'Initial ADL file creation for complex case']
+      );
+
+      await client.query('COMMIT');
+      
+      return adlFile;
     } catch (error) {
+      await client.query('ROLLBACK');
       throw error;
+    } finally {
+      client.release();
     }
   }
 

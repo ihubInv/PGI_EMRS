@@ -12,16 +12,30 @@ class ClinicalController {
 
       const proforma = await ClinicalProforma.create(proformaData);
 
+      let adlFileCreated = false;
+      let adlFile = null;
+      let adlCreationMessage = null;
+
       // If this is a complex case requiring ADL file, create it
       if (proforma.doctor_decision === 'complex_case' && proforma.requires_adl_file) {
         try {
           const patient = await Patient.findById(proforma.patient_id);
-          if (patient && !patient.has_adl_file) {
-            await patient.createADLFile(proforma.id, req.user.id);
+          if (!patient) {
+            adlCreationMessage = 'Patient not found for ADL file creation';
+          } else if (patient.has_adl_file) {
+            adlCreationMessage = 'Patient already has an ADL file';
+            // Get existing ADL file info
+            const existingFiles = await patient.getADLFiles();
+            adlFile = existingFiles.length > 0 ? existingFiles[0] : null;
+          } else {
+            // Create the ADL file
+            adlFile = await patient.createADLFile(proforma.id, req.user.id);
+            adlFileCreated = true;
+            adlCreationMessage = 'ADL file created successfully';
           }
         } catch (adlError) {
-          console.warn('Failed to create ADL file:', adlError.message);
-          // Don't fail the entire operation if ADL file creation fails
+          console.error('Failed to create ADL file:', adlError);
+          adlCreationMessage = `Failed to create ADL file: ${adlError.message}`;
         }
       }
 
@@ -29,7 +43,13 @@ class ClinicalController {
         success: true,
         message: 'Clinical proforma created successfully',
         data: {
-          proforma: proforma.toJSON()
+          proforma: proforma.toJSON(),
+          adl_file: adlFile ? {
+            id: adlFile.id,
+            adl_no: adlFile.adl_no,
+            created: adlFileCreated,
+            message: adlCreationMessage
+          } : null
         }
       });
     } catch (error) {
