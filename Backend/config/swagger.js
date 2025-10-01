@@ -19,8 +19,8 @@ const options = {
     servers: [
       {
         url: process.env.NODE_ENV === 'production' 
-          ? 'https://emrs.pgimer.ac.in/api' 
-          : `http://localhost:${process.env.PORT || 5000}/api`,
+          ? 'https://emrs.pgimer.ac.in' 
+          : `http://localhost:${process.env.PORT || 5000}`,
         description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
       },
     ],
