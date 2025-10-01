@@ -1,2 +1,0 @@
-# PGI_EMRS
-This is PGI PROJECT
