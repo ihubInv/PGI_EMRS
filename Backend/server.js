@@ -35,9 +35,9 @@ app.use(helmet({
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://emrs.pgimer.ac.in'] 
-    : ['http://localhost:3000', 'http://localhost:3001'],
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://emrs.pgimer.ac.in']
+    : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -93,6 +93,14 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'EMRS PGIMER API Documentation',
   customfavIcon: '/favicon.ico',
+  swaggerOptions: {
+    persistAuthorization: true, // Keep authorization when page refreshes
+    displayRequestDuration: true,
+    docExpansion: 'none',
+    filter: true,
+    showExtensions: true,
+    tryItOutEnabled: true
+  }
 }));
 
 // API Routes

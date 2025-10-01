@@ -6,7 +6,27 @@ const options = {
     info: {
       title: 'EMRS PGIMER API',
       version: '1.0.0',
-      description: 'Electronic Medical Record System for Psychiatry Department - PGIMER, Chandigarh',
+      description: `Electronic Medical Record System for Psychiatry Department - PGIMER, Chandigarh
+      
+## Authentication
+
+This API uses JWT Bearer tokens for authentication.
+
+### How to authenticate in Swagger:
+
+1. **Register or Login**: Use the \`/api/users/register\` or \`/api/users/login\` endpoint
+2. **Copy the token**: From the response, copy the \`token\` value
+3. **Click the "Authorize" button**: Look for the 🔓 button at the top right of this page
+4. **Enter your token**: Paste the token in the format: \`Bearer YOUR_TOKEN_HERE\` or just \`YOUR_TOKEN_HERE\`
+5. **Click "Authorize"**: Then click "Close"
+6. **Make requests**: Now you can access protected endpoints 🔒
+
+### Token Format:
+\`\`\`
+Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+\`\`\`
+
+**Note**: Tokens expire after a certain period. If you get a 401 error, login again to get a new token.`,
       contact: {
         name: 'PGIMER Team',
         email: 'support@pgimer.ac.in',
@@ -30,6 +50,7 @@ const options = {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
+          description: 'Enter your JWT token from the login response. Format: Bearer <token>',
         },
       },
       schemas: {
