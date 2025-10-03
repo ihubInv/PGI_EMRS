@@ -4,22 +4,22 @@ export const outpatientApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getAllOutpatientRecords: builder.query({
       query: ({ page = 1, limit = 10, ...filters }) => ({
-        url: '/outpatient-record',
+        url: '/outpatient-records',
         params: { page, limit, ...filters },
       }),
       providesTags: ['Outpatient'],
     }),
     getOutpatientRecordById: builder.query({
-      query: (id) => `/outpatient-record/${id}`,
+      query: (id) => `/outpatient-records/${id}`,
       providesTags: (result, error, id) => [{ type: 'Outpatient', id }],
     }),
     getOutpatientRecordByPatientId: builder.query({
-      query: (patientId) => `/outpatient-record/patient/${patientId}`,
+      query: (patientId) => `/outpatient-records/patient/${patientId}`,
       providesTags: (result, error, patientId) => [{ type: 'Outpatient', id: `patient-${patientId}` }],
     }),
     createOutpatientRecord: builder.mutation({
       query: (recordData) => ({
-        url: '/outpatient-record',
+        url: '/outpatient-records',
         method: 'POST',
         body: recordData,
       }),
@@ -27,7 +27,7 @@ export const outpatientApiSlice = apiSlice.injectEndpoints({
     }),
     updateOutpatientRecord: builder.mutation({
       query: ({ id, ...data }) => ({
-        url: `/outpatient-record/${id}`,
+        url: `/outpatient-records/${id}`,
         method: 'PUT',
         body: data,
       }),
@@ -35,18 +35,18 @@ export const outpatientApiSlice = apiSlice.injectEndpoints({
     }),
     deleteOutpatientRecord: builder.mutation({
       query: (id) => ({
-        url: `/outpatient-record/${id}`,
+        url: `/outpatient-records/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['Outpatient', 'Stats'],
     }),
     getOutpatientStats: builder.query({
-      query: () => '/outpatient-record/stats',
+      query: () => '/outpatient-records/stats',
       providesTags: ['Stats'],
     }),
     getMyRecords: builder.query({
       query: ({ page = 1, limit = 10 }) => ({
-        url: '/outpatient-record/my-records',
+        url: '/outpatient-records/my-records',
         params: { page, limit },
       }),
       providesTags: ['Outpatient'],

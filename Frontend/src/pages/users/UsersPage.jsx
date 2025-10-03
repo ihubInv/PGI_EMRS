@@ -24,7 +24,9 @@ const UsersPage = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const limit = 10;
 
-  const { data, isLoading, isFetching } = useGetAllUsersQuery({ page, limit });
+  const { data, isLoading, isFetching, refetch } = useGetAllUsersQuery({ page, limit }, {
+    pollingInterval: 30000, // Auto-refresh every 30 seconds for real-time data
+  });
   const [deleteUser] = useDeleteUserMutation();
   const [activateUser] = useActivateUserMutation();
   const [deactivateUser] = useDeactivateUserMutation();

@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useCreateOutpatientRecordMutation } from '../../features/outpatient/outpatientApiSlice';
-import { useSearchPatientsQuery } from '../../features/patients/patientsApiSlice';
+import { useCreatePatientMutation, useSearchPatientsQuery } from '../../features/patients/patientsApiSlice';
 import Card from '../../components/Card';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
 import Textarea from '../../components/Textarea';
 import Button from '../../components/Button';
-import { MARITAL_STATUS, FAMILY_TYPE, LOCALITY, RELIGION } from '../../utils/constants';
+import { MARITAL_STATUS, FAMILY_TYPE, LOCALITY, RELIGION, SEX_OPTIONS } from '../../utils/constants';
 
 const CreateOutpatientRecord = () => {
   const navigate = useNavigate();
@@ -16,11 +16,20 @@ const CreateOutpatientRecord = () => {
   const patientIdFromQuery = searchParams.get('patient_id');
 
   const [createRecord, { isLoading }] = useCreateOutpatientRecordMutation();
+  const [createPatient, { isLoading: isCreatingPatient }] = useCreatePatientMutation();
   const [patientSearch, setPatientSearch] = useState('');
   const { data: patientsData } = useSearchPatientsQuery(
     { search: patientSearch, limit: 10 },
     { skip: !patientSearch }
   );
+
+  const [isNewPatient, setIsNewPatient] = useState(!patientIdFromQuery);
+  const [patientData, setPatientData] = useState({
+    name: '',
+    sex: '',
+    actual_age: '',
+    assigned_room: '',
+  });
 
   const [formData, setFormData] = useState({
     patient_id: patientIdFromQuery || '',
@@ -64,11 +73,22 @@ const CreateOutpatientRecord = () => {
     }
   };
 
+  const handlePatientChange = (e) => {
+    const { name, value } = e.target;
+    setPatientData((prev) => ({ ...prev, [name]: value }));
+  };
+
   const validate = () => {
     const newErrors = {};
-    if (!formData.patient_id) {
-      newErrors.patient_id = 'Patient is required';
+    
+    if (isNewPatient) {
+      if (!patientData.name.trim()) newErrors.patientName = 'Name is required';
+      if (!patientData.sex) newErrors.patientSex = 'Sex is required';
+      if (!patientData.actual_age) newErrors.patientAge = 'Age is required';
+    } else {
+      if (!formData.patient_id) newErrors.patient_id = 'Patient is required';
     }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -82,9 +102,22 @@ const CreateOutpatientRecord = () => {
     }
 
     try {
+      let patientId = formData.patient_id;
+
+      // Step 1: Create patient if new
+      if (isNewPatient) {
+        const patientResult = await createPatient({
+          ...patientData,
+          actual_age: parseInt(patientData.actual_age),
+        }).unwrap();
+        patientId = patientResult.data.patient.id;
+        toast.success('Patient registered successfully!');
+      }
+
+      // Step 2: Create outpatient record
       const submitData = {
         ...formData,
-        patient_id: parseInt(formData.patient_id),
+        patient_id: parseInt(patientId),
         year_of_marriage: formData.year_of_marriage ? parseInt(formData.year_of_marriage) : null,
         no_of_children: formData.no_of_children ? parseInt(formData.no_of_children) : null,
         completed_years_of_education: formData.completed_years_of_education ? parseInt(formData.completed_years_of_education) : null,
@@ -115,31 +148,105 @@ const CreateOutpatientRecord = () => {
       </div>
 
       <form onSubmit={handleSubmit}>
-        {/* Patient Selection */}
+        {/* Patient Selection or Registration */}
         <Card title="Patient Information" className="mb-6">
           <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Search Patient <span className="text-red-500">*</span>
-              </label>
-              <Input
-                placeholder="Search by name or CR number..."
-                value={patientSearch}
-                onChange={(e) => setPatientSearch(e.target.value)}
-              />
-              {patientOptions.length > 0 && (
-                <Select
-                  name="patient_id"
-                  value={formData.patient_id}
-                  onChange={handleChange}
-                  options={patientOptions}
-                  placeholder="Select patient"
-                  error={errors.patient_id}
-                  required
-                  className="mt-2"
+            {/* Toggle between new and existing patient */}
+            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="patientType"
+                  checked={isNewPatient}
+                  onChange={() => setIsNewPatient(true)}
+                  className="mr-2"
                 />
-              )}
+                <span className="font-medium">Register New Patient</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="patientType"
+                  checked={!isNewPatient}
+                  onChange={() => setIsNewPatient(false)}
+                  className="mr-2"
+                />
+                <span className="font-medium">Select Existing Patient</span>
+              </label>
             </div>
+
+            {isNewPatient ? (
+              /* New Patient Registration Form */
+              <div className="space-y-6 p-4 border-2 border-dashed border-primary-300 rounded-lg">
+                <h4 className="font-medium text-lg text-primary-700">New Patient Registration</h4>
+                
+                <Input
+                  label="Patient Name"
+                  name="name"
+                  value={patientData.name}
+                  onChange={handlePatientChange}
+                  placeholder="Enter full name"
+                  error={errors.patientName}
+                  required
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Select
+                    label="Sex"
+                    name="sex"
+                    value={patientData.sex}
+                    onChange={handlePatientChange}
+                    options={SEX_OPTIONS}
+                    error={errors.patientSex}
+                    required
+                  />
+
+                  <Input
+                    label="Age"
+                    type="number"
+                    name="actual_age"
+                    value={patientData.actual_age}
+                    onChange={handlePatientChange}
+                    placeholder="Enter age"
+                    error={errors.patientAge}
+                    required
+                    min="0"
+                    max="150"
+                  />
+                </div>
+
+                <Input
+                  label="Assigned Room"
+                  name="assigned_room"
+                  value={patientData.assigned_room}
+                  onChange={handlePatientChange}
+                  placeholder="e.g., Ward A-101"
+                />
+              </div>
+            ) : (
+              /* Existing Patient Selection */
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  Search Patient <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  placeholder="Search by name or CR number..."
+                  value={patientSearch}
+                  onChange={(e) => setPatientSearch(e.target.value)}
+                />
+                {patientOptions.length > 0 && (
+                  <Select
+                    name="patient_id"
+                    value={formData.patient_id}
+                    onChange={handleChange}
+                    options={patientOptions}
+                    placeholder="Select patient"
+                    error={errors.patient_id}
+                    required
+                  />
+                )}
+              </div>
+            )}
           </div>
         </Card>
 
@@ -422,8 +529,8 @@ const CreateOutpatientRecord = () => {
             >
               Cancel
             </Button>
-            <Button type="submit" loading={isLoading}>
-              Create Outpatient Record
+            <Button type="submit" loading={isLoading || isCreatingPatient}>
+              {isNewPatient ? 'Register Patient & Create Record' : 'Create Outpatient Record'}
             </Button>
           </div>
         </Card>

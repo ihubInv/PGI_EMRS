@@ -36,6 +36,9 @@ import CreateUser from './pages/users/CreateUser';
 // Profile
 import Profile from './pages/Profile';
 
+// API Test (Development only)
+import ApiTest from './pages/ApiTest';
+
 function App() {
   const isAuthenticated = useSelector(selectIsAuthenticated);
 
@@ -92,6 +95,9 @@ function App() {
 
               {/* Profile - All authenticated users */}
               <Route path="/profile" element={<Profile />} />
+
+              {/* API Test - Development only */}
+              <Route path="/api-test" element={<ApiTest />} />
             </Route>
           </Route>
 

@@ -22,7 +22,9 @@ const ADLFilesPage = () => {
   const [search, setSearch] = useState('');
   const limit = 10;
 
-  const { data, isLoading, isFetching } = useGetAllADLFilesQuery({ page, limit });
+  const { data, isLoading, isFetching, refetch } = useGetAllADLFilesQuery({ page, limit }, {
+    pollingInterval: 30000, // Auto-refresh every 30 seconds for real-time data
+  });
   const [retrieveFile] = useRetrieveFileMutation();
   const [returnFile] = useReturnFileMutation();
   const [archiveFile] = useArchiveFileMutation();

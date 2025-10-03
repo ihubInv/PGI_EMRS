@@ -35,12 +35,18 @@ const Header = ({ onMenuClick }) => {
             </div>
 
             <div className="flex items-center gap-2">
-              <Link to="/profile">
+              <Link to="/profile" title="Profile Settings">
                 <Button variant="ghost" size="sm">
                   <FiUser className="h-5 w-5" />
                 </Button>
               </Link>
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleLogout}
+                title="Sign Out"
+                className="text-gray-600 hover:text-red-600"
+              >
                 <FiLogOut className="h-5 w-5" />
               </Button>
             </div>

@@ -4,22 +4,22 @@ export const clinicalApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getAllClinicalProformas: builder.query({
       query: ({ page = 1, limit = 10, ...filters }) => ({
-        url: '/clinical-proforma',
+        url: '/clinical-proformas',
         params: { page, limit, ...filters },
       }),
       providesTags: ['Clinical'],
     }),
     getClinicalProformaById: builder.query({
-      query: (id) => `/clinical-proforma/${id}`,
+      query: (id) => `/clinical-proformas/${id}`,
       providesTags: (result, error, id) => [{ type: 'Clinical', id }],
     }),
     getClinicalProformaByPatientId: builder.query({
-      query: (patientId) => `/clinical-proforma/patient/${patientId}`,
+      query: (patientId) => `/clinical-proformas/patient/${patientId}`,
       providesTags: (result, error, patientId) => [{ type: 'Clinical', id: `patient-${patientId}` }],
     }),
     createClinicalProforma: builder.mutation({
       query: (proformaData) => ({
-        url: '/clinical-proforma',
+        url: '/clinical-proformas',
         method: 'POST',
         body: proformaData,
       }),
@@ -27,7 +27,7 @@ export const clinicalApiSlice = apiSlice.injectEndpoints({
     }),
     updateClinicalProforma: builder.mutation({
       query: ({ id, ...data }) => ({
-        url: `/clinical-proforma/${id}`,
+        url: `/clinical-proformas/${id}`,
         method: 'PUT',
         body: data,
       }),
@@ -35,40 +35,40 @@ export const clinicalApiSlice = apiSlice.injectEndpoints({
     }),
     deleteClinicalProforma: builder.mutation({
       query: (id) => ({
-        url: `/clinical-proforma/${id}`,
+        url: `/clinical-proformas/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['Clinical', 'Stats'],
     }),
     getClinicalStats: builder.query({
-      query: () => '/clinical-proforma/stats',
+      query: () => '/clinical-proformas/stats',
       providesTags: ['Stats'],
     }),
     getMyProformas: builder.query({
       query: ({ page = 1, limit = 10 }) => ({
-        url: '/clinical-proforma/my-proformas',
+        url: '/clinical-proformas/my-proformas',
         params: { page, limit },
       }),
       providesTags: ['Clinical'],
     }),
     getComplexCases: builder.query({
       query: ({ page = 1, limit = 10 }) => ({
-        url: '/clinical-proforma/complex-cases',
+        url: '/clinical-proformas/complex-cases',
         params: { page, limit },
       }),
       providesTags: ['Clinical'],
     }),
     getCasesBySeverity: builder.query({
-      query: () => '/clinical-proforma/stats/severity',
+      query: () => '/clinical-proformas/stats/severity',
       providesTags: ['Stats'],
     }),
     getCasesByDecision: builder.query({
-      query: () => '/clinical-proforma/stats/decision',
+      query: () => '/clinical-proformas/stats/decision',
       providesTags: ['Stats'],
     }),
     getCasesByRoom: builder.query({
       query: ({ room_no, page = 1, limit = 10 }) => ({
-        url: `/clinical-proforma/room/${room_no}`,
+        url: `/clinical-proformas/room/${room_no}`,
         params: { page, limit },
       }),
       providesTags: ['Clinical'],

@@ -1,74 +1,349 @@
-const { Pool } = require('pg');
+const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
-// Database configuration
-const dbConfig = {
-  connectionString: process.env.DB_HOST,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  max: 20, // Maximum number of clients in the pool
-  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
-};
+// Supabase configuration
+const supabaseUrl = 'https://opixxwotdsrscfuekysm.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9waXh4d290ZHNyc2NmdWVreXNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzMTY0NzQsImV4cCI6MjA3NDg5MjQ3NH0.WphzwLI0KYc-MbFk06LrFxrhwu-jcvdji4NdyFX1FlU';
+const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9waXh4d290ZHNyc2NmdWVreXNtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTMxNjQ3NCwiZXhwIjoyMDc0ODkyNDc0fQ.6DKe7ZwnSAWK2LRbbhI7FTOU9KTYlqs5tUJJZZhJAlg';
 
-// Create a new pool instance
-const pool = new Pool(dbConfig);
+// Create Supabase client instances
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-// Test database connection
-pool.on('connect', () => {
-  console.log('Connected to PostgreSQL database');
-});
+// Test Supabase client connection
+async function testConnection() {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('count')
+      .limit(1);
+    
+    if (error && error.code != 'PGRST116') { // PGRST116 is table not found, which is expected for initial setup
+      throw error;
+    }
+    
+    console.log('✅ Connected to Supabase successfully');
+    return true;
+  } catch (error) {
+    console.error('❌ Supabase connection error:', error.message);
+    return false;
+  }
+}
 
-pool.on('error', (err) => {
-  console.error('Database connection error:', err);
-  process.exit(-1);
-});
-
-// Helper function to execute queries
-const query = async (text, params) => {
+// Enhanced query function that handles complex SQL queries
+const query = async (text, params = []) => {
   const start = Date.now();
   try {
-    const res = await pool.query(text, params);
-    const duration = Date.now() - start;
-    console.log('Executed query', { text, duration, rows: res.rowCount });
-    return res;
+    console.log('Executing query via Supabase:', { text, params });
+    
+    // Handle aggregation queries (COUNT, AVG, etc.)
+    if (text.includes('COUNT(') || text.includes('AVG(')) {
+      return await executeAggregationQuery(text, params, start);
+    }
+    
+    // Handle JOIN queries
+    if (text.includes('LEFT JOIN') || text.includes('RIGHT JOIN') || text.includes('INNER JOIN')) {
+      return await executeJoinQuery(text, params, start);
+    }
+    
+    // Handle simple queries with ORDER BY and LIMIT
+    if (text.includes('ORDER BY') && text.includes('LIMIT')) {
+      return await executeSelectWithOrderLimit(text, params, start);
+    }
+    
+    // Handle simple SELECT queries
+    return await executeSimpleQuery(text, params, start);
+    
   } catch (error) {
     console.error('Database query error:', error);
     throw error;
   }
 };
 
-// Helper function to get a client from the pool
-const getClient = async () => {
-  const client = await pool.connect();
-  const query = client.query;
-  const release = client.release;
+// Execute aggregation queries
+async function executeAggregationQuery(text, params, startTime) {
+  const tableMatch = text.match(/FROM\s+(\w+)/i);
+  if (!tableMatch) throw new Error('Could not extract table name');
   
-  // Set a timeout of 5 seconds, after which we will log this client's last query
-  const timeout = setTimeout(() => {
-    console.error('A client has been checked out for more than 5 seconds!');
-    console.error(`The last executed query on this client was: ${client.lastQuery}`);
-  }, 5000);
+  const tableName = tableMatch[1];
   
-  // Monkey patch the query method to keep track of the last query executed
-  client.query = (...args) => {
-    client.lastQuery = args;
-    return query.apply(client, args);
+  // For simple COUNT(*) queries
+  if (text.includes('COUNT(*)') && !text.includes('CASE WHEN')) {
+    const { count, error } = await supabaseAdmin
+      .from(tableName)
+      .select('*', { count: 'exact', head: true });
+    
+    if (error) throw error;
+    
+    const duration = Date.now() - startTime;
+    console.log('Count query executed successfully', { duration, count });
+    
+    return {
+      rows: [{ count: count }],
+      rowCount: 1,
+      command: 'SELECT'
+    };
+  }
+  
+  // For complex aggregation queries with CASE WHEN (stats queries)
+  const { data, error } = await supabaseAdmin.from(tableName).select('*');
+  if (error) throw error;
+  
+  const stats = computeStatsFromData(data, tableName);
+  
+  const duration = Date.now() - startTime;
+  console.log('Stats query executed successfully', { duration, rows: 1 });
+  
+  return {
+    rows: [stats],
+    rowCount: 1,
+    command: 'SELECT'
   };
+}
+
+// Compute stats from data based on table type
+function computeStatsFromData(data, tableName) {
+  if (tableName === 'adl_files') {
+    return {
+      total_files: data.length,
+      created_files: data.filter(d => d.file_status === 'created').length,
+      stored_files: data.filter(d => d.file_status === 'stored').length,
+      retrieved_files: data.filter(d => d.file_status === 'retrieved').length || 0,
+      archived_files: data.filter(d => d.file_status === 'archived').length || 0,
+      active_files: data.filter(d => d.is_active === true).length,
+      inactive_files: data.filter(d => d.is_active === false).length,
+      avg_visits_per_file: data.length > 0 ? data.reduce((sum, d) => sum + (d.total_visits || 0), 0) / data.length : 0
+    };
+  }
   
-  client.release = () => {
-    // Clear our timeout
-    clearTimeout(timeout);
-    // Set the methods back to their old un-monkey-patched version
-    client.query = query;
-    client.release = release;
-    return release.apply(client);
+  if (tableName === 'clinical_proforma') {
+    return {
+      total_proformas: data.length,
+      first_visits: data.filter(d => d.visit_type === 'first_visit').length,
+      follow_ups: data.filter(d => d.visit_type === 'follow_up').length,
+      simple_cases: data.filter(d => d.doctor_decision === 'simple_case').length,
+      complex_cases: data.filter(d => d.doctor_decision === 'complex_case').length,
+      cases_requiring_adl: data.filter(d => d.requires_adl_file === true).length,
+      mild_cases: data.filter(d => d.case_severity === 'mild').length,
+      moderate_cases: data.filter(d => d.case_severity === 'moderate').length,
+      severe_cases: data.filter(d => d.case_severity === 'severe').length || 0,
+      critical_cases: data.filter(d => d.case_severity === 'critical').length || 0
+    };
+  }
+  
+  // Default stats for other tables
+  return {
+    total_records: data.length,
+    total_active: data.filter(d => d.is_active !== false).length,
+    total_inactive: data.filter(d => d.is_active === false).length
   };
+}
+
+// Execute join queries
+async function executeJoinQuery(text, params, startTime) {
+  const tableMatch = text.match(/FROM\s+(\w+)\s+\w+\s*(LEFT JOIN|RIGHT JOIN|INNER JOIN|\sORDER|$)/i);
+  if (!tableMatch) throw new Error('Could not parse table name');
   
-  return client;
+  const mainTable = tableMatch[1];
+  
+  // Extract LIMIT and OFFSET
+  const limitMatch = text.match(/LIMIT\s+(\d+)/i);
+  const offsetMatch = text.match(/OFFSET\s+(\d+)/i);
+  const limit = limitMatch ? parseInt(limitMatch[1]) : 10;
+  const offset = offsetMatch ? parseInt(offsetMatch[1]) : 0;
+  
+  // For outpatient_record joins
+  if (mainTable === 'outpatient_record') {
+    const { data, error } = await supabaseAdmin
+      .from('outpatient_record')
+      .select(`
+        *,
+        patients:patient_id(id, name, cr_no, psy_no),
+        users:filled_by(id, name)
+      `)
+      .range(offset, offset + limit - 1)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    const transformedData = data.map(item => ({
+      ...item,
+      patient_name: item.patients?.name,
+      cr_no: item.patients?.cr_no,
+      psy_no: item.patients?.psy_no,
+      filled_by_name: item.users?.name
+    }));
+    
+    const duration = Date.now() - startTime;
+    console.log('Join query executed successfully', { duration, rows: transformedData.length });
+    
+    return {
+      rows: transformedData,
+      rowCount: transformedData.length,
+      command: 'SELECT'
+    };
+  }
+  
+  // For adl_files joins
+  if (mainTable === 'adl_files') {
+    const { data, error } = await supabaseAdmin
+      .from('adl_files')
+      .select(`
+        *,
+        patients:patient_id(id, name, cr_no, psy_no),
+        users:created_by(id, name),
+        users:last_accessed_by(id, name)
+      `)
+      .range(offset, offset + limit - 1)
+      .order('file_created_date', { ascending: false });
+    
+    if (error) throw error;
+    
+    const transformedData = data.map(item => ({
+      ...item,
+      patient_name: item.patients?.name,
+      cr_no: item.patients?.cr_no,
+      psy_no: item.patients?.psy_no,
+      created_by_name: item.users?.name,
+      last_accessed_by_name: item.users?.name
+    }));
+    
+    const duration = Date.now() - startTime;
+    console.log('Join query executed successfully', { duration, rows: transformedData.length });
+    
+    return {
+      rows: transformedData,
+      rowCount: transformedData.length,
+      command: 'SELECT'
+    };
+  }
+  
+  throw new Error(`Join query not supported for table: ${mainTable}`);
+}
+
+// Execute select queries with ORDER BY and LIMIT
+async function executeSelectWithOrderLimit(text, params, startTime) {
+  const tableMatch = text.match(/FROM\s+(\w+)/i);
+  if (!tableMatch) throw new Error('Could not parse table name');
+  
+  const tableName = tableMatch[1];
+  
+  const limitMatch = text.match(/LIMIT\s+(\d+)/i);
+  const offsetMatch = text.match(/OFFSET\s+(\d+)/i);
+  const limit = limitMatch ? parseInt(limitMatch[1]) : 10;
+  const offset = offsetMatch ? parseInt(offsetMatch[1]) : 0;
+  
+  let query = supabaseAdmin.from(tableName).select('*');
+  
+  // Add WHERE conditions if present
+  if (text.includes('WHERE') && params.length > 0) {
+    const whereMatch = text.match(/WHERE\s+(\w+)\s*=\s*\$(\d+)/i);
+    if (whereMatch) {
+      const column = whereMatch[1];
+      const paramIndex = parseInt(whereMatch[2]) - 1;
+      const value = params[paramIndex];
+      query = query.eq(column, value);
+    }
+  }
+  
+  // Add ORDER BY if present
+  if (text.includes('ORDER BY')) {
+    const orderMatch = text.match(/ORDER BY\s+(\w+)/i);
+    if (orderMatch) {
+      const orderColumn = orderMatch[1];
+      query = query.order(orderColumn, { ascending: false });
+    }
+  }
+  
+  // Add LIMIT and OFFSET
+  query = query.range(offset, offset + limit - 1);
+  
+  const result = await query;
+  if (result.error) throw result.error;
+  
+  const duration = Date.now() - startTime;
+  console.log('Query executed successfully', { duration, rows: result.data.length });
+  
+  return {
+    rows: result.data || [],
+    rowCount: result.data ? result.data.length : 0,
+    command: 'SELECT'
+  };
+}
+
+// Execute simple queries
+async function executeSimpleQuery(text, params, startTime) {
+  const tableMatch = text.match(/FROM\s+(\w+)/i);
+  if (!tableMatch) throw new Error('Could not parse table name');
+  
+  const tableName = tableMatch[1];
+  
+  let query = supabaseAdmin.from(tableName).select('*');
+  
+  // Handle WHERE conditions
+  if (text.includes('WHERE') && params.length > 0) {
+    const whereMatch = text.match(/WHERE\s+(\w+)\s*=\s*\$(\d+)/i);
+    if (whereMatch) {
+      const column = whereMatch[1];
+      const paramIndex = parseInt(whereMatch[2]) - 1;
+      const value = params[paramIndex];
+      query = query.eq(column, value);
+    }
+    
+    // Handle AND conditions
+    const andMatch = text.match(/AND\s+(\w+)\s*=\s*\$(\d+)/i);
+    if (andMatch) {
+      const column = andMatch[1];
+      const paramIndex = parseInt(andMatch[2]) - 1;
+      const value = params[paramIndex];
+      query = query.eq(column, value);
+    }
+  }
+  
+  // Handle ORDER BY
+  if (text.includes('ORDER BY')) {
+    const orderMatch = text.match(/ORDER BY\s+(\w+)/i);
+    if (orderMatch) {
+      const orderColumn = orderMatch[1];
+      query = query.order(orderColumn, { ascending: false });
+    }
+  }
+  
+  // Handle LIMIT
+  if (text.includes('LIMIT')) {
+    const limitMatch = text.match(/LIMIT\s+(\d+)/i);
+    const offsetMatch = text.match(/OFFSET\s+(\d+)/i);
+    const limit = limitMatch ? parseInt(limitMatch[1]) : 10;
+    const offset = offsetMatch ? parseInt(offsetMatch[1]) : 0;
+    
+    query = query.range(offset, offset + limit - 1);
+  }
+  
+  const result = await query;
+  if (result.error) throw result.error;
+  
+  const duration = Date.now() - startTime;
+  console.log('Query executed successfully', { duration, rows: result.data.length });
+  
+  return {
+    rows: result.data || [],
+    rowCount: result.data ? result.data.length : 0,
+    command: 'SELECT'
+  };
+}
+
+// Helper function to get Supabase client for direct operations
+const getClient = () => {
+  return supabaseAdmin; // Return admin client for direct operations
 };
+
+// Initialize connection test on module load
+testConnection();
 
 module.exports = {
   query,
   getClient,
-  pool
+  supabase,
+  supabaseAdmin,
+  testConnection
 };

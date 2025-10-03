@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FiPlus, FiSearch, FiEdit, FiTrash2, FiEye } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiEdit, FiTrash2, FiEye, FiRefreshCw } from 'react-icons/fi';
 import {
   useGetAllOutpatientRecordsQuery,
   useDeleteOutpatientRecordMutation,
@@ -12,6 +12,7 @@ import Input from '../../components/Input';
 import Table from '../../components/Table';
 import Pagination from '../../components/Pagination';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import Alert from '../../components/Alert';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 
 const OutpatientPage = () => {
@@ -19,8 +20,16 @@ const OutpatientPage = () => {
   const [search, setSearch] = useState('');
   const limit = 10;
 
-  const { data, isLoading, isFetching } = useGetAllOutpatientRecordsQuery({ page, limit });
+  const { data, isLoading, isFetching, refetch, error } = useGetAllOutpatientRecordsQuery({ page, limit }, {
+    pollingInterval: 30000, // Auto-refresh every 30 seconds for real-time data
+    refetchOnMountOrArgChange: true,
+  });
   const [deleteRecord] = useDeleteOutpatientRecordMutation();
+
+  const handleRefresh = () => {
+    refetch();
+    toast.info('Refreshing data...');
+  };
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this outpatient record?')) {
@@ -87,12 +96,25 @@ const OutpatientPage = () => {
           <h1 className="text-3xl font-bold text-gray-900">Outpatient Records</h1>
           <p className="text-gray-600 mt-1">Manage demographic and social data</p>
         </div>
-        <Link to="/outpatient/new">
-          <Button>
-            <FiPlus className="mr-2" /> New Record
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleRefresh} disabled={isFetching}>
+            <FiRefreshCw className={`mr-2 ${isFetching ? 'animate-spin' : ''}`} /> Refresh
           </Button>
-        </Link>
+          <Link to="/outpatient/new">
+            <Button>
+              <FiPlus className="mr-2" /> New Record
+            </Button>
+          </Link>
+        </div>
       </div>
+
+      {error && (
+        <Alert
+          type="error"
+          title="Error Loading Records"
+          message={error?.data?.message || 'Failed to load outpatient records. Please check your connection and try again.'}
+        />
+      )}
 
       <Card>
         <div className="mb-4">
@@ -111,10 +133,21 @@ const OutpatientPage = () => {
           <LoadingSpinner className="h-64" />
         ) : (
           <>
+            {/* Debug Info - Remove in production */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mb-4 p-3 bg-blue-50 rounded text-xs">
+                <p><strong>API Response Debug:</strong></p>
+                <p>Total Records: {data?.data?.pagination?.total || 0}</p>
+                <p>Records Array Length: {data?.data?.records?.length || 0}</p>
+                <p>Current Page: {data?.data?.pagination?.page || 'N/A'}</p>
+              </div>
+            )}
+
             <Table
               columns={columns}
               data={data?.data?.records || []}
               loading={isLoading}
+              emptyMessage="No outpatient records found. Click 'New Record' to create one."
             />
 
             {data?.data?.pagination && (

@@ -34,6 +34,13 @@ class OutpatientRecord {
     this.school_college_office = data.school_college_office;
     this.contact_number = data.contact_number;
     this.created_at = data.created_at;
+    this.updated_at = data.updated_at;
+    
+    // Joined fields from queries
+    this.patient_name = data.patient_name;
+    this.cr_no = data.cr_no;
+    this.psy_no = data.psy_no;
+    this.filled_by_name = data.filled_by_name;
   }
 
   // Create a new outpatient record

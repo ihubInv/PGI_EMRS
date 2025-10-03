@@ -20,7 +20,9 @@ const ClinicalProformaPage = () => {
   const [search, setSearch] = useState('');
   const limit = 10;
 
-  const { data, isLoading, isFetching } = useGetAllClinicalProformasQuery({ page, limit });
+  const { data, isLoading, isFetching, refetch } = useGetAllClinicalProformasQuery({ page, limit }, {
+    pollingInterval: 30000, // Auto-refresh every 30 seconds for real-time data
+  });
   const [deleteProforma] = useDeleteClinicalProformaMutation();
 
   const handleDelete = async (id) => {

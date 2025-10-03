@@ -1,9 +1,21 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+// Helper function to get user from localStorage safely
+const getUserFromStorage = () => {
+  try {
+    const userData = localStorage.getItem('user');
+    return userData ? JSON.parse(userData) : null;
+  } catch (error) {
+    console.error('Error parsing user data from localStorage:', error);
+    localStorage.removeItem('user');
+    return null;
+  }
+};
+
 const initialState = {
-  user: null,
+  user: getUserFromStorage(),
   token: localStorage.getItem('token') || null,
-  isAuthenticated: !!localStorage.getItem('token'),
+  isAuthenticated: !!(localStorage.getItem('token') && getUserFromStorage()),
   twoFactorRequired: false,
   tempToken: null,
 };

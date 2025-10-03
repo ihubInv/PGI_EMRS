@@ -9,6 +9,34 @@ import Card from '../components/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Badge from '../components/Badge';
 
+// Chart components
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from 'chart.js';
+import { Doughnut, Bar, Line } from 'react-chartjs-2';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
+
 const StatCard = ({ title, value, icon: Icon, color, to }) => (
   <Link to={to}>
     <Card className="hover:shadow-lg transition-shadow">
@@ -28,11 +56,130 @@ const StatCard = ({ title, value, icon: Icon, color, to }) => (
 const Dashboard = () => {
   const user = useSelector(selectCurrentUser);
   
-  const { data: patientStats, isLoading: patientsLoading } = useGetPatientStatsQuery();
-  const { data: clinicalStats, isLoading: clinicalLoading } = useGetClinicalStatsQuery();
-  const { data: adlStats, isLoading: adlLoading } = useGetADLStatsQuery();
+  const { data: patientStats, isLoading: patientsLoading } = useGetPatientStatsQuery(undefined, {
+    pollingInterval: 30000, // Auto-refresh every 30 seconds
+  });
+  const { data: clinicalStats, isLoading: clinicalLoading } = useGetClinicalStatsQuery(undefined, {
+    pollingInterval: 30000,
+  });
+  const { data: adlStats, isLoading: adlLoading } = useGetADLStatsQuery(undefined, {
+    pollingInterval: 30000,
+  });
 
   const isLoading = patientsLoading || clinicalLoading || adlLoading;
+
+  // Chart data for Patient Gender Distribution
+  const genderChartData = {
+    labels: ['Male', 'Female'],
+    datasets: [
+      {
+        data: [
+          patientStats?.data?.stats?.male_patients || 0,
+          patientStats?.data?.stats?.female_patients || 0
+        ],
+        backgroundColor: ['#3B82F6', '#EC4899'],
+        borderColor: ['#1D4ED8', '#BE185D'],
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  // Chart data for Clinical Cases Distribution
+  const clinicalCasesChartData = {
+    labels: ['First Visit', 'Follow Up'],
+    datasets: [
+      {
+        label: 'Visits',
+        data: [
+          clinicalStats?.data?.stats?.first_visits || 0,
+          clinicalStats?.data?.stats?.follow_ups || 0
+        ],
+        backgroundColor: ['#10B981', '#F59E0B'],
+        borderColor: ['#059669', '#D97706'],
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  // Chart data for Case Severity Distribution
+  const severityChartData = {
+    labels: ['Mild', 'Moderate', 'Severe', 'Critical'],
+    datasets: [
+      {
+        label: 'Cases',
+        data: [
+          clinicalStats?.data?.stats?.mild_cases || 0,
+          clinicalStats?.data?.stats?.moderate_cases || 0,
+          clinicalStats?.data?.stats?.severe_cases || 0,
+          clinicalStats?.data?.stats?.critical_cases || 0
+        ],
+        backgroundColor: ['#8B5CF6', '#06B6D4', '#EF4444', '#F59E0B'],
+        borderColor: ['#7C3AED', '#0891B2', '#DC2626', '#D97706'],
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  // Chart data for ADL File Status Distribution
+  const adlStatusChartData = {
+    labels: ['Created', 'Stored', 'Retrieved', 'Archived'],
+    datasets: [
+      {
+        data: [
+          adlStats?.data?.stats?.created_files || 0,
+          adlStats?.data?.stats?.stored_files || 0,
+          adlStats?.data?.stats?.retrieved_files || 0,
+          adlStats?.data?.stats?.archived_files || 0
+        ],
+        backgroundColor: ['#EF4444', '#10B981', '#F59E0B', '#6B7280'],
+        borderColor: ['#DC2626', '#059669', '#D97706', '#4B5563'],
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  // Chart data for Patient Age Distribution (mock data for demonstration)
+  const ageChartData = {
+    labels: ['18-25', '26-35', '36-45', '46-55', '56-65', '65+'],
+    datasets: [
+      {
+        label: 'Number of Patients',
+        data: [2, 4, 3, 5, 2, 1], // This would ideally come from API
+        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+        borderColor: 'rgba(29, 78, 216, 1)',
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+      },
+      title: {
+        display: true,
+        font: {
+          size: 16,
+          weight: 'bold'
+        }
+      }
+    }
+  };
+
+  const barChartOptions = {
+    ...chartOptions,
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          stepSize: 1
+        }
+      }
+    }
+  };
 
   if (isLoading) {
     return <LoadingSpinner size="lg" className="h-96" />;
@@ -40,6 +187,7 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600 mt-1">Welcome back, {user?.name}!</p>
@@ -73,14 +221,120 @@ const Dashboard = () => {
         
         <StatCard
           title="Complex Cases"
-          value={patientStats?.data?.stats?.complex_cases}
+          value={clinicalStats?.data?.stats?.complex_cases}
           icon={FiTrendingUp}
           color="bg-orange-500"
           to="/patients?complexity=complex"
         />
       </div>
 
-      {/* Quick Stats */}
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Patient Gender Distribution */}
+        <Card title="Patient Gender Distribution">
+          <div className="h-80">
+            <Doughnut 
+              data={genderChartData} 
+              options={{
+                ...chartOptions,
+                plugins: {
+                  ...chartOptions.plugins,
+                  title: {
+                    ...chartOptions.plugins.title,
+                    text: 'Patient Gender Distribution'
+                  }
+                }
+              }} 
+            />
+          </div>
+        </Card>
+
+        {/* Clinical Cases Distribution */}
+        <Card title="Visit Type Distribution">
+          <div className="h-80">
+            <Bar 
+              data={clinicalCasesChartData} 
+              options={{
+                ...barChartOptions,
+                plugins: {
+                  ...barChartOptions.plugins,
+                  title: {
+                    ...barChartOptions.plugins.title,
+                    text: 'Visit Type Distribution'
+                  }
+                }
+              }} 
+            />
+          </div>
+        </Card>
+
+        {/* Case Severity Distribution */}
+        <Card title="Case Severity Distribution">
+          <div className="h-80">
+            <Bar 
+              data={severityChartData} 
+              options={{
+                ...barChartOptions,
+                plugins: {
+                  ...barChartOptions.plugins,
+                  title: {
+                    ...barChartOptions.plugins.title,
+                    text: 'Case Severity Distribution'
+                  }
+                }
+              }} 
+            />
+          </div>
+        </Card>
+
+        {/* ADL File Status Distribution */}
+        <Card title="ADL File Status">
+          <div className="h-80">
+            <Doughnut 
+              data={adlStatusChartData} 
+              options={{
+                ...chartOptions,
+                plugins: {
+                  ...chartOptions.plugins,
+                  title: {
+                    ...chartOptions.plugins.title,
+                    text: 'ADL File Status Distribution'
+                  }
+                }
+              }} 
+            />
+          </div>
+        </Card>
+      </div>
+
+      {/* Patient Age Distribution */}
+      <Card title="Patient Age Distribution">
+        <div className="h-96">
+          <Line 
+            data={ageChartData} 
+            options={{
+              ...chartOptions,
+              plugins: {
+                ...chartOptions.plugins,
+                title: {
+                  ...chartOptions.plugins.title,
+                  text: 'Patient Age Distribution'
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    stepSize: 1
+                  }
+                }
+              }
+            }} 
+          />
+        </div>
+      </Card>
+
+      {/* Detailed Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card title="Patient Statistics">
           <div className="space-y-3">
@@ -98,28 +352,28 @@ const Dashboard = () => {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Complex Cases</span>
-              <Badge variant="warning">{patientStats?.data?.stats?.complex_cases || 0}</Badge>
+              <Badge variant="warning">{clinicalStats?.data?.stats?.complex_cases || 0}</Badge>
             </div>
           </div>
         </Card>
 
-        <Card title="ADL File Status">
+        <Card title="Clinical Statistics">
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Created</span>
-              <Badge>{adlStats?.data?.stats?.created_files || 0}</Badge>
+              <span className="text-gray-600">First Visits</span>
+              <Badge>{clinicalStats?.data?.stats?.first_visits || 0}</Badge>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Stored</span>
-              <Badge variant="success">{adlStats?.data?.stats?.stored_files || 0}</Badge>
+              <span className="text-gray-600">Follow-ups</span>
+              <Badge variant="success">{clinicalStats?.data?.stats?.follow_ups || 0}</Badge>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Retrieved</span>
-              <Badge variant="warning">{adlStats?.data?.stats?.retrieved_files || 0}</Badge>
+              <span className="text-gray-600">Simple Cases</span>
+              <Badge variant="info">{clinicalStats?.data?.stats?.simple_cases || 0}</Badge>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Archived</span>
-              <Badge variant="default">{adlStats?.data?.stats?.archived_files || 0}</Badge>
+              <span className="text-gray-600">Cases Requiring ADL</span>
+              <Badge variant="warning">{clinicalStats?.data?.stats?.cases_requiring_adl || 0}</Badge>
             </div>
           </div>
         </Card>
@@ -128,32 +382,54 @@ const Dashboard = () => {
       {/* Role-based Quick Actions */}
       <Card title="Quick Actions">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link
-            to="/patients/new"
-            className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center"
-          >
-            <FiUsers className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-            <p className="font-medium">Register New Patient</p>
-          </Link>
-
-          {(user?.role === 'MWO' || user?.role === 'Admin') && (
+          {user?.role === 'MWO' ? (
             <Link
               to="/outpatient/new"
               className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center"
             >
-              <FiClipboard className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-              <p className="font-medium">New Outpatient Record</p>
+              <FiUsers className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+              <p className="font-medium">Register Patient & Create Record</p>
             </Link>
+          ) : (
+            <>
+              <Link
+                to="/patients/new"
+                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center"
+              >
+                <FiUsers className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <p className="font-medium">Register New Patient</p>
+              </Link>
+
+              {user?.role === 'Admin' && (
+                <Link
+                  to="/outpatient/new"
+                  className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center"
+                >
+                  <FiClipboard className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p className="font-medium">New Outpatient Record</p>
+                </Link>
+              )}
+            </>
           )}
 
           {(user?.role === 'JR' || user?.role === 'SR' || user?.role === 'Admin') && (
-            <Link
-              to="/clinical/new"
-              className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center"
-            >
-              <FiFileText className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-              <p className="font-medium">New Clinical Proforma</p>
-            </Link>
+            <>
+              <Link
+                to="/clinical/new"
+               className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center"
+              >
+                <FiFileText className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <p className="font-medium">Create Clinical Proforma</p>
+              </Link>
+
+              <Link
+                to="/adl-files"
+                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center"
+              >
+                <FiFolder className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <p className="font-medium">Manage ADL Files</p>
+              </Link>
+            </>
           )}
         </div>
       </Card>
@@ -162,4 +438,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-

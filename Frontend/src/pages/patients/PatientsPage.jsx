@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { FiPlus, FiSearch, FiEdit, FiTrash2, FiEye } from 'react-icons/fi';
 import { useGetAllPatientsQuery, useDeletePatientMutation } from '../../features/patients/patientsApiSlice';
+import { selectCurrentUser } from '../../features/auth/authSlice';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
@@ -10,13 +12,17 @@ import Table from '../../components/Table';
 import Pagination from '../../components/Pagination';
 import Badge from '../../components/Badge';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import Alert from '../../components/Alert';
 
 const PatientsPage = () => {
+  const user = useSelector(selectCurrentUser);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const limit = 10;
 
-  const { data, isLoading, isFetching } = useGetAllPatientsQuery({ page, limit });
+  const { data, isLoading, isFetching, refetch } = useGetAllPatientsQuery({ page, limit }, {
+    pollingInterval: 30000, // Auto-refresh every 30 seconds
+  });
   const [deletePatient] = useDeletePatientMutation();
 
   const handleDelete = async (id) => {
@@ -98,14 +104,27 @@ const PatientsPage = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Patients</h1>
-          <p className="text-gray-600 mt-1">Manage patient records</p>
+          <p className="text-gray-600 mt-1">
+            {user?.role === 'MWO' 
+              ? 'View patient records (Create patients via Outpatient Records)' 
+              : 'Manage patient records'}
+          </p>
         </div>
-        <Link to="/patients/new">
-          <Button>
-            <FiPlus className="mr-2" /> Add Patient
-          </Button>
-        </Link>
+        {user?.role !== 'MWO' && (
+          <Link to="/patients/new">
+            <Button>
+              <FiPlus className="mr-2" /> Add Patient
+            </Button>
+          </Link>
+        )}
       </div>
+
+      {user?.role === 'MWO' && (
+        <Alert
+          type="info"
+          message="To register a new patient, please go to Outpatient Records → New Record"
+        />
+      )}
 
       <Card>
         <div className="mb-4">
