@@ -139,22 +139,23 @@ class Patient {
     try {
       const offset = (page - 1) * limit;
       
+      // Simple search pattern
       const searchPattern = `%${searchTerm}%`;
       
-      // Search in name, cr_no, psy_no, adl_no
-      const result = await db.query(
-        `SELECT * FROM patients 
-         WHERE name ILIKE $1 OR cr_no ILIKE $1 OR psy_no ILIKE $1 OR adl_no ILIKE $1
-         ORDER BY created_at DESC 
-         LIMIT $2 OFFSET $3`,
-        [searchPattern, limit, offset]
-      );
+      const query = `
+        SELECT * FROM patients 
+        WHERE name ILIKE $1 OR cr_no ILIKE $1 OR psy_no ILIKE $1 OR adl_no ILIKE $1
+        ORDER BY created_at DESC 
+        LIMIT $2 OFFSET $3
+      `;
+      
+      const countQuery = `
+        SELECT COUNT(*) FROM patients 
+        WHERE name ILIKE $1 OR cr_no ILIKE $1 OR psy_no ILIKE $1 OR adl_no ILIKE $1
+      `;
 
-      const countResult = await db.query(
-        `SELECT COUNT(*) FROM patients 
-         WHERE name ILIKE $1 OR cr_no ILIKE $1 OR psy_no ILIKE $1 OR adl_no ILIKE $1`,
-        [searchPattern]
-      );
+      const result = await db.query(query, [searchPattern, limit, offset]);
+      const countResult = await db.query(countQuery, [searchPattern]);
 
       const patients = result.rows.map(row => new Patient(row));
       const total = parseInt(countResult.rows[0].count);

@@ -346,7 +346,7 @@ router.get('/', authenticateToken, validatePagination, OutpatientController.getA
  *       500:
  *         description: Server error
  */
-router.get('/stats', authenticateToken, OutpatientController.getOutpatientStats);
+router.get('/stats', authenticateToken, requireAdmin, OutpatientController.getOutpatientStats);
 
 /**
  * @swagger

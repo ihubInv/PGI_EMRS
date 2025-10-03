@@ -133,15 +133,6 @@ const OutpatientPage = () => {
           <LoadingSpinner className="h-64" />
         ) : (
           <>
-            {/* Debug Info - Remove in production */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="mb-4 p-3 bg-blue-50 rounded text-xs">
-                <p><strong>API Response Debug:</strong></p>
-                <p>Total Records: {data?.data?.pagination?.total || 0}</p>
-                <p>Records Array Length: {data?.data?.records?.length || 0}</p>
-                <p>Current Page: {data?.data?.pagination?.page || 'N/A'}</p>
-              </div>
-            )}
 
             <Table
               columns={columns}

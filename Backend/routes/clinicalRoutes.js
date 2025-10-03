@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const ClinicalController = require('../controllers/clinicalController');
-const { authenticateToken, requireDoctor, requireAdmin } = require('../middleware/auth');
+const { authenticateToken, requireDoctor, requireAdmin, authorizeRoles } = require('../middleware/auth');
 const {
   validateClinicalProforma,
   validateId,
@@ -249,7 +249,7 @@ const {
  * @swagger
  * /api/clinical-proformas:
  *   post:
- *     summary: Create a new clinical proforma (Doctor only)
+ *     summary: Create a new clinical proforma (Admin, JR/SR Doctor only)
  *     tags: [Clinical Proforma]
  *     security:
  *       - bearerAuth: []
@@ -281,13 +281,13 @@ const {
  *       401:
  *         description: Unauthorized
  *       403:
- *         description: Doctor access required
+ *         description: Admin or Doctor access required
  *       404:
  *         description: Patient not found
  *       500:
  *         description: Server error
  */
-router.post('/', authenticateToken, requireDoctor, validateClinicalProforma, ClinicalController.createClinicalProforma);
+router.post('/', authenticateToken, authorizeRoles('Admin', 'JR', 'SR'), validateClinicalProforma, ClinicalController.createClinicalProforma);
 
 /**
  * @swagger
@@ -449,7 +449,7 @@ router.get('/', authenticateToken, validatePagination, ClinicalController.getAll
  *       500:
  *         description: Server error
  */
-router.get('/stats', authenticateToken, ClinicalController.getClinicalStats);
+router.get('/stats', authenticateToken, requireAdmin, ClinicalController.getClinicalStats);
 
 /**
  * @swagger

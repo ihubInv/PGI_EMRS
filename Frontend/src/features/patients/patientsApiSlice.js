@@ -16,7 +16,7 @@ export const patientsApiSlice = apiSlice.injectEndpoints({
     searchPatients: builder.query({
       query: ({ search, page = 1, limit = 10 }) => ({
         url: '/patients/search',
-        params: { search, page, limit },
+        params: { q: search, page, limit },
       }),
       providesTags: ['Patient'],
     }),

@@ -198,7 +198,7 @@ router.get('/', authenticateToken, validatePagination, ADLController.getAllADLFi
  *       500:
  *         description: Server error
  */
-router.get('/stats', authenticateToken, ADLController.getADLStats);
+router.get('/stats', authenticateToken, requireAdmin, ADLController.getADLStats);
 
 /**
  * @swagger

@@ -8,6 +8,7 @@ class ClinicalProforma {
     this.visit_date = data.visit_date;
     this.visit_type = data.visit_type;
     this.room_no = data.room_no;
+    this.assigned_doctor = data.assigned_doctor;
     this.informant_present = data.informant_present;
     this.nature_of_information = data.nature_of_information;
     this.onset_duration = data.onset_duration;
@@ -59,6 +60,7 @@ class ClinicalProforma {
         visit_date,
         visit_type,
         room_no,
+        assigned_doctor,
         informant_present,
         nature_of_information,
         onset_duration,
@@ -113,7 +115,7 @@ class ClinicalProforma {
       // Insert clinical proforma
       const result = await db.query(
         `INSERT INTO clinical_proforma (
-          patient_id, filled_by, visit_date, visit_type, room_no, informant_present,
+          patient_id, filled_by, visit_date, visit_type, room_no, assigned_doctor, informant_present,
           nature_of_information, onset_duration, course, precipitating_factor,
           illness_duration, current_episode_since, mood, behaviour, speech, thought,
           perception, somatic, bio_functions, adjustment, cognitive_function, fits,
@@ -125,10 +127,10 @@ class ClinicalProforma {
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
           $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-          $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44
+          $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45
         ) RETURNING *`,
         [
-          patient_id, filled_by, visit_date, visit_type, room_no, informant_present,
+          patient_id, filled_by, visit_date, visit_type, room_no, assigned_doctor, informant_present,
           nature_of_information, onset_duration, course, precipitating_factor,
           illness_duration, current_episode_since, mood, behaviour, speech, thought,
           perception, somatic, bio_functions, adjustment, cognitive_function, fits,

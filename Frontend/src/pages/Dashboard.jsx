@@ -56,17 +56,21 @@ const StatCard = ({ title, value, icon: Icon, color, to }) => (
 const Dashboard = () => {
   const user = useSelector(selectCurrentUser);
   
+  // Only fetch stats if user is Admin
   const { data: patientStats, isLoading: patientsLoading } = useGetPatientStatsQuery(undefined, {
-    pollingInterval: 30000, // Auto-refresh every 30 seconds
+    pollingInterval: user?.role === 'Admin' ? 30000 : 0, // Disable polling for non-admin
+    skip: user?.role !== 'Admin', // Skip query entirely for non-admin
   });
   const { data: clinicalStats, isLoading: clinicalLoading } = useGetClinicalStatsQuery(undefined, {
-    pollingInterval: 30000,
+    pollingInterval: user?.role === 'Admin' ? 30000 : 0,
+    skip: user?.role !== 'Admin',
   });
   const { data: adlStats, isLoading: adlLoading } = useGetADLStatsQuery(undefined, {
-    pollingInterval: 30000,
+    pollingInterval: user?.role === 'Admin' ? 30000 : 0,
+    skip: user?.role !== 'Admin',
   });
 
-  const isLoading = patientsLoading || clinicalLoading || adlLoading;
+  const isLoading = user?.role === 'Admin' ? (patientsLoading || clinicalLoading || adlLoading) : false;
 
   // Chart data for Patient Gender Distribution
   const genderChartData = {
@@ -183,6 +187,86 @@ const Dashboard = () => {
 
   if (isLoading) {
     return <LoadingSpinner size="lg" className="h-96" />;
+  }
+
+  // Non-admin role - show limited dashboard
+  if (user?.role !== 'Admin') {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600 mt-1">Welcome back, {user?.name}!</p>
+        </div>
+
+        {/* Role-based content */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {user?.role === 'JR' || user?.role === 'SR' ? (
+            <>
+              <StatCard
+                title="Patients"
+                value="View Patients"
+                icon={FiUsers}
+                color="bg-blue-500"
+                to="/patients"
+              />
+              
+              <StatCard
+                title="Clinical Proforma"
+                value="Manage Cases"
+                icon={FiFileText}
+                color="bg-green-500"
+                to="/clinical"
+              />
+              
+              <StatCard
+                title="ADL Files"
+                value="File System"
+                icon={FiFolder}
+                color="bg-purple-500"
+                to="/adl-files"
+              />
+            </>
+          ) : user?.role === 'MWO' ? (
+            <>
+              <StatCard
+                title="Patients"
+                value="View Patients"
+                icon={FiUsers}
+                color="bg-blue-500"
+                to="/patients"
+              />
+              
+              <StatCard
+                title="Outpatient Records"
+                value="Create Records"
+                icon={FiClipboard}
+                color="bg-orange-500"
+                to="/outpatient"
+              />
+            </>
+          ) : null}
+        </div>
+
+        {/* Role-specific info card */}
+        <Card>
+          <div className="p-6 text-center">
+            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl font-bold text-primary-600">{user?.role?.[0]}</span>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Limited Access Dashboard</h3>
+            <p className="text-gray-600">
+              You have access to view and manage patients and clinical data according to your role ({user?.role}).
+              {user?.role === 'Admin' ? ' Full administrative access available.' : 
+               user?.role === 'JR' || user?.role === 'SR' ? ' View patients, clinical proformas, and ADL files.' :
+               user?.role === 'MWO' ? ' View patients and create outpatient records.' :
+               ' Contact administrator for role permissions.'
+              }
+            </p>
+          </div>
+        </Card>
+      </div>
+    );
   }
 
   return (

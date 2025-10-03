@@ -108,6 +108,7 @@ const validateClinicalProforma = [
     .isISO8601()
     .withMessage('Valid visit date is required'),
   body('visit_type')
+    .optional()
     .isIn(['first_visit', 'follow_up'])
     .withMessage('Visit type must be first_visit or follow_up'),
   body('room_no')
@@ -122,6 +123,10 @@ const validateClinicalProforma = [
     .optional()
     .isIn(['mild', 'moderate', 'severe', 'critical'])
     .withMessage('Case severity must be mild, moderate, severe, or critical'),
+  body('assigned_doctor')
+    .optional()
+    .isLength({ max: 255 })
+    .withMessage('Assigned doctor name must not exceed 255 characters'),
   handleValidationErrors
 ];
 
