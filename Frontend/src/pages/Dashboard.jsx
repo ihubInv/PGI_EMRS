@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { FiUsers, FiFileText, FiFolder, FiClipboard, FiTrendingUp } from 'react-icons/fi';
 import { selectCurrentUser } from '../features/auth/authSlice';
 import { useGetPatientStatsQuery } from '../features/patients/patientsApiSlice';
-import { useGetClinicalStatsQuery } from '../features/clinical/clinicalApiSlice';
-import { useGetADLStatsQuery } from '../features/adl/adlApiSlice';
+import { useGetClinicalStatsQuery, useGetCasesBySeverityQuery, useGetCasesByDecisionQuery, useGetMyProformasQuery } from '../features/clinical/clinicalApiSlice';
+import { useGetADLStatsQuery, useGetFilesByStatusQuery } from '../features/adl/adlApiSlice';
+import { useGetOutpatientStatsQuery } from '../features/outpatient/outpatientApiSlice';
 import Card from '../components/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Badge from '../components/Badge';
@@ -71,6 +72,20 @@ const Dashboard = () => {
   });
 
   const isLoading = user?.role === 'Admin' ? (patientsLoading || clinicalLoading || adlLoading) : false;
+
+  // Role-specific stats for JR/SR
+  const isJrSr = user?.role === 'JR' || user?.role === 'SR';
+  const { data: severityStats } = useGetCasesBySeverityQuery(undefined, { skip: !isJrSr });
+  const { data: decisionStats } = useGetCasesByDecisionQuery(undefined, { skip: !isJrSr });
+  const { data: myProformas } = useGetMyProformasQuery({ page: 1, limit: 5 }, { skip: !isJrSr });
+
+  // Role-specific stats for MWO
+  const isMwo = user?.role === 'MWO';
+  const { data: outpatientStats } = useGetOutpatientStatsQuery(undefined, { skip: !isMwo });
+  const { data: adlByStatus } = useGetFilesByStatusQuery(undefined, { skip: !isMwo });
+
+  // Helpers
+  const sumValues = (obj) => Object.values(obj || {}).reduce((acc, v) => acc + (Number(v) || 0), 0);
 
   // Chart data for Patient Gender Distribution
   const genderChartData = {
@@ -199,72 +214,140 @@ const Dashboard = () => {
           <p className="text-gray-600 mt-1">Welcome back, {user?.name}!</p>
         </div>
 
-        {/* Role-based content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {user?.role === 'JR' || user?.role === 'SR' ? (
-            <>
-              <StatCard
-                title="Patients"
-                value="View Patients"
-                icon={FiUsers}
-                color="bg-blue-500"
-                to="/patients"
-              />
-              
-              <StatCard
-                title="Clinical Proforma"
-                value="Manage Cases"
-                icon={FiFileText}
-                color="bg-green-500"
-                to="/clinical"
-              />
-              
-              <StatCard
-                title="ADL Files"
-                value="File System"
-                icon={FiFolder}
-                color="bg-purple-500"
-                to="/adl-files"
-              />
-            </>
-          ) : user?.role === 'MWO' ? (
-            <>
-              <StatCard
-                title="Patients"
-                value="View Patients"
-                icon={FiUsers}
-                color="bg-blue-500"
-                to="/patients"
-              />
-              
-              <StatCard
-                title="Outpatient Records"
-                value="Create Records"
-                icon={FiClipboard}
-                color="bg-orange-500"
-                to="/outpatient"
-              />
-            </>
-          ) : null}
-        </div>
-
-        {/* Role-specific info card */}
-        <Card>
-          <div className="p-6 text-center">
-            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl font-bold text-primary-600">{user?.role?.[0]}</span>
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Limited Access Dashboard</h3>
-            <p className="text-gray-600">
-              You have access to view and manage patients and clinical data according to your role ({user?.role}).
-              {user?.role === 'Admin' ? ' Full administrative access available.' : 
-               user?.role === 'JR' || user?.role === 'SR' ? ' View patients, clinical proformas, and ADL files.' :
-               user?.role === 'MWO' ? ' View patients and create outpatient records.' :
-               ' Contact administrator for role permissions.'
-              }
-            </p>
+        {/* Role-based quick KPIs */}
+        {isJrSr && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard title="My Proformas" value={myProformas?.data?.pagination?.total} icon={FiFileText} color="bg-green-500" to="/clinical" />
+            <StatCard title="Cases by Severity" value={sumValues(severityStats?.data?.stats)} icon={FiTrendingUp} color="bg-orange-500" to="/clinical" />
+            <StatCard title="Decisions Logged" value={sumValues(decisionStats?.data?.stats)} icon={FiClipboard} color="bg-blue-500" to="/clinical" />
+            <StatCard title="Patients" value="Browse" icon={FiUsers} color="bg-purple-500" to="/patients" />
           </div>
-        </Card>
+        )}
+        {isMwo && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard title="Outpatient Records" value={sumValues(outpatientStats?.data?.stats)} icon={FiClipboard} color="bg-orange-500" to="/outpatient" />
+            <StatCard title="ADL by Status" value={sumValues(adlByStatus?.data?.stats)} icon={FiFolder} color="bg-purple-500" to="/adl-files" />
+            <StatCard title="Patients" value="Browse" icon={FiUsers} color="bg-blue-500" to="/patients" />
+            <StatCard title="Create Record" value="Start" icon={FiTrendingUp} color="bg-green-600" to="/outpatient/new" />
+          </div>
+        )}
+
+        {/* Role-specific charts */}
+        {(isJrSr || isMwo) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {isJrSr && (
+              <>
+                <Card title="My Cases by Severity">
+                  <div className="h-80">
+                    <Bar
+                      data={{
+                        labels: Object.keys(severityStats?.data?.stats || {}),
+                        datasets: [
+                          {
+                            label: 'Cases',
+                            data: Object.values(severityStats?.data?.stats || {}),
+                            backgroundColor: ['#8B5CF6', '#06B6D4', '#EF4444', '#F59E0B', '#10B981'],
+                            borderColor: ['#7C3AED', '#0891B2', '#DC2626', '#D97706', '#059669'],
+                            borderWidth: 2,
+                          },
+                        ],
+                      }}
+                      options={{
+                        ...barChartOptions,
+                        plugins: {
+                          ...barChartOptions.plugins,
+                          title: { ...barChartOptions.plugins.title, text: 'My Cases by Severity' },
+                        },
+                      }}
+                    />
+                  </div>
+                </Card>
+
+                <Card title="My Cases by Decision">
+                  <div className="h-80">
+                    <Doughnut
+                      data={{
+                        labels: Object.keys(decisionStats?.data?.stats || {}),
+                        datasets: [
+                          {
+                            data: Object.values(decisionStats?.data?.stats || {}),
+                            backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'],
+                            borderColor: ['#1D4ED8', '#059669', '#D97706', '#DC2626', '#7C3AED'],
+                            borderWidth: 2,
+                          },
+                        ],
+                      }}
+                      options={{
+                        ...chartOptions,
+                        plugins: {
+                          ...chartOptions.plugins,
+                          title: { ...chartOptions.plugins.title, text: 'My Cases by Decision' },
+                        },
+                      }}
+                    />
+                  </div>
+                </Card>
+              </>
+            )}
+
+            {isMwo && (
+              <>
+                <Card title="Outpatient Records Overview">
+                  <div className="h-80">
+                    <Bar
+                      data={{
+                        labels: Object.keys(outpatientStats?.data?.stats || {}),
+                        datasets: [
+                          {
+                            label: 'Records',
+                            data: Object.values(outpatientStats?.data?.stats || {}),
+                            backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                            borderColor: 'rgba(29, 78, 216, 1)',
+                            borderWidth: 2,
+                          },
+                        ],
+                      }}
+                      options={{
+                        ...barChartOptions,
+                        plugins: {
+                          ...barChartOptions.plugins,
+                          title: { ...barChartOptions.plugins.title, text: 'Outpatient Records Overview' },
+                        },
+                      }}
+                    />
+                  </div>
+                </Card>
+
+                <Card title="ADL Files by Status">
+                  <div className="h-80">
+                    <Doughnut
+                      data={{
+                        labels: Object.keys(adlByStatus?.data?.stats || {}),
+                        datasets: [
+                          {
+                            data: Object.values(adlByStatus?.data?.stats || {}),
+                            backgroundColor: ['#EF4444', '#10B981', '#F59E0B', '#6B7280'],
+                            borderColor: ['#DC2626', '#059669', '#D97706', '#4B5563'],
+                            borderWidth: 2,
+                          },
+                        ],
+                      }}
+                      options={{
+                        ...chartOptions,
+                        plugins: {
+                          ...chartOptions.plugins,
+                          title: { ...chartOptions.plugins.title, text: 'ADL Files by Status' },
+                        },
+                      }}
+                    />
+                  </div>
+                </Card>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Role-specific charts remain below */}
       </div>
     );
   }
