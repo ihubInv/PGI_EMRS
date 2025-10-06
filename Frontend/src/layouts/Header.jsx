@@ -1,15 +1,22 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { FiLogOut, FiUser, FiMenu } from 'react-icons/fi';
 import { logout, selectCurrentUser } from '../features/auth/authSlice';
+import { apiSlice } from '../app/api/apiSlice';
 import Button from '../components/Button';
 
 const Header = ({ onMenuClick }) => {
   const dispatch = useDispatch();
   const user = useSelector(selectCurrentUser);
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     dispatch(logout());
+    // Extra safety: clear RTK Query cache immediately and redirect
+    dispatch(apiSlice.util.resetApiState());
+    navigate('/login', { replace: true });
+    // Ensure full in-memory reset in rare cases
+    setTimeout(() => window.location.replace('/login'), 0);
   };
 
   return (

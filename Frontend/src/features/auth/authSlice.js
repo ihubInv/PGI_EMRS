@@ -44,8 +44,16 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.twoFactorRequired = false;
       state.tempToken = null;
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      try {
+        // Clear all app data from storage on logout
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch (e) {
+        // Fallback to removing known keys if clear() fails (e.g., quota issues)
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        try { sessionStorage.clear(); } catch (_) {}
+      }
     },
     updateUser: (state, action) => {
       state.user = { ...state.user, ...action.payload };

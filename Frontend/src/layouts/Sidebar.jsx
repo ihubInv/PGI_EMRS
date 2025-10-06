@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useEffect } from 'react';
 import {
@@ -13,15 +13,20 @@ import {
   FiUser,
 } from 'react-icons/fi';
 import { selectCurrentUser, logout } from '../features/auth/authSlice';
+import { apiSlice } from '../app/api/apiSlice';
 import Button from '../components/Button';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
   const user = useSelector(selectCurrentUser);
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     dispatch(logout());
+    dispatch(apiSlice.util.resetApiState());
     onClose(); // Close sidebar on mobile after logout
+    navigate('/login', { replace: true });
+    setTimeout(() => window.location.replace('/login'), 0);
   };
 
   // Prevent body scroll when sidebar is open on mobile
