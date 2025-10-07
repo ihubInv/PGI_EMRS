@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useCreateOutpatientRecordMutation } from '../../features/outpatient/outpatientApiSlice';
-import { useCreatePatientMutation, useSearchPatientsQuery } from '../../features/patients/patientsApiSlice';
+import { useCreatePatientMutation, useSearchPatientsQuery, useAssignPatientMutation } from '../../features/patients/patientsApiSlice';
+import { useGetAllUsersQuery } from '../../features/users/usersApiSlice';
 import Card from '../../components/Card';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
@@ -17,6 +18,8 @@ const CreateOutpatientRecord = () => {
 
   const [createRecord, { isLoading }] = useCreateOutpatientRecordMutation();
   const [createPatient, { isLoading: isCreatingPatient }] = useCreatePatientMutation();
+  const [assignPatient, { isLoading: isAssigning }] = useAssignPatientMutation();
+  const { data: usersData } = useGetAllUsersQuery({ page: 1, limit: 100 });
   const [patientSearch, setPatientSearch] = useState('');
   const { data: patientsData, error: searchError, isLoading: searching } = useSearchPatientsQuery(
     { search: patientSearch, limit: 10 },
@@ -29,6 +32,7 @@ const CreateOutpatientRecord = () => {
     sex: '',
     actual_age: '',
     assigned_room: '',
+    assigned_doctor_id: '',
   });
 
   const [formData, setFormData] = useState({
@@ -62,7 +66,7 @@ const CreateOutpatientRecord = () => {
     school_college_office: '',
     contact_number: '',
     visit_type: 'first_visit', // Add visit type
-    assigned_doctor: '', // Add doctor assignment
+    assigned_doctor_id: '', // Doctor assignment for existing patient
   });
 
   const [errors, setErrors] = useState({});
@@ -127,6 +131,17 @@ const CreateOutpatientRecord = () => {
         }).unwrap();
         patientId = patientResult.data.patient.id;
         toast.success('Patient registered successfully!');
+
+        // Optional: assign selected doctor for new patient
+        if (patientData.assigned_doctor_id) {
+          try {
+            await assignPatient({
+              patient_id: patientId,
+              assigned_doctor: Number(patientData.assigned_doctor_id),
+              room_no: patientData.assigned_room || ''
+            }).unwrap();
+          } catch (_) {}
+        }
       }
 
       // Step 2: Create outpatient record (demographic data) - MWO ONLY
@@ -163,6 +178,17 @@ const CreateOutpatientRecord = () => {
       };
       
       await createRecord(demographicData).unwrap();
+
+      // Optional: assign selected doctor for existing patient flow
+      if (!isNewPatient && formData.assigned_doctor_id) {
+        try {
+          await assignPatient({
+            patient_id: parseInt(patientId),
+            assigned_doctor: Number(formData.assigned_doctor_id),
+            room_no: patientData.assigned_room || ''
+          }).unwrap();
+        } catch (_) {}
+      }
       toast.success('Outpatient record created successfully!');
       
       // Navigate to outpatient records list (NOT clinical proforma)
@@ -319,6 +345,18 @@ const CreateOutpatientRecord = () => {
                   value={patientData.assigned_room}
                   onChange={handlePatientChange}
                   placeholder="e.g., Ward A-101"
+                />
+
+                {/* Assign Doctor (JR/SR) for new patient */}
+                <Select
+                  label="Assign Doctor (JR/SR)"
+                  name="assigned_doctor_id"
+                  value={patientData.assigned_doctor_id}
+                  onChange={handlePatientChange}
+                  options={(usersData?.data?.users || [])
+                    .filter(u => u.role === 'JR' || u.role === 'SR')
+                    .map(u => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
+                  placeholder="Select doctor (optional)"
                 />
               </div>
             ) : (
@@ -533,6 +571,20 @@ const CreateOutpatientRecord = () => {
                         </div>
                       );
                     })()}
+
+                    {/* Assign Doctor (JR/SR) for existing patient */}
+                    <div className="border-t border-gray-200 pt-4">
+                      <Select
+                        label="Assign Doctor (JR/SR)"
+                        name="assigned_doctor_id"
+                        value={formData.assigned_doctor_id}
+                        onChange={handleChange}
+                        options={(usersData?.data?.users || [])
+                          .filter(u => u.role === 'JR' || u.role === 'SR')
+                          .map(u => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
+                        placeholder="Select doctor (optional)"
+                      />
+                    </div>
                     
                     {/* MWO Information */}
                     <div className="border-t border-gray-200 pt-4">
@@ -844,7 +896,7 @@ const CreateOutpatientRecord = () => {
             >
               Cancel
             </Button>
-            <Button type="submit" loading={isLoading || isCreatingPatient}>
+            <Button type="submit" loading={isLoading || isCreatingPatient || isAssigning}>
               {isNewPatient ? 'Register Patient & Create Record' : 'Create Visit Record'}
             </Button>
           </div>

@@ -4,6 +4,7 @@ import { FiLogOut, FiUser, FiMenu } from 'react-icons/fi';
 import { logout, selectCurrentUser } from '../features/auth/authSlice';
 import { apiSlice } from '../app/api/apiSlice';
 import Button from '../components/Button';
+import PGI_Logo from '../assets/PGI_Logo.png';
 
 const Header = ({ onMenuClick }) => {
   const dispatch = useDispatch();
@@ -30,7 +31,8 @@ const Header = ({ onMenuClick }) => {
             >
               <FiMenu className="h-6 w-6" />
             </button>
-            <Link to="/" className="flex items-center ml-2 lg:ml-0">
+            <Link to="/" className="flex items-center ml-2 lg:ml-0 gap-3">
+              <img src={PGI_Logo} alt="PGIMER Logo" className="h-8 object-contain" />
               <h1 className="text-2xl font-bold text-primary-600">PGI EMRS</h1>
             </Link>
           </div>

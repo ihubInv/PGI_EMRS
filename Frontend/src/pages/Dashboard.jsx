@@ -207,7 +207,7 @@ const Dashboard = () => {
     return <LoadingSpinner size="lg" className="h-96" />;
   }
 
-  // Non-admin role - show limited dashboard
+  // Non-admin role - show JR/SR or MWO focused dashboard
   if (user?.role !== 'Admin') {
     return (
       <div className="space-y-6">

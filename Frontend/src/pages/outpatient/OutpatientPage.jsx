@@ -100,11 +100,6 @@ const OutpatientPage = () => {
           <Button variant="outline" onClick={handleRefresh} disabled={isFetching}>
             <FiRefreshCw className={`mr-2 ${isFetching ? 'animate-spin' : ''}`} /> Refresh
           </Button>
-          <Link to="/outpatient/new">
-            <Button>
-              <FiPlus className="mr-2" /> New Record
-            </Button>
-          </Link>
         </div>
       </div>
 

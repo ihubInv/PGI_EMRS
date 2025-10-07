@@ -1,17 +1,16 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3000,
+    host: '0.0.0.0', // ✅ Allows access from external IP (not just localhost)
+    port: 2026,      // ✅ Runs on port 2026
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://31.97.60.2:2025', // ✅ Backend server IP and port
         changeOrigin: true,
       },
     },
   },
 })
-

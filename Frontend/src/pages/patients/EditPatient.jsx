@@ -5,7 +5,9 @@ import { FiArrowLeft } from 'react-icons/fi';
 import {
   useGetPatientByIdQuery,
   useUpdatePatientMutation,
+  useAssignPatientMutation,
 } from '../../features/patients/patientsApiSlice';
+import { useGetAllUsersQuery } from '../../features/users/usersApiSlice';
 import Card from '../../components/Card';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
@@ -19,12 +21,15 @@ const EditPatient = () => {
 
   const { data: patientData, isLoading: patientLoading } = useGetPatientByIdQuery(id);
   const [updatePatient, { isLoading: isUpdating }] = useUpdatePatientMutation();
+  const [assignPatient, { isLoading: isAssigning }] = useAssignPatientMutation();
+  const { data: usersData } = useGetAllUsersQuery({ page: 1, limit: 100, role: 'JR,SR' });
 
   const [formData, setFormData] = useState({
     name: '',
     sex: '',
     actual_age: '',
     assigned_room: '',
+    assigned_doctor_id: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -37,6 +42,7 @@ const EditPatient = () => {
         sex: patient.sex || '',
         actual_age: patient.actual_age || '',
         assigned_room: patient.assigned_room || '',
+        assigned_doctor_id: '',
       });
     }
   }, [patientData]);
@@ -90,6 +96,12 @@ const EditPatient = () => {
         ...formData,
         actual_age: parseInt(formData.actual_age),
       }).unwrap();
+
+      if (formData.assigned_doctor_id) {
+        try {
+          await assignPatient({ patient_id: Number(id), assigned_doctor: Number(formData.assigned_doctor_id), room_no: formData.assigned_room || '' }).unwrap();
+        } catch (_) {}
+      }
 
       toast.success('Patient updated successfully!');
       navigate(`/patients/${id}`);
@@ -162,6 +174,17 @@ const EditPatient = () => {
               placeholder="e.g., Ward A-101"
             />
 
+            <Select
+              label="Assign Doctor (JR/SR)"
+              name="assigned_doctor_id"
+              value={formData.assigned_doctor_id}
+              onChange={handleChange}
+              options={(usersData?.data?.users || [])
+                .filter(u => u.role === 'JR' || u.role === 'SR')
+                .map(u => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
+              placeholder="Select doctor (optional)"
+            />
+
             <div className="flex justify-end gap-3 pt-4">
               <Button
                 type="button"
@@ -170,7 +193,7 @@ const EditPatient = () => {
               >
                 Cancel
               </Button>
-              <Button type="submit" loading={isUpdating}>
+              <Button type="submit" loading={isUpdating || isAssigning}>
                 Update Patient
               </Button>
             </div>

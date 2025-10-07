@@ -1,4 +1,5 @@
 const Patient = require('../models/Patient');
+const PatientVisit = require('../models/PatientVisit');
 
 class PatientController {
   // Create a new patient
@@ -45,6 +46,42 @@ class PatientController {
       if (req.query.assigned_room) filters.assigned_room = req.query.assigned_room;
 
       const result = await Patient.findAll(page, limit, filters);
+
+      // Enrich with latest assignment info (assigned doctor) for each patient
+      try {
+        const db = require('../config/database');
+        const client = db.getClient();
+        const patientIds = (result.patients || []).map(p => p.id);
+        if (patientIds.length > 0) {
+          // Fetch latest visit per patient (ordered by visit_date desc) and join doctor user
+          const { data: visits, error } = await client
+            .from('patient_visits')
+            .select(`patient_id, visit_date, assigned_doctor, users:assigned_doctor(id, name, role)`) 
+            .in('patient_id', patientIds)
+            .order('visit_date', { ascending: false });
+
+          if (!error && Array.isArray(visits)) {
+            const latestByPatient = new Map();
+            for (const v of visits) {
+              if (!latestByPatient.has(v.patient_id)) {
+                latestByPatient.set(v.patient_id, v);
+              }
+            }
+            result.patients = result.patients.map(p => {
+              const latest = latestByPatient.get(p.id);
+              return {
+                ...p,
+                assigned_doctor_id: latest?.assigned_doctor || null,
+                assigned_doctor_name: latest?.users?.name || null,
+                assigned_doctor_role: latest?.users?.role || null,
+                last_assigned_date: latest?.visit_date || null,
+              };
+            });
+          }
+        }
+      } catch (_) {
+        // Fail silently; base data still returned
+      }
 
       res.json({
         success: true,
@@ -439,6 +476,24 @@ class PatientController {
         message: 'Failed to get patient statistics',
         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
       });
+    }
+  }
+
+  // Assign patient to a doctor (MWO workflow tracking)
+  static async assignPatient(req, res) {
+    try {
+      const { patient_id, assigned_doctor, room_no, visit_date, notes } = req.body;
+
+      if (!patient_id || !assigned_doctor) {
+        return res.status(400).json({ success: false, message: 'patient_id and assigned_doctor are required' });
+      }
+
+      const assignment = await PatientVisit.assignPatient({ patient_id, assigned_doctor, room_no, visit_date, notes });
+
+      return res.status(201).json({ success: true, message: 'Patient assigned successfully', data: { assignment } });
+    } catch (error) {
+      console.error('Assign patient error:', error);
+      return res.status(500).json({ success: false, message: 'Failed to assign patient', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
     }
   }
 }

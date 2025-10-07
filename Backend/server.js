@@ -18,7 +18,7 @@ const clinicalRoutes = require('./routes/clinicalRoutes');
 const adlRoutes = require('./routes/adlRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 2025;
 
 // Security middleware
 app.use(helmet({
@@ -37,7 +37,7 @@ app.use(helmet({
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? ['https://emrs.pgimer.ac.in']
-    : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5000'],
+    : ['http://31.97.60.2:3000', 'http://31.97.60.2:2026', 'http://31.97.60.2:2026'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],

@@ -54,6 +54,14 @@ export const patientsApiSlice = apiSlice.injectEndpoints({
       }),
       providesTags: ['Patient'],
     }),
+    assignPatient: builder.mutation({
+      query: (payload) => ({
+        url: '/patients/assign',
+        method: 'POST',
+        body: payload,
+      }),
+      invalidatesTags: ['Patient'],
+    }),
   }),
 });
 
@@ -66,5 +74,6 @@ export const {
   useDeletePatientMutation,
   useGetPatientStatsQuery,
   useGetComplexPatientsQuery,
+  useAssignPatientMutation,
 } = patientsApiSlice;
 

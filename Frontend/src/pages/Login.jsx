@@ -6,6 +6,7 @@ import { useLoginMutation, useVerify2FAMutation } from '../features/auth/authApi
 import { setCredentials, setTwoFactorRequired, selectTwoFactorRequired } from '../features/auth/authSlice';
 import Input from '../components/Input';
 import Button from '../components/Button';
+import PGI_Logo from '../assets/PGI_Logo.png';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -104,8 +105,13 @@ const Login = () => {
           {/* Left promo section */}
           <div className="hidden lg:block lg:col-span-2 relative">
             <div className="h-full w-full p-10 pr-6 flex flex-col">
-              <div className="text-primary-900 text-3xl font-extrabold">PGIMER Chandigarh</div>
-              <div className="text-primary-700 mt-1 text-lg">Department of Psychiatry</div>
+              <div className="flex items-center gap-4 mb-4">
+                <img src={PGI_Logo} alt="PGIMER Logo" className="h-16 object-contain" />
+                <div>
+                  <div className="text-primary-900 text-3xl font-extrabold">PGIMER Chandigarh</div>
+                  <div className="text-primary-700 mt-1 text-lg">Department of Psychiatry</div>
+                </div>
+              </div>
 
               <div className="flex items-center mt-8 ml-2">
                 <div className="w-56">
@@ -142,7 +148,7 @@ const Login = () => {
           {/* Right sign-in section */}
           <div className="col-span-1 bg-white px-6 py-8 lg:px-8 relative lg:border-l lg:border-gray-100">
             <div className="flex flex-col items-center">
-              <img src="https://via.placeholder.com/160x40?text=PGIMER+Logo" alt="PGIMER Logo" className="h-10 mb-6 object-contain" />
+              <img src={PGI_Logo} alt="PGIMER Logo" className="h-12 mb-6 object-contain" />
               <div className="w-full max-w-md">
                 <h2 className="text-2xl font-bold text-gray-900 pt-2">Sign in</h2>
                 <div className="text-gray-500 mb-6">Welcome back! Please enter your details.</div>

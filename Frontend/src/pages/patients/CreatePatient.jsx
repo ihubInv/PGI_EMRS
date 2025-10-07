@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { useCreatePatientMutation } from '../../features/patients/patientsApiSlice';
+import { useCreatePatientMutation, useAssignPatientMutation } from '../../features/patients/patientsApiSlice';
+import { useGetAllUsersQuery } from '../../features/users/usersApiSlice';
 import Card from '../../components/Card';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
@@ -11,12 +12,17 @@ import { SEX_OPTIONS } from '../../utils/constants';
 const CreatePatient = () => {
   const navigate = useNavigate();
   const [createPatient, { isLoading }] = useCreatePatientMutation();
+  const [assignPatient, { isLoading: isAssigning }] = useAssignPatientMutation();
+
+  // Fetch JR/SR doctors for assignment dropdown
+  const { data: usersData } = useGetAllUsersQuery({ page: 1, limit: 100, role: 'JR,SR' });
 
   const [formData, setFormData] = useState({
     name: '',
     sex: '',
     actual_age: '',
     assigned_room: '',
+    assigned_doctor_id: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -70,6 +76,19 @@ const CreatePatient = () => {
         ...formData,
         actual_age: parseInt(formData.actual_age),
       }).unwrap();
+
+      // Assign to selected doctor if chosen
+      if (formData.assigned_doctor_id) {
+        try {
+          await assignPatient({
+            patient_id: result.data.patient.id,
+            assigned_doctor: Number(formData.assigned_doctor_id),
+            room_no: formData.assigned_room || ''
+          }).unwrap();
+        } catch (err) {
+          // Non-blocking: continue even if assignment fails
+        }
+      }
 
       toast.success('Patient created successfully!');
       navigate(`/patients/${result.data.patient.id}`);
@@ -131,6 +150,18 @@ const CreatePatient = () => {
               placeholder="e.g., Ward A-101"
             />
 
+          {/* Assigned Doctor (optional) */}
+          <Select
+            label="Assign Doctor (JR/SR)"
+            name="assigned_doctor_id"
+            value={formData.assigned_doctor_id}
+            onChange={handleChange}
+            options={(usersData?.data?.users || [])
+              .filter(u => u.role === 'JR' || u.role === 'SR')
+              .map(u => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
+            placeholder="Select doctor (optional)"
+          />
+
             <div className="flex justify-end gap-3 pt-4">
               <Button
                 type="button"
@@ -139,7 +170,7 @@ const CreatePatient = () => {
               >
                 Cancel
               </Button>
-              <Button type="submit" loading={isLoading}>
+              <Button type="submit" loading={isLoading || isAssigning}>
                 Create Patient
               </Button>
             </div>

@@ -39,8 +39,8 @@ Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
     servers: [
       {
         url: process.env.NODE_ENV === 'production' 
-          ? 'https://emrs.pgimer.ac.in' 
-          : `http://localhost:${process.env.PORT || 5000}`,
+          ? 'http://31.97.60.2:2025/' 
+          : `http://31.97.60.2:${process.env.PORT || 2025}`,
         description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
       },
     ],

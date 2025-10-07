@@ -2,9 +2,11 @@ const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 // Supabase configuration
-const supabaseUrl = 'https://opixxwotdsrscfuekysm.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9waXh4d290ZHNyc2NmdWVreXNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzMTY0NzQsImV4cCI6MjA3NDg5MjQ3NH0.WphzwLI0KYc-MbFk06LrFxrhwu-jcvdji4NdyFX1FlU';
-const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9waXh4d290ZHNyc2NmdWVreXNtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTMxNjQ3NCwiZXhwIjoyMDc0ODkyNDc0fQ.6DKe7ZwnSAWK2LRbbhI7FTOU9KTYlqs5tUJJZZhJAlg';
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+
+
 
 // Create Supabase client instances
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -44,6 +46,11 @@ const query = async (text, params = []) => {
     // Handle JOIN queries
     if (text.includes('LEFT JOIN') || text.includes('RIGHT JOIN') || text.includes('INNER JOIN')) {
       return await executeJoinQuery(text, params, start);
+    }
+    
+    // Handle INSERT queries
+    if (text.includes('INSERT INTO')) {
+      return await executeInsertQuery(text, params, start);
     }
     
     // Handle simple queries with ORDER BY and LIMIT
@@ -191,8 +198,8 @@ async function executeJoinQuery(text, params, startTime) {
       .select(`
         *,
         patients:patient_id(id, name, cr_no, psy_no),
-        users:created_by(id, name),
-        users:last_accessed_by(id, name)
+        created_by_user:created_by(id, name),
+        last_accessed_by_user:last_accessed_by(id, name)
       `)
       .range(offset, offset + limit - 1)
       .order('file_created_date', { ascending: false });
@@ -204,8 +211,41 @@ async function executeJoinQuery(text, params, startTime) {
       patient_name: item.patients?.name,
       cr_no: item.patients?.cr_no,
       psy_no: item.patients?.psy_no,
-      created_by_name: item.users?.name,
-      last_accessed_by_name: item.users?.name
+      created_by_name: item.created_by_user?.name,
+      last_accessed_by_name: item.last_accessed_by_user?.name
+    }));
+    
+    const duration = Date.now() - startTime;
+    console.log('Join query executed successfully', { duration, rows: transformedData.length });
+    
+    return {
+      rows: transformedData,
+      rowCount: transformedData.length,
+      command: 'SELECT'
+    };
+  }
+  
+  // For clinical_proforma joins
+  if (mainTable === 'clinical_proforma') {
+    const { data, error } = await supabaseAdmin
+      .from('clinical_proforma')
+      .select(`
+        *,
+        patients:patient_id(id, name, cr_no, psy_no),
+        users:filled_by(id, name, role)
+      `)
+      .range(offset, offset + limit - 1)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    const transformedData = data.map(item => ({
+      ...item,
+      patient_name: item.patients?.name,
+      cr_no: item.patients?.cr_no,
+      psy_no: item.patients?.psy_no,
+      doctor_name: item.users?.name,
+      doctor_role: item.users?.role
     }));
     
     const duration = Date.now() - startTime;
@@ -330,6 +370,55 @@ async function executeSimpleQuery(text, params, startTime) {
     rowCount: result.data ? result.data.length : 0,
     command: 'SELECT'
   };
+}
+
+// Execute INSERT queries
+async function executeInsertQuery(text, params, startTime) {
+  try {
+    // Extract table name from INSERT INTO statement
+    const tableMatch = text.match(/INSERT INTO\s+(\w+)/i);
+    if (!tableMatch) throw new Error('Could not parse table name from INSERT statement');
+    
+    const tableName = tableMatch[1];
+    
+    // Extract column names and values from the INSERT statement
+    const valuesMatch = text.match(/VALUES\s*\(([^)]+)\)/i);
+    if (!valuesMatch) throw new Error('Could not parse VALUES from INSERT statement');
+    
+    // Extract column names from the INSERT statement
+    const columnsMatch = text.match(/INSERT INTO\s+\w+\s*\(([^)]+)\)/i);
+    if (!columnsMatch) throw new Error('Could not parse column names from INSERT statement');
+    
+    const columns = columnsMatch[1].split(',').map(col => col.trim());
+    
+    // Create the data object for Supabase
+    const data = {};
+    columns.forEach((column, index) => {
+      if (params[index] !== undefined) {
+        data[column] = params[index];
+      }
+    });
+    
+    // Execute the insert using Supabase
+    const { data: result, error } = await supabaseAdmin
+      .from(tableName)
+      .insert(data)
+      .select();
+    
+    if (error) throw error;
+    
+    const duration = Date.now() - startTime;
+    console.log('Insert query executed successfully', { duration, rows: result.length });
+    
+    return {
+      rows: result || [],
+      rowCount: result ? result.length : 0,
+      command: 'INSERT'
+    };
+  } catch (error) {
+    console.error('Insert query error:', error);
+    throw error;
+  }
 }
 
 // Helper function to get Supabase client for direct operations

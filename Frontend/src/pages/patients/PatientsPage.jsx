@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
-import { FiPlus, FiSearch, FiEdit, FiTrash2, FiEye } from 'react-icons/fi';
-import { useGetAllPatientsQuery, useDeletePatientMutation } from '../../features/patients/patientsApiSlice';
+import { FiPlus, FiSearch, FiEdit, FiTrash2, FiEye, FiUserPlus } from 'react-icons/fi';
+import { useGetAllPatientsQuery, useDeletePatientMutation, useAssignPatientMutation } from '../../features/patients/patientsApiSlice';
 import { selectCurrentUser } from '../../features/auth/authSlice';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
@@ -25,6 +25,20 @@ const PatientsPage = () => {
     refetchOnMountOrArgChange: true,
   });
   const [deletePatient] = useDeletePatientMutation();
+  const [assignPatient, { isLoading: isAssigning }] = useAssignPatientMutation();
+
+  const handleAssign = async (patient) => {
+    const doctorId = prompt('Enter Doctor User ID to assign:');
+    if (!doctorId) return;
+    const roomNo = prompt('Enter Room No (optional):') || '';
+    try {
+      await assignPatient({ patient_id: patient.id, assigned_doctor: Number(doctorId), room_no: roomNo }).unwrap();
+      toast.success('Patient assigned');
+      refetch();
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to assign');
+    }
+  };
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this patient?')) {
@@ -41,6 +55,16 @@ const PatientsPage = () => {
     {
       header: 'CR No',
       accessor: 'cr_no',
+    },
+    {
+      header: 'Assigned Doctor',
+      render: (row) => (
+        row.assigned_doctor_name ? (
+          <Badge>{row.assigned_doctor_name} ({row.assigned_doctor_role})</Badge>
+        ) : (
+          <span className="text-gray-400">Unassigned</span>
+        )
+      ),
     },
     {
       header: 'PSY No',
@@ -88,6 +112,11 @@ const PatientsPage = () => {
               <FiEdit />
             </Button>
           </Link>
+          {user?.role === 'MWO' && (
+            <Button variant="ghost" size="sm" onClick={() => handleAssign(row)} disabled={isAssigning}>
+              <FiUserPlus />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"

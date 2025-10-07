@@ -472,6 +472,9 @@ router.get('/:id/clinical-records', authenticateToken, authorizeRoles('Admin', '
  */
 router.get('/:id/adl-files', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), validateId, PatientController.getPatientADLFiles);
 
+// MWO assignment endpoint (tracking only, not restricting access)
+router.post('/assign', authenticateToken, authorizeRoles('MWO', 'Admin'), PatientController.assignPatient);
+
 // Routes for finding patients by specific numbers
 /**
  * @swagger

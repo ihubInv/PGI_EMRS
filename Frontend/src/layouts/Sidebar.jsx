@@ -15,6 +15,60 @@ import {
 import { selectCurrentUser, logout } from '../features/auth/authSlice';
 import { apiSlice } from '../app/api/apiSlice';
 import Button from '../components/Button';
+import PGI_Logo from '../assets/PGI_Logo.png';
+
+const MWOOutpatientMenu = ({ onClose }) => {
+  return (
+    <div className="mb-2">
+      <NavLink
+        to="/outpatient"
+        onClick={onClose}
+        className={({ isActive }) =>
+          `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+            isActive ? 'bg-primary-100 text-primary-900' : 'text-gray-700 hover:bg-gray-100'
+          }`
+        }
+      >
+        <FiClipboard className="h-5 w-5 mr-3" /> Outpatient Records
+      </NavLink>
+      <div className="ml-6 mt-1 space-y-1">
+        <NavLink
+          to="/outpatient"
+          onClick={onClose}
+          className={({ isActive }) =>
+            `block px-4 py-2 text-sm rounded-lg transition-colors ${
+              isActive ? 'bg-primary-50 text-primary-900' : 'text-gray-600 hover:bg-gray-50'
+            }`
+          }
+        >
+          All Patient Records
+        </NavLink>
+        <NavLink
+          to="/outpatient/new"
+          onClick={onClose}
+          className={({ isActive }) =>
+            `block px-4 py-2 text-sm rounded-lg transition-colors ${
+              isActive ? 'bg-primary-50 text-primary-900' : 'text-gray-600 hover:bg-gray-50'
+            }`
+          }
+        >
+          Add New Patient Record
+        </NavLink>
+        <NavLink
+          to="/outpatient/select"
+          onClick={onClose}
+          className={({ isActive }) =>
+            `block px-4 py-2 text-sm rounded-lg transition-colors ${
+              isActive ? 'bg-primary-50 text-primary-900' : 'text-gray-600 hover:bg-gray-50'
+            }`
+          }
+        >
+          Select Existing Record
+        </NavLink>
+      </div>
+    </div>
+  );
+};
 
 const Sidebar = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
@@ -45,8 +99,8 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   const navigation = [
     { name: 'Dashboard', to: '/', icon: FiHome, roles: ['Admin', 'JR', 'SR', 'MWO'] },
-    { name: 'Patients', to: '/patients', icon: FiUsers, roles: ['Admin', 'JR', 'SR', 'MWO'], description: 'View patients only' },
-    { name: 'Outpatient Records', to: '/outpatient', icon: FiClipboard, roles: ['Admin', 'MWO'], description: 'Create patients & records' },
+    { name: 'Patients', to: '/patients', icon: FiUsers, roles: ['Admin', 'JR', 'SR', 'MWO'] },
+    { name: 'Outpatient Records', to: '/outpatient', icon: FiClipboard, roles: ['Admin', 'MWO'] },
     { name: 'Clinical Proforma', to: '/clinical', icon: FiFileText, roles: ['Admin', 'JR', 'SR'] },
     { name: 'ADL Files', to: '/adl-files', icon: FiFolder, roles: ['Admin', 'JR', 'SR'] },
     { name: 'Users', to: '/users', icon: FiSettings, roles: ['Admin'] },
@@ -79,9 +133,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           <div className="flex items-center justify-between h-16 px-4 border-b flex-shrink-0 bg-white">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">P</span>
-                </div>
+                <img src={PGI_Logo} alt="PGIMER Logo" className="w-8 h-8 object-contain" />
               </div>
               <div className="ml-3">
                 <h1 className="text-lg font-bold text-primary-600">PGI EMRS</h1>
@@ -99,23 +151,31 @@ const Sidebar = ({ isOpen, onClose }) => {
 
           {/* Navigation - scrollable middle section */}
           <nav className="flex-1 px-4 py-6 pb-48 space-y-1 overflow-y-auto min-h-0">
-            {filteredNavigation.map((item) => (
-              <NavLink
-                key={item.name}
-                to={item.to}
-                onClick={onClose}
-                className={({ isActive }) =>
-                  `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-primary-100 text-primary-900'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`
-                }
-              >
-                <item.icon className="h-5 w-5 mr-3" />
-                {item.name}
-              </NavLink>
-            ))}
+            {filteredNavigation.map((item) => {
+              // Render MWO dropdown submenu for Outpatient Records
+              if (user?.role === 'MWO' && item.name === 'Outpatient Records') {
+                return (
+                  <MWOOutpatientMenu key="mwo-outpatient" onClose={onClose} />
+                );
+              }
+              return (
+                <NavLink
+                  key={item.name}
+                  to={item.to}
+                  onClick={onClose}
+                  className={({ isActive }) =>
+                    `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-primary-100 text-primary-900'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`
+                  }
+                >
+                  <item.icon className="h-5 w-5 mr-3" />
+                  {item.name}
+                </NavLink>
+              );
+            })}
           </nav>
 
           {/* User info and actions - ABSOLUTELY FIXED at bottom - NOT scrollable */}
