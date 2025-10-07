@@ -20,8 +20,9 @@ const PatientsPage = () => {
   const [search, setSearch] = useState('');
   const limit = 10;
 
-  const { data, isLoading, isFetching, refetch } = useGetAllPatientsQuery({ page, limit }, {
+  const { data, isLoading, isFetching, refetch, error } = useGetAllPatientsQuery({ page, limit }, {
     pollingInterval: 30000, // Auto-refresh every 30 seconds
+    refetchOnMountOrArgChange: true,
   });
   const [deletePatient] = useDeletePatientMutation();
 
@@ -127,6 +128,13 @@ const PatientsPage = () => {
       )}
 
       <Card>
+        {error && (
+          <Alert
+            type="error"
+            title="Error Loading Patients"
+            message={error?.data?.message || 'Failed to load patients. Please try again.'}
+          />
+        )}
         <div className="mb-4">
           <div className="relative">
             <Input

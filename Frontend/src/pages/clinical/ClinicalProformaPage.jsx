@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FiPlus, FiSearch, FiEdit, FiTrash2, FiEye } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiEdit, FiTrash2, FiEye, FiRefreshCw } from 'react-icons/fi';
 import {
   useGetAllClinicalProformasQuery,
   useDeleteClinicalProformaMutation,
@@ -20,8 +20,11 @@ const ClinicalProformaPage = () => {
   const [search, setSearch] = useState('');
   const limit = 10;
 
-  const { data, isLoading, isFetching, refetch } = useGetAllClinicalProformasQuery({ page, limit }, {
+  const { data, isLoading, isFetching, refetch, error } = useGetAllClinicalProformasQuery({ page, limit }, {
     pollingInterval: 30000, // Auto-refresh every 30 seconds for real-time data
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
   });
   const [deleteProforma] = useDeleteClinicalProformaMutation();
 
@@ -110,14 +113,25 @@ const ClinicalProformaPage = () => {
           <h1 className="text-3xl font-bold text-gray-900">Clinical Proforma</h1>
           <p className="text-gray-600 mt-1">Manage clinical assessments</p>
         </div>
-        <Link to="/clinical/new">
-          <Button>
-            <FiPlus className="mr-2" /> New Proforma
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => { refetch(); }} disabled={isFetching}>
+            <FiRefreshCw className={`mr-2 ${isFetching ? 'animate-spin' : ''}`} /> Refresh
           </Button>
-        </Link>
+          <Link to="/clinical/new">
+            <Button>
+              <FiPlus className="mr-2" /> New Proforma
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Card>
+        {error && (
+          <div className="mb-4">
+            <LoadingSpinner className="hidden" />
+            <p className="text-red-600 text-sm">{error?.data?.message || 'Failed to load clinical proformas.'}</p>
+          </div>
+        )}
         <div className="mb-4">
           <div className="relative">
             <Input

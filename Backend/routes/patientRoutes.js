@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const PatientController = require('../controllers/patientController');
-const { authenticateToken, requireMWOOrDoctor, requireAdmin } = require('../middleware/auth');
+const { authenticateToken, requireMWOOrDoctor, requireAdmin, authorizeRoles } = require('../middleware/auth');
 const {
   validatePatient,
   validateId,
@@ -209,7 +209,8 @@ router.post('/', authenticateToken, requireMWOOrDoctor, validatePatient, Patient
  *       500:
  *         description: Server error
  */
-router.get('/', authenticateToken, requireMWOOrDoctor, validatePagination, PatientController.getAllPatients);
+// Allow Admin to access patient list as well
+router.get('/', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), validatePagination, PatientController.getAllPatients);
 
 /**
  * @swagger
@@ -250,7 +251,7 @@ router.get('/', authenticateToken, requireMWOOrDoctor, validatePagination, Patie
  *       500:
  *         description: Server error
  */
-router.get('/search', authenticateToken, requireMWOOrDoctor, PatientController.searchPatients);
+router.get('/search', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), PatientController.searchPatients);
 
 /**
  * @swagger
@@ -268,7 +269,7 @@ router.get('/search', authenticateToken, requireMWOOrDoctor, PatientController.s
  *       500:
  *         description: Server error
  */
-router.get('/stats', authenticateToken, requireMWOOrDoctor, PatientController.getPatientStats);
+router.get('/stats', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), PatientController.getPatientStats);
 
 /**
  * @swagger
@@ -295,7 +296,7 @@ router.get('/stats', authenticateToken, requireMWOOrDoctor, PatientController.ge
  *       500:
  *         description: Server error
  */
-router.get('/:id', authenticateToken, requireMWOOrDoctor, validateId, PatientController.getPatientById);
+router.get('/:id', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), validateId, PatientController.getPatientById);
 
 /**
  * @swagger
@@ -330,7 +331,7 @@ router.get('/:id', authenticateToken, requireMWOOrDoctor, validateId, PatientCon
  *       500:
  *         description: Server error
  */
-router.put('/:id', authenticateToken, requireMWOOrDoctor, validateId, PatientController.updatePatient);
+router.put('/:id', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), validateId, PatientController.updatePatient);
 
 /**
  * @swagger
@@ -388,7 +389,7 @@ router.delete('/:id', authenticateToken, requireAdmin, validateId, PatientContro
  *       500:
  *         description: Server error
  */
-router.get('/:id/profile', authenticateToken, requireMWOOrDoctor, validateId, PatientController.getPatientProfile);
+router.get('/:id/profile', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), validateId, PatientController.getPatientProfile);
 
 /**
  * @swagger
@@ -415,7 +416,7 @@ router.get('/:id/profile', authenticateToken, requireMWOOrDoctor, validateId, Pa
  *       500:
  *         description: Server error
  */
-router.get('/:id/visits', authenticateToken, requireMWOOrDoctor, validateId, PatientController.getPatientVisitHistory);
+router.get('/:id/visits', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), validateId, PatientController.getPatientVisitHistory);
 
 /**
  * @swagger
@@ -442,7 +443,7 @@ router.get('/:id/visits', authenticateToken, requireMWOOrDoctor, validateId, Pat
  *       500:
  *         description: Server error
  */
-router.get('/:id/clinical-records', authenticateToken, requireMWOOrDoctor, validateId, PatientController.getPatientClinicalRecords);
+router.get('/:id/clinical-records', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), validateId, PatientController.getPatientClinicalRecords);
 
 /**
  * @swagger
@@ -469,7 +470,7 @@ router.get('/:id/clinical-records', authenticateToken, requireMWOOrDoctor, valid
  *       500:
  *         description: Server error
  */
-router.get('/:id/adl-files', authenticateToken, requireMWOOrDoctor, validateId, PatientController.getPatientADLFiles);
+router.get('/:id/adl-files', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), validateId, PatientController.getPatientADLFiles);
 
 // Routes for finding patients by specific numbers
 /**
@@ -497,7 +498,7 @@ router.get('/:id/adl-files', authenticateToken, requireMWOOrDoctor, validateId, 
  *       500:
  *         description: Server error
  */
-router.get('/cr/:cr_no', authenticateToken, requireMWOOrDoctor, PatientController.getPatientByCRNo);
+router.get('/cr/:cr_no', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), PatientController.getPatientByCRNo);
 
 /**
  * @swagger
@@ -524,7 +525,7 @@ router.get('/cr/:cr_no', authenticateToken, requireMWOOrDoctor, PatientControlle
  *       500:
  *         description: Server error
  */
-router.get('/psy/:psy_no', authenticateToken, requireMWOOrDoctor, PatientController.getPatientByPSYNo);
+router.get('/psy/:psy_no', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), PatientController.getPatientByPSYNo);
 
 /**
  * @swagger
@@ -551,6 +552,6 @@ router.get('/psy/:psy_no', authenticateToken, requireMWOOrDoctor, PatientControl
  *       500:
  *         description: Server error
  */
-router.get('/adl/:adl_no', authenticateToken, requireMWOOrDoctor, PatientController.getPatientByADLNo);
+router.get('/adl/:adl_no', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), PatientController.getPatientByADLNo);
 
 module.exports = router;

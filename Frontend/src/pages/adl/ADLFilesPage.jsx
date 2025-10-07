@@ -22,8 +22,11 @@ const ADLFilesPage = () => {
   const [search, setSearch] = useState('');
   const limit = 10;
 
-  const { data, isLoading, isFetching, refetch } = useGetAllADLFilesQuery({ page, limit }, {
+  const { data, isLoading, isFetching, refetch, error } = useGetAllADLFilesQuery({ page, limit }, {
     pollingInterval: 30000, // Auto-refresh every 30 seconds for real-time data
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
   });
   const [retrieveFile] = useRetrieveFileMutation();
   const [returnFile] = useReturnFileMutation();
@@ -152,6 +155,9 @@ const ADLFilesPage = () => {
           <h1 className="text-3xl font-bold text-gray-900">ADL File Management</h1>
           <p className="text-gray-600 mt-1">Track and manage complex case files</p>
         </div>
+        <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
+          <FiRefreshCw className={`mr-2 ${isFetching ? 'animate-spin' : ''}`} /> Refresh
+        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -191,6 +197,11 @@ const ADLFilesPage = () => {
       </div>
 
       <Card>
+        {error && (
+          <div className="mb-4">
+            <p className="text-red-600 text-sm">{error?.data?.message || 'Failed to load ADL files.'}</p>
+          </div>
+        )}
         <div className="mb-4">
           <div className="relative">
             <Input

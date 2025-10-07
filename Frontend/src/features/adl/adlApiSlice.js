@@ -67,7 +67,7 @@ export const adlApiSlice = apiSlice.injectEndpoints({
       providesTags: ['Stats'],
     }),
     getFilesByStatus: builder.query({
-      query: () => '/adl-files/stats/by-status',
+      query: () => '/adl-files/status-stats',
       providesTags: ['Stats'],
     }),
   }),

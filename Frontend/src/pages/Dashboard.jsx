@@ -58,16 +58,19 @@ const Dashboard = () => {
   const user = useSelector(selectCurrentUser);
   
   // Only fetch stats if user is Admin
-  const { data: patientStats, isLoading: patientsLoading } = useGetPatientStatsQuery(undefined, {
+  const { data: patientStats, isLoading: patientsLoading, error: patientsError } = useGetPatientStatsQuery(undefined, {
     pollingInterval: user?.role === 'Admin' ? 30000 : 0, // Disable polling for non-admin
+    refetchOnMountOrArgChange: true,
     skip: user?.role !== 'Admin', // Skip query entirely for non-admin
   });
-  const { data: clinicalStats, isLoading: clinicalLoading } = useGetClinicalStatsQuery(undefined, {
+  const { data: clinicalStats, isLoading: clinicalLoading, error: clinicalError } = useGetClinicalStatsQuery(undefined, {
     pollingInterval: user?.role === 'Admin' ? 30000 : 0,
+    refetchOnMountOrArgChange: true,
     skip: user?.role !== 'Admin',
   });
-  const { data: adlStats, isLoading: adlLoading } = useGetADLStatsQuery(undefined, {
+  const { data: adlStats, isLoading: adlLoading, error: adlError } = useGetADLStatsQuery(undefined, {
     pollingInterval: user?.role === 'Admin' ? 30000 : 0,
+    refetchOnMountOrArgChange: true,
     skip: user?.role !== 'Admin',
   });
 
@@ -359,6 +362,16 @@ const Dashboard = () => {
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600 mt-1">Welcome back, {user?.name}!</p>
       </div>
+
+      {(patientsError || clinicalError || adlError) && (
+        <Card>
+          <div className="p-4 text-sm text-red-600">
+            {patientsError && <div>Failed to load patient stats.</div>}
+            {clinicalError && <div>Failed to load clinical stats.</div>}
+            {adlError && <div>Failed to load ADL stats.</div>}
+          </div>
+        </Card>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

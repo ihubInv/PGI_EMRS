@@ -59,11 +59,11 @@ export const clinicalApiSlice = apiSlice.injectEndpoints({
       providesTags: ['Clinical'],
     }),
     getCasesBySeverity: builder.query({
-      query: () => '/clinical-proformas/stats/severity',
+      query: () => '/clinical-proformas/severity-stats',
       providesTags: ['Stats'],
     }),
     getCasesByDecision: builder.query({
-      query: () => '/clinical-proformas/stats/decision',
+      query: () => '/clinical-proformas/decision-stats',
       providesTags: ['Stats'],
     }),
     getCasesByRoom: builder.query({

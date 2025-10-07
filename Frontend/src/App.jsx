@@ -24,6 +24,7 @@ import ClinicalProformaDetails from './pages/clinical/ClinicalProformaDetails';
 // Outpatient Record Pages
 import OutpatientPage from './pages/outpatient/OutpatientPage';
 import CreateOutpatientRecord from './pages/outpatient/CreateOutpatientRecord';
+import OutpatientDetails from './pages/outpatient/OutpatientDetails';
 
 // ADL File Pages
 import ADLFilesPage from './pages/adl/ADLFilesPage';
@@ -68,7 +69,7 @@ function App() {
               <Route element={<ProtectedRoute allowedRoles={['Admin', 'MWO']} />}>
                 <Route path="/outpatient" element={<OutpatientPage />} />
                 <Route path="/outpatient/new" element={<CreateOutpatientRecord />} />
-                <Route path="/outpatient/:id" element={<div>Outpatient Details</div>} />
+                <Route path="/outpatient/:id" element={<OutpatientDetails />} />
                 <Route path="/outpatient/:id/edit" element={<div>Edit Outpatient</div>} />
               </Route>
 
