@@ -64,11 +64,10 @@ class PasswordResetToken {
         return null;
       }
 
-      return {
-        ...new PasswordResetToken(result.rows[0]),
-        user_name: result.rows[0].name,
-        user_email: result.rows[0].email
-      };
+      const tokenInstance = new PasswordResetToken(result.rows[0]);
+      tokenInstance.user_name = result.rows[0].name;
+      tokenInstance.user_email = result.rows[0].email;
+      return tokenInstance;
     } catch (error) {
       console.error('Error finding password reset token:', error);
       throw new Error('Failed to find password reset token');
@@ -92,11 +91,10 @@ class PasswordResetToken {
         return null;
       }
 
-      return {
-        ...new PasswordResetToken(result.rows[0]),
-        user_name: result.rows[0].name,
-        user_email: result.rows[0].email
-      };
+      const tokenInstance = new PasswordResetToken(result.rows[0]);
+      tokenInstance.user_name = result.rows[0].name;
+      tokenInstance.user_email = result.rows[0].email;
+      return tokenInstance;
     } catch (error) {
       console.error('Error finding password reset token by user ID:', error);
       throw new Error('Failed to find password reset token');

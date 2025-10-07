@@ -183,7 +183,30 @@ CREATE TABLE IF NOT EXISTS patient_visits (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 8. System Settings (for configuration)
+-- 8. Password Reset Tokens (for forgot password functionality)
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token VARCHAR(255) UNIQUE NOT NULL,
+    otp VARCHAR(6) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 9. Login OTPs (for 2FA login verification)
+CREATE TABLE IF NOT EXISTS login_otps (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    otp VARCHAR(6) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 10. System Settings (for configuration)
 CREATE TABLE IF NOT EXISTS system_settings (
     id SERIAL PRIMARY KEY,
     setting_key VARCHAR(100) UNIQUE NOT NULL,
