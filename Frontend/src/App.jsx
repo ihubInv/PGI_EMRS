@@ -7,6 +7,9 @@ import { selectIsAuthenticated } from './features/auth/authSlice';
 import ProtectedRoute from './utils/ProtectedRoute';
 import MainLayout from './layouts/MainLayout';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import VerifyOTP from './pages/VerifyOTP';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import NotFound from './pages/NotFound';
 
@@ -52,6 +55,18 @@ function App() {
           <Route
             path="/login"
             element={isAuthenticated ? <Navigate to="/" replace /> : <Login />}
+          />
+          <Route
+            path="/forgot-password"
+            element={isAuthenticated ? <Navigate to="/" replace /> : <ForgotPassword />}
+          />
+          <Route
+            path="/verify-otp"
+            element={isAuthenticated ? <Navigate to="/" replace /> : <VerifyOTP />}
+          />
+          <Route
+            path="/reset-password"
+            element={isAuthenticated ? <Navigate to="/" replace /> : <ResetPassword />}
           />
 
           {/* Protected routes */}

@@ -53,6 +53,11 @@ const query = async (text, params = []) => {
       return await executeInsertQuery(text, params, start);
     }
     
+    // Handle UPDATE queries
+    if (text.includes('UPDATE')) {
+      return await executeUpdateQuery(text, params, start);
+    }
+    
     // Handle simple queries with ORDER BY and LIMIT
     if (text.includes('ORDER BY') && text.includes('LIMIT')) {
       return await executeSelectWithOrderLimit(text, params, start);
@@ -417,6 +422,86 @@ async function executeInsertQuery(text, params, startTime) {
     };
   } catch (error) {
     console.error('Insert query error:', error);
+    throw error;
+  }
+}
+
+// Execute UPDATE queries
+async function executeUpdateQuery(text, params, startTime) {
+  try {
+    // Extract table name from UPDATE statement
+    const tableMatch = text.match(/UPDATE\s+(\w+)/i);
+    if (!tableMatch) throw new Error('Could not parse table name from UPDATE statement');
+    
+    const tableName = tableMatch[1];
+    
+    // Extract SET clause
+    const setMatch = text.match(/SET\s+(.+?)(?:\s+WHERE|\s*$)/i);
+    if (!setMatch) throw new Error('Could not parse SET clause from UPDATE statement');
+    
+    const setClause = setMatch[1];
+    
+    // Parse SET clause to extract column=value pairs
+    const setPairs = setClause.split(',').map(pair => pair.trim());
+    const updateData = {};
+    let paramIndex = 0;
+    
+    setPairs.forEach(pair => {
+      const [column, value] = pair.split('=').map(item => item.trim());
+      if (value === `$${paramIndex + 1}`) {
+        updateData[column] = params[paramIndex];
+        paramIndex++;
+      } else if (value === 'CURRENT_TIMESTAMP') {
+        // Handle CURRENT_TIMESTAMP - use JavaScript Date
+        updateData[column] = new Date().toISOString();
+      } else if (!value.includes('$')) {
+        // Handle other direct values
+        updateData[column] = value;
+      }
+    });
+    
+    // Extract WHERE clause if present
+    let whereConditions = {};
+    const whereMatch = text.match(/WHERE\s+(.+?)(?:\s+RETURNING|\s*$)/i);
+    if (whereMatch) {
+      const whereClause = whereMatch[1];
+      
+      // Handle simple WHERE conditions like "id = $2"
+      const wherePairMatch = whereClause.match(/(\w+)\s*=\s*\$(\d+)/i);
+      if (wherePairMatch) {
+        const column = wherePairMatch[1];
+        const paramNum = parseInt(wherePairMatch[2]) - 1;
+        if (params[paramNum] !== undefined) {
+          whereConditions[column] = params[paramNum];
+        }
+      }
+    }
+    
+    // Execute the update using Supabase
+    let query = supabaseAdmin.from(tableName).update(updateData);
+    
+    // Apply WHERE conditions
+    Object.keys(whereConditions).forEach(column => {
+      query = query.eq(column, whereConditions[column]);
+    });
+    
+    // Check if RETURNING clause is present
+    const { data: result, error } = text.includes('RETURNING') 
+      ? await query.select()
+      : await query;
+    
+    if (error) throw error;
+    
+    const duration = Date.now() - startTime;
+    console.log('Update query executed successfully', { duration, rows: result ? result.length : 0 });
+    
+    return {
+      rows: result || [],
+      rowCount: result ? result.length : 0,
+      command: 'UPDATE'
+    };
+  } catch (error) {
+    console.error('Update query error:', error);
     throw error;
   }
 }

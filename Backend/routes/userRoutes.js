@@ -155,6 +155,117 @@ router.post('/register', validateUserRegistration, UserController.register);
  */
 router.post('/login', validateUserLogin, UserController.login);
 
+/**
+ * @swagger
+ * /api/users/forgot-password:
+ *   post:
+ *     summary: Request password reset OTP
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: User's email address
+ *     responses:
+ *       200:
+ *         description: OTP sent successfully (if email exists)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: string
+ *                       description: Reset token for frontend
+ *                     expires_at:
+ *                       type: string
+ *                       format: date-time
+ *       500:
+ *         description: Server error
+ */
+router.post('/forgot-password', UserController.forgotPassword);
+
+/**
+ * @swagger
+ * /api/users/verify-otp:
+ *   post:
+ *     summary: Verify OTP for password reset
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - otp
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Reset token from forgot-password response
+ *               otp:
+ *                 type: string
+ *                 pattern: '^[0-9]{6}$'
+ *                 description: 6-digit OTP from email
+ *     responses:
+ *       200:
+ *         description: OTP verified successfully
+ *       400:
+ *         description: Invalid or expired OTP
+ *       500:
+ *         description: Server error
+ */
+router.post('/verify-otp', UserController.verifyOTP);
+
+/**
+ * @swagger
+ * /api/users/reset-password:
+ *   post:
+ *     summary: Reset password with verified token
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - newPassword
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Reset token from verify-otp response
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 6
+ *                 description: New password
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *       400:
+ *         description: Invalid or expired token
+ *       500:
+ *         description: Server error
+ */
+router.post('/reset-password', UserController.resetPassword);
+
 // Protected routes (require authentication)
 /**
  * @swagger

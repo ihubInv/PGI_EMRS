@@ -191,6 +191,26 @@ class User {
     }
   }
 
+  // Update password (for forgot password flow - no current password verification)
+  async updatePassword(newPassword) {
+    try {
+      // Hash new password
+      const saltRounds = parseInt(process.env.BCRYPT_ROUNDS) || 12;
+      const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+
+      // Update password
+      await db.query(
+        'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [newPasswordHash, this.id]
+      );
+
+      this.password_hash = newPasswordHash;
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // Verify password
   async verifyPassword(password) {
     try {
