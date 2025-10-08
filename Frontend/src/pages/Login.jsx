@@ -114,10 +114,9 @@ const Login = () => {
               </div>
               
               <div className="mb-8">
-                <h2 className="text-4xl font-bold mb-4">Psychiatry EMR System</h2>
+                <h2 className="text-4xl font-bold mb-4">Department of Psychiatry EMR System</h2>
                 <p className="text-xl text-blue-100 mb-6">
-                  {/* Comprehensive Electronic Medical Records for 10,000+ healthcare professionals */}
-                  A dedicated Electronic Medical Records platform built exclusively for the Department of Psychiatry, PGIMER Chandigarh — enabling smarter, faster, and more coordinated mental healthcare.               
+                Digitally transforming patient care through advanced electronic medical records             
                 </p>
               </div>
             </div>
@@ -129,8 +128,8 @@ const Login = () => {
                   <FileText className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg mb-1">Unified Patient Management</h3>
-                  <p className="text-blue-100 text-sm">Streamlined access to comprehensive patient records, therapy histories, diagnosis notes, and medication details — all in one secure digital environment.</p>
+                  <h3 className="font-semibold text-lg mb-1">Smart Patient Records</h3>
+                  <p className="text-blue-100 text-sm">Secure and seamless management of psychiatric patient data and medical history</p>
                 </div>
               </div>
 
@@ -139,8 +138,8 @@ const Login = () => {
                   <Users className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg mb-1">Multi-Role Accessibility</h3>
-                  <p className="text-blue-100 text-sm">Designed for Junior Residents, Senior Residents, Faculty, and Medical Welfare Officers — each with personalized dashboards and role-based access.</p>
+                  <h3 className="font-semibold text-lg mb-1">Integrated Department Workflow</h3>
+                  <p className="text-blue-100 text-sm">Smooth collaboration among clinicians, therapists, and administrative staff</p>
                 </div>
               </div>
 
@@ -149,8 +148,8 @@ const Login = () => {
                   <Shield className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg mb-1">HIPAA Compliant Security</h3>
-                  <p className="text-blue-100 text-sm">Advanced security measures ensuring patient data privacy and compliance</p>
+                  <h3 className="font-semibold text-lg mb-1">Data Privacy & Security</h3>
+                  <p className="text-blue-100 text-sm">HIPAA-compliant protection ensuring confidentiality of mental health records</p>
                 </div>
               </div>
 
@@ -159,8 +158,8 @@ const Login = () => {
                   <Clock className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg mb-1">24/7 System Availability</h3>
-                  <p className="text-blue-100 text-sm">Round-the-clock access to critical patient information when you need it</p>
+                  <h3 className="font-semibold text-lg mb-1">24/7 Access</h3>
+                  <p className="text-blue-100 text-sm">Reliable, round-the-clock access to patient information for authorized staff</p>
                 </div>
               </div>
             </div>
@@ -187,6 +186,15 @@ const Login = () => {
             <div className="lg:hidden text-center mb-8">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
                 <img src={PGI_Logo} alt="PGIMER Logo" className="h-8 w-8 object-contain" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900">PGIMER Chandigarh</h2>
+              <p className="text-sm text-gray-600">Electronic Medical Record System</p>
+            </div>
+
+            {/* Desktop Logo */}
+            <div className="hidden lg:block text-center mb-8">
+              <div className="inline-flex items-center justify-center mb-4">
+                <img src={PGI_Logo} alt="PGIMER Logo" className="h-24 w-24 object-contain" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900">PGIMER Chandigarh</h2>
               <p className="text-sm text-gray-600">Electronic Medical Record System</p>
@@ -280,7 +288,7 @@ const Login = () => {
                         Signing in...
                       </div>
                     ) : (
-                      'Sign in to Dashboard'
+                      'Login'
                     )}
                   </button>
                 </form>
