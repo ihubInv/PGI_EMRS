@@ -53,18 +53,23 @@ const query = async (text, params = []) => {
       return await executeInsertQuery(text, params, start);
     }
     
-    // Handle UPDATE queries
-    if (text.includes('UPDATE')) {
-      return await executeUpdateQuery(text, params, start);
-    }
-    
-    // Handle simple queries with ORDER BY and LIMIT
-    if (text.includes('ORDER BY') && text.includes('LIMIT')) {
-      return await executeSelectWithOrderLimit(text, params, start);
-    }
-    
-    // Handle simple SELECT queries
-    return await executeSimpleQuery(text, params, start);
+  // Handle UPDATE queries
+  if (text.includes('UPDATE')) {
+    return await executeUpdateQuery(text, params, start);
+  }
+  
+  // Handle CREATE TABLE queries
+  if (text.includes('CREATE TABLE')) {
+    return await executeCreateTableQuery(text, params, start);
+  }
+  
+  // Handle simple queries with ORDER BY and LIMIT
+  if (text.includes('ORDER BY') && text.includes('LIMIT')) {
+    return await executeSelectWithOrderLimit(text, params, start);
+  }
+  
+  // Handle simple SELECT queries
+  return await executeSimpleQuery(text, params, start);
     
   } catch (error) {
     console.error('Database query error:', error);
@@ -512,6 +517,45 @@ const getClient = () => {
 };
 
 // Initialize connection test on module load
+// Execute CREATE TABLE queries
+async function executeCreateTableQuery(text, params, startTime) {
+  try {
+    console.log('Executing CREATE TABLE query via Supabase:', { text: text.substring(0, 100) + '...', params });
+    
+    // For CREATE TABLE, we'll use the Supabase REST API directly
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/exec_sql`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseServiceKey}`,
+        'apikey': supabaseServiceKey
+      },
+      body: JSON.stringify({
+        sql: text
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Supabase CREATE TABLE error:', errorText);
+      throw new Error(`Supabase error: ${response.status} ${errorText}`);
+    }
+
+    const result = await response.json();
+    const duration = Date.now() - startTime;
+    console.log('CREATE TABLE query executed successfully', { duration });
+    
+    return {
+      rows: [],
+      rowCount: 0,
+      command: 'CREATE TABLE'
+    };
+  } catch (error) {
+    console.error('CREATE TABLE query error:', error);
+    throw error;
+  }
+}
+
 testConnection();
 
 module.exports = {

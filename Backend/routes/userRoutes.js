@@ -133,7 +133,14 @@ router.post('/register', validateUserRegistration, UserController.register);
  * @swagger
  * /api/users/login:
  *   post:
- *     summary: Login user
+ *     summary: Login user (Step 1 - Send OTP)
+ *     description: |
+ *       First step of the 2FA login process. Verifies user credentials and sends OTP to email.
+ *       
+ *       **2FA Login Flow:**
+ *       1. Call this endpoint with email and password
+ *       2. Check your email for the 6-digit OTP (valid for 5 minutes)
+ *       3. Use the returned `user_id` and OTP in `/verify-login-otp` endpoint
  *     tags: [Authentication]
  *     requestBody:
  *       required: true
@@ -143,23 +150,86 @@ router.post('/register', validateUserRegistration, UserController.register);
  *             $ref: '#/components/schemas/UserLogin'
  *     responses:
  *       200:
- *         description: Login successful
+ *         description: OTP sent successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/AuthResponse'
+ *               $ref: '#/components/schemas/LoginOTPResponse'
  *       401:
- *         description: Invalid credentials
+ *         description: Invalid credentials or account deactivated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post('/login', validateUserLogin, UserController.login);
 
 /**
  * @swagger
+ * /api/users/verify-login-otp:
+ *   post:
+ *     summary: Verify login OTP (Step 2 - Complete Authentication)
+ *     description: |
+ *       Second step of the 2FA login process. Verifies the OTP received via email and completes authentication.
+ *       
+ *       **Requirements:**
+ *       - Use the `user_id` from the `/login` response
+ *       - Use the 6-digit OTP received via email (valid for 5 minutes)
+ *       - OTP can only be used once
+ *       
+ *       **Response:**
+ *       - Returns JWT token for accessing protected endpoints
+ *       - OTP is automatically marked as used
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/VerifyLoginOTPRequest'
+ *     responses:
+ *       200:
+ *         description: Login completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
+ *       401:
+ *         description: Invalid or expired OTP
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/verify-login-otp', UserController.verifyLoginOTP);
+
+/**
+ * @swagger
  * /api/users/forgot-password:
  *   post:
- *     summary: Request password reset OTP
+ *     summary: Request password reset OTP (Step 1)
+ *     description: |
+ *       First step of the password reset process. Sends OTP to user's email if account exists.
+ *       
+ *       **Password Reset Flow:**
+ *       1. Call this endpoint with your email
+ *       2. Check your email for the 6-digit OTP (valid for 15 minutes)
+ *       3. Use the returned `token` and OTP in `/verify-otp` endpoint
+ *       4. Use the verified token in `/reset-password` endpoint
+ *       
+ *       **Security Note:** This endpoint always returns success (200) to prevent email enumeration attacks.
  *     tags: [Authentication]
  *     requestBody:
  *       required: true
@@ -174,6 +244,7 @@ router.post('/login', validateUserLogin, UserController.login);
  *                 type: string
  *                 format: email
  *                 description: User's email address
+ *                 example: "admin@pgimer.ac.in"
  *     responses:
  *       200:
  *         description: OTP sent successfully (if email exists)
@@ -184,19 +255,27 @@ router.post('/login', validateUserLogin, UserController.login);
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
+ *                   example: "If an account with this email exists, a password reset OTP has been sent."
  *                 data:
  *                   type: object
  *                   properties:
  *                     token:
  *                       type: string
- *                       description: Reset token for frontend
+ *                       description: Reset token for OTP verification
+ *                       example: "abc123def456..."
  *                     expires_at:
  *                       type: string
  *                       format: date-time
+ *                       description: Token expiration time
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post('/forgot-password', UserController.forgotPassword);
 
@@ -204,7 +283,16 @@ router.post('/forgot-password', UserController.forgotPassword);
  * @swagger
  * /api/users/verify-otp:
  *   post:
- *     summary: Verify OTP for password reset
+ *     summary: Verify OTP for password reset (Step 2)
+ *     description: |
+ *       Second step of the password reset process. Verifies the OTP received via email.
+ *       
+ *       **Requirements:**
+ *       - Use the `token` from the `/forgot-password` response
+ *       - Use the 6-digit OTP received via email (valid for 15 minutes)
+ *       - OTP can only be used once
+ *       
+ *       **Next Step:** Use the same token in `/reset-password` endpoint
  *     tags: [Authentication]
  *     requestBody:
  *       required: true
@@ -219,17 +307,38 @@ router.post('/forgot-password', UserController.forgotPassword);
  *               token:
  *                 type: string
  *                 description: Reset token from forgot-password response
+ *                 example: "abc123def456..."
  *               otp:
  *                 type: string
  *                 pattern: '^[0-9]{6}$'
  *                 description: 6-digit OTP from email
+ *                 example: "123456"
  *     responses:
  *       200:
  *         description: OTP verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "OTP verified successfully"
  *       400:
  *         description: Invalid or expired OTP
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post('/verify-otp', UserController.verifyOTP);
 
@@ -237,7 +346,18 @@ router.post('/verify-otp', UserController.verifyOTP);
  * @swagger
  * /api/users/reset-password:
  *   post:
- *     summary: Reset password with verified token
+ *     summary: Reset password (Step 3 - Final Step)
+ *     description: |
+ *       Final step of the password reset process. Resets the user's password using the verified token.
+ *       
+ *       **Requirements:**
+ *       - Use the same `token` from `/forgot-password` and `/verify-otp` responses
+ *       - Token must have been verified with OTP in the previous step
+ *       - Token must not be expired
+ *       
+ *       **Security:**
+ *       - Token is automatically marked as used after successful password reset
+ *       - User will receive a confirmation email
  *     tags: [Authentication]
  *     requestBody:
  *       required: true
@@ -251,18 +371,39 @@ router.post('/verify-otp', UserController.verifyOTP);
  *             properties:
  *               token:
  *                 type: string
- *                 description: Reset token from verify-otp response
+ *                 description: Reset token from forgot-password response (verified with OTP)
+ *                 example: "abc123def456..."
  *               newPassword:
  *                 type: string
  *                 minLength: 6
- *                 description: New password
+ *                 description: New password (minimum 6 characters)
+ *                 example: "NewSecurePassword123"
  *     responses:
  *       200:
  *         description: Password reset successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Password reset successfully"
  *       400:
  *         description: Invalid or expired token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post('/reset-password', UserController.resetPassword);
 
@@ -272,6 +413,7 @@ router.post('/reset-password', UserController.resetPassword);
  * /api/users/profile:
  *   get:
  *     summary: Get current user profile
+ *     description: Get the profile information of the currently authenticated user
  *     tags: [User Management]
  *     security:
  *       - bearerAuth: []
@@ -285,6 +427,10 @@ router.post('/reset-password', UserController.resetPassword);
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Profile retrieved successfully"
  *                 data:
  *                   type: object
  *                   properties:
@@ -292,10 +438,16 @@ router.post('/reset-password', UserController.resetPassword);
  *                       $ref: '#/components/schemas/User'
  *       401:
  *         description: Unauthorized
- *       404:
- *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/profile', authenticateToken, UserController.getProfile);
 
@@ -304,6 +456,7 @@ router.get('/profile', authenticateToken, UserController.getProfile);
  * /api/users/profile:
  *   put:
  *     summary: Update current user profile
+ *     description: Update the profile information of the currently authenticated user
  *     tags: [User Management]
  *     security:
  *       - bearerAuth: []
@@ -316,18 +469,50 @@ router.get('/profile', authenticateToken, UserController.getProfile);
  *             properties:
  *               name:
  *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 255
+ *                 example: "Dr. Updated Name"
  *               email:
  *                 type: string
  *                 format: email
+ *                 example: "updated@pgimer.ac.in"
  *     responses:
  *       200:
  *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Profile updated successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
  *       400:
  *         description: Validation error
- *       409:
- *         description: Email already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.put('/profile', authenticateToken, UserController.updateProfile);
 
@@ -336,6 +521,7 @@ router.put('/profile', authenticateToken, UserController.updateProfile);
  * /api/users/change-password:
  *   put:
  *     summary: Change user password
+ *     description: Change the password of the currently authenticated user
  *     tags: [User Management]
  *     security:
  *       - bearerAuth: []
@@ -351,16 +537,46 @@ router.put('/profile', authenticateToken, UserController.updateProfile);
  *             properties:
  *               currentPassword:
  *                 type: string
+ *                 minLength: 6
+ *                 description: Current password for verification
+ *                 example: "currentPassword123"
  *               newPassword:
  *                 type: string
  *                 minLength: 6
+ *                 description: New password
+ *                 example: "newPassword123"
  *     responses:
  *       200:
  *         description: Password changed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Password changed successfully"
  *       400:
- *         description: Invalid current password
+ *         description: Validation error or incorrect current password
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.put('/change-password', authenticateToken, UserController.changePassword);
 
@@ -370,6 +586,7 @@ router.put('/change-password', authenticateToken, UserController.changePassword)
  * /api/users:
  *   get:
  *     summary: Get all users (Admin only)
+ *     description: Get a paginated list of all users in the system
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
@@ -393,15 +610,52 @@ router.put('/change-password', authenticateToken, UserController.changePassword)
  *           type: string
  *           enum: [MWO, JR, SR, Admin]
  *         description: Filter by user role
+ *       - in: query
+ *         name: is_active
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active status
  *     responses:
  *       200:
  *         description: Users retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Users retrieved successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     users:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/User'
+ *                     pagination:
+ *                       $ref: '#/components/schemas/PaginationResponse'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       403:
  *         description: Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/', authenticateToken, requireAdmin, validatePagination, UserController.getAllUsers);
 
@@ -410,18 +664,69 @@ router.get('/', authenticateToken, requireAdmin, validatePagination, UserControl
  * /api/users/stats:
  *   get:
  *     summary: Get user statistics (Admin only)
+ *     description: Get statistics about users in the system
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Statistics retrieved successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalUsers:
+ *                       type: integer
+ *                       example: 150
+ *                     activeUsers:
+ *                       type: integer
+ *                       example: 145
+ *                     usersByRole:
+ *                       type: object
+ *                       properties:
+ *                         MWO:
+ *                           type: integer
+ *                           example: 50
+ *                         JR:
+ *                           type: integer
+ *                           example: 30
+ *                         SR:
+ *                           type: integer
+ *                           example: 20
+ *                         Admin:
+ *                           type: integer
+ *                           example: 5
+ *                     recentRegistrations:
+ *                       type: integer
+ *                       example: 12
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       403:
  *         description: Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/stats', authenticateToken, requireAdmin, UserController.getUserStats);
 
@@ -430,6 +735,7 @@ router.get('/stats', authenticateToken, requireAdmin, UserController.getUserStat
  * /api/users/{id}:
  *   get:
  *     summary: Get user by ID (Admin only)
+ *     description: Get detailed information about a specific user
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
@@ -443,14 +749,46 @@ router.get('/stats', authenticateToken, requireAdmin, UserController.getUserStat
  *     responses:
  *       200:
  *         description: User retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "User retrieved successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       403:
  *         description: Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/:id', authenticateToken, requireAdmin, validateId, UserController.getUserById);
 
@@ -459,6 +797,7 @@ router.get('/:id', authenticateToken, requireAdmin, validateId, UserController.g
  * /api/users/{id}:
  *   put:
  *     summary: Update user by ID (Admin only)
+ *     description: Update user information including role and active status
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
@@ -478,27 +817,69 @@ router.get('/:id', authenticateToken, requireAdmin, validateId, UserController.g
  *             properties:
  *               name:
  *                 type: string
- *               role:
- *                 type: string
- *                 enum: [MWO, JR, SR, Admin]
+ *                 minLength: 2
+ *                 maxLength: 255
+ *                 example: "Dr. Updated Name"
  *               email:
  *                 type: string
  *                 format: email
+ *                 example: "updated@pgimer.ac.in"
+ *               role:
+ *                 type: string
+ *                 enum: [MWO, JR, SR, Admin]
+ *                 example: "SR"
+ *               is_active:
+ *                 type: boolean
+ *                 example: true
  *     responses:
  *       200:
  *         description: User updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "User updated successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
  *       400:
  *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       403:
  *         description: Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: User not found
- *       409:
- *         description: Email already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.put('/:id', authenticateToken, requireAdmin, validateId, UserController.updateUserById);
 
@@ -507,6 +888,7 @@ router.put('/:id', authenticateToken, requireAdmin, validateId, UserController.u
  * /api/users/{id}:
  *   delete:
  *     summary: Delete user by ID (Admin only)
+ *     description: Delete a user from the system (soft delete by deactivating)
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
@@ -520,16 +902,47 @@ router.put('/:id', authenticateToken, requireAdmin, validateId, UserController.u
  *     responses:
  *       200:
  *         description: User deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "User deleted successfully"
  *       400:
- *         description: Cannot delete own account
+ *         description: Cannot delete user with existing records
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       403:
  *         description: Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.delete('/:id', authenticateToken, requireAdmin, validateId, UserController.deleteUserById);
 

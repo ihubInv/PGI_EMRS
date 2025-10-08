@@ -16,8 +16,8 @@ const initialState = {
   user: getUserFromStorage(),
   token: localStorage.getItem('token') || null,
   isAuthenticated: !!(localStorage.getItem('token') && getUserFromStorage()),
-  twoFactorRequired: false,
-  tempToken: null,
+  otpRequired: false,
+  loginData: null, // Store user_id and email for OTP verification
 };
 
 const authSlice = createSlice({
@@ -29,21 +29,21 @@ const authSlice = createSlice({
       state.user = user;
       state.token = token;
       state.isAuthenticated = true;
-      state.twoFactorRequired = false;
-      state.tempToken = null;
+      state.otpRequired = false;
+      state.loginData = null;
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
     },
-    setTwoFactorRequired: (state, action) => {
-      state.twoFactorRequired = true;
-      state.tempToken = action.payload.tempToken;
+    setOTPRequired: (state, action) => {
+      state.otpRequired = true;
+      state.loginData = action.payload;
     },
     logout: (state) => {
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
-      state.twoFactorRequired = false;
-      state.tempToken = null;
+      state.otpRequired = false;
+      state.loginData = null;
       try {
         // Clear all app data from storage on logout
         localStorage.clear();
@@ -62,13 +62,13 @@ const authSlice = createSlice({
   },
 });
 
-export const { setCredentials, setTwoFactorRequired, logout, updateUser } = authSlice.actions;
+export const { setCredentials, setOTPRequired, logout, updateUser } = authSlice.actions;
 
 export default authSlice.reducer;
 
 export const selectCurrentUser = (state) => state.auth.user;
 export const selectCurrentToken = (state) => state.auth.token;
 export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
-export const selectTwoFactorRequired = (state) => state.auth.twoFactorRequired;
-export const selectTempToken = (state) => state.auth.tempToken;
+export const selectOTPRequired = (state) => state.auth.otpRequired;
+export const selectLoginData = (state) => state.auth.loginData;
 

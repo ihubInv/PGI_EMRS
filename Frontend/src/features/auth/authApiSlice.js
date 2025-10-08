@@ -9,9 +9,9 @@ export const authApiSlice = apiSlice.injectEndpoints({
         body: credentials,
       }),
     }),
-    verify2FA: builder.mutation({
+    verifyLoginOTP: builder.mutation({
       query: (data) => ({
-        url: '/users/verify-2fa',
+        url: '/users/verify-login-otp',
         method: 'POST',
         body: data,
       }),
@@ -61,7 +61,7 @@ export const authApiSlice = apiSlice.injectEndpoints({
 
 export const {
   useLoginMutation,
-  useVerify2FAMutation,
+  useVerifyLoginOTPMutation,
   useRegisterMutation,
   useGetProfileQuery,
   useUpdateProfileMutation,

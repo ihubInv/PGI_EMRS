@@ -10,6 +10,12 @@ class LoginOTP {
     this.used = data.used;
     this.created_at = data.created_at;
     this.updated_at = data.updated_at;
+    
+    // User data fields
+    this.name = data.name;
+    this.email = data.email;
+    this.role = data.role;
+    this.is_active = data.is_active;
   }
 
   // Create a new login OTP
@@ -44,10 +50,8 @@ class LoginOTP {
   static async verifyOTP(userId, otp) {
     try {
       const result = await db.query(
-        `SELECT lot.*, u.name, u.email, u.role, u.is_active
-         FROM login_otps lot
-         JOIN users u ON lot.user_id = u.id
-         WHERE lot.user_id = $1 AND lot.otp = $2 AND lot.used = false AND lot.expires_at > NOW()`,
+        `SELECT * FROM login_otps 
+         WHERE user_id = $1 AND otp = $2 AND used = false AND expires_at > NOW()`,
         [userId, otp]
       );
 
@@ -55,7 +59,20 @@ class LoginOTP {
         return null;
       }
 
-      return new LoginOTP(result.rows[0]);
+      // Get user data separately
+      const userResult = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+      if (userResult.rows.length === 0) {
+        return null;
+      }
+
+      // Combine data - prioritize OTP data, then add user data
+      const combinedData = { ...result.rows[0] };
+      const userData = userResult.rows[0];
+      combinedData.name = userData.name;
+      combinedData.email = userData.email;
+      combinedData.role = userData.role;
+      combinedData.is_active = userData.is_active;
+      return new LoginOTP(combinedData);
     } catch (error) {
       throw error;
     }
@@ -65,11 +82,9 @@ class LoginOTP {
   static async findByUserId(userId) {
     try {
       const result = await db.query(
-        `SELECT lot.*, u.name, u.email, u.role, u.is_active
-         FROM login_otps lot
-         JOIN users u ON lot.user_id = u.id
-         WHERE lot.user_id = $1 AND lot.used = false AND lot.expires_at > NOW()
-         ORDER BY lot.created_at DESC
+        `SELECT * FROM login_otps 
+         WHERE user_id = $1 AND used = false AND expires_at > NOW()
+         ORDER BY created_at DESC
          LIMIT 1`,
         [userId]
       );
@@ -78,7 +93,20 @@ class LoginOTP {
         return null;
       }
 
-      return new LoginOTP(result.rows[0]);
+      // Get user data separately
+      const userResult = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+      if (userResult.rows.length === 0) {
+        return null;
+      }
+
+      // Combine data - prioritize OTP data, then add user data
+      const combinedData = { ...result.rows[0] };
+      const userData = userResult.rows[0];
+      combinedData.name = userData.name;
+      combinedData.email = userData.email;
+      combinedData.role = userData.role;
+      combinedData.is_active = userData.is_active;
+      return new LoginOTP(combinedData);
     } catch (error) {
       throw error;
     }

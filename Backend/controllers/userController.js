@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const PasswordResetToken = require('../models/PasswordResetToken');
+const LoginOTP = require('../models/LoginOTP');
 const { sendEmail } = require('../config/email');
 
 class UserController {
@@ -44,7 +45,7 @@ class UserController {
     }
   }
 
-  // Login user
+  // Login user - Step 1: Verify credentials and send OTP
   static async login(req, res) {
     try {
       const { email, password } = req.body;
@@ -58,6 +59,14 @@ class UserController {
         });
       }
 
+      // Check if user is active
+      if (!user.is_active) {
+        return res.status(401).json({
+          success: false,
+          message: 'Account is deactivated. Please contact administrator.'
+        });
+      }
+
       // Verify password
       const isValidPassword = await user.verifyPassword(password);
       if (!isValidPassword) {
@@ -67,8 +76,67 @@ class UserController {
         });
       }
 
+      // Create login OTP
+      const loginOTP = await LoginOTP.create(user.id);
+
+      // Send OTP email
+      await sendEmail(user.email, 'loginOTP', { userName: user.name, otp: loginOTP.otp });
+
+      res.json({
+        success: true,
+        message: 'OTP sent to your email. Please check your inbox.',
+        data: {
+          user_id: user.id,
+          email: user.email,
+          expires_in: 300 // 5 minutes in seconds
+        }
+      });
+    } catch (error) {
+      console.error('User login error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Login failed',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+
+  // Verify login OTP - Step 2: Complete login with OTP
+  static async verifyLoginOTP(req, res) {
+    try {
+      const { user_id, otp } = req.body;
+
+      // Verify OTP
+      const loginOTP = await LoginOTP.verifyOTP(user_id, otp);
+      if (!loginOTP) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid or expired OTP'
+        });
+      }
+
+      // Get user data
+      const userData = loginOTP.getUserData();
+      
+      // Check if user is still active
+      if (!userData.is_active) {
+        return res.status(401).json({
+          success: false,
+          message: 'Account is deactivated. Please contact administrator.'
+        });
+      }
+
+      // Mark OTP as used
+      await loginOTP.markAsUsed();
+
+      // Create user instance for token generation
+      const user = new User(userData);
+      
       // Generate token
       const token = user.generateToken();
+
+      // Update last login
+      await user.updateLastLogin();
 
       res.json({
         success: true,
@@ -79,10 +147,10 @@ class UserController {
         }
       });
     } catch (error) {
-      console.error('User login error:', error);
+      console.error('Verify login OTP error:', error);
       res.status(500).json({
         success: false,
-        message: 'Login failed',
+        message: 'OTP verification failed',
         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
       });
     }
@@ -373,7 +441,7 @@ class UserController {
 
       // Send OTP email
       try {
-        await sendEmail(user.email, 'passwordResetOTP', [user.name, resetToken.otp]);
+        await sendEmail(user.email, 'passwordResetOTP', { userName: user.name, otp: resetToken.otp });
         
         res.json({
           success: true,
@@ -468,7 +536,7 @@ class UserController {
 
       // Send success email
       try {
-        await sendEmail(user.email, 'passwordResetSuccess', [user.name]);
+        await sendEmail(user.email, 'passwordResetSuccess', { userName: user.name });
       } catch (emailError) {
         console.error('Success email sending failed:', emailError);
         // Don't fail the request if email fails

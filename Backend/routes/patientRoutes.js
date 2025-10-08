@@ -472,7 +472,83 @@ router.get('/:id/clinical-records', authenticateToken, authorizeRoles('Admin', '
  */
 router.get('/:id/adl-files', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), validateId, PatientController.getPatientADLFiles);
 
-// MWO assignment endpoint (tracking only, not restricting access)
+/**
+ * @swagger
+ * /api/patients/assign:
+ *   post:
+ *     summary: Assign patient to MWO (MWO/Admin only)
+ *     description: Assign a patient to a specific MWO for tracking purposes
+ *     tags: [Patient Management]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - patient_id
+ *               - assigned_to
+ *             properties:
+ *               patient_id:
+ *                 type: integer
+ *                 description: Patient ID to assign
+ *                 example: 1
+ *               assigned_to:
+ *                 type: integer
+ *                 description: MWO user ID to assign patient to
+ *                 example: 5
+ *     responses:
+ *       200:
+ *         description: Patient assigned successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Patient assigned successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     patient:
+ *                       $ref: '#/components/schemas/Patient'
+ *       400:
+ *         description: Validation error or invalid assignment
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: MWO or Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Patient or MWO not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.post('/assign', authenticateToken, authorizeRoles('MWO', 'Admin'), PatientController.assignPatient);
 
 // Routes for finding patients by specific numbers

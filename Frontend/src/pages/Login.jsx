@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
-import { useLoginMutation, useVerify2FAMutation } from '../features/auth/authApiSlice';
-import { setCredentials, setTwoFactorRequired, selectTwoFactorRequired } from '../features/auth/authSlice';
+import { useLoginMutation, useVerifyLoginOTPMutation } from '../features/auth/authApiSlice';
+import { setCredentials, setOTPRequired, selectOTPRequired, selectLoginData } from '../features/auth/authSlice';
 import { 
   Eye, 
   EyeOff, 
@@ -22,18 +22,19 @@ import PGI_Logo from '../assets/PGI_Logo.png';
 const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const twoFactorRequired = useSelector(selectTwoFactorRequired);
+  const otpRequired = useSelector(selectOTPRequired);
+  const loginData = useSelector(selectLoginData);
 
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    twoFactorCode: '',
+    otp: '',
   });
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const [login, { isLoading: isLoggingIn }] = useLoginMutation();
-  const [verify2FA, { isLoading: isVerifying }] = useVerify2FAMutation();
+  const [verifyLoginOTP, { isLoading: isVerifying }] = useVerifyLoginOTPMutation();
 
   const handleChange = (e) => {
     setFormData({
@@ -50,37 +51,31 @@ const Login = () => {
         password: formData.password,
       }).unwrap();
 
-      if (result.requiresTwoFactor) {
-        dispatch(setTwoFactorRequired({ tempToken: result.tempToken }));
-        toast.info('Please enter your 2FA code');
-      } else {
-        dispatch(setCredentials({
-          user: result.data.user,
-          token: result.data.token,
-        }));
-        toast.success('Login successful!');
-        navigate('/');
-      }
+      // Store login data for OTP verification
+      dispatch(setOTPRequired(result.data));
+      toast.info('OTP sent to your email. Please check your inbox.');
     } catch (err) {
       toast.error(err?.data?.message || 'Login failed');
     }
   };
 
-  const handle2FAVerify = async (e) => {
+  const handleOTPVerify = async (e) => {
     e.preventDefault();
     try {
-      const result = await verify2FA({
-        twoFactorCode: formData.twoFactorCode,
+      const result = await verifyLoginOTP({
+        user_id: loginData.user_id,
+        otp: formData.otp,
       }).unwrap();
 
       dispatch(setCredentials({
         user: result.data.user,
         token: result.data.token,
       }));
+      dispatch(setOTPRequired(false));
       toast.success('Login successful!');
       navigate('/');
     } catch (err) {
-      toast.error(err?.data?.message || '2FA verification failed');
+      toast.error(err?.data?.message || 'OTP verification failed');
     }
   };
 
@@ -114,14 +109,15 @@ const Login = () => {
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold">PGIMER Chandigarh</h1>
-                  <p className="text-blue-100">India's Premier Medical Institute</p>
+                  <p className="text-blue-100">Department of Psychiatry</p>
                 </div>
               </div>
               
               <div className="mb-8">
-                <h2 className="text-4xl font-bold mb-4">Trusted EMR System</h2>
+                <h2 className="text-4xl font-bold mb-4">Psychiatry EMR System</h2>
                 <p className="text-xl text-blue-100 mb-6">
-                  Comprehensive Electronic Medical Records for 10,000+ healthcare professionals
+                  {/* Comprehensive Electronic Medical Records for 10,000+ healthcare professionals */}
+                  A dedicated Electronic Medical Records platform built exclusively for the Department of Psychiatry, PGIMER Chandigarh — enabling smarter, faster, and more coordinated mental healthcare.               
                 </p>
               </div>
             </div>
@@ -133,8 +129,8 @@ const Login = () => {
                   <FileText className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg mb-1">Digital Patient Records</h3>
-                  <p className="text-blue-100 text-sm">Complete digital transformation of patient documentation and medical history</p>
+                  <h3 className="font-semibold text-lg mb-1">Unified Patient Management</h3>
+                  <p className="text-blue-100 text-sm">Streamlined access to comprehensive patient records, therapy histories, diagnosis notes, and medication details — all in one secure digital environment.</p>
                 </div>
               </div>
 
@@ -143,8 +139,8 @@ const Login = () => {
                   <Users className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg mb-1">Multi-Department Integration</h3>
-                  <p className="text-blue-100 text-sm">Seamless coordination across all medical departments and specialties</p>
+                  <h3 className="font-semibold text-lg mb-1">Multi-Role Accessibility</h3>
+                  <p className="text-blue-100 text-sm">Designed for Junior Residents, Senior Residents, Faculty, and Medical Welfare Officers — each with personalized dashboards and role-based access.</p>
                 </div>
               </div>
 
@@ -203,7 +199,7 @@ const Login = () => {
                 <p className="text-gray-600">Welcome back! Please enter your details.</p>
               </div>
 
-              {!twoFactorRequired ? (
+              {!otpRequired ? (
                 <form className="space-y-6" onSubmit={handleLogin}>
                   <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -289,65 +285,72 @@ const Login = () => {
                   </button>
                 </form>
               ) : (
-                <form className="space-y-6" onSubmit={handle2FAVerify}>
-                  <div>
-                    <label htmlFor="twoFactorCode" className="block text-sm font-medium text-gray-700 mb-2">
-                      Two-Factor Authentication Code
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Shield className="h-5 w-5 text-gray-400" />
-                      </div>
-                      <input
-                        id="twoFactorCode"
-                        name="twoFactorCode"
-                        type="text"
-                        required
-                        maxLength={6}
-                        value={formData.twoFactorCode}
-                        onChange={handleChange}
-                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                        placeholder="Enter 6-digit code"
-                      />
+                <div className="space-y-6">
+                  <div className="text-center mb-6">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+                      <Mail className="h-8 w-8 text-blue-600" />
                     </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Check Your Email</h3>
+                    <p className="text-sm text-gray-600">
+                      We've sent a 6-digit verification code to<br />
+                      <span className="font-medium text-gray-900">{loginData?.email}</span>
+                    </p>
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={isVerifying}
-                    className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {isVerifying ? (
-                      <div className="flex items-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Verifying...
+                  <form className="space-y-6" onSubmit={handleOTPVerify}>
+                    <div>
+                      <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-2">
+                        Verification Code
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Shield className="h-5 w-5 text-gray-400" />
                       </div>
-                    ) : (
-                      'Verify Code'
-                    )}
-                  </button>
-                </form>
+                        <input
+                          id="otp"
+                          name="otp"
+                          type="text"
+                          maxLength="6"
+                          pattern="[0-9]{6}"
+                          required
+                          value={formData.otp}
+                          onChange={handleChange}
+                          className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-center text-lg font-mono tracking-widest"
+                          placeholder="000000"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isVerifying || formData.otp.length !== 6}
+                      className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isVerifying ? (
+                        <div className="flex items-center">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Verifying...
+                        </div>
+                      ) : (
+                        'Verify & Continue'
+                      )}
+                    </button>
+                  </form>
+
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        dispatch(setOTPRequired(false));
+                        setFormData(prev => ({ ...prev, otp: '' }));
+                      }}
+                      className="text-sm text-gray-600 hover:text-gray-800 underline"
+                    >
+                      Back to Login
+                    </button>
+                  </div>
+                </div>
               )}
-
-              <div className="mt-6 text-center text-xs text-gray-500">
-                By clicking 'Sign In', you acknowledge the{' '}
-                <a href="#" className="text-blue-600 hover:text-blue-500 underline">
-                  Terms of Services
-                </a>{' '}
-                and{' '}
-                <a href="#" className="text-blue-600 hover:text-blue-500 underline">
-                  Privacy Policy
-                </a>
-              </div>
-
-              <div className="mt-4 text-center">
-                <p className="text-sm text-gray-600">
-                  Not an existing user?{' '}
-                  <a href="#" className="text-blue-600 hover:text-blue-500 font-medium">
-                    Contact IT Support
-                  </a>
-                </p>
-              </div>
             </div>
 
             {/* Footer */}

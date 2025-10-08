@@ -18,7 +18,7 @@ const createTransporter = () => {
 
 // Email templates
 const emailTemplates = {
-  passwordResetOTP: (userName, otp) => ({
+  passwordResetOTP: ({ userName, otp }) => ({
     subject: 'PGIMER EMR System - Password Reset OTP',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -97,7 +97,7 @@ Postgraduate Institute of Medical Education & Research, Chandigarh
     `
   }),
 
-  passwordResetSuccess: (userName) => ({
+  passwordResetSuccess: ({ userName }) => ({
     subject: 'PGIMER EMR System - Password Reset Successful',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -162,6 +162,91 @@ Best regards,
 PGIMER IT Support Team
 Postgraduate Institute of Medical Education & Research, Chandigarh
     `
+  }),
+
+  // Login OTP email template
+  loginOTP: ({ userName, otp }) => ({
+    subject: 'PGIMER EMR System - Login Verification Code',
+    html: `
+      <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; background: #ffffff;">
+        <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 24px; font-weight: bold;">
+            🔐 Login Verification
+          </h1>
+          <p style="color: #e0e7ff; margin: 10px 0 0 0; font-size: 16px;">
+            PGIMER EMR System
+          </p>
+        </div>
+        
+        <div style="padding: 30px; background: #ffffff; border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          <h2 style="color: #1f2937; margin: 0 0 20px 0; font-size: 20px;">
+            Hello ${userName},
+          </h2>
+          
+          <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+            You have successfully entered your credentials. To complete your login to the PGIMER EMR System, 
+            please use the verification code below:
+          </p>
+          
+          <div style="background: #f3f4f6; border: 2px dashed #d1d5db; padding: 25px; text-align: center; margin: 25px 0; border-radius: 8px;">
+            <p style="color: #6b7280; font-size: 14px; margin: 0 0 10px 0; font-weight: 500;">
+              Your Login Verification Code:
+            </p>
+            <div style="background: #1e40af; color: white; font-size: 32px; font-weight: bold; padding: 15px 25px; border-radius: 6px; letter-spacing: 8px; display: inline-block; font-family: 'Courier New', monospace;">
+              ${otp}
+            </div>
+          </div>
+          
+          <p style="color: #4b5563; font-size: 14px; line-height: 1.6; margin-bottom: 20px;">
+            <strong>Important:</strong>
+          </p>
+          <ul style="color: #4b5563; font-size: 14px; line-height: 1.6; padding-left: 20px;">
+            <li>This verification code is valid for <strong>5 minutes</strong> only</li>
+            <li>Do not share this code with anyone</li>
+            <li>If you didn't attempt to login, please contact IT support immediately</li>
+            <li>For security reasons, this code can only be used once</li>
+          </ul>
+          
+          <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
+            <p style="color: #92400e; margin: 0; font-size: 14px;">
+              <strong>Security Notice:</strong> If you suspect any unauthorized access to your account, 
+              please contact the IT support team immediately at 0172-2746018.
+            </p>
+          </div>
+          
+          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+            Best regards,<br>
+            <strong>PGIMER IT Support Team</strong><br>
+            Postgraduate Institute of Medical Education & Research, Chandigarh
+          </p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; padding: 15px; background: #f9fafb; border-radius: 6px;">
+          <p style="color: #6b7280; font-size: 12px; margin: 0;">
+            This is an automated message. Please do not reply to this email.
+          </p>
+        </div>
+      </div>
+    `,
+    text: `
+PGIMER EMR System - Login Verification Code
+
+Hello ${userName},
+
+You have successfully entered your credentials. To complete your login to the PGIMER EMR System, 
+please use the verification code below:
+
+Your Login Verification Code: ${otp}
+
+This verification code is valid for 5 minutes only.
+Do not share this code with anyone.
+
+If you didn't attempt to login, please contact IT support immediately.
+
+Best regards,
+PGIMER IT Support Team
+Postgraduate Institute of Medical Education & Research, Chandigarh
+    `
   })
 };
 
@@ -173,7 +258,7 @@ const sendEmail = async (to, template, data = {}) => {
     // Verify connection configuration
     await transporter.verify();
     
-    const emailContent = emailTemplates[template](...data);
+    const emailContent = emailTemplates[template](data);
     
     const mailOptions = {
       from: `"PGIMER EMR System" <${process.env.SMTP_USER || process.env.EMAIL_USER}>`,

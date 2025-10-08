@@ -8,7 +8,7 @@ const swaggerUi = require('swagger-ui-express');
 require('dotenv').config();
 
 // Import configurations
-const swaggerSpecs = require('./config/swagger');
+const { swaggerSpecs, swaggerUiOptions } = require('./config/swagger');
 
 // Import routes
 const userRoutes = require('./routes/userRoutes');
@@ -88,20 +88,135 @@ app.get('/health', (req, res) => {
 });
 
 // API Documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
-  explorer: true,
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'EMRS PGIMER API Documentation',
-  customfavIcon: '/favicon.ico',
-  swaggerOptions: {
-    persistAuthorization: true, // Keep authorization when page refreshes
-    displayRequestDuration: true,
-    docExpansion: 'none',
-    filter: true,
-    showExtensions: true,
-    tryItOutEnabled: true
+app.get('/api-docs/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpecs);
+});
+
+// Favicon route to prevent 404 error
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end(); // No content, but no error
+});
+
+// Middleware to prevent HTTPS conversion for Swagger UI
+app.use('/api-docs', (req, res, next) => {
+  // Remove security headers that might force HTTPS
+  res.removeHeader('Strict-Transport-Security');
+  res.removeHeader('Content-Security-Policy');
+  res.removeHeader('X-Content-Type-Options');
+  res.removeHeader('X-Frame-Options');
+  res.removeHeader('X-XSS-Protection');
+  
+  // Set headers to allow mixed content and prevent HTTPS conversion
+  // Removed Cross-Origin-Opener-Policy to avoid "untrustworthy origin" error
+  res.setHeader('Origin-Agent-Cluster', '?0');
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  
+  // Override any HTTPS redirects
+  if (req.headers['x-forwarded-proto'] === 'https') {
+    req.headers['x-forwarded-proto'] = 'http';
   }
-}));
+  
+  next();
+});
+
+// Custom Swagger UI route with forced HTTP URLs
+app.get('/api-docs', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <title>EMRS PGIMER API Documentation</title>
+      <link rel="stylesheet" type="text/css" href="http://31.97.60.2:2025/api-docs/swagger-ui.css" />
+      <link rel="icon" href="/favicon.ico" />
+      <style>
+        html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
+        *, *:before, *:after { box-sizing: inherit; }
+        body { margin:0; background: #fafafa; }
+        .swagger-ui .topbar { display: none; }
+      </style>
+    </head>
+    <body>
+      <div id="swagger-ui"></div>
+      <script src="http://31.97.60.2:2025/api-docs/swagger-ui-bundle.js"></script>
+      <script src="http://31.97.60.2:2025/api-docs/swagger-ui-standalone-preset.js"></script>
+      <script>
+        // Override fetch to prevent HTTPS
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options) {
+          if (typeof url === 'string' && url.startsWith('https://')) {
+            url = url.replace('https://', 'http://');
+          }
+          return originalFetch(url, options);
+        };
+        
+        // Override XMLHttpRequest to prevent HTTPS
+        const originalXHR = window.XMLHttpRequest;
+        window.XMLHttpRequest = function() {
+          const xhr = new originalXHR();
+          const originalOpen = xhr.open;
+          xhr.open = function(method, url, async, user, password) {
+            if (typeof url === 'string' && url.startsWith('https://')) {
+              url = url.replace('https://', 'http://');
+            }
+            return originalOpen.call(this, method, url, async, user, password);
+          };
+          return xhr;
+        };
+        
+        // Override URL constructor to force HTTP
+        const originalURL = window.URL;
+        window.URL = function(url, base) {
+          if (typeof url === 'string' && url.startsWith('https://')) {
+            url = url.replace('https://', 'http://');
+          }
+          if (typeof base === 'string' && base.startsWith('https://')) {
+            base = base.replace('https://', 'http://');
+          }
+          return new originalURL(url, base);
+        };
+        
+        // Initialize Swagger UI
+        window.onload = function() {
+          const ui = SwaggerUIBundle({
+            url: 'http://31.97.60.2:2025/api-docs/swagger.json',
+            dom_id: '#swagger-ui',
+            deepLinking: true,
+            presets: [
+              SwaggerUIBundle.presets.apis,
+              SwaggerUIStandalonePreset
+            ],
+            plugins: [
+              SwaggerUIBundle.plugins.DownloadUrl
+            ],
+            layout: "StandaloneLayout",
+            validatorUrl: null,
+            requestInterceptor: function(req) {
+              if (req.url && req.url.startsWith('https://')) {
+                req.url = req.url.replace('https://', 'http://');
+              }
+              return req;
+            },
+            responseInterceptor: function(res) {
+              if (res.url && res.url.startsWith('https://')) {
+                res.url = res.url.replace('https://', 'http://');
+              }
+              return res;
+            }
+          });
+          
+          window.ui = ui;
+        };
+      </script>
+    </body>
+    </html>
+  `);
+});
+
+// Serve Swagger UI assets
+app.use('/api-docs', swaggerUi.serve);
 
 // API Routes
 app.use('/api/users', userRoutes);

@@ -12,7 +12,10 @@ class User {
     this.two_factor_secret = data.two_factor_secret;
     this.two_factor_enabled = data.two_factor_enabled;
     this.backup_codes = data.backup_codes;
+    this.is_active = data.is_active;
+    this.last_login = data.last_login;
     this.created_at = data.created_at;
+    this.updated_at = data.updated_at;
   }
 
   // Create a new user
@@ -260,6 +263,20 @@ class User {
       `);
 
       return result.rows;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Update last login timestamp
+  async updateLastLogin() {
+    try {
+      await db.query(
+        'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1',
+        [this.id]
+      );
+      this.last_login = new Date().toISOString();
+      return true;
     } catch (error) {
       throw error;
     }

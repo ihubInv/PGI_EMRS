@@ -14,19 +14,44 @@ This API uses JWT Bearer tokens for authentication.
 
 ### How to authenticate in Swagger:
 
-1. **Register or Login**: Use the \`/api/users/register\` or \`/api/users/login\` endpoint
-2. **Copy the token**: From the response, copy the \`token\` value
-3. **Click the "Authorize" button**: Look for the 🔓 button at the top right of this page
-4. **Enter your token**: Paste the token in the format: \`Bearer YOUR_TOKEN_HERE\` or just \`YOUR_TOKEN_HERE\`
-5. **Click "Authorize"**: Then click "Close"
-6. **Make requests**: Now you can access protected endpoints 🔒
+This API uses **Two-Factor Authentication (2FA)** with email OTP verification for enhanced security.
+
+#### **Login Process:**
+
+1. **Step 1 - Initial Login**: Use the \`/api/users/login\` endpoint with your email and password
+   - You'll receive an OTP via email (valid for 5 minutes)
+   - Response will contain \`user_id\` and \`email\`
+
+2. **Step 2 - Verify OTP**: Use the \`/api/users/verify-login-otp\` endpoint with your \`user_id\` and the 6-digit OTP from your email
+   - Upon successful verification, you'll receive the JWT token
+   - The OTP will be automatically marked as used
+
+3. **Step 3 - Access Protected Endpoints**: 
+   - Copy the \`token\` from the OTP verification response
+   - Click the "Authorize" button (🔓) at the top right
+   - Enter your token in the format: \`Bearer YOUR_TOKEN_HERE\`
+   - Click "Authorize" and then "Close"
+   - Now you can access protected endpoints 🔒
+
+#### **Password Reset Process:**
+
+1. **Request Reset**: Use \`/api/users/forgot-password\` with your email
+2. **Verify OTP**: Use \`/api/users/verify-otp\` with the token and OTP from email
+3. **Reset Password**: Use \`/api/users/reset-password\` with the token and new password
 
 ### Token Format:
 \`\`\`
 Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 \`\`\`
 
-**Note**: Tokens expire after a certain period. If you get a 401 error, login again to get a new token.`,
+### Security Features:
+- ✅ **Email OTP Verification** - 6-digit codes sent to registered email
+- ✅ **5-minute OTP expiration** - Enhanced security with time-limited codes
+- ✅ **One-time use OTPs** - Codes become invalid after verification
+- ✅ **Account status validation** - Only active accounts can login
+- ✅ **JWT token authentication** - Secure session management
+
+**Note**: Tokens expire after a certain period. If you get a 401 error, complete the login process again.`,
       contact: {
         name: 'PGIMER Team',
         email: 'support@pgimer.ac.in',
@@ -39,8 +64,8 @@ Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
     servers: [
       {
         url: process.env.NODE_ENV === 'production' 
-          ? 'http://31.97.60.2:2025/' 
-          : `http://31.97.60.2:${process.env.PORT || 2025}`,
+          ? 'http://31.97.60.2:2025/api' 
+          : `http://31.97.60.2:${process.env.PORT || 2025}/api`,
         description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
       },
     ],
@@ -119,6 +144,201 @@ Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
             },
           },
         },
+        LoginOTPResponse: {
+          type: 'object',
+          properties: {
+            success: {
+              type: 'boolean',
+              example: true,
+            },
+            message: {
+              type: 'string',
+              example: 'OTP sent to your email. Please check your inbox.',
+            },
+            data: {
+              type: 'object',
+              properties: {
+                user_id: {
+                  type: 'integer',
+                  example: 1,
+                  description: 'User ID for OTP verification',
+                },
+                email: {
+                  type: 'string',
+                  format: 'email',
+                  example: 'admin@pgimer.ac.in',
+                  description: 'Email where OTP was sent',
+                },
+                expires_in: {
+                  type: 'integer',
+                  example: 300,
+                  description: 'OTP expiration time in seconds',
+                },
+              },
+            },
+          },
+        },
+        VerifyLoginOTPRequest: {
+          type: 'object',
+          required: ['user_id', 'otp'],
+          properties: {
+            user_id: {
+              type: 'integer',
+              example: 1,
+              description: 'User ID from login response',
+            },
+            otp: {
+              type: 'string',
+              pattern: '^[0-9]{6}$',
+              example: '123456',
+              description: '6-digit OTP from email',
+            },
+          },
+        },
+        AuthResponse: {
+          type: 'object',
+          properties: {
+            success: {
+              type: 'boolean',
+              example: true,
+            },
+            message: {
+              type: 'string',
+              example: 'Login successful',
+            },
+            data: {
+              type: 'object',
+              properties: {
+                user: {
+                  type: 'object',
+                  properties: {
+                    id: {
+                      type: 'integer',
+                      example: 1,
+                    },
+                    name: {
+                      type: 'string',
+                      example: 'Dr. Admin User',
+                    },
+                    role: {
+                      type: 'string',
+                      enum: ['MWO', 'JR', 'SR', 'Admin'],
+                      example: 'Admin',
+                    },
+                    email: {
+                      type: 'string',
+                      format: 'email',
+                      example: 'admin@pgimer.ac.in',
+                    },
+                  },
+                },
+                token: {
+                  type: 'string',
+                  example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+                  description: 'JWT access token',
+                },
+              },
+            },
+          },
+        },
+        User: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'integer',
+              example: 1,
+              description: 'Auto-generated user ID',
+            },
+            name: {
+              type: 'string',
+              example: 'Dr. Admin User',
+              description: 'Full name of the user',
+            },
+            email: {
+              type: 'string',
+              format: 'email',
+              example: 'admin@pgimer.ac.in',
+              description: 'User email address',
+            },
+            role: {
+              type: 'string',
+              enum: ['MWO', 'JR', 'SR', 'Admin'],
+              example: 'Admin',
+              description: 'User role in the system',
+            },
+            is_active: {
+              type: 'boolean',
+              example: true,
+              description: 'Whether the user account is active',
+            },
+            last_login: {
+              type: 'string',
+              format: 'date-time',
+              example: '2025-01-27T10:30:00Z',
+              description: 'Last login timestamp',
+            },
+            created_at: {
+              type: 'string',
+              format: 'date-time',
+              example: '2025-01-01T00:00:00Z',
+              description: 'Account creation timestamp',
+            },
+            updated_at: {
+              type: 'string',
+              format: 'date-time',
+              example: '2025-01-27T10:30:00Z',
+              description: 'Last update timestamp',
+            },
+          },
+        },
+        UserRegistration: {
+          type: 'object',
+          required: ['name', 'email', 'password', 'role'],
+          properties: {
+            name: {
+              type: 'string',
+              minLength: 2,
+              maxLength: 255,
+              example: 'Dr. New User',
+              description: 'Full name of the user',
+            },
+            email: {
+              type: 'string',
+              format: 'email',
+              example: 'newuser@pgimer.ac.in',
+              description: 'User email address',
+            },
+            password: {
+              type: 'string',
+              minLength: 6,
+              example: 'securePassword123',
+              description: 'User password (minimum 6 characters)',
+            },
+            role: {
+              type: 'string',
+              enum: ['MWO', 'JR', 'SR', 'Admin'],
+              example: 'JR',
+              description: 'User role in the system',
+            },
+          },
+        },
+        UserLogin: {
+          type: 'object',
+          required: ['email', 'password'],
+          properties: {
+            email: {
+              type: 'string',
+              format: 'email',
+              example: 'admin@pgimer.ac.in',
+              description: 'User email address',
+            },
+            password: {
+              type: 'string',
+              example: 'password123',
+              description: 'User password',
+            },
+          },
+        },
       },
     },
     tags: [
@@ -161,4 +381,73 @@ Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 const specs = swaggerJsdoc(options);
 
-module.exports = specs;
+// Swagger UI configuration to force HTTP and prevent HTTPS conversion
+const swaggerUiOptions = {
+  explorer: true,
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'EMRS PGIMER API Documentation',
+  customfavIcon: '/favicon.ico',
+  swaggerOptions: {
+    persistAuthorization: true,
+    displayRequestDuration: true,
+    docExpansion: 'none',
+    filter: true,
+    showExtensions: true,
+    tryItOutEnabled: true,
+    url: '/api-docs/swagger.json',
+    // Force HTTP URLs to prevent HTTPS conversion
+    validatorUrl: null,
+    deepLinking: true,
+    displayOperationId: false,
+    defaultModelsExpandDepth: 1,
+    defaultModelExpandDepth: 1,
+    defaultModelRendering: 'example',
+    maxDisplayedTags: 10,
+    showCommonExtensions: true,
+    requestInterceptor: (req) => {
+      // Ensure all requests use HTTP
+      if (req.url && req.url.startsWith('https://')) {
+        req.url = req.url.replace('https://', 'http://');
+      }
+      return req;
+    },
+    responseInterceptor: (res) => {
+      // Ensure all responses use HTTP
+      if (res.url && res.url.startsWith('https://')) {
+        res.url = res.url.replace('https://', 'http://');
+      }
+      return res;
+    },
+    // Additional options to prevent HTTPS conversion
+    oauth2RedirectUrl: 'http://31.97.60.2:2025/api-docs/oauth2-redirect.html',
+    preauthorizeBasic: false,
+    preauthorizeApiKey: false
+  },
+  // Custom HTML to override Swagger UI's internal URL generation
+  customHtml: `
+    <script>
+      // Override window.location.protocol to force HTTP
+      Object.defineProperty(window.location, 'protocol', {
+        get: function() { return 'http:'; },
+        configurable: true
+      });
+      
+      // Override window.location.href to force HTTP
+      Object.defineProperty(window.location, 'href', {
+        get: function() { return 'http://' + window.location.host + window.location.pathname + window.location.search + window.location.hash; },
+        configurable: true
+      });
+      
+      // Override fetch to force HTTP
+      const originalFetch = window.fetch;
+      window.fetch = function(url, options) {
+        if (typeof url === 'string' && url.startsWith('https://')) {
+          url = url.replace('https://', 'http://');
+        }
+        return originalFetch(url, options);
+      };
+    </script>
+  `
+};
+
+module.exports = { swaggerSpecs: specs, swaggerUiOptions };
