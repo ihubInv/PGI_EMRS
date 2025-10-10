@@ -146,11 +146,11 @@ class OutpatientController {
         });
       }
 
-      // Only allow the MWO who created the record or admin to update
-      if (record.filled_by !== req.user.id && req.user.role !== 'Admin') {
+      // Only allow MWO users and Admin to update
+      if (req.user.role !== 'MWO' && req.user.role !== 'Admin') {
         return res.status(403).json({
           success: false,
-          message: 'Access denied. You can only update records you created.'
+          message: 'Access denied. Only MWO and Admin users can update outpatient records.'
         });
       }
 

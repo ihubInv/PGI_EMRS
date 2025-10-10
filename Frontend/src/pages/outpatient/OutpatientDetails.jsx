@@ -1,7 +1,8 @@
 import { Link, useParams } from 'react-router-dom';
-import { FiArrowLeft } from 'react-icons/fi';
+import { FiArrowLeft, FiEdit } from 'react-icons/fi';
 import { useGetOutpatientRecordByIdQuery } from '../../features/outpatient/outpatientApiSlice';
 import Card from '../../components/Card';
+import Button from '../../components/Button';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 const Row = ({ label, value }) => (
@@ -28,9 +29,17 @@ const OutpatientDetails = () => {
           <h1 className="text-3xl font-bold text-gray-900">Outpatient Record</h1>
           <p className="text-gray-600 mt-1">Detailed demographic and social information</p>
         </div>
-        <Link to="/outpatient" className="inline-flex items-center text-primary-600 hover:underline">
-          <FiArrowLeft className="mr-2" /> Back to list
-        </Link>
+        <div className="flex items-center space-x-3">
+          <Link to={`/outpatient/${id}/edit`}>
+            <Button variant="outline" className="flex items-center">
+              <FiEdit className="mr-2" />
+              Edit Record
+            </Button>
+          </Link>
+          <Link to="/outpatient" className="inline-flex items-center text-primary-600 hover:underline">
+            <FiArrowLeft className="mr-2" /> Back to list
+          </Link>
+        </div>
       </div>
 
       {error && (

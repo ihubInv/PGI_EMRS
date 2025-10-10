@@ -61,6 +61,13 @@ export const usersApiSlice = apiSlice.injectEndpoints({
         body: data,
       }),
     }),
+    getDoctors: builder.query({
+      query: ({ page = 1, limit = 100 }) => ({
+        url: '/users/doctors',
+        params: { page, limit },
+      }),
+      providesTags: ['User'],
+    }),
   }),
 });
 
@@ -74,5 +81,6 @@ export const {
   useActivateUserMutation,
   useDeactivateUserMutation,
   useResetUserPasswordMutation,
+  useGetDoctorsQuery,
 } = usersApiSlice;
 

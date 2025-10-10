@@ -8,7 +8,7 @@ const Card = ({
 }) => {
   return (
     <div
-      className={`bg-white rounded-lg shadow-md overflow-hidden ${className}`}
+      className={`glass-card glass-hover rounded-2xl ${className}`}
       {...props}
     >
       {(title || subtitle || actions) && (
@@ -24,7 +24,7 @@ const Card = ({
           {actions && <div className="flex gap-2">{actions}</div>}
         </div>
       )}
-      <div className="px-6 py-4">{children}</div>
+      <div className="px-6 py-4 overflow-visible">{children}</div>
     </div>
   );
 };

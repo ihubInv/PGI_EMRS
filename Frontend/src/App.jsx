@@ -17,7 +17,6 @@ import NotFound from './pages/NotFound';
 import PatientsPage from './pages/patients/PatientsPage';
 import CreatePatient from './pages/patients/CreatePatient';
 import PatientDetails from './pages/patients/PatientDetails';
-import EditPatient from './pages/patients/EditPatient';
 
 // Clinical Proforma Pages
 import ClinicalProformaPage from './pages/clinical/ClinicalProformaPage';
@@ -29,6 +28,7 @@ import OutpatientPage from './pages/outpatient/OutpatientPage';
 import CreateOutpatientRecord from './pages/outpatient/CreateOutpatientRecord';
 import SelectExistingOutpatient from './pages/outpatient/SelectExistingOutpatient';
 import OutpatientDetails from './pages/outpatient/OutpatientDetails';
+import EditOutpatientRecord from './pages/outpatient/EditOutpatientRecord';
 
 // ADL File Pages
 import ADLFilesPage from './pages/adl/ADLFilesPage';
@@ -79,7 +79,6 @@ function App() {
               <Route path="/patients" element={<PatientsPage />} />
               <Route path="/patients/new" element={<CreatePatient />} />
               <Route path="/patients/:id" element={<PatientDetails />} />
-              <Route path="/patients/:id/edit" element={<EditPatient />} />
               
               {/* Outpatient Records - MWO and Admin only */}
               <Route element={<ProtectedRoute allowedRoles={['Admin', 'MWO']} />}>
@@ -87,7 +86,7 @@ function App() {
                 <Route path="/outpatient/new" element={<CreateOutpatientRecord />} />
                 <Route path="/outpatient/select" element={<SelectExistingOutpatient />} />
                 <Route path="/outpatient/:id" element={<OutpatientDetails />} />
-                <Route path="/outpatient/:id/edit" element={<div>Edit Outpatient</div>} />
+                <Route path="/outpatient/:id/edit" element={<EditOutpatientRecord />} />
               </Route>
 
               {/* Clinical Proforma - JR, SR, and Admin */}

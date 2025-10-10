@@ -421,6 +421,40 @@ class UserController {
     }
   }
 
+  // Get doctors (JR/SR) - Accessible to all authenticated users
+  static async getDoctors(req, res) {
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 100;
+
+      // Get users with role JR or SR
+      const result = await User.findAll(page, limit, null);
+
+      // Filter for JR and SR roles
+      const doctors = result.users.filter(user => user.role === 'JR' || user.role === 'SR');
+
+      res.json({
+        success: true,
+        data: {
+          users: doctors,
+          pagination: {
+            page,
+            limit,
+            total: doctors.length,
+            pages: 1
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Get doctors error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get doctors',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+
   // Forgot password - Send OTP to email
   static async forgotPassword(req, res) {
     try {

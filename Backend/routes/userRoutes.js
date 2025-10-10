@@ -580,6 +580,59 @@ router.put('/profile', authenticateToken, UserController.updateProfile);
  */
 router.put('/change-password', authenticateToken, UserController.changePassword);
 
+// Get doctors (JR/SR) - Accessible to all authenticated users
+/**
+ * @swagger
+ * /api/users/doctors:
+ *   get:
+ *     summary: Get all doctors (JR/SR)
+ *     description: Get a list of all doctors (JR and SR roles) in the system. Accessible to all authenticated users.
+ *     tags: [User Management]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 100
+ *         description: Number of doctors per page
+ *     responses:
+ *       200:
+ *         description: Doctors retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     users:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/User'
+ *                     pagination:
+ *                       type: object
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.get('/doctors', authenticateToken, UserController.getDoctors);
+
 // Admin-only routes
 /**
  * @swagger

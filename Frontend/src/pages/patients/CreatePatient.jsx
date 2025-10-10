@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useCreatePatientMutation, useAssignPatientMutation } from '../../features/patients/patientsApiSlice';
-import { useGetAllUsersQuery } from '../../features/users/usersApiSlice';
+import { useGetDoctorsQuery } from '../../features/users/usersApiSlice';
 import Card from '../../components/Card';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
@@ -15,7 +15,7 @@ const CreatePatient = () => {
   const [assignPatient, { isLoading: isAssigning }] = useAssignPatientMutation();
 
   // Fetch JR/SR doctors for assignment dropdown
-  const { data: usersData } = useGetAllUsersQuery({ page: 1, limit: 100, role: 'JR,SR' });
+  const { data: usersData } = useGetDoctorsQuery({ page: 1, limit: 100 });
 
   const [formData, setFormData] = useState({
     name: '',
@@ -23,6 +23,8 @@ const CreatePatient = () => {
     actual_age: '',
     assigned_room: '',
     assigned_doctor_id: '',
+    cr_no: '',
+    psy_no: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -149,6 +151,26 @@ const CreatePatient = () => {
               onChange={handleChange}
               placeholder="e.g., Ward A-101"
             />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input
+                label="CR Number"
+                name="cr_no"
+                value={formData.cr_no}
+                onChange={handleChange}
+                placeholder="e.g., CR2024000001"
+                error={errors.cr_no}
+              />
+
+              <Input
+                label="PSY Number"
+                name="psy_no"
+                value={formData.psy_no}
+                onChange={handleChange}
+                placeholder="e.g., PSY2024000001"
+                error={errors.psy_no}
+              />
+            </div>
 
           {/* Assigned Doctor (optional) */}
           <Select

@@ -42,18 +42,18 @@ class Patient {
   // Create a new patient
   static async create(patientData) {
     try {
-      const { name, sex, actual_age, assigned_room } = patientData;
+      const { name, sex, actual_age, assigned_room, cr_no, psy_no } = patientData;
       
-      // Generate numbers
-      const cr_no = Patient.generateCRNo();
-      const psy_no = Patient.generatePSYNo();
+      // Use provided CR_NO and PSY_NO, or generate if not provided
+      const final_cr_no = cr_no || Patient.generateCRNo();
+      const final_psy_no = psy_no || Patient.generatePSYNo();
 
       // Insert patient
       const result = await db.query(
         `INSERT INTO patients (cr_no, psy_no, name, sex, actual_age, assigned_room) 
          VALUES ($1, $2, $3, $4, $5, $6) 
          RETURNING *`,
-        [cr_no, psy_no, name, sex, actual_age, assigned_room]
+        [final_cr_no, final_psy_no, name, sex, actual_age, assigned_room]
       );
 
       return new Patient(result.rows[0]);
@@ -138,26 +138,45 @@ class Patient {
   static async search(searchTerm, page = 1, limit = 10) {
     try {
       const offset = (page - 1) * limit;
-      
+
       // Simple search pattern
       const searchPattern = `%${searchTerm}%`;
-      
+
       const query = `
-        SELECT * FROM patients 
-        WHERE name ILIKE $1 OR cr_no ILIKE $1 OR psy_no ILIKE $1 OR adl_no ILIKE $1
-        ORDER BY created_at DESC 
+        SELECT
+          p.*,
+          pa.assigned_doctor as assigned_doctor_id,
+          u.name as assigned_doctor_name,
+          u.role as assigned_doctor_role,
+          pa.visit_date as last_assigned_date
+        FROM patients p
+        LEFT JOIN LATERAL (
+          SELECT * FROM patient_assignments
+          WHERE patient_id = p.id
+          ORDER BY visit_date DESC
+          LIMIT 1
+        ) pa ON true
+        LEFT JOIN users u ON pa.assigned_doctor = u.id
+        WHERE p.name ILIKE $1 OR p.cr_no ILIKE $1 OR p.psy_no ILIKE $1 OR p.adl_no ILIKE $1
+        ORDER BY p.created_at DESC
         LIMIT $2 OFFSET $3
       `;
-      
+
       const countQuery = `
-        SELECT COUNT(*) FROM patients 
+        SELECT COUNT(*) FROM patients
         WHERE name ILIKE $1 OR cr_no ILIKE $1 OR psy_no ILIKE $1 OR adl_no ILIKE $1
       `;
 
       const result = await db.query(query, [searchPattern, limit, offset]);
       const countResult = await db.query(countQuery, [searchPattern]);
 
-      const patients = result.rows.map(row => new Patient(row));
+      const patients = result.rows.map(row => ({
+        ...new Patient(row).toJSON(),
+        assigned_doctor_id: row.assigned_doctor_id,
+        assigned_doctor_name: row.assigned_doctor_name,
+        assigned_doctor_role: row.assigned_doctor_role,
+        last_assigned_date: row.last_assigned_date
+      }));
       const total = parseInt(countResult.rows[0].count);
 
       return {

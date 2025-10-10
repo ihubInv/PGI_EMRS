@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
+import { FiUser, FiUsers, FiBriefcase, FiDollarSign, FiHome, FiMapPin, FiPhone } from 'react-icons/fi';
 import { useCreateOutpatientRecordMutation } from '../../features/outpatient/outpatientApiSlice';
-import { useCreatePatientMutation, useSearchPatientsQuery, useAssignPatientMutation } from '../../features/patients/patientsApiSlice';
-import { useGetAllUsersQuery } from '../../features/users/usersApiSlice';
+import { useCreatePatientMutation, useAssignPatientMutation, useSearchPatientsQuery } from '../../features/patients/patientsApiSlice';
+import { useGetDoctorsQuery } from '../../features/users/usersApiSlice';
+import { updatePatientRegistrationForm, resetPatientRegistrationForm, selectPatientRegistrationForm } from '../../features/form/formSlice';
 import Card from '../../components/Card';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
@@ -13,101 +16,68 @@ import { MARITAL_STATUS, FAMILY_TYPE, LOCALITY, RELIGION, SEX_OPTIONS } from '..
 
 const CreateOutpatientRecord = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const patientIdFromQuery = searchParams.get('patient_id');
+  const dispatch = useDispatch();
+  const formData = useSelector(selectPatientRegistrationForm);
 
   const [createRecord, { isLoading }] = useCreateOutpatientRecordMutation();
   const [createPatient, { isLoading: isCreatingPatient }] = useCreatePatientMutation();
   const [assignPatient, { isLoading: isAssigning }] = useAssignPatientMutation();
-  const { data: usersData } = useGetAllUsersQuery({ page: 1, limit: 100 });
-  const [patientSearch, setPatientSearch] = useState('');
-  const { data: patientsData, error: searchError, isLoading: searching } = useSearchPatientsQuery(
-    { search: patientSearch, limit: 10 },
-    { skip: !patientSearch || patientSearch.length < 2 }
+  const { data: usersData } = useGetDoctorsQuery({ page: 1, limit: 100 });
+
+  // Search for existing patient by CR number
+  const [crSearchTerm, setCrSearchTerm] = useState('');
+  const { data: crSearchData } = useSearchPatientsQuery(
+    { search: crSearchTerm, limit: 5 },
+    { skip: !crSearchTerm || crSearchTerm.length < 2 }
   );
-
-  const [isNewPatient, setIsNewPatient] = useState(!patientIdFromQuery);
-  const [patientData, setPatientData] = useState({
-    name: '',
-    sex: '',
-    actual_age: '',
-    assigned_room: '',
-    assigned_doctor_id: '',
-  });
-
-  const [formData, setFormData] = useState({
-    patient_id: patientIdFromQuery || '',
-    age_group: '',
-    marital_status: '',
-    year_of_marriage: '',
-    no_of_children: '',
-    occupation: '',
-    actual_occupation: '',
-    education_level: '',
-    completed_years_of_education: '',
-    patient_income: '',
-    family_income: '',
-    religion: '',
-    family_type: '',
-    locality: '',
-    head_name: '',
-    head_age: '',
-    head_relationship: '',
-    head_education: '',
-    head_occupation: '',
-    head_income: '',
-    distance_from_hospital: '',
-    mobility: '',
-    referred_by: '',
-    exact_source: '',
-    present_address: '',
-    permanent_address: '',
-    local_address: '',
-    school_college_office: '',
-    contact_number: '',
-    visit_type: 'first_visit', // Add visit type
-    assigned_doctor_id: '', // Doctor assignment for existing patient
-  });
 
   const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    dispatch(updatePatientRegistrationForm({ [name]: value }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
-    }
-
-    // Auto-detect follow-up visit when patient is selected
-    if (name === 'patient_id' && value) {
-      setFormData((prev) => ({ 
-        ...prev, 
-        [name]: value, 
-        visit_type: 'follow_up' // Always follow-up for existing patients
-      }));
     }
   };
 
   const handlePatientChange = (e) => {
     const { name, value } = e.target;
-    setPatientData((prev) => ({ ...prev, [name]: value }));
+    dispatch(updatePatientRegistrationForm({ [name]: value }));
+
+    // Trigger search when CR number is entered
+    if (name === 'cr_no' && value.length >= 2) {
+      setCrSearchTerm(value);
+    } else if (name === 'cr_no' && value.length < 2) {
+      setCrSearchTerm('');
+      setErrors((prev) => ({ ...prev, patientCRNo: '' }));
+    }
   };
+
+  // Check if CR number already exists
+  useEffect(() => {
+    if (crSearchData?.data?.patients && formData.cr_no && formData.cr_no.length >= 2) {
+      const existingPatient = crSearchData.data.patients.find(
+        (p) => p.cr_no?.toLowerCase() === formData.cr_no.toLowerCase()
+      );
+
+      if (existingPatient) {
+        setErrors((prev) => ({
+          ...prev,
+          patientCRNo: `Patient already exists: ${existingPatient.name} (CR: ${existingPatient.cr_no}). Please go to "Existing Patients" tab to create a visit record.`,
+        }));
+      }
+    }
+  }, [crSearchData, formData.cr_no]);
 
   const validate = () => {
     const newErrors = {};
-    
-    if (isNewPatient) {
-      // Validate new patient data
-      if (!patientData.name.trim()) newErrors.patientName = 'Name is required';
-      if (!patientData.sex) newErrors.patientSex = 'Sex is required';
-      if (!patientData.actual_age) newErrors.patientAge = 'Age is required';
-    } else {
-      // Validate existing patient selection (for follow-up visits)
-      if (!formData.patient_id) newErrors.patient_id = 'Patient is required';
-      // Note: MWO only creates demographic records, doctor assignment happens later
-      // Note: visit_type is automatically set to 'follow_up' for existing patients
-    }
-    
+
+    // Validate new patient data
+    if (!formData.name.trim()) newErrors.patientName = 'Name is required';
+    if (!formData.sex) newErrors.patientSex = 'Sex is required';
+    if (!formData.actual_age) newErrors.patientAge = 'Age is required';
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -121,30 +91,31 @@ const CreateOutpatientRecord = () => {
     }
 
     try {
-      let patientId = formData.patient_id;
+      // Step 1: Create patient
+      const patientResult = await createPatient({
+        name: formData.name,
+        sex: formData.sex,
+        actual_age: parseInt(formData.actual_age),
+        assigned_room: formData.assigned_room,
+        cr_no: formData.cr_no,
+        psy_no: formData.psy_no,
+      }).unwrap();
 
-      // Step 1: Create patient if new
-      if (isNewPatient) {
-        const patientResult = await createPatient({
-          ...patientData,
-          actual_age: parseInt(patientData.actual_age),
-        }).unwrap();
-        patientId = patientResult.data.patient.id;
-        toast.success('Patient registered successfully!');
+      const patientId = patientResult.data.patient.id;
+      toast.success('Patient registered successfully!');
 
-        // Optional: assign selected doctor for new patient
-        if (patientData.assigned_doctor_id) {
-          try {
-            await assignPatient({
-              patient_id: patientId,
-              assigned_doctor: Number(patientData.assigned_doctor_id),
-              room_no: patientData.assigned_room || ''
-            }).unwrap();
-          } catch (_) {}
-        }
+      // Step 2: Assign doctor if selected
+      if (formData.assigned_doctor_id) {
+        try {
+          await assignPatient({
+            patient_id: patientId,
+            assigned_doctor: Number(formData.assigned_doctor_id),
+            room_no: formData.assigned_room || ''
+          }).unwrap();
+        } catch (_) {}
       }
 
-      // Step 2: Create outpatient record (demographic data) - MWO ONLY
+      // Step 3: Create outpatient record (demographic data)
       const demographicData = {
         patient_id: parseInt(patientId),
         age_group: formData.age_group,
@@ -176,446 +147,125 @@ const CreateOutpatientRecord = () => {
         school_college_office: formData.school_college_office,
         contact_number: formData.contact_number,
       };
-      
-      await createRecord(demographicData).unwrap();
 
-      // Optional: assign selected doctor for existing patient flow
-      if (!isNewPatient && formData.assigned_doctor_id) {
-        try {
-          await assignPatient({
-            patient_id: parseInt(patientId),
-            assigned_doctor: Number(formData.assigned_doctor_id),
-            room_no: patientData.assigned_room || ''
-          }).unwrap();
-        } catch (_) {}
-      }
+      await createRecord(demographicData).unwrap();
       toast.success('Outpatient record created successfully!');
-      
-      // Navigate to outpatient records list (NOT clinical proforma)
-      navigate('/outpatient');
-      
+
+      // Reset form after successful submission
+      dispatch(resetPatientRegistrationForm());
+
+      // Navigate to patients list
+      navigate('/patients');
+
     } catch (err) {
       toast.error(err?.data?.message || 'Failed to create record');
       console.error('Submission error:', err);
     }
   };
 
-  // Auto-select patient when exact match found
-  useEffect(() => {
-    if (!patientsData?.data?.patients || formData.patient_id) return;
-    
-    const patients = patientsData.data.patients;
-    
-    // Auto-select if exact CR match found OR any single match
-    if (patientSearch && patientSearch.startsWith('CR')) {
-      const exactMatch = patients.find(p => 
-        p.cr_no === patientSearch || p.cr_no === patientSearch.toUpperCase()
-      );
-      
-      if (exactMatch) {
-        setFormData(prev => ({ 
-          ...prev, 
-          patient_id: exactMatch.id.toString(),
-          visit_type: 'follow_up',
-          assigned_doctor: exactMatch.assigned_doctor || exactMatch.doctor_name || '' // Auto-assign existing doctor
-        }));
-      }
-    } else if (patients.length === 1) {
-      // Auto-select if only one result found
-      setFormData(prev => ({ 
-        ...prev, 
-        patient_id: patients[0].id.toString(),
-        visit_type: 'follow_up',
-        assigned_doctor: patients[0].assigned_doctor || patients[0].doctor_name || '' // Auto-assign existing doctor
-      }));
-    }
-  }, [patientsData, patientSearch]);
-
-  // Create patient options with exact matches prioritized
-  const patientOptions = (() => {
-    if (!patientsData?.data?.patients) return [];
-    
-    const patients = patientsData.data.patients;
-    
-    // If searching for a CR number, prioritize exact match
-    if (patientSearch && patientSearch.startsWith('CR')) {
-      const exactMatch = patients.find(p => 
-        p.cr_no === patientSearch || p.cr_no === patientSearch.toUpperCase()
-      );
-      
-      if (exactMatch) {
-        return [{
-          value: exactMatch.id,
-          label: `${exactMatch.name} (${exactMatch.cr_no}) - EXACT MATCH`,
-        }];
-      }
-    }
-    
-    // Default: return all patients with limit
-    return patients.slice(0, 5).map(p => ({
-    value: p.id,
-    label: `${p.name} (${p.cr_no})`,
-    }));
-  })();
-
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">New Outpatient Record</h1>
-        <p className="text-gray-600 mt-1">Complete demographic and social information</p>
+        <h1 className="text-3xl font-bold text-gray-900">Register New Patient</h1>
+        <p className="text-gray-600 mt-1">Complete patient registration and demographic information</p>
       </div>
 
       <form onSubmit={handleSubmit}>
-        {/* Patient Selection or Registration */}
-        <Card title="Patient Information" className="mb-6">
+        {/* Patient Information */}
+        <Card
+          title={
+            <div className="flex items-center gap-2">
+              <FiUser className="h-5 w-5 text-primary-600" />
+              <span>Patient Information</span>
+            </div>
+          }
+          className="mb-6">
           <div className="space-y-6">
-            {/* Toggle between new and existing patient */}
-            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="patientType"
-                  checked={isNewPatient}
-                  onChange={() => {
-                    setIsNewPatient(true);
-                    setFormData(prev => ({ ...prev, visit_type: 'first_visit' }));
-                  }}
-                  className="mr-2"
-                />
-                <span className="font-medium">Register New Patient</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="patientType"
-                  checked={!isNewPatient}
-                  onChange={() => {
-                    setIsNewPatient(false);
-                    setFormData(prev => ({ ...prev, visit_type: 'follow_up' }));
-                  }}
-                  className="mr-2"
-                />
-                <span className="font-medium">Select Existing Patient</span>
-              </label>
+            <Input
+              label="Patient Name"
+              name="name"
+              value={formData.name}
+              onChange={handlePatientChange}
+              placeholder="Enter full name"
+              error={errors.patientName}
+              required
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Select
+                label="Sex"
+                name="sex"
+                value={formData.sex}
+                onChange={handlePatientChange}
+                options={SEX_OPTIONS}
+                error={errors.patientSex}
+                required
+              />
+
+              <Input
+                label="Age"
+                type="number"
+                name="actual_age"
+                value={formData.actual_age}
+                onChange={handlePatientChange}
+                placeholder="Enter age"
+                error={errors.patientAge}
+                required
+                min="0"
+                max="150"
+              />
             </div>
 
-            {isNewPatient ? (
-              /* New Patient Registration Form */
-              <div className="space-y-6 p-4 border-2 border-dashed border-primary-300 rounded-lg">
-                <h4 className="font-medium text-lg text-primary-700">New Patient Registration</h4>
-                
-                <Input
-                  label="Patient Name"
-                  name="name"
-                  value={patientData.name}
-                  onChange={handlePatientChange}
-                  placeholder="Enter full name"
-                  error={errors.patientName}
-                  required
-                />
+            <Input
+              label="Assigned Room"
+              name="assigned_room"
+              value={formData.assigned_room}
+              onChange={handlePatientChange}
+              placeholder="e.g., Ward A-101"
+            />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Select
-                    label="Sex"
-                    name="sex"
-                    value={patientData.sex}
-                    onChange={handlePatientChange}
-                    options={SEX_OPTIONS}
-                    error={errors.patientSex}
-                    required
-                  />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input
+                label="CR Number"
+                name="cr_no"
+                value={formData.cr_no}
+                onChange={handlePatientChange}
+                placeholder="e.g., CR2024000001"
+                error={errors.patientCRNo}
+              />
 
-                  <Input
-                    label="Age"
-                    type="number"
-                    name="actual_age"
-                    value={patientData.actual_age}
-                    onChange={handlePatientChange}
-                    placeholder="Enter age"
-                    error={errors.patientAge}
-                    required
-                    min="0"
-                    max="150"
-                  />
-                </div>
+              <Input
+                label="PSY Number"
+                name="psy_no"
+                value={formData.psy_no}
+                onChange={handlePatientChange}
+                placeholder="e.g., PSY2024000001"
+                error={errors.patientPSYNo}
+              />
+            </div>
 
-                <Input
-                  label="Assigned Room"
-                  name="assigned_room"
-                  value={patientData.assigned_room}
-                  onChange={handlePatientChange}
-                  placeholder="e.g., Ward A-101"
-                />
-
-                {/* Assign Doctor (JR/SR) for new patient */}
-                <Select
-                  label="Assign Doctor (JR/SR)"
-                  name="assigned_doctor_id"
-                  value={patientData.assigned_doctor_id}
-                  onChange={handlePatientChange}
-                  options={(usersData?.data?.users || [])
-                    .filter(u => u.role === 'JR' || u.role === 'SR')
-                    .map(u => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
-                  placeholder="Select doctor (optional)"
-                />
-              </div>
-            ) : (
-              /* Existing Patient Selection */
-              <div className="space-y-6 p-4 border-2 border-dashed border-green-300 rounded-lg">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                    <span className="text-green-600 text-sm font-bold">✓</span>
-                  </div>
-                  <h4 className="font-medium text-lg text-green-700">Select Existing Patient</h4>
-                </div>
-                
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    <strong>Note:</strong> Since this patient already exists in our system, all demographic details are already available. 
-                    You only need to select the patient and specify the visit type.
-                  </p>
-                </div>
-
-              <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Search Patient <span className="text-red-500">*</span>
-                </label>
-                    <div className="space-y-2">
-                      <Input
-                        placeholder="Type CR number, PSY number, ADL number, or patient name..."
-                        value={patientSearch}
-                        onChange={(e) => setPatientSearch(e.target.value)}
-                        className="text-sm"
-                      />
-                      {patientSearch.length >= 2 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setFormData(prev => ({ 
-                              ...prev, 
-                              patient_id: '', 
-                              visit_type: 'first_visit' 
-                            }));
-                          }}
-                          className="text-xs text-blue-600 hover:text-blue-800 underline"
-                        >
-                          Clear selection & search again
-                        </button>
-                      )}
-                    </div>
-                    {patientSearch && patientSearch.length < 2 && (
-                      <p className="text-xs text-gray-500 mt-1">Enter at least 2 characters to search</p>
-                    )}
-                  </div>
-
-                  {/* Show selected patient info */}
-                  {formData.patient_id && (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                          <span className="text-green-600 text-sm font-bold">✓</span>
-                        </div>
-                        <div>
-                          <p className="text-sm text-green-800 font-medium">
-                            Patient Auto-Selected Successfully
-                          </p>
-                          <p className="text-xs text-green-600">
-                            Found matching patient in the system
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Show patient details */}
-                      {(() => {
-                        const selectedPatient = patientsData?.data?.patients?.find(p => p.id.toString() === formData.patient_id);
-                        return selectedPatient ? (
-                          <div className="mt-3 p-3 bg-white border border-green-100 rounded">
-                            <div className="flex justify-between items-start mb-3">
-                              <h4 className="font-medium text-gray-800">Patient Details</h4>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setFormData(prev => ({ 
-                                    ...prev, 
-                                    patient_id: '',
-                                    visit_type: 'first_visit' 
-                                  }));
-                                  setPatientSearch('');
-                                }}
-                                className="text-xs text-red-600 hover:text-red-800 underline"
-                              >
-                                Change Patient
-                              </button>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3 text-sm">
-                              <div>
-                                <span className="font-medium text-gray-700">Name:</span>
-                                <span className="ml-2 text-green-700">{selectedPatient.name}</span>
-                              </div>
-                              <div>
-                                <span className="font-medium text-gray-700">CR Number:</span>
-                                <span className="ml-2 text-green-700 font-mono">{selectedPatient.cr_no}</span>
-                              </div>
-                              <div>
-                                <span className="font-medium text-gray-700">Sex:</span>
-                                <span className="ml-2 text-green-700">{selectedPatient.sex}</span>
-                              </div>
-                              <div>
-                                <span className="font-medium text-gray-700">Age:</span>
-                                <span className="ml-2 text-green-700">{selectedPatient.actual_age}</span>
-                              </div>
-                            </div>
-                          </div>
-                        ) : null;
-                      })()}
-                    </div>
-                  )}
-                  
-                  {/* Click to search different patient */}
-                  {!formData.patient_id && (
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                      <p className="text-sm text-gray-600 text-center">
-                        Type a CR number or patient name to search and auto-select
-                      </p>
-                    </div>
-                  )}
-
-                    {/* Loading state */}
-                    {patientSearch.length >= 2 && searching && (
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-sm text-blue-800">
-                          🔍 Searching for patients...
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Error state */}
-                    {searchError && (
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm text-red-800">
-                          ❌ Error searching patients: {searchError?.data?.message || searchError.message}
-                        </p>
-                      </div>
-                    )}
-
-
-                    {/* No results */}
-                    {patientSearch.length >= 2 && !searching && !searchError && !patientsData?.data?.patients?.length && (
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <p className="text-sm text-yellow-800">
-                          🔍 No patients found matching "{patientSearch}". Try a different search term.
-                        </p>
-                      </div>
-                    )}
-                </div>
-
-                {/* Visit Type Selection */}
-                {formData.patient_id && (
-                  <div className="mt-4 pt-4 border-t border-gray-200 space-y-4">
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <label className="block text-sm font-medium text-green-800 mb-2">
-                        Visit Type <span className="text-red-500">*</span>
-                      </label>
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                          <span className="text-green-600 text-sm font-bold">✓</span>
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium text-green-800">Follow-up Visit</span>
-                          <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                            Auto-selected
-                          </span>
-                        </div>
-                      </div>
-                      <div className="mt-3 p-3 bg-white border border-green-100 rounded">
-                        <p className="text-xs text-green-700">
-                          📋 This patient is returning for follow-up consultation. Since the patient already exists in our system, this is automatically set as a follow-up visit.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* ADL File Status Check */}
-                    {(() => {
-                      const selectedPatient = patientsData?.data?.patients?.find(p => p.id.toString() === formData.patient_id);
-                      const hasADLFile = selectedPatient?.adl_no || selectedPatient?.has_adl_file;
-                      
-                      return (
-                        <div className="border-t border-gray-200 pt-4">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${hasADLFile ? 'bg-orange-100' : 'bg-gray-100'}`}>
-                              <span className={`text-sm font-bold ${hasADLFile ? 'text-orange-600' : 'text-gray-600'}`}>
-                                📁
-                              </span>
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700">
-                                ADL File Status
-                              </label>
-                              <p className={`text-sm ${hasADLFile ? 'text-orange-700' : 'text-gray-600'}`}>
-                                {hasADLFile ? 
-                                  `Patient already has ADL file (${selectedPatient.adl_no})` : 
-                                  'Patient does not have an ADL file'
-                                }
-                              </p>
-                            </div>
-                          </div>
-                          
-                          {hasADLFile && (
-                            <div className="p-3 bg-orange-50 border border-orange-200 rounded">
-                              <p className="text-xs text-orange-700">
-                                ✓ This patient already has an ADL file in the system
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-
-                    {/* Assign Doctor (JR/SR) for existing patient */}
-                    <div className="border-t border-gray-200 pt-4">
-                      <Select
-                        label="Assign Doctor (JR/SR)"
-                        name="assigned_doctor_id"
-                        value={formData.assigned_doctor_id}
-                        onChange={handleChange}
-                        options={(usersData?.data?.users || [])
-                          .filter(u => u.role === 'JR' || u.role === 'SR')
-                          .map(u => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
-                        placeholder="Select doctor (optional)"
-                      />
-                    </div>
-                    
-                    {/* MWO Information */}
-                    <div className="border-t border-gray-200 pt-4">
-                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                            <span className="text-green-600 text-sm font-bold">🏥</span>
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-medium text-green-800">Next Steps after MWO Registration</h4>
-                          </div>
-                        </div>
-                        <p className="text-xs text-green-700">
-                          ✓ Patient demographics have been recorded by MWO<br/>
-                          ✓ Patient has been assigned CR and PSY numbers<br/>
-                          → Next: Patient will be directed to Room 205/206 for doctor consultation
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            <Select
+              label="Assign Doctor (JR/SR)"
+              name="assigned_doctor_id"
+              value={formData.assigned_doctor_id}
+              onChange={handlePatientChange}
+              options={(usersData?.data?.users || [])
+                .filter(u => u.role === 'JR' || u.role === 'SR')
+                .map(u => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
+              placeholder="Select doctor (optional)"
+            />
           </div>
         </Card>
 
-        {/* Only show demographic form for new patients */}
-        {isNewPatient && (
-          <>
         {/* Personal Information */}
-        <Card title="Personal Information" className="mb-6">
+        <Card
+          title={
+            <div className="flex items-center gap-2">
+              <FiUser className="h-5 w-5 text-primary-600" />
+              <span>Personal Information</span>
+            </div>
+          }
+          className="mb-6">
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input
@@ -655,7 +305,14 @@ const CreateOutpatientRecord = () => {
         </Card>
 
         {/* Occupation & Education */}
-        <Card title="Occupation & Education" className="mb-6">
+        <Card
+          title={
+            <div className="flex items-center gap-2">
+              <FiBriefcase className="h-5 w-5 text-primary-600" />
+              <span>Occupation & Education</span>
+            </div>
+          }
+          className="mb-6">
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input
@@ -695,7 +352,14 @@ const CreateOutpatientRecord = () => {
         </Card>
 
         {/* Financial Information */}
-        <Card title="Financial Information" className="mb-6">
+        <Card
+          title={
+            <div className="flex items-center gap-2">
+              <FiDollarSign className="h-5 w-5 text-primary-600" />
+              <span>Financial Information</span>
+            </div>
+          }
+          className="mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Input
               label="Patient Income (₹)"
@@ -720,7 +384,14 @@ const CreateOutpatientRecord = () => {
         </Card>
 
         {/* Family Information */}
-        <Card title="Family Information" className="mb-6">
+        <Card
+          title={
+            <div className="flex items-center gap-2">
+              <FiUsers className="h-5 w-5 text-primary-600" />
+              <span>Family Information</span>
+            </div>
+          }
+          className="mb-6">
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Select
@@ -801,7 +472,14 @@ const CreateOutpatientRecord = () => {
         </Card>
 
         {/* Referral Information */}
-        <Card title="Referral & Mobility" className="mb-6">
+        <Card
+          title={
+            <div className="flex items-center gap-2">
+              <FiMapPin className="h-5 w-5 text-primary-600" />
+              <span>Referral & Mobility</span>
+            </div>
+          }
+          className="mb-6">
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input
@@ -840,7 +518,14 @@ const CreateOutpatientRecord = () => {
         </Card>
 
         {/* Contact Information */}
-        <Card title="Contact Information" className="mb-6">
+        <Card
+          title={
+            <div className="flex items-center gap-2">
+              <FiPhone className="h-5 w-5 text-primary-600" />
+              <span>Contact Information</span>
+            </div>
+          }
+          className="mb-6">
           <div className="space-y-6">
             <Textarea
               label="Present Address"
@@ -883,21 +568,18 @@ const CreateOutpatientRecord = () => {
           </div>
         </Card>
 
-          </>
-        )}
-
         {/* Submit Buttons */}
         <Card>
           <div className="flex justify-end gap-3">
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate('/outpatient')}
+              onClick={() => navigate('/patients')}
             >
               Cancel
             </Button>
             <Button type="submit" loading={isLoading || isCreatingPatient || isAssigning}>
-              {isNewPatient ? 'Register Patient & Create Record' : 'Create Visit Record'}
+              Register Patient & Create Record
             </Button>
           </div>
         </Card>
@@ -907,4 +589,3 @@ const CreateOutpatientRecord = () => {
 };
 
 export default CreateOutpatientRecord;
-

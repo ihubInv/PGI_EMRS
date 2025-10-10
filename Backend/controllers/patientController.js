@@ -5,13 +5,15 @@ class PatientController {
   // Create a new patient
   static async createPatient(req, res) {
     try {
-      const { name, sex, actual_age, assigned_room } = req.body;
+      const { name, sex, actual_age, assigned_room, cr_no, psy_no } = req.body;
 
       const patient = await Patient.create({
         name,
         sex,
         actual_age,
-        assigned_room
+        assigned_room,
+        cr_no,
+        psy_no
       });
 
       res.status(201).json({
@@ -37,6 +39,16 @@ class PatientController {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
       const filters = {};
+
+      // Check if search parameter is provided
+      if (req.query.search && req.query.search.trim().length >= 2) {
+        // Use search method instead
+        const result = await Patient.search(req.query.search.trim(), page, limit);
+        return res.json({
+          success: true,
+          data: result
+        });
+      }
 
       // Apply filters
       if (req.query.sex) filters.sex = req.query.sex;

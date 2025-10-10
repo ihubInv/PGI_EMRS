@@ -64,6 +64,14 @@ const validatePatient = [
     .optional()
     .isLength({ max: 10 })
     .withMessage('Room number must not exceed 10 characters'),
+  body('cr_no')
+    .optional()
+    .isLength({ min: 1, max: 50 })
+    .withMessage('CR number must not exceed 50 characters'),
+  body('psy_no')
+    .optional()
+    .isLength({ min: 1, max: 50 })
+    .withMessage('PSY number must not exceed 50 characters'),
   handleValidationErrors
 ];
 

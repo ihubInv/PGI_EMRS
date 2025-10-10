@@ -81,20 +81,26 @@ const query = async (text, params = []) => {
 async function executeAggregationQuery(text, params, startTime) {
   const tableMatch = text.match(/FROM\s+(\w+)/i);
   if (!tableMatch) throw new Error('Could not extract table name');
-  
+
   const tableName = tableMatch[1];
-  
+
   // For simple COUNT(*) queries
   if (text.includes('COUNT(*)') && !text.includes('CASE WHEN')) {
-    const { count, error } = await supabaseAdmin
-      .from(tableName)
-      .select('*', { count: 'exact', head: true });
-    
+    let query = supabaseAdmin.from(tableName).select('*', { count: 'exact', head: true });
+
+    // Handle WHERE conditions for ILIKE search (for patients table)
+    if (text.includes('ILIKE') && params.length > 0) {
+      const searchPattern = params[0].replace(/%/g, '');
+      query = query.or(`name.ilike.%${searchPattern}%,cr_no.ilike.%${searchPattern}%,psy_no.ilike.%${searchPattern}%,adl_no.ilike.%${searchPattern}%`);
+    }
+
+    const { count, error } = await query;
+
     if (error) throw error;
-    
+
     const duration = Date.now() - startTime;
     console.log('Count query executed successfully', { duration, count });
-    
+
     return {
       rows: [{ count: count }],
       rowCount: 1,
@@ -246,9 +252,9 @@ async function executeJoinQuery(text, params, startTime) {
       `)
       .range(offset, offset + limit - 1)
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
-    
+
     const transformedData = data.map(item => ({
       ...item,
       patient_name: item.patients?.name,
@@ -257,17 +263,105 @@ async function executeJoinQuery(text, params, startTime) {
       doctor_name: item.users?.name,
       doctor_role: item.users?.role
     }));
-    
+
     const duration = Date.now() - startTime;
     console.log('Join query executed successfully', { duration, rows: transformedData.length });
-    
+
     return {
       rows: transformedData,
       rowCount: transformedData.length,
       command: 'SELECT'
     };
   }
-  
+
+  // For patients joins with doctor assignments
+  if (mainTable === 'patients') {
+    // Extract WHERE conditions for ILIKE search
+    const whereMatch = text.match(/WHERE\s+(.+?)\s+(?:ORDER BY|LIMIT|$)/is);
+    let query = supabaseAdmin.from('patients').select('*');
+
+    // Handle ILIKE search conditions
+    if (whereMatch && params.length > 0) {
+      const searchPattern = params[0].replace(/%/g, '');
+      query = query.or(`name.ilike.%${searchPattern}%,cr_no.ilike.%${searchPattern}%,psy_no.ilike.%${searchPattern}%,adl_no.ilike.%${searchPattern}%`);
+    }
+
+    query = query.range(offset, offset + limit - 1).order('created_at', { ascending: false });
+
+    const { data: patients, error } = await query;
+    if (error) throw error;
+
+    if (patients.length === 0) {
+      return {
+        rows: [],
+        rowCount: 0,
+        command: 'SELECT'
+      };
+    }
+
+    // Fetch patient visits for these patients (using patient_visits table)
+    const patientIds = patients.map(p => p.id);
+    const { data: visits, error: visitsError } = await supabaseAdmin
+      .from('patient_visits')
+      .select('patient_id, assigned_doctor, visit_date')
+      .in('patient_id', patientIds)
+      .order('visit_date', { ascending: false });
+
+    if (visitsError) {
+      console.error('Error fetching visits:', visitsError);
+    }
+
+    // Group visits by patient_id and get the most recent one
+    const visitsMap = {};
+    if (visits) {
+      visits.forEach(visit => {
+        if (!visitsMap[visit.patient_id]) {
+          visitsMap[visit.patient_id] = visit;
+        }
+      });
+    }
+
+    // Fetch user information for assigned doctors
+    const assignedDoctorIds = Object.values(visitsMap)
+      .map(v => v.assigned_doctor)
+      .filter(id => id);
+
+    let usersMap = {};
+    if (assignedDoctorIds.length > 0) {
+      const { data: users, error: usersError } = await supabaseAdmin
+        .from('users')
+        .select('id, name, role')
+        .in('id', [...new Set(assignedDoctorIds)]);
+
+      if (!usersError && users) {
+        usersMap = users.reduce((acc, u) => ({ ...acc, [u.id]: u }), {});
+      }
+    }
+
+    // Transform data to match expected format
+    const transformedData = patients.map(patient => {
+      const latestVisit = visitsMap[patient.id];
+      const assignedDoctor = latestVisit && usersMap[latestVisit.assigned_doctor];
+
+      return {
+        ...patient,
+        assigned_doctor_id: assignedDoctor?.id || null,
+        assigned_doctor_name: assignedDoctor?.name || null,
+        assigned_doctor_role: assignedDoctor?.role || null,
+        last_assigned_date: latestVisit?.visit_date || null
+      };
+    });
+
+    const duration = Date.now() - startTime;
+    console.log('Join query executed successfully', { duration, rows: transformedData.length });
+
+    return {
+      rows: transformedData,
+      rowCount: transformedData.length,
+      command: 'SELECT'
+    };
+  }
+
   throw new Error(`Join query not supported for table: ${mainTable}`);
 }
 

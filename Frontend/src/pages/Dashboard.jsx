@@ -1,14 +1,16 @@
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { FiUsers, FiFileText, FiFolder, FiClipboard, FiTrendingUp } from 'react-icons/fi';
+import { FiUsers, FiFileText, FiFolder, FiClipboard, FiTrendingUp, FiEye, FiEdit, FiTrash2, FiUserPlus } from 'react-icons/fi';
 import { selectCurrentUser } from '../features/auth/authSlice';
 import { useGetPatientStatsQuery } from '../features/patients/patientsApiSlice';
 import { useGetClinicalStatsQuery, useGetCasesBySeverityQuery, useGetCasesByDecisionQuery, useGetMyProformasQuery } from '../features/clinical/clinicalApiSlice';
 import { useGetADLStatsQuery, useGetFilesByStatusQuery } from '../features/adl/adlApiSlice';
-import { useGetOutpatientStatsQuery } from '../features/outpatient/outpatientApiSlice';
+import { useGetOutpatientStatsQuery, useGetMyRecordsQuery, useDeleteOutpatientRecordMutation } from '../features/outpatient/outpatientApiSlice';
 import Card from '../components/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Badge from '../components/Badge';
+import Button from '../components/Button';
+import { toast } from 'react-toastify';
 
 // Chart components
 import {
@@ -84,8 +86,9 @@ const Dashboard = () => {
 
   // Role-specific stats for MWO
   const isMwo = user?.role === 'MWO';
-  const { data: outpatientStats } = useGetOutpatientStatsQuery(undefined, { skip: !isMwo });
+  const { data: outpatientStats } = useGetOutpatientStatsQuery(undefined, { skip: !isMwo, refetchOnMountOrArgChange: true });
   const { data: adlByStatus } = useGetFilesByStatusQuery(undefined, { skip: !isMwo });
+  const { data: myRecords } = useGetMyRecordsQuery({ page: 1, limit: 10 }, { skip: !isMwo, refetchOnMountOrArgChange: true });
 
   // Helpers
   const sumValues = (obj) => Object.values(obj || {}).reduce((acc, v) => acc + (Number(v) || 0), 0);
@@ -228,10 +231,10 @@ const Dashboard = () => {
         )}
         {isMwo && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard title="Outpatient Records" value={sumValues(outpatientStats?.data?.stats)} icon={FiClipboard} color="bg-orange-500" to="/outpatient" />
-            <StatCard title="ADL by Status" value={sumValues(adlByStatus?.data?.stats)} icon={FiFolder} color="bg-purple-500" to="/adl-files" />
-            <StatCard title="Patients" value="Browse" icon={FiUsers} color="bg-blue-500" to="/patients" />
-            <StatCard title="Create Record" value="Start" icon={FiTrendingUp} color="bg-green-600" to="/outpatient/new" />
+            <StatCard title="Total Outpatient Records" value={outpatientStats?.data?.stats?.total_records || 0} icon={FiClipboard} color="bg-blue-500" to="/outpatient" />
+            <StatCard title="My Records" value={myRecords?.data?.pagination?.total || 0} icon={FiFileText} color="bg-green-500" to="/outpatient" />
+            <StatCard title="All Patients" value={myRecords?.data?.pagination?.total || 0} icon={FiUsers} color="bg-purple-500" to="/patients" />
+            <StatCard title="Register New" value="+" icon={FiTrendingUp} color="bg-orange-500" to="/outpatient/new" />
           </div>
         )}
 
@@ -295,42 +298,22 @@ const Dashboard = () => {
 
             {isMwo && (
               <>
-                <Card title="Outpatient Records Overview">
-                  <div className="h-80">
-                    <Bar
-                      data={{
-                        labels: Object.keys(outpatientStats?.data?.stats || {}),
-                        datasets: [
-                          {
-                            label: 'Records',
-                            data: Object.values(outpatientStats?.data?.stats || {}),
-                            backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                            borderColor: 'rgba(29, 78, 216, 1)',
-                            borderWidth: 2,
-                          },
-                        ],
-                      }}
-                      options={{
-                        ...barChartOptions,
-                        plugins: {
-                          ...barChartOptions.plugins,
-                          title: { ...barChartOptions.plugins.title, text: 'Outpatient Records Overview' },
-                        },
-                      }}
-                    />
-                  </div>
-                </Card>
-
-                <Card title="ADL Files by Status">
+                <Card title="Outpatient Records by Marital Status">
                   <div className="h-80">
                     <Doughnut
                       data={{
-                        labels: Object.keys(adlByStatus?.data?.stats || {}),
+                        labels: ['Married', 'Unmarried', 'Widow/Widower', 'Divorced', 'Other'],
                         datasets: [
                           {
-                            data: Object.values(adlByStatus?.data?.stats || {}),
-                            backgroundColor: ['#EF4444', '#10B981', '#F59E0B', '#6B7280'],
-                            borderColor: ['#DC2626', '#059669', '#D97706', '#4B5563'],
+                            data: [
+                              outpatientStats?.data?.stats?.married || 0,
+                              outpatientStats?.data?.stats?.unmarried || 0,
+                              outpatientStats?.data?.stats?.widow_widower || 0,
+                              outpatientStats?.data?.stats?.divorced || 0,
+                              outpatientStats?.data?.stats?.other_marital || 0,
+                            ],
+                            backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'],
+                            borderColor: ['#1D4ED8', '#059669', '#D97706', '#DC2626', '#7C3AED'],
                             borderWidth: 2,
                           },
                         ],
@@ -339,7 +322,36 @@ const Dashboard = () => {
                         ...chartOptions,
                         plugins: {
                           ...chartOptions.plugins,
-                          title: { ...chartOptions.plugins.title, text: 'ADL Files by Status' },
+                          title: { ...chartOptions.plugins.title, text: 'Records by Marital Status' },
+                        },
+                      }}
+                    />
+                  </div>
+                </Card>
+
+                <Card title="Records by Locality">
+                  <div className="h-80">
+                    <Bar
+                      data={{
+                        labels: ['Urban', 'Rural'],
+                        datasets: [
+                          {
+                            label: 'Records',
+                            data: [
+                              outpatientStats?.data?.stats?.urban || 0,
+                              outpatientStats?.data?.stats?.rural || 0,
+                            ],
+                            backgroundColor: ['#3B82F6', '#10B981'],
+                            borderColor: ['#1D4ED8', '#059669'],
+                            borderWidth: 2,
+                          },
+                        ],
+                      }}
+                      options={{
+                        ...barChartOptions,
+                        plugins: {
+                          ...barChartOptions.plugins,
+                          title: { ...barChartOptions.plugins.title, text: 'Urban vs Rural Distribution' },
                         },
                       }}
                     />
@@ -350,7 +362,124 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Role-specific charts remain below */}
+        {/* MWO Recent Records Table with CRUD */}
+        {isMwo && myRecords?.data?.records && myRecords.data.records.length > 0 && (
+          <Card title="My Recent Outpatient Records" actions={
+            <Link to="/outpatient">
+              <Button variant="outline" size="sm">View All</Button>
+            </Link>
+          }>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Patient Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      MR No
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Marital Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Locality
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Created At
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {myRecords.data.records.slice(0, 5).map((record) => (
+                    <tr key={record.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {record.patient_name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {record.mr_no}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {record.marital_status || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <Badge variant={record.locality === 'Urban' ? 'info' : 'success'}>
+                          {record.locality || 'N/A'}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(record.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end gap-2">
+                          <Link to={`/outpatient/${record.id}`}>
+                            <Button variant="ghost" size="sm">
+                              <FiEye />
+                            </Button>
+                          </Link>
+                          <Link to={`/patients/${record.patient_id}?edit=true`}>
+                            <Button variant="ghost" size="sm">
+                              <FiEdit />
+                            </Button>
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
+
+        {/* MWO Quick Actions */}
+        {isMwo && (
+          <Card title="Quick Actions">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Link
+                to="/outpatient/new"
+                className="p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-primary-500 hover:bg-primary-50 transition-all duration-200 text-center group"
+              >
+                <div className="flex flex-col items-center">
+                  <div className="p-3 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors mb-3">
+                    <FiUserPlus className="h-8 w-8 text-blue-600" />
+                  </div>
+                  <p className="font-semibold text-gray-900">Register New Patient</p>
+                  <p className="text-sm text-gray-500 mt-1">Create outpatient record</p>
+                </div>
+              </Link>
+
+              <Link
+                to="/outpatient/select"
+                className="p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all duration-200 text-center group"
+              >
+                <div className="flex flex-col items-center">
+                  <div className="p-3 rounded-full bg-green-100 group-hover:bg-green-200 transition-colors mb-3">
+                    <FiClipboard className="h-8 w-8 text-green-600" />
+                  </div>
+                  <p className="font-semibold text-gray-900">Existing Patient</p>
+                  <p className="text-sm text-gray-500 mt-1">Add record for existing patient</p>
+                </div>
+              </Link>
+
+              <Link
+                to="/patients"
+                className="p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all duration-200 text-center group"
+              >
+                <div className="flex flex-col items-center">
+                  <div className="p-3 rounded-full bg-purple-100 group-hover:bg-purple-200 transition-colors mb-3">
+                    <FiUsers className="h-8 w-8 text-purple-600" />
+                  </div>
+                  <p className="font-semibold text-gray-900">Browse Patients</p>
+                  <p className="text-sm text-gray-500 mt-1">View all patient records</p>
+                </div>
+              </Link>
+            </div>
+          </Card>
+        )}
       </div>
     );
   }

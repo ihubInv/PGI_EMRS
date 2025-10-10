@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS patients (
 CREATE TABLE IF NOT EXISTS outpatient_record (
     id SERIAL PRIMARY KEY,
     patient_id INT REFERENCES patients(id) ON DELETE CASCADE,
-    filled_by INT REFERENCES users(id),  -- MWO user
+    filled_by INT REFERENCES users(id) ON DELETE CASCADE,  -- MWO user
     age_group TEXT,
     marital_status TEXT,
     year_of_marriage INT,
@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS outpatient_record (
 CREATE TABLE IF NOT EXISTS clinical_proforma (
     id SERIAL PRIMARY KEY,
     patient_id INT REFERENCES patients(id) ON DELETE CASCADE,
-    filled_by INT REFERENCES users(id), -- JR/SR Doctor
+    filled_by INT REFERENCES users(id) ON DELETE CASCADE, -- JR/SR Doctor
     visit_date DATE NOT NULL,
     visit_type VARCHAR(20) CHECK (visit_type IN ('first_visit','follow_up')) DEFAULT 'first_visit',
     room_no TEXT,
@@ -138,13 +138,13 @@ CREATE TABLE IF NOT EXISTS adl_files (
     id SERIAL PRIMARY KEY,
     patient_id INT REFERENCES patients(id) ON DELETE CASCADE,
     adl_no VARCHAR(50) UNIQUE NOT NULL,
-    created_by INT REFERENCES users(id), -- Doctor who created the file
+    created_by INT REFERENCES users(id) ON DELETE CASCADE, -- Doctor who created the file
     clinical_proforma_id INT REFERENCES clinical_proforma(id),
     file_status VARCHAR(20) CHECK (file_status IN ('created','stored','retrieved','active','archived')) DEFAULT 'created',
     physical_file_location TEXT,
     file_created_date DATE NOT NULL,
     last_accessed_date DATE,
-    last_accessed_by INT REFERENCES users(id),
+    last_accessed_by INT REFERENCES users(id) ON DELETE CASCADE,
     total_visits INT DEFAULT 1,
     is_active BOOLEAN DEFAULT TRUE,
     notes TEXT,
@@ -157,7 +157,7 @@ CREATE TABLE IF NOT EXISTS file_movements (
     id SERIAL PRIMARY KEY,
     adl_file_id INT REFERENCES adl_files(id) ON DELETE CASCADE,
     patient_id INT REFERENCES patients(id),
-    moved_by INT REFERENCES users(id),
+    moved_by INT REFERENCES users(id) ON DELETE CASCADE,
     movement_type VARCHAR(20) CHECK (movement_type IN ('created','stored','retrieved','returned','archived')),
     from_location TEXT,
     to_location TEXT,
@@ -175,7 +175,7 @@ CREATE TABLE IF NOT EXISTS patient_visits (
     has_file BOOLEAN DEFAULT FALSE,
     adl_file_id INT REFERENCES adl_files(id),
     clinical_proforma_id INT REFERENCES clinical_proforma(id),
-    assigned_doctor INT REFERENCES users(id),
+    assigned_doctor INT REFERENCES users(id) ON DELETE CASCADE,
     room_no TEXT,
     visit_status VARCHAR(20) CHECK (visit_status IN ('scheduled','in_progress','completed','cancelled')) DEFAULT 'scheduled',
     notes TEXT,
@@ -225,7 +225,7 @@ CREATE TABLE IF NOT EXISTS audit_log (
     action VARCHAR(20) NOT NULL, -- INSERT, UPDATE, DELETE
     old_values JSONB,
     new_values JSONB,
-    changed_by INT REFERENCES users(id),
+    changed_by INT REFERENCES users(id) ON DELETE CASCADE,
     changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ip_address INET,
     user_agent TEXT
