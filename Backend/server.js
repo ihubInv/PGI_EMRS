@@ -43,23 +43,22 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Rate limiting - Increased for dashboard with multiple API calls
+// Rate limiting - DISABLED for unrestricted API access
+// Uncomment and configure below if you need to enable rate limiting in production
+/*
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 1000, // limit each IP to 1000 requests per windowMs (increased from 100)
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 1000, // limit each IP to 1000 requests per windowMs
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.',
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req, res) => {
-    // Skip rate limiting for health check and documentation endpoints
-    return req.path === '/health' || req.path.startsWith('/api-docs');
-  },
 });
 
 app.use('/api/', limiter);
+*/
 
 // Compression middleware
 app.use(compression());

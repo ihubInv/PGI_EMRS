@@ -51,9 +51,20 @@ const Login = () => {
         password: formData.password,
       }).unwrap();
 
-      // Store login data for OTP verification
-      dispatch(setOTPRequired(result.data));
-      toast.info('OTP sent to your email. Please check your inbox.');
+      // Check if token is returned (direct login without OTP)
+      if (result.data.token) {
+        // Direct login - token received
+        dispatch(setCredentials({
+          user: result.data.user,
+          token: result.data.token,
+        }));
+        toast.success('Login successful!');
+        navigate('/');
+      } else {
+        // OTP required - store login data for OTP verification
+        dispatch(setOTPRequired(result.data));
+        toast.info('OTP sent to your email. Please check your inbox.');
+      }
     } catch (err) {
       toast.error(err?.data?.message || 'Login failed');
     }

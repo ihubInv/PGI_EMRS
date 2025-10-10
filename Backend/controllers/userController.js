@@ -45,7 +45,7 @@ class UserController {
     }
   }
 
-  // Login user - Step 1: Verify credentials and send OTP
+  // Login user - DIRECT LOGIN (2FA Disabled for Development)
   static async login(req, res) {
     try {
       const { email, password } = req.body;
@@ -76,6 +76,9 @@ class UserController {
         });
       }
 
+      // TWO-FACTOR AUTH DISABLED - Direct login without OTP
+      // TODO: Re-enable 2FA in production by uncommenting the code below
+      /*
       // Create login OTP
       const loginOTP = await LoginOTP.create(user.id);
 
@@ -89,6 +92,22 @@ class UserController {
           user_id: user.id,
           email: user.email,
           expires_in: 300 // 5 minutes in seconds
+        }
+      });
+      */
+
+      // Generate token immediately
+      const token = user.generateToken();
+
+      // Update last login
+      await user.updateLastLogin();
+
+      res.json({
+        success: true,
+        message: 'Login successful',
+        data: {
+          user: user.toJSON(),
+          token
         }
       });
     } catch (error) {

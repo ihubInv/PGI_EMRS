@@ -43,7 +43,7 @@ class OutpatientRecord {
     this.filled_by_name = data.filled_by_name;
   }
 
-  // Create a new outpatient record
+  // Create a new outpatient record (with UPSERT functionality)
   static async create(recordData) {
     try {
       const {
@@ -95,11 +95,51 @@ class OutpatientRecord {
         [patient_id]
       );
 
+      // If record exists, update it instead of creating new one
       if (existingRecord.rows.length > 0) {
-        throw new Error('Outpatient record already exists for this patient');
+        const existingOutpatientRecord = await OutpatientRecord.findById(existingRecord.rows[0].id);
+
+        // Build update payload with only defined fields
+        const updatePayload = {};
+        if (age_group !== undefined && age_group !== null) updatePayload.age_group = age_group;
+        if (marital_status !== undefined && marital_status !== null) updatePayload.marital_status = marital_status;
+        if (year_of_marriage !== undefined && year_of_marriage !== null) updatePayload.year_of_marriage = year_of_marriage;
+        if (no_of_children !== undefined && no_of_children !== null) updatePayload.no_of_children = no_of_children;
+        if (occupation !== undefined && occupation !== null) updatePayload.occupation = occupation;
+        if (actual_occupation !== undefined && actual_occupation !== null) updatePayload.actual_occupation = actual_occupation;
+        if (education_level !== undefined && education_level !== null) updatePayload.education_level = education_level;
+        if (completed_years_of_education !== undefined && completed_years_of_education !== null) updatePayload.completed_years_of_education = completed_years_of_education;
+        if (patient_income !== undefined && patient_income !== null) updatePayload.patient_income = patient_income;
+        if (family_income !== undefined && family_income !== null) updatePayload.family_income = family_income;
+        if (religion !== undefined && religion !== null) updatePayload.religion = religion;
+        if (family_type !== undefined && family_type !== null) updatePayload.family_type = family_type;
+        if (locality !== undefined && locality !== null) updatePayload.locality = locality;
+        if (head_name !== undefined && head_name !== null) updatePayload.head_name = head_name;
+        if (head_age !== undefined && head_age !== null) updatePayload.head_age = head_age;
+        if (head_relationship !== undefined && head_relationship !== null) updatePayload.head_relationship = head_relationship;
+        if (head_education !== undefined && head_education !== null) updatePayload.head_education = head_education;
+        if (head_occupation !== undefined && head_occupation !== null) updatePayload.head_occupation = head_occupation;
+        if (head_income !== undefined && head_income !== null) updatePayload.head_income = head_income;
+        if (distance_from_hospital !== undefined && distance_from_hospital !== null) updatePayload.distance_from_hospital = distance_from_hospital;
+        if (mobility !== undefined && mobility !== null) updatePayload.mobility = mobility;
+        if (referred_by !== undefined && referred_by !== null) updatePayload.referred_by = referred_by;
+        if (exact_source !== undefined && exact_source !== null) updatePayload.exact_source = exact_source;
+        if (present_address !== undefined && present_address !== null) updatePayload.present_address = present_address;
+        if (permanent_address !== undefined && permanent_address !== null) updatePayload.permanent_address = permanent_address;
+        if (local_address !== undefined && local_address !== null) updatePayload.local_address = local_address;
+        if (school_college_office !== undefined && school_college_office !== null) updatePayload.school_college_office = school_college_office;
+        if (contact_number !== undefined && contact_number !== null) updatePayload.contact_number = contact_number;
+
+        // If there are fields to update, update the record; otherwise return existing record
+        if (Object.keys(updatePayload).length > 0) {
+          return await existingOutpatientRecord.update(updatePayload);
+        } else {
+          // No fields to update, just return the existing record
+          return existingOutpatientRecord;
+        }
       }
 
-      // Insert outpatient record
+      // Insert new outpatient record
       const result = await db.query(
         `INSERT INTO outpatient_record (
           patient_id, filled_by, age_group, marital_status, year_of_marriage,
