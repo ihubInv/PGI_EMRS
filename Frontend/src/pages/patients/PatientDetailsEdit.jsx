@@ -9,15 +9,15 @@ const PatientDetailsEdit = ({ formData, handleChange, usersData }) => {
   return (
     <>
       {/* Patient Information */}
-      <Card
+      {/* <Card
         title={
           <div className="flex items-center gap-2">
-            <FiUser className="h-5 w-5 text-primary-600" />
+            <FiUser className="w-5 h-5 text-primary-600" />
             <span>Patient Information</span>
           </div>
         }
       >
-        <div className="space-y-6">
+        <div className="pb-48 space-y-6">
           <Input
             label="Patient Name"
             name="name"
@@ -25,7 +25,7 @@ const PatientDetailsEdit = ({ formData, handleChange, usersData }) => {
             onChange={handleChange}
             required
           />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <Select
               label="Sex"
               name="sex"
@@ -62,18 +62,21 @@ const PatientDetailsEdit = ({ formData, handleChange, usersData }) => {
             placeholder="Select doctor (optional)"
           />
         </div>
-      </Card>
+
+     
+      </Card> */}
 
       {/* Personal Information */}
-      <Card
+      {/* <Card
         title={
-          <div className="flex items-center gap-2">
-            <FiUser className="h-5 w-5 text-primary-600" />
+          <div className="flex items-center gap-2 ">
+            <FiUser className="w-5 h-5 text-primary-600" />
             <span>Personal Information</span>
           </div>
         }
+         className="!overflow-visible"
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <Input
             label="Age Group"
             name="age_group"
@@ -103,18 +106,123 @@ const PatientDetailsEdit = ({ formData, handleChange, usersData }) => {
             min="0"
           />
         </div>
-      </Card>
+      </Card> */}
 
+
+{/* Wrap the first card in a relative container with higher z-index */}
+<div className="relative z-20">
+  <Card
+    title={
+      <div className="flex items-center gap-2">
+        <FiUser className="w-5 h-5 text-primary-600" />
+        <span>Patient Information</span>
+      </div>
+    }
+    className="!overflow-visible"
+  >
+    <div className="space-y-6">
+      <Input
+        label="Patient Name"
+        name="name"
+        value={formData.name}
+        onChange={handleChange}
+        required
+      />
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <Select
+          label="Sex"
+          name="sex"
+          value={formData.sex}
+          onChange={handleChange}
+          options={SEX_OPTIONS}
+          required
+        />
+        <Input
+          label="Age"
+          type="number"
+          name="actual_age"
+          value={formData.actual_age}
+          onChange={handleChange}
+          required
+          min="0"
+          max="150"
+        />
+      </div>
+      <Input
+        label="Assigned Room"
+        name="assigned_room"
+        value={formData.assigned_room}
+        onChange={handleChange}
+      />
+      {/* Wrap the Select in its own relative container */}
+      <div className="relative z-30">
+        <Select
+          label="Assign Doctor (JR/SR)"
+          name="assigned_doctor_id"
+          value={formData.assigned_doctor_id}
+          onChange={handleChange}
+          options={(usersData?.data?.users || [])
+            .filter(u => u.role === 'JR' || u.role === 'SR')
+            .map(u => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
+          placeholder="Select doctor (optional)"
+        />
+      </div>
+    </div>
+  </Card>
+</div>
+
+{/* Add margin-top to create space between cards */}
+<div className="mt-6">
+  <Card
+    title={
+      <div className="flex items-center gap-2">
+        <FiUser className="w-5 h-5 text-primary-600" />
+        <span>Personal Information</span>
+      </div>
+    }
+  >
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <Input
+        label="Age Group"
+        name="age_group"
+        value={formData.age_group}
+        onChange={handleChange}
+      />
+      <Select
+        label="Marital Status"
+        name="marital_status"
+        value={formData.marital_status}
+        onChange={handleChange}
+        options={MARITAL_STATUS}
+      />
+      <Input
+        label="Year of Marriage"
+        type="number"
+        name="year_of_marriage"
+        value={formData.year_of_marriage}
+        onChange={handleChange}
+      />
+      <Input
+        label="Number of Children"
+        type="number"
+        name="no_of_children"
+        value={formData.no_of_children}
+        onChange={handleChange}
+        min="0"
+      />
+    </div>
+  </Card>
+</div>
       {/* Occupation & Education */}
       <Card
         title={
           <div className="flex items-center gap-2">
-            <FiBriefcase className="h-5 w-5 text-primary-600" />
+            <FiBriefcase className="w-5 h-5 text-primary-600" />
             <span>Occupation & Education</span>
           </div>
         }
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <Input
             label="Occupation"
             name="occupation"
@@ -148,12 +256,12 @@ const PatientDetailsEdit = ({ formData, handleChange, usersData }) => {
       <Card
         title={
           <div className="flex items-center gap-2">
-            <FiDollarSign className="h-5 w-5 text-primary-600" />
+            <FiDollarSign className="w-5 h-5 text-primary-600" />
             <span>Financial Information</span>
           </div>
         }
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <Input
             label="Patient Income (₹)"
             type="number"
@@ -177,13 +285,13 @@ const PatientDetailsEdit = ({ formData, handleChange, usersData }) => {
       <Card
         title={
           <div className="flex items-center gap-2">
-            <FiUsers className="h-5 w-5 text-primary-600" />
+            <FiUsers className="w-5 h-5 text-primary-600" />
             <span>Family Information</span>
           </div>
         }
       >
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <Select
               label="Religion"
               name="religion"
@@ -206,8 +314,8 @@ const PatientDetailsEdit = ({ formData, handleChange, usersData }) => {
               options={LOCALITY}
             />
           </div>
-          <h4 className="font-medium text-gray-900 mt-4">Head of Family</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <h4 className="mt-4 font-medium text-gray-900">Head of Family</h4>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <Input
               label="Name"
               name="head_name"
@@ -256,12 +364,12 @@ const PatientDetailsEdit = ({ formData, handleChange, usersData }) => {
       <Card
         title={
           <div className="flex items-center gap-2">
-            <FiMapPin className="h-5 w-5 text-primary-600" />
+            <FiMapPin className="w-5 h-5 text-primary-600" />
             <span>Referral & Mobility</span>
           </div>
         }
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <Input
             label="Distance from Hospital"
             name="distance_from_hospital"
@@ -293,7 +401,7 @@ const PatientDetailsEdit = ({ formData, handleChange, usersData }) => {
       <Card
         title={
           <div className="flex items-center gap-2">
-            <FiPhone className="h-5 w-5 text-primary-600" />
+            <FiPhone className="w-5 h-5 text-primary-600" />
             <span>Contact Information</span>
           </div>
         }
