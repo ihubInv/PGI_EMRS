@@ -92,7 +92,78 @@ const {
  *             token:
  *               type: string
  *               description: JWT access token
- *   
+ *
+ *     LoginOTPResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: true
+ *         message:
+ *           type: string
+ *           example: "OTP sent to your email. Please check your inbox."
+ *         data:
+ *           type: object
+ *           properties:
+ *             user_id:
+ *               type: integer
+ *               description: User ID for OTP verification
+ *               example: 1
+ *             email:
+ *               type: string
+ *               format: email
+ *               description: User's email address
+ *               example: "doctor@pgimer.ac.in"
+ *             expires_in:
+ *               type: integer
+ *               description: OTP expiration time in seconds
+ *               example: 300
+ *
+ *     VerifyLoginOTPRequest:
+ *       type: object
+ *       required:
+ *         - user_id
+ *         - otp
+ *       properties:
+ *         user_id:
+ *           type: integer
+ *           description: User ID from login response
+ *           example: 1
+ *         otp:
+ *           type: string
+ *           pattern: '^[0-9]{6}$'
+ *           description: 6-digit OTP from email
+ *           example: "123456"
+ *
+ *     Error:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: false
+ *         message:
+ *           type: string
+ *           description: Error message
+ *         error:
+ *           type: string
+ *           description: Detailed error information (only in development)
+ *
+ *     PaginationResponse:
+ *       type: object
+ *       properties:
+ *         currentPage:
+ *           type: integer
+ *           example: 1
+ *         totalPages:
+ *           type: integer
+ *           example: 10
+ *         totalItems:
+ *           type: integer
+ *           example: 100
+ *         itemsPerPage:
+ *           type: integer
+ *           example: 10
+ *
  *   securitySchemes:
  *     bearerAuth:
  *       type: http
@@ -133,14 +204,23 @@ router.post('/register', validateUserRegistration, UserController.register);
  * @swagger
  * /api/users/login:
  *   post:
- *     summary: Login user (Step 1 - Send OTP)
+ *     summary: Login user (Conditional 2FA)
  *     description: |
- *       First step of the 2FA login process. Verifies user credentials and sends OTP to email.
- *       
- *       **2FA Login Flow:**
- *       1. Call this endpoint with email and password
- *       2. Check your email for the 6-digit OTP (valid for 5 minutes)
- *       3. Use the returned `user_id` and OTP in `/verify-login-otp` endpoint
+ *       Login endpoint with conditional two-factor authentication based on user settings.
+ *
+ *       **Login Flow:**
+ *       - If user has 2FA ENABLED:
+ *         1. Validates email and password
+ *         2. Sends OTP to user's email
+ *         3. Returns `user_id` and `email` for OTP verification
+ *         4. Use `/verify-login-otp` endpoint to complete login
+ *
+ *       - If user has 2FA DISABLED:
+ *         1. Validates email and password
+ *         2. Returns JWT token directly (no OTP required)
+ *         3. User is logged in immediately
+ *
+ *       **Note:** Users can enable/disable 2FA from their profile settings.
  *     tags: [Authentication]
  *     requestBody:
  *       required: true
@@ -148,13 +228,45 @@ router.post('/register', validateUserRegistration, UserController.register);
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/UserLogin'
+ *           examples:
+ *             loginRequest:
+ *               summary: Login credentials
+ *               value:
+ *                 email: "doctor@pgimer.ac.in"
+ *                 password: "yourpassword"
  *     responses:
  *       200:
- *         description: OTP sent successfully
+ *         description: Login successful or OTP sent
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/LoginOTPResponse'
+ *               oneOf:
+ *                 - $ref: '#/components/schemas/AuthResponse'
+ *                 - $ref: '#/components/schemas/LoginOTPResponse'
+ *             examples:
+ *               directLogin:
+ *                 summary: Direct login (2FA disabled)
+ *                 value:
+ *                   success: true
+ *                   message: "Login successful"
+ *                   data:
+ *                     user:
+ *                       id: 1
+ *                       name: "Dr. John Doe"
+ *                       email: "doctor@pgimer.ac.in"
+ *                       role: "SR"
+ *                       two_factor_enabled: false
+ *                       created_at: "2025-01-01T00:00:00.000Z"
+ *                     token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *               otpRequired:
+ *                 summary: OTP sent (2FA enabled)
+ *                 value:
+ *                   success: true
+ *                   message: "OTP sent to your email. Please check your inbox."
+ *                   data:
+ *                     user_id: 1
+ *                     email: "doctor@pgimer.ac.in"
+ *                     expires_in: 300
  *       401:
  *         description: Invalid credentials or account deactivated
  *         content:
@@ -579,6 +691,82 @@ router.put('/profile', authenticateToken, UserController.updateProfile);
  *               $ref: '#/components/schemas/Error'
  */
 router.put('/change-password', authenticateToken, UserController.changePassword);
+
+/**
+ * @swagger
+ * /api/users/enable-2fa:
+ *   post:
+ *     summary: Enable two-factor authentication
+ *     description: Enable 2FA for the currently authenticated user. When enabled, OTP will be required during login.
+ *     tags: [User Management]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 2FA enabled successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "2FA has been enabled successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     two_factor_enabled:
+ *                       type: boolean
+ *                       example: true
+ *       400:
+ *         description: 2FA is already enabled
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.post('/enable-2fa', authenticateToken, UserController.enable2FA);
+
+/**
+ * @swagger
+ * /api/users/disable-2fa:
+ *   post:
+ *     summary: Disable two-factor authentication
+ *     description: Disable 2FA for the currently authenticated user. Login will not require OTP when disabled.
+ *     tags: [User Management]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 2FA disabled successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "2FA has been disabled successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     two_factor_enabled:
+ *                       type: boolean
+ *                       example: false
+ *       400:
+ *         description: 2FA is already disabled
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.post('/disable-2fa', authenticateToken, UserController.disable2FA);
 
 // Get doctors (JR/SR) - Accessible to all authenticated users
 /**

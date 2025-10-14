@@ -10,13 +10,28 @@ const options = {
       
 ## Authentication
 
-This API uses JWT Bearer tokens for authentication.
+This API uses JWT Bearer tokens for authentication with **Conditional Two-Factor Authentication (2FA)**.
 
 ### How to authenticate in Swagger:
 
-This API uses **Two-Factor Authentication (2FA)** with email OTP verification for enhanced security.
+This API supports **Conditional 2FA** - OTP verification is only required when enabled by the user.
 
 #### **Login Process:**
+
+**Scenario 1: User has 2FA DISABLED (Default)**
+
+1. **Direct Login**: Use the \`/api/users/login\` endpoint with your email and password
+   - You'll receive the JWT token immediately (no OTP required)
+   - Response contains \`user\` object and \`token\`
+
+2. **Access Protected Endpoints**:
+   - Copy the \`token\` from the login response
+   - Click the "Authorize" button (🔓) at the top right
+   - Enter your token in the format: \`Bearer YOUR_TOKEN_HERE\`
+   - Click "Authorize" and then "Close"
+   - Now you can access protected endpoints 🔒
+
+**Scenario 2: User has 2FA ENABLED**
 
 1. **Step 1 - Initial Login**: Use the \`/api/users/login\` endpoint with your email and password
    - You'll receive an OTP via email (valid for 5 minutes)
@@ -26,12 +41,18 @@ This API uses **Two-Factor Authentication (2FA)** with email OTP verification fo
    - Upon successful verification, you'll receive the JWT token
    - The OTP will be automatically marked as used
 
-3. **Step 3 - Access Protected Endpoints**: 
+3. **Step 3 - Access Protected Endpoints**:
    - Copy the \`token\` from the OTP verification response
    - Click the "Authorize" button (🔓) at the top right
    - Enter your token in the format: \`Bearer YOUR_TOKEN_HERE\`
    - Click "Authorize" and then "Close"
    - Now you can access protected endpoints 🔒
+
+**Managing 2FA Settings:**
+
+Users can enable or disable 2FA from their profile:
+- **Enable 2FA**: \`POST /api/users/enable-2fa\` (requires authentication)
+- **Disable 2FA**: \`POST /api/users/disable-2fa\` (requires authentication)
 
 #### **Password Reset Process:**
 
@@ -265,6 +286,11 @@ Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
               enum: ['MWO', 'JR', 'SR', 'Admin'],
               example: 'Admin',
               description: 'User role in the system',
+            },
+            two_factor_enabled: {
+              type: 'boolean',
+              example: false,
+              description: 'Whether 2FA is enabled for this user',
             },
             is_active: {
               type: 'boolean',

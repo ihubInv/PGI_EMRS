@@ -48,6 +48,7 @@ export const authApiSlice = apiSlice.injectEndpoints({
         url: '/users/enable-2fa',
         method: 'POST',
       }),
+      invalidatesTags: ['User'],
     }),
     disable2FA: builder.mutation({
       query: (data) => ({
@@ -55,6 +56,7 @@ export const authApiSlice = apiSlice.injectEndpoints({
         method: 'POST',
         body: data,
       }),
+      invalidatesTags: ['User'],
     }),
   }),
 });

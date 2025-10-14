@@ -309,6 +309,42 @@ class User {
     }
   }
 
+  // Enable 2FA for user
+  async enable2FA() {
+    try {
+      const result = await db.query(
+        'UPDATE users SET two_factor_enabled = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING two_factor_enabled',
+        [this.id]
+      );
+
+      if (result.rows.length > 0) {
+        this.two_factor_enabled = result.rows[0].two_factor_enabled;
+      }
+
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Disable 2FA for user
+  async disable2FA() {
+    try {
+      const result = await db.query(
+        'UPDATE users SET two_factor_enabled = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING two_factor_enabled',
+        [this.id]
+      );
+
+      if (result.rows.length > 0) {
+        this.two_factor_enabled = result.rows[0].two_factor_enabled;
+      }
+
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // Convert to JSON (exclude sensitive data)
   toJSON() {
     return {

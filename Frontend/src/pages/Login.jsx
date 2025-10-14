@@ -4,18 +4,21 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { useLoginMutation, useVerifyLoginOTPMutation } from '../features/auth/authApiSlice';
 import { setCredentials, setOTPRequired, selectOTPRequired, selectLoginData } from '../features/auth/authSlice';
-import { 
-  Eye, 
-  EyeOff, 
-  Stethoscope, 
-  Lock, 
-  Mail, 
-  CheckCircle, 
-  Users, 
-  FileText, 
+import {
+  Eye,
+  EyeOff,
+  Stethoscope,
+  Lock,
+  Mail,
+  CheckCircle,
+  Users,
+  FileText,
   Shield,
   Phone,
-  Clock
+  Clock,
+  Heart,
+  Activity,
+  Brain
 } from 'lucide-react';
 import PGI_Logo from '../assets/PGI_Logo.png';
 
@@ -92,97 +95,128 @@ const Login = () => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+    <div className="relative min-h-screen overflow-hidden">
+      {/* Animated Gradient Background - WHITE THEME */}
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
+        {/* Animated Circles */}
+        <div className="absolute bg-blue-300 rounded-full top-20 left-10 w-72 h-72 mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+        <div className="absolute bg-purple-300 rounded-full top-40 right-20 w-72 h-72 mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+        <div className="absolute bg-indigo-300 rounded-full bottom-20 left-40 w-72 h-72 mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+
+        {/* Grid Pattern Overlay */}
+        <div className="absolute inset-0 opacity-20" style={{
+          backgroundImage: `linear-gradient(rgba(99, 102, 241, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(99, 102, 241, 0.1) 1px, transparent 1px)`,
+          backgroundSize: '50px 50px'
         }}></div>
       </div>
 
-      <div className="relative min-h-screen flex">
-        {/* Left Panel - Medical Information */}
-        <div className="hidden lg:flex lg:w-3/5 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 relative overflow-hidden">
-          {/* Background Medical Pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full"></div>
-            <div className="absolute top-40 right-20 w-24 h-24 bg-white rounded-full"></div>
-            <div className="absolute bottom-20 left-20 w-16 h-16 bg-white rounded-full"></div>
-            <div className="absolute bottom-40 right-10 w-20 h-20 bg-white rounded-full"></div>
-          </div>
+      <div className="relative flex min-h-screen">
+        {/* Left Panel - Information (50%) */}
+        <div className="relative hidden overflow-hidden lg:flex lg:w-1/2">
+          {/* Glassmorphism Container - WHITE FROSTED GLASS */}
+          <div className="relative z-10 flex flex-col justify-between w-full p-12 text-gray-800 border-r shadow-2xl backdrop-blur-2xl bg-white/40 border-white/60">
+            {/* Floating Medical Icons */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
+              <div className="absolute top-20 left-20 animate-float">
+                <Heart className="w-16 h-16 text-blue-600" />
+              </div>
+              <div className="absolute top-60 right-20 animate-float animation-delay-2000">
+                <Brain className="w-20 h-20 text-indigo-600" />
+              </div>
+              <div className="absolute bottom-40 left-40 animate-float animation-delay-4000">
+                <Activity className="text-purple-600 w-14 h-14" />
+              </div>
+            </div>
 
-          <div className="relative z-10 flex flex-col justify-between p-12 text-white">
             {/* Header */}
-            <div>
+            <div className="relative z-20">
               <div className="flex items-center mb-8">
-                <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 mr-4">
-                  <img src={PGI_Logo} alt="PGIMER Logo" className="h-12 w-12 object-contain" />
+                <div className="p-4 mr-4 border shadow-2xl bg-white/60 backdrop-blur-lg rounded-2xl border-white/80">
+                  <img src={PGI_Logo} alt="PGIMER Logo" className="object-contain h-14 w-14" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold">PGIMER Chandigarh</h1>
-                  <p className="text-blue-100">Department of Psychiatry</p>
+                  <h1 className="text-3xl font-bold text-gray-800 drop-shadow-lg">PGIMER Chandigarh</h1>
+                  <p className="text-sm text-gray-700">Department of Psychiatry</p>
                 </div>
               </div>
-              
-              <div className="mb-8">
-                <h2 className="text-4xl font-bold mb-4">Department of Psychiatry EMR System</h2>
-                <p className="text-xl text-blue-100 mb-6">
-                Digitally transforming patient care through advanced electronic medical records             
+
+              <div className="mb-12">
+                <h2 className="mb-4 text-5xl font-bold leading-tight text-gray-900 drop-shadow-lg">
+                  Psychiatry EMR System
+                </h2>
+                <p className="text-xl leading-relaxed text-gray-700">
+                  Digitally transforming patient care through advanced electronic medical records
                 </p>
               </div>
             </div>
 
-            {/* Features */}
-            <div className="space-y-6">
-              <div className="flex items-start space-x-4">
-                <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
-                  <FileText className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg mb-1">Smart Patient Records</h3>
-                  <p className="text-blue-100 text-sm">Secure and seamless management of psychiatric patient data and medical history</p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
-                  <Users className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg mb-1">Integrated Department Workflow</h3>
-                  <p className="text-blue-100 text-sm">Smooth collaboration among clinicians, therapists, and administrative staff</p>
+            {/* Features with Glassmorphism Cards - WHITE THEME */}
+            <div className="relative z-20 space-y-4">
+              <div className="group">
+                <div className="p-5 transition-all duration-300 border shadow-lg bg-white/50 backdrop-blur-lg border-white/80 rounded-2xl hover:bg-white/70 hover:scale-105 hover:shadow-2xl">
+                  <div className="flex items-start space-x-4">
+                    <div className="p-3 transition-all duration-300 bg-blue-100 border border-blue-200 backdrop-blur-sm rounded-xl group-hover:bg-blue-200">
+                      <FileText className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="mb-1 text-lg font-semibold text-gray-800">Smart Patient Records</h3>
+                      <p className="text-sm text-gray-600">Secure and seamless management of psychiatric patient data</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-start space-x-4">
-                <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
-                  <Shield className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg mb-1">Data Privacy & Security</h3>
-                  <p className="text-blue-100 text-sm">HIPAA-compliant protection ensuring confidentiality of mental health records</p>
+              <div className="group">
+                <div className="p-5 transition-all duration-300 border shadow-lg bg-white/50 backdrop-blur-lg border-white/80 rounded-2xl hover:bg-white/70 hover:scale-105 hover:shadow-2xl">
+                  <div className="flex items-start space-x-4">
+                    <div className="p-3 transition-all duration-300 bg-purple-100 border border-purple-200 backdrop-blur-sm rounded-xl group-hover:bg-purple-200">
+                      <Users className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="mb-1 text-lg font-semibold text-gray-800">Integrated Workflow</h3>
+                      <p className="text-sm text-gray-600">Smooth collaboration among clinicians and staff</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-start space-x-4">
-                <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
-                  <Clock className="h-6 w-6 text-white" />
+              <div className="group">
+                <div className="p-5 transition-all duration-300 border shadow-lg bg-white/50 backdrop-blur-lg border-white/80 rounded-2xl hover:bg-white/70 hover:scale-105 hover:shadow-2xl">
+                  <div className="flex items-start space-x-4">
+                    <div className="p-3 transition-all duration-300 bg-indigo-100 border border-indigo-200 backdrop-blur-sm rounded-xl group-hover:bg-indigo-200">
+                      <Shield className="w-6 h-6 text-indigo-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="mb-1 text-lg font-semibold text-gray-800">Privacy & Security</h3>
+                      <p className="text-sm text-gray-600">HIPAA-compliant protection for mental health records</p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-lg mb-1">24/7 Access</h3>
-                  <p className="text-blue-100 text-sm">Reliable, round-the-clock access to patient information for authorized staff</p>
+              </div>
+
+              <div className="group">
+                <div className="p-5 transition-all duration-300 border shadow-lg bg-white/50 backdrop-blur-lg border-white/80 rounded-2xl hover:bg-white/70 hover:scale-105 hover:shadow-2xl">
+                  <div className="flex items-start space-x-4">
+                    <div className="p-3 transition-all duration-300 border bg-cyan-100 backdrop-blur-sm rounded-xl group-hover:bg-cyan-200 border-cyan-200">
+                      <Clock className="w-6 h-6 text-cyan-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="mb-1 text-lg font-semibold text-gray-800">24/7 Access</h3>
+                      <p className="text-sm text-gray-600">Round-the-clock access for authorized staff</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="border-t border-white/20 pt-6">
+            <div className="relative z-20 pt-6 mt-8 border-t border-gray-300">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Phone className="h-4 w-4 text-blue-200" />
-                  <span className="text-blue-100 text-sm">Need help? Call us @ 0172-2746018</span>
+                  <Phone className="w-4 h-4 text-gray-600" />
+                  <span className="text-sm text-gray-700">Need help? Call 0172-2746018</span>
                 </div>
-                <div className="text-blue-200 text-xs">
+                <div className="text-xs text-gray-600">
                   T&C apply*
                 </div>
               </div>
@@ -190,43 +224,43 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Right Panel - Login Form */}
-        <div className="w-full lg:w-2/5 flex items-center justify-center p-8">
+        {/* Right Panel - Login Form (50%) */}
+        <div className="flex items-center justify-center w-full p-8 lg:w-1/2">
           <div className="w-full max-w-md">
             {/* Mobile Logo */}
-            <div className="lg:hidden text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
-                <img src={PGI_Logo} alt="PGIMER Logo" className="h-8 w-8 object-contain" />
+            <div className="mb-8 text-center lg:hidden">
+              <div className="inline-flex items-center justify-center w-16 h-16 mb-4 border shadow-lg bg-white/60 backdrop-blur-lg border-white/80 rounded-2xl">
+                <img src={PGI_Logo} alt="PGIMER Logo" className="object-contain w-10 h-10" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">PGIMER Chandigarh</h2>
+              <h2 className="text-2xl font-bold text-gray-800">PGIMER Chandigarh</h2>
               <p className="text-sm text-gray-600">Electronic Medical Record System</p>
             </div>
 
             {/* Desktop Logo */}
-            <div className="hidden lg:block text-center mb-8">
-              <div className="inline-flex items-center justify-center mb-4">
-                <img src={PGI_Logo} alt="PGIMER Logo" className="h-24 w-24 object-contain" />
+            <div className="hidden mb-8 text-center lg:block">
+              <div className="inline-flex items-center justify-center mb-6">
+                <img src={PGI_Logo} alt="PGIMER Logo" className="object-contain w-24 h-24 drop-shadow-2xl" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">PGIMER Chandigarh</h2>
+              <h2 className="mb-2 text-2xl font-bold text-gray-800">PGIMER Chandigarh</h2>
               <p className="text-sm text-gray-600">Electronic Medical Record System</p>
             </div>
 
-            {/* Login Form */}
-            <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Sign in</h2>
+            {/* Glassmorphism Login Form - WHITE THEME */}
+            <div className="p-8 border shadow-2xl bg-white/50 backdrop-blur-2xl border-white/80 rounded-3xl">
+              <div className="mb-8 text-center">
+                <h2 className="mb-2 text-3xl font-bold text-gray-800">Sign in</h2>
                 <p className="text-gray-600">Welcome back! Please enter your details.</p>
               </div>
 
               {!otpRequired ? (
                 <form className="space-y-6" onSubmit={handleLogin}>
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-700">
                       Email Address
                     </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Mail className="h-5 w-5 text-gray-400" />
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                        <Mail className="w-5 h-5 text-gray-400 transition-colors group-focus-within:text-gray-600" />
                       </div>
                       <input
                         id="email"
@@ -235,19 +269,19 @@ const Login = () => {
                         required
                         value={formData.email}
                         onChange={handleChange}
-                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                        className="block w-full pl-12 pr-4 py-3.5 bg-white/60 border border-gray-300 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all backdrop-blur-lg shadow-inner"
                         placeholder="Enter your email"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-700">
                       Password
                     </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Lock className="h-5 w-5 text-gray-400" />
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                        <Lock className="w-5 h-5 text-gray-400 transition-colors group-focus-within:text-gray-600" />
                       </div>
                       <input
                         id="password"
@@ -256,34 +290,34 @@ const Login = () => {
                         required
                         value={formData.password}
                         onChange={handleChange}
-                        className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                        className="block w-full pl-12 pr-12 py-3.5 bg-white/60 border border-gray-300 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all backdrop-blur-lg shadow-inner"
                         placeholder="Enter your password"
                       />
                       <button
                         type="button"
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                        className="absolute inset-y-0 right-0 flex items-center pr-4"
                         onClick={() => setShowPassword(!showPassword)}
                       >
                         {showPassword ? (
-                          <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                          <EyeOff className="w-5 h-5 text-gray-400 transition-colors hover:text-gray-600" />
                         ) : (
-                          <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                          <Eye className="w-5 h-5 text-gray-400 transition-colors hover:text-gray-600" />
                         )}
                       </button>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <label className="flex items-center">
+                    <label className="flex items-center cursor-pointer group">
                       <input
                         type="checkbox"
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        className="w-4 h-4 text-blue-600 border-2 border-gray-300 rounded focus:ring-blue-400 bg-white/60 backdrop-blur-sm"
                         checked={rememberMe}
                         onChange={(e) => setRememberMe(e.target.checked)}
                       />
-                      <span className="ml-2 text-sm text-gray-600">Remember Me</span>
+                      <span className="ml-2 text-sm text-gray-700 transition-colors group-hover:text-gray-900">Remember Me</span>
                     </label>
-                    <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-500">
+                    <Link to="/forgot-password" className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-800">
                       Forgot Password?
                     </Link>
                   </div>
@@ -291,40 +325,40 @@ const Login = () => {
                   <button
                     type="submit"
                     disabled={isLoggingIn}
-                    className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-base font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
                   >
                     {isLoggingIn ? (
                       <div className="flex items-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <div className="w-5 h-5 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
                         Signing in...
                       </div>
                     ) : (
-                      'Login'
+                      'Sign In'
                     )}
                   </button>
                 </form>
               ) : (
                 <div className="space-y-6">
-                  <div className="text-center mb-6">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-                      <Mail className="h-8 w-8 text-blue-600" />
+                  <div className="mb-6 text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 mb-4 bg-blue-100 border border-blue-200 rounded-full shadow-lg backdrop-blur-lg">
+                      <Mail className="w-8 h-8 text-blue-600" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Check Your Email</h3>
+                    <h3 className="mb-2 text-xl font-semibold text-gray-800">Check Your Email</h3>
                     <p className="text-sm text-gray-600">
                       We've sent a 6-digit verification code to<br />
-                      <span className="font-medium text-gray-900">{loginData?.email}</span>
+                      <span className="font-semibold text-gray-800">{loginData?.email}</span>
                     </p>
                   </div>
 
                   <form className="space-y-6" onSubmit={handleOTPVerify}>
                     <div>
-                      <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label htmlFor="otp" className="block mb-2 text-sm font-medium text-gray-700">
                         Verification Code
                       </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Shield className="h-5 w-5 text-gray-400" />
-                      </div>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                          <Shield className="w-5 h-5 text-gray-400 transition-colors group-focus-within:text-gray-600" />
+                        </div>
                         <input
                           id="otp"
                           name="otp"
@@ -334,7 +368,7 @@ const Login = () => {
                           required
                           value={formData.otp}
                           onChange={handleChange}
-                          className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-center text-lg font-mono tracking-widest"
+                          className="block w-full pl-12 pr-4 py-3.5 bg-white/60 border border-gray-300 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all text-center text-2xl font-mono tracking-widest backdrop-blur-lg shadow-inner"
                           placeholder="000000"
                         />
                       </div>
@@ -343,11 +377,11 @@ const Login = () => {
                     <button
                       type="submit"
                       disabled={isVerifying || formData.otp.length !== 6}
-                      className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-base font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
                     >
                       {isVerifying ? (
                         <div className="flex items-center">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          <div className="w-5 h-5 mr-2 border-b-2 border-white rounded-full animate-spin"></div>
                           Verifying...
                         </div>
                       ) : (
@@ -363,9 +397,9 @@ const Login = () => {
                         dispatch(setOTPRequired(false));
                         setFormData(prev => ({ ...prev, otp: '' }));
                       }}
-                      className="text-sm text-gray-600 hover:text-gray-800 underline"
+                      className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-800"
                     >
-                      Back to Login
+                      ← Back to Login
                     </button>
                   </div>
                 </div>
@@ -373,7 +407,7 @@ const Login = () => {
             </div>
 
             {/* Footer */}
-            <div className="text-center mt-8">
+            <div className="mt-8 text-center">
               <p className="text-xs text-gray-500">
                 © 2025 Post Graduate Institute of Medical Education & Research, Chandigarh
               </p>
@@ -381,9 +415,54 @@ const Login = () => {
           </div>
         </div>
       </div>
+
+      {/* Custom CSS for animations */}
+      <style>{`
+        @keyframes blob {
+          0% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          33% {
+            transform: translate(30px, -50px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+          100% {
+            transform: translate(0px, 0px) scale(1);
+          }
+        }
+
+        @keyframes float {
+          0% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-20px);
+          }
+          100% {
+            transform: translateY(0px);
+          }
+        }
+
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
+        }
+
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
     </div>
   );
 };
 
 export default Login;
-

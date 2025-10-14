@@ -45,7 +45,7 @@ class UserController {
     }
   }
 
-  // Login user - DIRECT LOGIN (2FA Disabled for Development)
+  // Login user - Conditional 2FA based on user settings
   static async login(req, res) {
     try {
       const { email, password } = req.body;
@@ -76,40 +76,39 @@ class UserController {
         });
       }
 
-      // TWO-FACTOR AUTH DISABLED - Direct login without OTP
-      // TODO: Re-enable 2FA in production by uncommenting the code below
-      /*
-      // Create login OTP
-      const loginOTP = await LoginOTP.create(user.id);
+      // Check if 2FA is enabled for this user
+      if (user.two_factor_enabled) {
+        // 2FA is enabled - send OTP
+        const loginOTP = await LoginOTP.create(user.id);
 
-      // Send OTP email
-      await sendEmail(user.email, 'loginOTP', { userName: user.name, otp: loginOTP.otp });
+        // Send OTP email
+        await sendEmail(user.email, 'loginOTP', { userName: user.name, otp: loginOTP.otp });
 
-      res.json({
-        success: true,
-        message: 'OTP sent to your email. Please check your inbox.',
-        data: {
-          user_id: user.id,
-          email: user.email,
-          expires_in: 300 // 5 minutes in seconds
-        }
-      });
-      */
+        res.json({
+          success: true,
+          message: 'OTP sent to your email. Please check your inbox.',
+          data: {
+            user_id: user.id,
+            email: user.email,
+            expires_in: 300 // 5 minutes in seconds
+          }
+        });
+      } else {
+        // 2FA is disabled - direct login
+        const token = user.generateToken();
 
-      // Generate token immediately
-      const token = user.generateToken();
+        // Update last login
+        await user.updateLastLogin();
 
-      // Update last login
-      await user.updateLastLogin();
-
-      res.json({
-        success: true,
-        message: 'Login successful',
-        data: {
-          user: user.toJSON(),
-          token
-        }
-      });
+        res.json({
+          success: true,
+          message: 'Login successful',
+          data: {
+            user: user.toJSON(),
+            token
+          }
+        });
+      }
     } catch (error) {
       console.error('User login error:', error);
       res.status(500).json({
@@ -605,6 +604,84 @@ class UserController {
       res.status(500).json({
         success: false,
         message: 'Failed to reset password',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+
+  // Enable 2FA for user
+  static async enable2FA(req, res) {
+    try {
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      // Check if 2FA is already enabled
+      if (user.two_factor_enabled) {
+        return res.status(400).json({
+          success: false,
+          message: '2FA is already enabled for this account'
+        });
+      }
+
+      // Enable 2FA
+      await user.enable2FA();
+
+      res.json({
+        success: true,
+        message: '2FA has been enabled successfully',
+        data: {
+          two_factor_enabled: true
+        }
+      });
+    } catch (error) {
+      console.error('Enable 2FA error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to enable 2FA',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+
+  // Disable 2FA for user
+  static async disable2FA(req, res) {
+    try {
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      // Check if 2FA is already disabled
+      if (!user.two_factor_enabled) {
+        return res.status(400).json({
+          success: false,
+          message: '2FA is already disabled for this account'
+        });
+      }
+
+      // Disable 2FA
+      await user.disable2FA();
+
+      res.json({
+        success: true,
+        message: '2FA has been disabled successfully',
+        data: {
+          two_factor_enabled: false
+        }
+      });
+    } catch (error) {
+      console.error('Disable 2FA error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to disable 2FA',
         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
       });
     }

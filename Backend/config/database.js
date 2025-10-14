@@ -15,19 +15,22 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 // Test Supabase client connection
 async function testConnection() {
   try {
-    const { data, error } = await supabase
+    // IMPORTANT: Always use supabaseAdmin (service key) for connection tests
+    // The anon key has limited permissions and will fail
+    const { data, error } = await supabaseAdmin
       .from('users')
       .select('count')
       .limit(1);
-    
+
     if (error && error.code != 'PGRST116') { // PGRST116 is table not found, which is expected for initial setup
       throw error;
     }
-    
+
     console.log('✅ Connected to Supabase successfully');
     return true;
   } catch (error) {
     console.error('❌ Supabase connection error:', error.message);
+    console.error('Check your SUPABASE_URL and SUPABASE_SERVICE_KEY in .env file');
     return false;
   }
 }

@@ -254,12 +254,9 @@ Postgraduate Institute of Medical Education & Research, Chandigarh
 const sendEmail = async (to, template, data = {}) => {
   try {
     const transporter = createTransporter();
-    
-    // Verify connection configuration
-    await transporter.verify();
-    
+
     const emailContent = emailTemplates[template](data);
-    
+
     const mailOptions = {
       from: `"PGIMER EMR System" <${process.env.SMTP_USER || process.env.EMAIL_USER}>`,
       to: to,
@@ -267,13 +264,57 @@ const sendEmail = async (to, template, data = {}) => {
       text: emailContent.text,
       html: emailContent.html
     };
-    
-    const result = await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully:', result.messageId);
-    return { success: true, messageId: result.messageId };
-    
+
+    // Set a timeout for email sending (10 seconds)
+    const emailPromise = transporter.sendMail(mailOptions);
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Email timeout')), 10000)
+    );
+
+    try {
+      const result = await Promise.race([emailPromise, timeoutPromise]);
+      console.log('Email sent successfully:', result.messageId);
+      return { success: true, messageId: result.messageId };
+    } catch (timeoutError) {
+      // Log timeout but don't fail in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('⚠️  Email timeout (Development Mode - continuing anyway)');
+        console.log('📧 Email would have been sent to:', to);
+        console.log('📧 Template:', template);
+        console.log('📧 Data:', data);
+
+        // In development, log the OTP to console for testing
+        if (data.otp) {
+          console.log('\n🔐 ======================');
+          console.log('🔐 OTP for testing:', data.otp);
+          console.log('🔐 ======================\n');
+        }
+
+        return { success: true, messageId: 'dev-mode-no-email', development: true };
+      }
+      throw timeoutError;
+    }
+
   } catch (error) {
     console.error('Email sending failed:', error);
+
+    // In development mode, log the error but continue
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('⚠️  Email error (Development Mode - continuing anyway)');
+      console.log('📧 Email would have been sent to:', to);
+      console.log('📧 Template:', template);
+      console.log('📧 Data:', data);
+
+      // In development, log the OTP to console for testing
+      if (data.otp) {
+        console.log('\n🔐 ======================');
+        console.log('🔐 OTP for testing:', data.otp);
+        console.log('🔐 ======================\n');
+      }
+
+      return { success: true, messageId: 'dev-mode-no-email', development: true };
+    }
+
     throw new Error(`Failed to send email: ${error.message}`);
   }
 };

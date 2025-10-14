@@ -34,13 +34,22 @@ app.use(helmet({
 }));
 
 // CORS configuration
+// app.use(cors({
+//   origin: process.env.NODE_ENV === 'production'
+//     ? ['https://emrs.pgimer.ac.in']
+//     : ['http://31.97.60.2:3000', 'http://31.97.60.2:2026', 'http://31.97.60.2:2026'],
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization'],
+// }));
+
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? ['https://emrs.pgimer.ac.in']
-    : ['http://31.97.60.2:3000', 'http://31.97.60.2:2026', 'http://31.97.60.2:2026'],
+    : true, // Allow all origins in development
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
 // Rate limiting - DISABLED for unrestricted API access
