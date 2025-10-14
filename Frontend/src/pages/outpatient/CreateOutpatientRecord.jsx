@@ -167,15 +167,15 @@ const CreateOutpatientRecord = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Register New Patient</h1>
-        <p className="text-gray-600 mt-1">Complete patient registration and demographic information</p>
+        <p className="mt-1 text-gray-600">Complete patient registration and demographic information</p>
       </div>
 
       <form onSubmit={handleSubmit}>
         {/* Patient Information */}
-        <Card
+        {/* <Card
           title={
             <div className="flex items-center gap-2">
-              <FiUser className="h-5 w-5 text-primary-600" />
+              <FiUser className="w-5 h-5 text-primary-600" />
               <span>Patient Information</span>
             </div>
           }
@@ -191,7 +191,7 @@ const CreateOutpatientRecord = () => {
               required
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <Select
                 label="Sex"
                 name="sex"
@@ -224,7 +224,7 @@ const CreateOutpatientRecord = () => {
               placeholder="e.g., Ward A-101"
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <Input
                 label="CR Number"
                 name="cr_no"
@@ -255,19 +255,19 @@ const CreateOutpatientRecord = () => {
               placeholder="Select doctor (optional)"
             />
           </div>
-        </Card>
+        </Card> */}
 
         {/* Personal Information */}
-        <Card
+        {/* <Card
           title={
             <div className="flex items-center gap-2">
-              <FiUser className="h-5 w-5 text-primary-600" />
+              <FiUser className="w-5 h-5 text-primary-600" />
               <span>Personal Information</span>
             </div>
           }
           className="mb-6">
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <Input
                 label="Age Group"
                 name="age_group"
@@ -302,19 +302,215 @@ const CreateOutpatientRecord = () => {
               />
             </div>
           </div>
-        </Card>
+        </Card> */}
+
+{/* Patient Information */}
+<div className="relative z-20">
+  <Card
+    title={
+      <div className="flex items-center gap-2">
+        <FiUser className="w-5 h-5 text-primary-600" />
+        <span>Patient Information</span>
+      </div>
+    }
+    className="mb-6 !overflow-visible"
+    style={{ overflow: 'visible' }}>
+    <div className="space-y-6">
+      <Input
+        label="Patient Name"
+        name="name"
+        value={formData.name}
+        onChange={handlePatientChange}
+        placeholder="Enter full name"
+        error={errors.patientName}
+        required
+      />
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <Select
+          label="Sex"
+          name="sex"
+          value={formData.sex}
+          onChange={handlePatientChange}
+          options={SEX_OPTIONS}
+          error={errors.patientSex}
+          required
+        />
+
+        <Input
+          label="Age"
+          type="number"
+          name="actual_age"
+          value={formData.actual_age}
+          onChange={handlePatientChange}
+          placeholder="Enter age"
+          error={errors.patientAge}
+          required
+          min="0"
+          max="150"
+        />
+      </div>
+
+      <Input
+        label="Assigned Room"
+        name="assigned_room"
+        value={formData.assigned_room}
+        onChange={handlePatientChange}
+        placeholder="e.g., Ward A-101"
+      />
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <Input
+          label="CR Number"
+          name="cr_no"
+          value={formData.cr_no}
+          onChange={handlePatientChange}
+          placeholder="e.g., CR2024000001"
+          error={errors.patientCRNo}
+        />
+
+        <Input
+          label="PSY Number"
+          name="psy_no"
+          value={formData.psy_no}
+          onChange={handlePatientChange}
+          placeholder="e.g., PSY2024000001"
+          error={errors.patientPSYNo}
+        />
+      </div>
+
+      {/* Wrap the doctor select with high z-index */}
+      <div className="relative z-50" style={{ position: 'relative', zIndex: 9999 }}>
+        <Select
+          label="Assign Doctor (JR/SR)"
+          name="assigned_doctor_id"
+          value={formData.assigned_doctor_id}
+          onChange={handlePatientChange}
+          options={(usersData?.data?.users || [])
+            .filter(u => u.role === 'JR' || u.role === 'SR')
+            .map(u => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
+          placeholder="Select doctor (optional)"
+        />
+      </div>
+    </div>
+  </Card>
+</div>
+
+{/* Personal Information */}
+<div className="mt-6">
+  <Card
+    title={
+      <div className="flex items-center gap-2">
+        <FiUser className="w-5 h-5 text-primary-600" />
+        <span>Personal Information</span>
+      </div>
+    }
+    className="mb-6 !overflow-visible"
+    style={{ overflow: 'visible' }}>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <Input
+          label="Age Group"
+          name="age_group"
+          value={formData.age_group}
+          onChange={handleChange}
+          placeholder="e.g., 25-30"
+        />
+
+        {/* Wrap marital status select with high z-index */}
+        <div className="relative z-40" style={{ position: 'relative', zIndex: 9998 }}>
+          <Select
+            label="Marital Status"
+            name="marital_status"
+            value={formData.marital_status}
+            onChange={handleChange}
+            options={MARITAL_STATUS}
+          />
+        </div>
+
+        <Input
+          label="Year of Marriage"
+          type="number"
+          name="year_of_marriage"
+          value={formData.year_of_marriage}
+          onChange={handleChange}
+        />
+
+        <Input
+          label="Number of Children"
+          type="number"
+          name="no_of_children"
+          value={formData.no_of_children}
+          onChange={handleChange}
+          min="0"
+        />
+      </div>
+    </div>
+  </Card>
+</div>
+
+
+{/* Personal Information */}
+<Card
+  title={
+    <div className="flex items-center gap-2">
+      <FiUser className="w-5 h-5 text-primary-600" />
+      <span>Personal Information</span>
+    </div>
+  }
+  className="mb-6 overflow-visible">
+  <div className="space-y-6">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <Input
+        label="Age Group"
+        name="age_group"
+        value={formData.age_group}
+        onChange={handleChange}
+        placeholder="e.g., 25-30"
+      />
+
+      {/* Wrap Marital Status Select in higher z-index container */}
+      <div className="relative z-40">
+        <Select
+          label="Marital Status"
+          name="marital_status"
+          value={formData.marital_status}
+          onChange={handleChange}
+          options={MARITAL_STATUS}
+        />
+      </div>
+
+      <Input
+        label="Year of Marriage"
+        type="number"
+        name="year_of_marriage"
+        value={formData.year_of_marriage}
+        onChange={handleChange}
+      />
+
+      <Input
+        label="Number of Children"
+        type="number"
+        name="no_of_children"
+        value={formData.no_of_children}
+        onChange={handleChange}
+        min="0"
+      />
+    </div>
+  </div>
+</Card>
 
         {/* Occupation & Education */}
         <Card
           title={
             <div className="flex items-center gap-2">
-              <FiBriefcase className="h-5 w-5 text-primary-600" />
+              <FiBriefcase className="w-5 h-5 text-primary-600" />
               <span>Occupation & Education</span>
             </div>
           }
           className="mb-6">
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <Input
                 label="Occupation"
                 name="occupation"
@@ -355,12 +551,12 @@ const CreateOutpatientRecord = () => {
         <Card
           title={
             <div className="flex items-center gap-2">
-              <FiDollarSign className="h-5 w-5 text-primary-600" />
+              <FiDollarSign className="w-5 h-5 text-primary-600" />
               <span>Financial Information</span>
             </div>
           }
           className="mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <Input
               label="Patient Income (₹)"
               type="number"
@@ -387,13 +583,13 @@ const CreateOutpatientRecord = () => {
         <Card
           title={
             <div className="flex items-center gap-2">
-              <FiUsers className="h-5 w-5 text-primary-600" />
+              <FiUsers className="w-5 h-5 text-primary-600" />
               <span>Family Information</span>
             </div>
           }
           className="mb-6">
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <Select
                 label="Religion"
                 name="religion"
@@ -419,8 +615,8 @@ const CreateOutpatientRecord = () => {
               />
             </div>
 
-            <h4 className="font-medium text-gray-900 mt-4">Head of Family</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <h4 className="mt-4 font-medium text-gray-900">Head of Family</h4>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <Input
                 label="Name"
                 name="head_name"
@@ -475,13 +671,13 @@ const CreateOutpatientRecord = () => {
         <Card
           title={
             <div className="flex items-center gap-2">
-              <FiMapPin className="h-5 w-5 text-primary-600" />
+              <FiMapPin className="w-5 h-5 text-primary-600" />
               <span>Referral & Mobility</span>
             </div>
           }
           className="mb-6">
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <Input
                 label="Distance from Hospital"
                 name="distance_from_hospital"
@@ -521,7 +717,7 @@ const CreateOutpatientRecord = () => {
         <Card
           title={
             <div className="flex items-center gap-2">
-              <FiPhone className="h-5 w-5 text-primary-600" />
+              <FiPhone className="w-5 h-5 text-primary-600" />
               <span>Contact Information</span>
             </div>
           }
