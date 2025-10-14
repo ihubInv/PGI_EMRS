@@ -135,17 +135,17 @@ const Login = () => {
                   <img src={PGI_Logo} alt="PGIMER Logo" className="object-contain h-14 w-14" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-800 drop-shadow-lg">PGIMER Chandigarh</h1>
-                  <p className="text-sm text-gray-700">Department of Psychiatry</p>
+                  <h1 className="text-3xl font-bold text-gray-800 drop-shadow-lg">Department of Psychiatry  </h1>
+                  <p className="text-sm text-gray-700">PGIMER Chandigarh </p>
                 </div>
               </div>
 
               <div className="mb-12">
-                <h2 className="mb-4 text-5xl font-bold leading-tight text-gray-900 drop-shadow-lg">
-                  Psychiatry EMR System
+                <h2 className="mb-4 text-3xl font-bold leading-tight text-gray-900 drop-shadow-lg">
+                Electronic  Medical Record System
                 </h2>
                 <p className="text-xl leading-relaxed text-gray-700">
-                  Digitally transforming patient care through advanced electronic medical records
+                  Digitally transforming patient care through advanced electronic medical records system
                 </p>
               </div>
             </div>
@@ -232,8 +232,8 @@ const Login = () => {
               <div className="inline-flex items-center justify-center w-16 h-16 mb-4 border shadow-lg bg-white/60 backdrop-blur-lg border-white/80 rounded-2xl">
                 <img src={PGI_Logo} alt="PGIMER Logo" className="object-contain w-10 h-10" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-800">PGIMER Chandigarh</h2>
-              <p className="text-sm text-gray-600">Electronic Medical Record System</p>
+              <h2 className="text-2xl font-bold text-gray-800">Department of Psychiatry</h2>
+              <p className="text-sm text-gray-600">DPGIMER Chandigarh </p>
             </div>
 
             {/* Desktop Logo */}
@@ -241,8 +241,8 @@ const Login = () => {
               <div className="inline-flex items-center justify-center mb-6">
                 <img src={PGI_Logo} alt="PGIMER Logo" className="object-contain w-24 h-24 drop-shadow-2xl" />
               </div>
-              <h2 className="mb-2 text-2xl font-bold text-gray-800">PGIMER Chandigarh</h2>
-              <p className="text-sm text-gray-600">Electronic Medical Record System</p>
+              <h2 className="mb-2 text-2xl font-bold text-gray-800"> Department of Psychiatry</h2>
+              <p className="text-sm text-gray-600">PGIMER Chandigarh</p>
             </div>
 
             {/* Glassmorphism Login Form - WHITE THEME */}
