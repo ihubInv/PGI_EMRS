@@ -86,7 +86,7 @@ Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
       {
         url: process.env.NODE_ENV === 'production' 
           ? 'http://31.97.60.2:2025/api' 
-          : `http://31.97.60.2:${process.env.PORT || 2025}/api`,
+          : `http://localhost:${process.env.PORT || 2025}/api`,
         description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
       },
     ],
@@ -407,7 +407,7 @@ Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 const specs = swaggerJsdoc(options);
 
-// Swagger UI configuration to force HTTP and prevent HTTPS conversion
+// Swagger UI configuration
 const swaggerUiOptions = {
   explorer: true,
   customCss: '.swagger-ui .topbar { display: none }',
@@ -420,8 +420,6 @@ const swaggerUiOptions = {
     filter: true,
     showExtensions: true,
     tryItOutEnabled: true,
-    url: '/api-docs/swagger.json',
-    // Force HTTP URLs to prevent HTTPS conversion
     validatorUrl: null,
     deepLinking: true,
     displayOperationId: false,
@@ -443,37 +441,8 @@ const swaggerUiOptions = {
         res.url = res.url.replace('https://', 'http://');
       }
       return res;
-    },
-    // Additional options to prevent HTTPS conversion
-    oauth2RedirectUrl: 'http://31.97.60.2:2025/api-docs/oauth2-redirect.html',
-    preauthorizeBasic: false,
-    preauthorizeApiKey: false
-  },
-  // Custom HTML to override Swagger UI's internal URL generation
-  customHtml: `
-    <script>
-      // Override window.location.protocol to force HTTP
-      Object.defineProperty(window.location, 'protocol', {
-        get: function() { return 'http:'; },
-        configurable: true
-      });
-      
-      // Override window.location.href to force HTTP
-      Object.defineProperty(window.location, 'href', {
-        get: function() { return 'http://' + window.location.host + window.location.pathname + window.location.search + window.location.hash; },
-        configurable: true
-      });
-      
-      // Override fetch to force HTTP
-      const originalFetch = window.fetch;
-      window.fetch = function(url, options) {
-        if (typeof url === 'string' && url.startsWith('https://')) {
-          url = url.replace('https://', 'http://');
-        }
-        return originalFetch(url, options);
-      };
-    </script>
-  `
+    }
+  }
 };
 
 module.exports = { swaggerSpecs: specs, swaggerUiOptions };
