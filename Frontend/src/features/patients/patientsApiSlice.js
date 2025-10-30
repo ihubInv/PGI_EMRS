@@ -28,6 +28,14 @@ export const patientsApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ['Patient', 'Stats'],
     }),
+    createPatientComplete: builder.mutation({
+      query: (patientData) => ({
+        url: '/patients/register-complete',
+        method: 'POST',
+        body: patientData,
+      }),
+      invalidatesTags: ['Patient', 'Stats', 'OutpatientRecord'],
+    }),
     updatePatient: builder.mutation({
       query: ({ id, ...data }) => ({
         url: `/patients/${id}`,
@@ -62,6 +70,22 @@ export const patientsApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ['Patient'],
     }),
+    checkCRNumberExists: builder.query({
+      query: (crNo) => `/patients/cr/${crNo}`,
+      transformResponse: (response) => response.success, // true if patient exists
+      transformErrorResponse: (response) => {
+        // If 404, patient doesn't exist (return false)
+        // If other error, assume exists to be safe (return true)
+        return response.status === 404 ? false : true;
+      },
+    }),
+    getTodayPatients: builder.query({
+      query: ({ page = 1, limit = 10, date } = {}) => ({
+        url: '/patients/today',
+        params: { page, limit, date },
+      }),
+      providesTags: ['Patient'],
+    }),
   }),
 });
 
@@ -70,10 +94,13 @@ export const {
   useGetPatientByIdQuery,
   useSearchPatientsQuery,
   useCreatePatientMutation,
+  useCreatePatientCompleteMutation,
   useUpdatePatientMutation,
   useDeletePatientMutation,
   useGetPatientStatsQuery,
   useGetComplexPatientsQuery,
   useAssignPatientMutation,
+  useCheckCRNumberExistsQuery,
+  useGetTodayPatientsQuery,
 } = patientsApiSlice;
 

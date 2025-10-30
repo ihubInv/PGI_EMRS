@@ -246,26 +246,130 @@ async function executeJoinQuery(text, params, startTime) {
   
   // For clinical_proforma joins
   if (mainTable === 'clinical_proforma') {
-    const { data, error } = await supabaseAdmin
-      .from('clinical_proforma')
-      .select(`
-        *,
-        patients:patient_id(id, name, cr_no, psy_no),
-        users:filled_by(id, name, role)
-      `)
-      .range(offset, offset + limit - 1)
-      .order('created_at', { ascending: false });
+    // Build the query with filters
+    let query = supabaseAdmin.from('clinical_proforma').select('*');
 
-    if (error) throw error;
+    // Apply WHERE conditions if present
+    if (text.includes('WHERE') && params.length > 0) {
+      // Handle patient_id filter
+      const patientIdMatch = text.match(/WHERE\s+cp\.patient_id\s*=\s*\$(\d+)/i);
+      if (patientIdMatch) {
+        const paramIndex = parseInt(patientIdMatch[1]) - 1;
+        const patientId = params[paramIndex];
+        query = query.eq('patient_id', patientId);
+      }
 
-    const transformedData = data.map(item => ({
-      ...item,
-      patient_name: item.patients?.name,
-      cr_no: item.patients?.cr_no,
-      psy_no: item.patients?.psy_no,
-      doctor_name: item.users?.name,
-      doctor_role: item.users?.role
-    }));
+      // Handle other filters
+      const visitTypeMatch = text.match(/AND\s+cp\.visit_type\s*=\s*\$(\d+)/i);
+      if (visitTypeMatch) {
+        const paramIndex = parseInt(visitTypeMatch[1]) - 1;
+        const visitType = params[paramIndex];
+        query = query.eq('visit_type', visitType);
+      }
+
+      const doctorDecisionMatch = text.match(/AND\s+cp\.doctor_decision\s*=\s*\$(\d+)/i);
+      if (doctorDecisionMatch) {
+        const paramIndex = parseInt(doctorDecisionMatch[1]) - 1;
+        const doctorDecision = params[paramIndex];
+        query = query.eq('doctor_decision', doctorDecision);
+      }
+
+      const caseSeverityMatch = text.match(/AND\s+cp\.case_severity\s*=\s*\$(\d+)/i);
+      if (caseSeverityMatch) {
+        const paramIndex = parseInt(caseSeverityMatch[1]) - 1;
+        const caseSeverity = params[paramIndex];
+        query = query.eq('case_severity', caseSeverity);
+      }
+
+      const requiresAdlMatch = text.match(/AND\s+cp\.requires_adl_file\s*=\s*\$(\d+)/i);
+      if (requiresAdlMatch) {
+        const paramIndex = parseInt(requiresAdlMatch[1]) - 1;
+        const requiresAdl = params[paramIndex];
+        query = query.eq('requires_adl_file', requiresAdl);
+      }
+
+      const filledByMatch = text.match(/AND\s+cp\.filled_by\s*=\s*\$(\d+)/i);
+      if (filledByMatch) {
+        const paramIndex = parseInt(filledByMatch[1]) - 1;
+        const filledBy = params[paramIndex];
+        query = query.eq('filled_by', filledBy);
+      }
+
+      const roomNoMatch = text.match(/AND\s+cp\.room_no\s*=\s*\$(\d+)/i);
+      if (roomNoMatch) {
+        const paramIndex = parseInt(roomNoMatch[1]) - 1;
+        const roomNo = params[paramIndex];
+        query = query.eq('room_no', roomNo);
+      }
+
+      const dateFromMatch = text.match(/AND\s+cp\.visit_date\s*>=\s*\$(\d+)/i);
+      if (dateFromMatch) {
+        const paramIndex = parseInt(dateFromMatch[1]) - 1;
+        const dateFrom = params[paramIndex];
+        query = query.gte('visit_date', dateFrom);
+      }
+
+      const dateToMatch = text.match(/AND\s+cp\.visit_date\s*<=\s*\$(\d+)/i);
+      if (dateToMatch) {
+        const paramIndex = parseInt(dateToMatch[1]) - 1;
+        const dateTo = params[paramIndex];
+        query = query.lte('visit_date', dateTo);
+      }
+    }
+
+    // Apply ordering and pagination
+    query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
+
+    const { data: proformaData, error: proformaError } = await query;
+
+    if (proformaError) throw proformaError;
+
+    if (proformaData.length === 0) {
+      return {
+        rows: [],
+        rowCount: 0,
+        command: 'SELECT'
+      };
+    }
+
+    // Get unique patient IDs and user IDs
+    const patientIds = [...new Set(proformaData.map(p => p.patient_id).filter(id => id))];
+    const userIds = [...new Set(proformaData.map(p => p.filled_by).filter(id => id))];
+
+    // Fetch patient data
+    const { data: patients, error: patientsError } = await supabaseAdmin
+      .from('patients')
+      .select('id, name, cr_no, psy_no')
+      .in('id', patientIds);
+
+    if (patientsError) throw patientsError;
+
+    // Fetch user data
+    const { data: users, error: usersError } = await supabaseAdmin
+      .from('users')
+      .select('id, name, role')
+      .in('id', userIds);
+
+    if (usersError) throw usersError;
+
+    // Create lookup maps
+    const patientsMap = patients.reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
+    const usersMap = users.reduce((acc, u) => ({ ...acc, [u.id]: u }), {});
+
+    // Transform data to include joined information
+    const transformedData = proformaData.map(item => {
+      const patient = patientsMap[item.patient_id];
+      const user = usersMap[item.filled_by];
+
+      return {
+        ...item,
+        patient_name: patient?.name || null,
+        cr_no: patient?.cr_no || null,
+        psy_no: patient?.psy_no || null,
+        doctor_name: user?.name || null,
+        doctor_role: user?.role || null
+      };
+    });
 
     const duration = Date.now() - startTime;
     console.log('Join query executed successfully', { duration, rows: transformedData.length });

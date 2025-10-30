@@ -5,10 +5,15 @@ class OutpatientRecord {
     this.id = data.id;
     this.patient_id = data.patient_id;
     this.filled_by = data.filled_by;
+    this.seen_in_walk_in_on = data.seen_in_walk_in_on;
+    this.worked_up_on = data.worked_up_on;
+    this.special_clinic_no = data.special_clinic_no;
     this.age_group = data.age_group;
     this.marital_status = data.marital_status;
     this.year_of_marriage = data.year_of_marriage;
     this.no_of_children = data.no_of_children;
+    this.no_of_children_male = data.no_of_children_male;
+    this.no_of_children_female = data.no_of_children_female;
     this.occupation = data.occupation;
     this.actual_occupation = data.actual_occupation;
     this.education_level = data.education_level;
@@ -33,6 +38,43 @@ class OutpatientRecord {
     this.local_address = data.local_address;
     this.school_college_office = data.school_college_office;
     this.contact_number = data.contact_number;
+    
+    // Quick Entry fields
+    this.department = data.department;
+    this.unit_consit = data.unit_consit;
+    this.room_no = data.room_no;
+    this.serial_no = data.serial_no;
+    this.file_no = data.file_no;
+    this.unit_days = data.unit_days;
+    
+    // Address fields (Quick Entry)
+    this.address_line_1 = data.address_line_1;
+    this.country = data.country;
+    this.state = data.state;
+    this.district = data.district;
+    this.city_town_village = data.city_town_village;
+    this.pin_code = data.pin_code;
+    
+    // Present Address fields
+    this.present_address_line_1 = data.present_address_line_1;
+    this.present_country = data.present_country;
+    this.present_state = data.present_state;
+    this.present_district = data.present_district;
+    this.present_city_town_village = data.present_city_town_village;
+    this.present_pin_code = data.present_pin_code;
+    
+    // Permanent Address fields
+    this.permanent_address_line_1 = data.permanent_address_line_1;
+    this.permanent_country = data.permanent_country;
+    this.permanent_state = data.permanent_state;
+    this.permanent_district = data.permanent_district;
+    this.permanent_city_town_village = data.permanent_city_town_village;
+    this.permanent_pin_code = data.permanent_pin_code;
+    
+    // Additional fields
+    this.category = data.category;
+    this.assigned_doctor_id = data.assigned_doctor_id;
+    
     this.created_at = data.created_at;
     this.updated_at = data.updated_at;
     
@@ -49,10 +91,15 @@ class OutpatientRecord {
       const {
         patient_id,
         filled_by,
+        seen_in_walk_in_on,
+        worked_up_on,
+        special_clinic_no,
         age_group,
         marital_status,
         year_of_marriage,
         no_of_children,
+        no_of_children_male,
+        no_of_children_female,
         occupation,
         actual_occupation,
         education_level,
@@ -76,7 +123,38 @@ class OutpatientRecord {
         permanent_address,
         local_address,
         school_college_office,
-        contact_number
+        contact_number,
+        // Quick Entry fields
+        department,
+        unit_consit,
+        room_no,
+        serial_no,
+        file_no,
+        unit_days,
+        // Address fields (Quick Entry)
+        address_line_1,
+        country,
+        state,
+        district,
+        city_town_village,
+        pin_code,
+        // Present Address fields
+        present_address_line_1,
+        present_country,
+        present_state,
+        present_district,
+        present_city_town_village,
+        present_pin_code,
+        // Permanent Address fields
+        permanent_address_line_1,
+        permanent_country,
+        permanent_state,
+        permanent_district,
+        permanent_city_town_village,
+        permanent_pin_code,
+        // Additional fields
+        category,
+        assigned_doctor_id
       } = recordData;
 
       // Check if patient exists
@@ -101,10 +179,15 @@ class OutpatientRecord {
 
         // Build update payload with only defined fields
         const updatePayload = {};
+        if (seen_in_walk_in_on !== undefined && seen_in_walk_in_on !== null) updatePayload.seen_in_walk_in_on = seen_in_walk_in_on;
+        if (worked_up_on !== undefined && worked_up_on !== null) updatePayload.worked_up_on = worked_up_on;
+        if (special_clinic_no !== undefined && special_clinic_no !== null) updatePayload.special_clinic_no = special_clinic_no;
         if (age_group !== undefined && age_group !== null) updatePayload.age_group = age_group;
         if (marital_status !== undefined && marital_status !== null) updatePayload.marital_status = marital_status;
         if (year_of_marriage !== undefined && year_of_marriage !== null) updatePayload.year_of_marriage = year_of_marriage;
         if (no_of_children !== undefined && no_of_children !== null) updatePayload.no_of_children = no_of_children;
+        if (no_of_children_male !== undefined && no_of_children_male !== null) updatePayload.no_of_children_male = no_of_children_male;
+        if (no_of_children_female !== undefined && no_of_children_female !== null) updatePayload.no_of_children_female = no_of_children_female;
         if (occupation !== undefined && occupation !== null) updatePayload.occupation = occupation;
         if (actual_occupation !== undefined && actual_occupation !== null) updatePayload.actual_occupation = actual_occupation;
         if (education_level !== undefined && education_level !== null) updatePayload.education_level = education_level;
@@ -142,25 +225,44 @@ class OutpatientRecord {
       // Insert new outpatient record
       const result = await db.query(
         `INSERT INTO outpatient_record (
-          patient_id, filled_by, age_group, marital_status, year_of_marriage,
-          no_of_children, occupation, actual_occupation, education_level,
+          patient_id, filled_by, seen_in_walk_in_on, worked_up_on, special_clinic_no,
+          age_group, marital_status, year_of_marriage, no_of_children, no_of_children_male,
+          no_of_children_female, occupation, actual_occupation, education_level,
           completed_years_of_education, patient_income, family_income, religion,
           family_type, locality, head_name, head_age, head_relationship,
           head_education, head_occupation, head_income, distance_from_hospital,
           mobility, referred_by, exact_source, present_address, permanent_address,
-          local_address, school_college_office, contact_number
+          local_address, school_college_office, contact_number,
+          department, unit_consit, room_no, serial_no, file_no, unit_days,
+          address_line_1, country, state, district, city_town_village, pin_code,
+          present_address_line_1, present_country, present_state, 
+          present_district, present_city_town_village, present_pin_code,
+          permanent_address_line_1, permanent_country, permanent_state,
+          permanent_district, permanent_city_town_village, permanent_pin_code,
+          category, assigned_doctor_id
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-          $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
+          $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+          $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45,
+          $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60,
+          $61, $62, $63, $64, $65, $66, $67, $68, $69, $70, $71, $72, $73, $74, $75
         ) RETURNING *`,
         [
-          patient_id, filled_by, age_group, marital_status, year_of_marriage,
-          no_of_children, occupation, actual_occupation, education_level,
+          patient_id, filled_by, seen_in_walk_in_on, worked_up_on, special_clinic_no,
+          age_group, marital_status, year_of_marriage, no_of_children, no_of_children_male,
+          no_of_children_female, occupation, actual_occupation, education_level,
           completed_years_of_education, patient_income, family_income, religion,
           family_type, locality, head_name, head_age, head_relationship,
           head_education, head_occupation, head_income, distance_from_hospital,
           mobility, referred_by, exact_source, present_address, permanent_address,
-          local_address, school_college_office, contact_number
+          local_address, school_college_office, contact_number,
+          department, unit_consit, room_no, serial_no, file_no, unit_days,
+          address_line_1, country, state, district, city_town_village, pin_code,
+          present_address_line_1, present_country, present_state,
+          present_district, present_city_town_village, present_pin_code,
+          permanent_address_line_1, permanent_country, permanent_state,
+          permanent_district, permanent_city_town_village, permanent_pin_code,
+          category, assigned_doctor_id
         ]
       );
 
@@ -308,13 +410,26 @@ class OutpatientRecord {
   async update(updateData) {
     try {
       const allowedFields = [
-        'age_group', 'marital_status', 'year_of_marriage', 'no_of_children',
+        'seen_in_walk_in_on', 'worked_up_on', 'special_clinic_no', 'age_group', 'marital_status', 
+        'year_of_marriage', 'no_of_children', 'no_of_children_male', 'no_of_children_female',
         'occupation', 'actual_occupation', 'education_level', 'completed_years_of_education',
         'patient_income', 'family_income', 'religion', 'family_type', 'locality',
         'head_name', 'head_age', 'head_relationship', 'head_education', 'head_occupation',
         'head_income', 'distance_from_hospital', 'mobility', 'referred_by', 'exact_source',
         'present_address', 'permanent_address', 'local_address', 'school_college_office',
-        'contact_number'
+        'contact_number',
+        // Quick Entry fields
+        'department', 'unit_consit', 'room_no', 'serial_no', 'file_no', 'unit_days',
+        // Address fields (Quick Entry)
+        'address_line_1', 'country', 'state', 'district', 'city_town_village', 'pin_code',
+        // Present Address fields
+        'present_address_line_1', 'present_country', 'present_state',
+        'present_district', 'present_city_town_village', 'present_pin_code',
+        // Permanent Address fields
+        'permanent_address_line_1', 'permanent_country', 'permanent_state',
+        'permanent_district', 'permanent_city_town_village', 'permanent_pin_code',
+        // Additional fields
+        'category', 'assigned_doctor_id'
       ];
 
       const updates = [];
@@ -411,10 +526,15 @@ class OutpatientRecord {
       id: this.id,
       patient_id: this.patient_id,
       filled_by: this.filled_by,
+      seen_in_walk_in_on: this.seen_in_walk_in_on,
+      worked_up_on: this.worked_up_on,
+      special_clinic_no: this.special_clinic_no,
       age_group: this.age_group,
       marital_status: this.marital_status,
       year_of_marriage: this.year_of_marriage,
       no_of_children: this.no_of_children,
+      no_of_children_male: this.no_of_children_male,
+      no_of_children_female: this.no_of_children_female,
       occupation: this.occupation,
       actual_occupation: this.actual_occupation,
       education_level: this.education_level,
@@ -439,6 +559,37 @@ class OutpatientRecord {
       local_address: this.local_address,
       school_college_office: this.school_college_office,
       contact_number: this.contact_number,
+      // Quick Entry fields
+      department: this.department,
+      unit_consit: this.unit_consit,
+      room_no: this.room_no,
+      serial_no: this.serial_no,
+      file_no: this.file_no,
+      unit_days: this.unit_days,
+      // Address fields (Quick Entry)
+      address_line_1: this.address_line_1,
+      country: this.country,
+      state: this.state,
+      district: this.district,
+      city_town_village: this.city_town_village,
+      pin_code: this.pin_code,
+      // Present Address fields
+      present_address_line_1: this.present_address_line_1,
+      present_country: this.present_country,
+      present_state: this.present_state,
+      present_district: this.present_district,
+      present_city_town_village: this.present_city_town_village,
+      present_pin_code: this.present_pin_code,
+      // Permanent Address fields
+      permanent_address_line_1: this.permanent_address_line_1,
+      permanent_country: this.permanent_country,
+      permanent_state: this.permanent_state,
+      permanent_district: this.permanent_district,
+      permanent_city_town_village: this.permanent_city_town_village,
+      permanent_pin_code: this.permanent_pin_code,
+      // Additional fields
+      category: this.category,
+      assigned_doctor_id: this.assigned_doctor_id,
       created_at: this.created_at,
       // Additional fields from joins
       patient_name: this.patient_name,

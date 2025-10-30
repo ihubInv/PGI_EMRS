@@ -26,6 +26,17 @@ const {
  *         filled_by:
  *           type: integer
  *           description: MWO user ID who filled the record
+ *         seen_in_walk_in_on:
+ *           type: string
+ *           format: date
+ *           description: Date when patient was seen in walk-in
+ *         worked_up_on:
+ *           type: string
+ *           format: date
+ *           description: Date when patient was worked up
+ *         special_clinic_no:
+ *           type: string
+ *           description: Special Clinic Number
  *         age_group:
  *           type: string
  *           maxLength: 20
@@ -36,6 +47,12 @@ const {
  *           type: integer
  *         no_of_children:
  *           type: integer
+ *         no_of_children_male:
+ *           type: integer
+ *           description: Number of male children
+ *         no_of_children_female:
+ *           type: integer
+ *           description: Number of female children
  *         occupation:
  *           type: string
  *           maxLength: 50
@@ -100,6 +117,113 @@ const {
  *         contact_number:
  *           type: string
  *           maxLength: 20
+ *         # Quick Entry fields
+ *         department:
+ *           type: string
+ *           maxLength: 100
+ *           description: Department name
+ *         unit_consit:
+ *           type: string
+ *           maxLength: 100
+ *           description: Unit/Consit name
+ *         room_no:
+ *           type: string
+ *           maxLength: 20
+ *           description: Room number
+ *         serial_no:
+ *           type: string
+ *           maxLength: 50
+ *           description: Serial number
+ *         file_no:
+ *           type: string
+ *           maxLength: 50
+ *           description: File number
+ *         unit_days:
+ *           type: string
+ *           description: Unit days (Mon, Tue, Wed, Thu, Fri, Sat)
+ *         # Address fields (Quick Entry)
+ *         address_line_1:
+ *           type: string
+ *           maxLength: 255
+ *           description: Address line 1 (Quick Entry)
+ *         country:
+ *           type: string
+ *           maxLength: 100
+ *           description: Country (Quick Entry)
+ *         state:
+ *           type: string
+ *           maxLength: 100
+ *           description: State (Quick Entry)
+ *         district:
+ *           type: string
+ *           maxLength: 100
+ *           description: District (Quick Entry)
+ *         city_town_village:
+ *           type: string
+ *           maxLength: 100
+ *           description: City/Town/Village (Quick Entry)
+ *         pin_code:
+ *           type: string
+ *           maxLength: 6
+ *           description: Pin code (Quick Entry)
+ *         # Present Address fields
+ *         present_address_line_1:
+ *           type: string
+ *           maxLength: 255
+ *           description: Present address line 1
+ *         present_country:
+ *           type: string
+ *           maxLength: 100
+ *           description: Present address country
+ *         present_state:
+ *           type: string
+ *           maxLength: 100
+ *           description: Present address state
+ *         present_district:
+ *           type: string
+ *           maxLength: 100
+ *           description: Present address district
+ *         present_city_town_village:
+ *           type: string
+ *           maxLength: 100
+ *           description: Present address city/town/village
+ *         present_pin_code:
+ *           type: string
+ *           maxLength: 6
+ *           description: Present address pin code
+ *         # Permanent Address fields
+ *         permanent_address_line_1:
+ *           type: string
+ *           maxLength: 255
+ *           description: Permanent address line 1
+ *         permanent_country:
+ *           type: string
+ *           maxLength: 100
+ *           description: Permanent address country
+ *         permanent_state:
+ *           type: string
+ *           maxLength: 100
+ *           description: Permanent address state
+ *         permanent_district:
+ *           type: string
+ *           maxLength: 100
+ *           description: Permanent address district
+ *         permanent_city_town_village:
+ *           type: string
+ *           maxLength: 100
+ *           description: Permanent address city/town/village
+ *         permanent_pin_code:
+ *           type: string
+ *           maxLength: 6
+ *           description: Permanent address pin code
+ *         # Additional fields
+ *         category:
+ *           type: string
+ *           enum: [GEN, SC, ST, OBC, EWS]
+ *           description: Patient category
+ *         assigned_doctor_id:
+ *           type: integer
+ *           description: Assigned doctor ID
  *         created_at:
  *           type: string
  *           format: date-time

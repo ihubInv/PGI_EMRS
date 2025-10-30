@@ -5,7 +5,7 @@ import { selectCurrentUser } from '../features/auth/authSlice';
 import { useGetPatientStatsQuery } from '../features/patients/patientsApiSlice';
 import { useGetClinicalStatsQuery, useGetCasesBySeverityQuery, useGetCasesByDecisionQuery, useGetMyProformasQuery } from '../features/clinical/clinicalApiSlice';
 import { useGetADLStatsQuery, useGetFilesByStatusQuery } from '../features/adl/adlApiSlice';
-import { useGetOutpatientStatsQuery, useGetMyRecordsQuery, useDeleteOutpatientRecordMutation } from '../features/outpatient/outpatientApiSlice';
+import { useGetOutpatientStatsQuery, useGetMyRecordsQuery } from '../features/outpatient/outpatientApiSlice';
 import Card from '../components/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Badge from '../components/Badge';

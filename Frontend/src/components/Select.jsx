@@ -16,11 +16,13 @@ const Select = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const triggerRef = useRef(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target) && 
+          triggerRef.current && !triggerRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
@@ -43,7 +45,7 @@ const Select = ({
   };
 
   return (
-    <div className="w-full" ref={dropdownRef}>
+    <div className="w-full relative" ref={dropdownRef}>
       {label && (
         <label
           htmlFor={name}
@@ -77,6 +79,7 @@ const Select = ({
 
         {/* Custom dropdown trigger */}
         <button
+          ref={triggerRef}
           type="button"
           onClick={() => !disabled && setIsOpen(!isOpen)}
           disabled={disabled}
@@ -111,12 +114,17 @@ const Select = ({
         {/* Dropdown menu */}
         {isOpen && !disabled && (
           <div
-            className="absolute left-0 right-0 z-[9999] mt-2 bg-white border-2 border-primary-200 rounded-xl shadow-2xl overflow-hidden"
+            ref={dropdownRef}
+            className="absolute bg-white border-2 border-primary-200 rounded-xl shadow-2xl overflow-hidden"
             style={{
-              top: '100%'
+              top: 'calc(100% + 8px)',
+              left: 0,
+              right: 0,
+              maxHeight: '240px',
+              zIndex: 999999
             }}
           >
-            <div className="max-h-60 overflow-y-auto py-1">
+            <div className="overflow-y-auto py-1" style={{ maxHeight: '232px' }}>
               {options.length === 0 ? (
                 <div className="px-4 py-3 text-sm text-gray-500 text-center">
                   No options available

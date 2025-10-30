@@ -8,7 +8,8 @@ const Card = ({
 }) => {
   return (
     <div
-      className={`glass-card glass-hover rounded-2xl ${className}`}
+      className={`glass-card glass-hover rounded-2xl relative ${className}`}
+      style={{ zIndex: 'auto' }}
       {...props}
     >
       {(title || subtitle || actions) && (
@@ -24,7 +25,7 @@ const Card = ({
           {actions && <div className="flex gap-2">{actions}</div>}
         </div>
       )}
-      <div className="px-6 py-4 overflow-visible">{children}</div>
+      <div className="px-6 py-4 overflow-visible" style={{ zIndex: 'auto' }}>{children}</div>
     </div>
   );
 };

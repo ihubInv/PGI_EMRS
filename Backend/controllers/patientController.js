@@ -1,12 +1,177 @@
 const Patient = require('../models/Patient');
 const PatientVisit = require('../models/PatientVisit');
+const OutpatientRecord = require('../models/OutpatientRecord');
 
 class PatientController {
-  // Create a new patient
+  // Create a new patient (basic info only)
+  // static async createPatient(req, res) {
+  //   try {
+  //     const { name, sex, actual_age, assigned_room, cr_no, psy_no } = req.body;
+
+  //     const patient = await Patient.create({
+  //       name,
+  //       sex,
+  //       actual_age,
+  //       assigned_room,
+  //       cr_no,
+  //       psy_no
+  //     });
+
+  //     res.status(201).json({
+  //       success: true,
+  //       message: 'Patient registered successfully',
+  //       data: {
+  //         patient: patient.toJSON()
+  //       }
+  //     });
+  //   } catch (error) {
+  //     console.error('Patient creation error:', error);
+  //     res.status(500).json({
+  //       success: false,
+  //       message: 'Failed to register patient',
+  //       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+  //     });
+  //   }
+  // }
+
+  // // Comprehensive patient registration (includes personal information for MWO)
+  // static async registerPatientWithDetails(req, res) {
+  //   try {
+  //     const {
+  //       // Basic patient information
+  //       name, sex, actual_age, assigned_room, cr_no, psy_no,
+  //       // Additional outpatient fields
+  //       seen_in_walk_in_on, worked_up_on, special_clinic_no,
+  //       // Personal Information
+  //       age_group, marital_status, year_of_marriage, no_of_children, no_of_children_male, no_of_children_female,
+  //       // Occupation & Education
+  //       occupation, actual_occupation, education_level, completed_years_of_education,
+  //       // Financial Information
+  //       patient_income, family_income,
+  //       // Family Information
+  //       religion, family_type, locality, head_name, head_age, head_relationship,
+  //       head_education, head_occupation, head_income,
+  //       // Referral & Mobility
+  //       distance_from_hospital, mobility, referred_by, exact_source,
+  //       // Contact Information (simple fields)
+  //       present_address, permanent_address, local_address, school_college_office, contact_number,
+  //       // Quick Entry fields
+  //       department, unit_consit, room_no, serial_no, file_no, unit_days,
+  //       // Address fields (Quick Entry)
+  //       address_line_1, country, state, district, city_town_village, pin_code,
+  //       // Present Address fields
+  //       present_address_line_1, present_country, present_state, present_district, 
+  //       present_city_town_village, present_pin_code,
+  //       // Permanent Address fields
+  //       permanent_address_line_1, permanent_country, permanent_state, permanent_district,
+  //       permanent_city_town_village, permanent_pin_code,
+  //       // Additional fields
+  //       category, assigned_doctor_id
+  //     } = req.body;
+
+  //     // Create patient record
+  //     const patient = await Patient.create({
+  //       name,
+  //       sex,
+  //       actual_age,
+  //       assigned_room,
+  //       cr_no,
+  //       psy_no
+  //     });
+
+  //     // Create outpatient record with personal information
+  //     const outpatientRecord = await OutpatientRecord.create({
+  //       patient_id: patient.id,
+  //       filled_by: req.user.id, // MWO user ID
+  //       seen_in_walk_in_on,
+  //       worked_up_on,
+  //       special_clinic_no,
+  //       age_group,
+  //       marital_status,
+  //       year_of_marriage,
+  //       no_of_children,
+  //       no_of_children_male,
+  //       no_of_children_female,
+  //       occupation,
+  //       actual_occupation,
+  //       education_level,
+  //       completed_years_of_education,
+  //       patient_income,
+  //       family_income,
+  //       religion,
+  //       family_type,
+  //       locality,
+  //       head_name,
+  //       head_age,
+  //       head_relationship,
+  //       head_education,
+  //       head_occupation,
+  //       head_income,
+  //       distance_from_hospital,
+  //       mobility,
+  //       referred_by,
+  //       exact_source,
+  //       present_address,
+  //       permanent_address,
+  //       local_address,
+  //       school_college_office,
+  //       contact_number,
+  //       // Quick Entry fields
+  //       department,
+  //       unit_consit,
+  //       room_no,
+  //       serial_no,
+  //       file_no,
+  //       unit_days,
+  //       // Address fields (Quick Entry)
+  //       address_line_1,
+  //       country,
+  //       state,
+  //       district,
+  //       city_town_village,
+  //       pin_code,
+  //       // Present Address fields
+  //       present_address_line_1,
+  //       present_country,
+  //       present_state,
+  //       present_district,
+  //       present_city_town_village,
+  //       present_pin_code,
+  //       // Permanent Address fields
+  //       permanent_address_line_1,
+  //       permanent_country,
+  //       permanent_state,
+  //       permanent_district,
+  //       permanent_city_town_village,
+  //       permanent_pin_code,
+  //       // Additional fields
+  //       category,
+  //       assigned_doctor_id
+  //     });
+
+  //     res.status(201).json({
+  //       success: true,
+  //       message: 'Patient registered successfully with complete information',
+  //       data: {
+  //         patient: patient.toJSON(),
+  //         outpatientRecord: outpatientRecord.toJSON()
+  //       }
+  //     });
+  //   } catch (error) {
+  //     console.error('Comprehensive patient registration error:', error);
+  //     res.status(500).json({
+  //       success: false,
+  //       message: 'Failed to register patient with details',
+  //       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+  //     });
+  //   }
+  // }
+
+
   static async createPatient(req, res) {
     try {
       const { name, sex, actual_age, assigned_room, cr_no, psy_no } = req.body;
-
+  
       const patient = await Patient.create({
         name,
         sex,
@@ -15,7 +180,7 @@ class PatientController {
         cr_no,
         psy_no
       });
-
+  
       res.status(201).json({
         success: true,
         message: 'Patient registered successfully',
@@ -28,6 +193,161 @@ class PatientController {
       res.status(500).json({
         success: false,
         message: 'Failed to register patient',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+  
+  // Comprehensive patient registration (includes all patient information for MWO)
+  static async registerPatientWithDetails(req, res) {
+    try {
+      const {
+        // Basic patient information
+        name, sex, actual_age, assigned_room, cr_no, psy_no,
+        // Additional fields
+        seen_in_walk_in_on, worked_up_on, special_clinic_no,
+        // Personal Information
+        age_group, marital_status, year_of_marriage, no_of_children, 
+        no_of_children_male, no_of_children_female,
+        // Occupation & Education
+        occupation, actual_occupation, education_level, completed_years_of_education,
+        // Financial Information
+        patient_income, family_income,
+        // Family Information
+        religion, family_type, locality, head_name, head_age, head_relationship,
+        head_education, head_occupation, head_income,
+        // Referral & Mobility
+        distance_from_hospital, mobility, referred_by, exact_source,
+        // Contact Information
+        school_college_office, contact_number,
+        // Quick Entry fields
+        department, unit_consit, room_no, serial_no, file_no, unit_days,
+        // Local/Current Address fields
+        address_line_1, address_line_2, country, state, district, 
+        city_town_village, pin_code,
+        // Present Address fields
+        present_address_line_1, present_address_line_2, present_country, 
+        present_state, present_district, present_city_town_village, present_pin_code,
+        // Permanent Address fields
+        permanent_address_line_1, permanent_address_line_2, permanent_country, 
+        permanent_state, permanent_district, permanent_city_town_village, 
+        permanent_pin_code,
+        // Additional fields
+        category, assigned_doctor_id, has_adl_file, file_status, case_complexity
+      } = req.body;
+  
+      // Create patient record with all information
+      const patient = await Patient.create({
+        // Basic information
+        name,
+        sex,
+        actual_age,
+        assigned_room,
+        cr_no,
+        psy_no,
+        special_clinic_no,
+        has_adl_file,
+        file_status,
+        case_complexity,
+        
+        // Filled by (MWO user ID)
+        filled_by: req.user.id,
+        
+        // Visit information
+        seen_in_walk_in_on,
+        worked_up_on,
+        
+        // Personal Information
+        age_group,
+        marital_status,
+        year_of_marriage,
+        no_of_children,
+        no_of_children_male,
+        no_of_children_female,
+        
+        // Occupation & Education
+        occupation,
+        actual_occupation,
+        education_level,
+        completed_years_of_education,
+        
+        // Financial Information
+        patient_income,
+        family_income,
+        
+        // Family Information
+        religion,
+        family_type,
+        locality,
+        head_name,
+        head_age,
+        head_relationship,
+        head_education,
+        head_occupation,
+        head_income,
+        
+        // Referral & Mobility
+        distance_from_hospital,
+        mobility,
+        referred_by,
+        exact_source,
+        
+        // Contact Information
+        school_college_office,
+        contact_number,
+        
+        // Department/Unit fields
+        department,
+        unit_consit,
+        room_no,
+        serial_no,
+        file_no,
+        unit_days,
+        
+        // Local/Current Address
+        address_line_1,
+        address_line_2,
+        country,
+        state,
+        district,
+        city_town_village,
+        pin_code,
+        
+        // Present Address
+        present_address_line_1,
+        present_address_line_2,
+        present_country,
+        present_state,
+        present_district,
+        present_city_town_village,
+        present_pin_code,
+        
+        // Permanent Address
+        permanent_address_line_1,
+        permanent_address_line_2,
+        permanent_country,
+        permanent_state,
+        permanent_district,
+        permanent_city_town_village,
+        permanent_pin_code,
+        
+        // Additional fields
+        category,
+        assigned_doctor_id
+      });
+  
+      res.status(201).json({
+        success: true,
+        message: 'Patient registered successfully with complete information',
+        data: {
+          patient: patient.toJSON()
+        }
+      });
+    } catch (error) {
+      console.error('Comprehensive patient registration error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to register patient with details',
         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
       });
     }
@@ -268,24 +588,143 @@ class PatientController {
         });
       }
 
-      const { name, sex, actual_age, assigned_room, case_complexity, file_status, has_adl_file } = req.body;
+      const {
+        // Basic patient information
+        name, sex, actual_age, assigned_room, contact_number,
+        // Personal Information
+        age_group, marital_status, year_of_marriage, no_of_children, 
+        no_of_children_male, no_of_children_female,
+        // Occupation & Education
+        occupation, actual_occupation, education_level, completed_years_of_education,
+        // Financial Information
+        patient_income, family_income,
+        // Family Information
+        religion, family_type, locality, head_name, head_age, head_relationship,
+        head_education, head_occupation, head_income,
+        // Referral & Mobility
+        distance_from_hospital, mobility, referred_by, exact_source,
+        seen_in_walk_in_on, worked_up_on,
+        // Contact Information
+        school_college_office,
+        // Registration Details
+        department, unit_consit, room_no, serial_no, file_no, unit_days,
+        // Address Information (Quick Entry)
+        address_line_1, address_line_2, country, state, district, 
+        city_town_village, pin_code,
+        // Present Address
+        present_address_line_1, present_address_line_2, present_country, 
+        present_state, present_district, present_city_town_village, present_pin_code,
+        // Permanent Address
+        permanent_address_line_1, permanent_address_line_2, permanent_country, 
+        permanent_state, permanent_district, permanent_city_town_village, 
+        permanent_pin_code,
+        // Additional fields
+        category, special_clinic_no, case_complexity, file_status, has_adl_file
+      } = req.body;
+
       const updateData = {};
 
-      if (name) updateData.name = name;
-      if (sex) updateData.sex = sex;
+      // Basic information
+      if (name !== undefined) updateData.name = name;
+      if (sex !== undefined) updateData.sex = sex;
       if (actual_age !== undefined) updateData.actual_age = actual_age;
-      if (assigned_room) updateData.assigned_room = assigned_room;
-      if (case_complexity) updateData.case_complexity = case_complexity;
-      if (file_status) updateData.file_status = file_status;
+      if (assigned_room !== undefined) updateData.assigned_room = assigned_room;
+      if (contact_number !== undefined) updateData.contact_number = contact_number;
+
+      // Personal Information
+      if (age_group !== undefined) updateData.age_group = age_group;
+      if (marital_status !== undefined) updateData.marital_status = marital_status;
+      if (year_of_marriage !== undefined) updateData.year_of_marriage = year_of_marriage;
+      if (no_of_children !== undefined) updateData.no_of_children = no_of_children;
+      if (no_of_children_male !== undefined) updateData.no_of_children_male = no_of_children_male;
+      if (no_of_children_female !== undefined) updateData.no_of_children_female = no_of_children_female;
+
+      // Occupation & Education
+      if (occupation !== undefined) updateData.occupation = occupation;
+      if (actual_occupation !== undefined) updateData.actual_occupation = actual_occupation;
+      if (education_level !== undefined) updateData.education_level = education_level;
+      if (completed_years_of_education !== undefined) updateData.completed_years_of_education = completed_years_of_education;
+
+      // Financial Information
+      if (patient_income !== undefined) updateData.patient_income = patient_income;
+      if (family_income !== undefined) updateData.family_income = family_income;
+
+      // Family Information
+      if (religion !== undefined) updateData.religion = religion;
+      if (family_type !== undefined) updateData.family_type = family_type;
+      if (locality !== undefined) updateData.locality = locality;
+      if (head_name !== undefined) updateData.head_name = head_name;
+      if (head_age !== undefined) updateData.head_age = head_age;
+      if (head_relationship !== undefined) updateData.head_relationship = head_relationship;
+      if (head_education !== undefined) updateData.head_education = head_education;
+      if (head_occupation !== undefined) updateData.head_occupation = head_occupation;
+      if (head_income !== undefined) updateData.head_income = head_income;
+
+      // Referral & Mobility
+      if (distance_from_hospital !== undefined) updateData.distance_from_hospital = distance_from_hospital;
+      if (mobility !== undefined) updateData.mobility = mobility;
+      if (referred_by !== undefined) updateData.referred_by = referred_by;
+      if (exact_source !== undefined) updateData.exact_source = exact_source;
+      if (seen_in_walk_in_on !== undefined) updateData.seen_in_walk_in_on = seen_in_walk_in_on;
+      if (worked_up_on !== undefined) updateData.worked_up_on = worked_up_on;
+
+      // Contact Information
+      if (school_college_office !== undefined) updateData.school_college_office = school_college_office;
+
+      // Registration Details
+      if (department !== undefined) updateData.department = department;
+      if (unit_consit !== undefined) updateData.unit_consit = unit_consit;
+      if (room_no !== undefined) updateData.room_no = room_no;
+      if (serial_no !== undefined) updateData.serial_no = serial_no;
+      if (file_no !== undefined) updateData.file_no = file_no;
+      if (unit_days !== undefined) updateData.unit_days = unit_days;
+
+      // Address Information (Quick Entry)
+      if (address_line_1 !== undefined) updateData.address_line_1 = address_line_1;
+      if (address_line_2 !== undefined) updateData.address_line_2 = address_line_2;
+      if (country !== undefined) updateData.country = country;
+      if (state !== undefined) updateData.state = state;
+      if (district !== undefined) updateData.district = district;
+      if (city_town_village !== undefined) updateData.city_town_village = city_town_village;
+      if (pin_code !== undefined) updateData.pin_code = pin_code;
+
+      // Present Address
+      if (present_address_line_1 !== undefined) updateData.present_address_line_1 = present_address_line_1;
+      if (present_address_line_2 !== undefined) updateData.present_address_line_2 = present_address_line_2;
+      if (present_country !== undefined) updateData.present_country = present_country;
+      if (present_state !== undefined) updateData.present_state = present_state;
+      if (present_district !== undefined) updateData.present_district = present_district;
+      if (present_city_town_village !== undefined) updateData.present_city_town_village = present_city_town_village;
+      if (present_pin_code !== undefined) updateData.present_pin_code = present_pin_code;
+
+      // Permanent Address
+      if (permanent_address_line_1 !== undefined) updateData.permanent_address_line_1 = permanent_address_line_1;
+      if (permanent_address_line_2 !== undefined) updateData.permanent_address_line_2 = permanent_address_line_2;
+      if (permanent_country !== undefined) updateData.permanent_country = permanent_country;
+      if (permanent_state !== undefined) updateData.permanent_state = permanent_state;
+      if (permanent_district !== undefined) updateData.permanent_district = permanent_district;
+      if (permanent_city_town_village !== undefined) updateData.permanent_city_town_village = permanent_city_town_village;
+      if (permanent_pin_code !== undefined) updateData.permanent_pin_code = permanent_pin_code;
+
+      // Additional fields
+      if (category !== undefined) updateData.category = category;
+      if (special_clinic_no !== undefined) updateData.special_clinic_no = special_clinic_no;
+      if (case_complexity !== undefined) updateData.case_complexity = case_complexity;
+      if (file_status !== undefined) updateData.file_status = file_status;
       if (has_adl_file !== undefined) updateData.has_adl_file = has_adl_file;
 
+      console.log('Updating patient with data:', updateData);
+
       await patient.update(updateData);
+
+      // Fetch updated patient data with joins
+      const updatedPatient = await Patient.findById(id);
 
       res.json({
         success: true,
         message: 'Patient updated successfully',
         data: {
-          patient: patient.toJSON()
+          patient: updatedPatient.toJSON()
         }
       });
     } catch (error) {
@@ -506,6 +945,152 @@ class PatientController {
     } catch (error) {
       console.error('Assign patient error:', error);
       return res.status(500).json({ success: false, message: 'Failed to assign patient', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
+    }
+  }
+
+  // Get today's patients registered by MWO
+  static async getTodayPatients(req, res) {
+    try {
+      const { page = 1, limit = 10, date } = req.query;
+      const pageNum = parseInt(page, 10);
+      const limitNum = parseInt(limit, 10);
+      const offset = (pageNum - 1) * limitNum;
+
+      // Use provided date or default to today
+      const targetDate = date ? new Date(date) : new Date();
+      const startOfDay = new Date(targetDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(targetDate);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const db = require('../config/database');
+
+      // Query to get patients registered today by MWO users
+      const query = `
+        SELECT 
+          p.*,
+          opr.age_group,
+          opr.marital_status,
+          opr.year_of_marriage,
+          opr.no_of_children,
+          opr.occupation,
+          opr.actual_occupation,
+          opr.education_level,
+          opr.completed_years_of_education,
+          opr.patient_income,
+          opr.family_income,
+          opr.religion,
+          opr.family_type,
+          opr.locality,
+          opr.head_name,
+          opr.head_age,
+          opr.head_relationship,
+          opr.head_education,
+          opr.head_occupation,
+          opr.head_income,
+          opr.distance_from_hospital,
+          opr.mobility,
+          opr.referred_by,
+          opr.exact_source,
+          opr.present_address,
+          opr.permanent_address,
+          opr.local_address,
+          opr.school_college_office,
+          opr.contact_number,
+          u.name as filled_by_name,
+          u.role as filled_by_role
+        FROM patients p
+        INNER JOIN outpatient_record opr ON p.id = opr.patient_id
+        INNER JOIN users u ON opr.filled_by = u.id
+        WHERE u.role = 'MWO'
+          AND DATE(opr.created_at) = DATE($1)
+        ORDER BY opr.created_at DESC
+        LIMIT $2 OFFSET $3
+      `;
+
+      const countQuery = `
+        SELECT COUNT(*) as total
+        FROM patients p
+        INNER JOIN outpatient_record opr ON p.id = opr.patient_id
+        INNER JOIN users u ON opr.filled_by = u.id
+        WHERE u.role = 'MWO'
+          AND DATE(opr.created_at) = DATE($1)
+      `;
+
+      const [patientsResult, countResult] = await Promise.all([
+        db.query(query, [targetDate, limitNum, offset]),
+        db.query(countQuery, [targetDate])
+      ]);
+
+      const patients = patientsResult.rows.map(row => ({
+        id: row.id,
+        cr_no: row.cr_no,
+        psy_no: row.psy_no,
+        adl_no: row.adl_no,
+        special_clinic_no: row.special_clinic_no,
+        name: row.name,
+        sex: row.sex,
+        actual_age: row.actual_age,
+        age_group: row.age_group,
+        marital_status: row.marital_status,
+        year_of_marriage: row.year_of_marriage,
+        no_of_children: row.no_of_children,
+        occupation: row.occupation,
+        actual_occupation: row.actual_occupation,
+        education_level: row.education_level,
+        completed_years_of_education: row.completed_years_of_education,
+        patient_income: row.patient_income,
+        family_income: row.family_income,
+        religion: row.religion,
+        family_type: row.family_type,
+        locality: row.locality,
+        head_name: row.head_name,
+        head_age: row.head_age,
+        head_relationship: row.head_relationship,
+        head_education: row.head_education,
+        head_occupation: row.head_occupation,
+        head_income: row.head_income,
+        distance_from_hospital: row.distance_from_hospital,
+        mobility: row.mobility,
+        referred_by: row.referred_by,
+        exact_source: row.exact_source,
+        present_address: row.present_address,
+        permanent_address: row.permanent_address,
+        local_address: row.local_address,
+        school_college_office: row.school_college_office,
+        contact_number: row.contact_number,
+        filled_by_name: row.filled_by_name,
+        filled_by_role: row.filled_by_role,
+        created_at: row.created_at,
+        has_adl_file: row.has_adl_file,
+        file_status: row.file_status,
+        case_complexity: row.case_complexity,
+        assigned_room: row.assigned_room
+      }));
+
+      const total = parseInt(countResult.rows[0].total, 10);
+
+      res.status(200).json({
+        success: true,
+        message: `Patients registered today by MWO (${targetDate.toDateString()})`,
+        data: {
+          patients,
+          pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total,
+            pages: Math.ceil(total / limitNum)
+          },
+          date: targetDate.toISOString().split('T')[0]
+        }
+      });
+    } catch (error) {
+      console.error('Get today patients error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch today\'s patients',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
     }
   }
 }

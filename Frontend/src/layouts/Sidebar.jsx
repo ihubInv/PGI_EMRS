@@ -15,6 +15,7 @@ import {
   FiChevronUp,
   FiUserPlus,
   FiUserCheck,
+  FiCalendar,
 } from 'react-icons/fi';
 import { selectCurrentUser, logout } from '../features/auth/authSlice';
 import { apiSlice } from '../app/api/apiSlice';
@@ -49,6 +50,28 @@ const MWONavigation = ({ onClose }) => {
         <span>Dashboard</span>
       </NavLink>
 
+      {/* Register New Patient */}
+      <NavLink
+        to="/patients/new"
+        onClick={onClose}
+        className={({ isActive }) =>
+          `group flex items-center px-4 py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${
+            isActive
+              ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
+              : 'text-gray-700 hover:bg-white/40 hover:text-primary-700 hover:shadow-md'
+          }`
+        }
+      >
+        <div className={`p-2 rounded-lg mr-3 transition-colors ${
+          location.pathname === '/outpatient/new'
+            ? 'bg-white/20'
+            : 'bg-gray-100 group-hover:bg-primary-100'
+        }`}>
+          <FiUserPlus className="h-5 w-5" />
+        </div>
+        <span>Register New Patient</span>
+      </NavLink>
+
       {/* All Patient Records */}
       <NavLink
         to="/patients"
@@ -72,31 +95,11 @@ const MWONavigation = ({ onClose }) => {
         <span>All Patient Records</span>
       </NavLink>
 
-      {/* Register New Patient */}
-      <NavLink
-        to="/outpatient/new"
-        onClick={onClose}
-        className={({ isActive }) =>
-          `group flex items-center px-4 py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${
-            isActive
-              ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
-              : 'text-gray-700 hover:bg-white/40 hover:text-primary-700 hover:shadow-md'
-          }`
-        }
-      >
-        <div className={`p-2 rounded-lg mr-3 transition-colors ${
-          location.pathname === '/outpatient/new'
-            ? 'bg-white/20'
-            : 'bg-gray-100 group-hover:bg-primary-100'
-        }`}>
-          <FiUserPlus className="h-5 w-5" />
-        </div>
-        <span>Register New Patient</span>
-      </NavLink>
+      
 
       {/* Existing Patient */}
       <NavLink
-        to="/outpatient/select"
+        to="/patients/select"
         onClick={onClose}
         className={({ isActive }) =>
           `group flex items-center px-4 py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${
@@ -149,6 +152,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const navigation = [
     { name: 'Dashboard', to: '/', icon: FiHome, roles: ['Admin', 'JR', 'SR', 'MWO'] },
     { name: 'Patients', to: '/patients', icon: FiUsers, roles: ['Admin', 'JR', 'SR', 'MWO'] },
+    { name: "Today's Patients", to: '/today-patients', icon: FiCalendar, roles: ['Admin', 'JR', 'SR'] },
     { name: 'Outpatient Records', to: '/outpatient', icon: FiClipboard, roles: ['Admin', 'MWO'] },
     { name: 'Clinical Proforma', to: '/clinical', icon: FiFileText, roles: ['Admin', 'JR', 'SR'] },
     { name: 'ADL Files', to: '/adl-files', icon: FiFolder, roles: ['Admin', 'JR', 'SR'] },
@@ -185,8 +189,8 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <img src={PGI_Logo} alt="PGIMER Logo" className="w-8 h-8 object-contain" />
               </div>
               <div className="ml-3">
-                <h1 className="text-lg font-bold text-primary-900">PGI EMRS</h1>
-                <p className="text-xs text-gray-600">Patient Management</p>
+                <h1 className="text-lg font-bold text-primary-900">PGIMER PSY</h1>
+                <p className="text-xs text-gray-600"> Psychiatry Department - PGIMER Chandigarh</p>
               </div>
             </div>
             {/* Mobile close button */}

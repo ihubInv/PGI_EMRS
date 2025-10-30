@@ -95,7 +95,7 @@ const Login = () => {
 
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="relative h-screen overflow-hidden">
       {/* Animated Gradient Background - WHITE THEME */}
       <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
         {/* Animated Circles */}
@@ -110,11 +110,11 @@ const Login = () => {
         }}></div>
       </div>
 
-      <div className="relative flex min-h-screen">
+      <div className="relative flex h-full">
         {/* Left Panel - Information (50%) */}
         <div className="relative hidden overflow-hidden lg:flex lg:w-1/2">
           {/* Glassmorphism Container - WHITE FROSTED GLASS */}
-          <div className="relative z-10 flex flex-col justify-between w-full p-12 text-gray-800 border-r shadow-2xl backdrop-blur-2xl bg-white/40 border-white/60">
+          <div className="relative z-10 flex flex-col justify-between w-full p-8 text-gray-800 border-r shadow-2xl backdrop-blur-2xl bg-white/40 border-white/60">
             {/* Floating Medical Icons */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
               <div className="absolute top-20 left-20 animate-float">
@@ -140,69 +140,69 @@ const Login = () => {
                 </div>
               </div>
 
-              <div className="mb-12">
-                <h2 className="mb-4 text-3xl font-bold leading-tight text-gray-900 drop-shadow-lg">
+              <div className="mb-8">
+                <h2 className="mb-3 text-2xl font-bold leading-tight text-gray-900 drop-shadow-lg">
                 Electronic  Medical Record System
                 </h2>
-                <p className="text-xl leading-relaxed text-gray-700">
+                <p className="text-lg leading-relaxed text-gray-700">
                   Digitally transforming patient care through advanced electronic medical records system
                 </p>
               </div>
             </div>
 
             {/* Features with Glassmorphism Cards - WHITE THEME */}
-            <div className="relative z-20 space-y-4">
+            <div className="relative z-20 space-y-2">
               <div className="group">
-                <div className="p-5 transition-all duration-300 border shadow-lg bg-white/50 backdrop-blur-lg border-white/80 rounded-2xl hover:bg-white/70 hover:scale-105 hover:shadow-2xl">
-                  <div className="flex items-start space-x-4">
-                    <div className="p-3 transition-all duration-300 bg-blue-100 border border-blue-200 backdrop-blur-sm rounded-xl group-hover:bg-blue-200">
-                      <FileText className="w-6 h-6 text-blue-600" />
+                <div className="p-3 transition-all duration-300 border shadow-lg bg-white/50 backdrop-blur-lg border-white/80 rounded-xl hover:bg-white/70 hover:scale-105 hover:shadow-2xl">
+                  <div className="flex items-start space-x-3">
+                    <div className="p-2 transition-all duration-300 bg-blue-100 border border-blue-200 backdrop-blur-sm rounded-lg group-hover:bg-blue-200">
+                      <FileText className="w-5 h-5 text-blue-600" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="mb-1 text-lg font-semibold text-gray-800">Smart Patient Records</h3>
-                      <p className="text-sm text-gray-600">Secure and seamless management of psychiatric patient data</p>
+                      <h3 className="mb-1 text-sm font-semibold text-gray-800">Smart Patient Records</h3>
+                      <p className="text-xs text-gray-600">Secure and seamless management of psychiatric patient data</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="group">
-                <div className="p-5 transition-all duration-300 border shadow-lg bg-white/50 backdrop-blur-lg border-white/80 rounded-2xl hover:bg-white/70 hover:scale-105 hover:shadow-2xl">
-                  <div className="flex items-start space-x-4">
-                    <div className="p-3 transition-all duration-300 bg-purple-100 border border-purple-200 backdrop-blur-sm rounded-xl group-hover:bg-purple-200">
-                      <Users className="w-6 h-6 text-purple-600" />
+                <div className="p-3 transition-all duration-300 border shadow-lg bg-white/50 backdrop-blur-lg border-white/80 rounded-xl hover:bg-white/70 hover:scale-105 hover:shadow-2xl">
+                  <div className="flex items-start space-x-3">
+                    <div className="p-2 transition-all duration-300 bg-purple-100 border border-purple-200 backdrop-blur-sm rounded-lg group-hover:bg-purple-200">
+                      <Users className="w-5 h-5 text-purple-600" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="mb-1 text-lg font-semibold text-gray-800">Integrated Workflow</h3>
-                      <p className="text-sm text-gray-600">Smooth collaboration among clinicians and staff</p>
+                      <h3 className="mb-1 text-sm font-semibold text-gray-800">Integrated Workflow</h3>
+                      <p className="text-xs text-gray-600">Smooth collaboration among clinicians and staff</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="group">
-                <div className="p-5 transition-all duration-300 border shadow-lg bg-white/50 backdrop-blur-lg border-white/80 rounded-2xl hover:bg-white/70 hover:scale-105 hover:shadow-2xl">
-                  <div className="flex items-start space-x-4">
-                    <div className="p-3 transition-all duration-300 bg-indigo-100 border border-indigo-200 backdrop-blur-sm rounded-xl group-hover:bg-indigo-200">
-                      <Shield className="w-6 h-6 text-indigo-600" />
+                <div className="p-3 transition-all duration-300 border shadow-lg bg-white/50 backdrop-blur-lg border-white/80 rounded-xl hover:bg-white/70 hover:scale-105 hover:shadow-2xl">
+                  <div className="flex items-start space-x-3">
+                    <div className="p-2 transition-all duration-300 bg-indigo-100 border border-indigo-200 backdrop-blur-sm rounded-lg group-hover:bg-indigo-200">
+                      <Shield className="w-5 h-5 text-indigo-600" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="mb-1 text-lg font-semibold text-gray-800">Privacy & Security</h3>
-                      <p className="text-sm text-gray-600">HIPAA-compliant protection for mental health records</p>
+                      <h3 className="mb-1 text-sm font-semibold text-gray-800">Privacy & Security</h3>
+                      <p className="text-xs text-gray-600">HIPAA-compliant protection for mental health records</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="group">
-                <div className="p-5 transition-all duration-300 border shadow-lg bg-white/50 backdrop-blur-lg border-white/80 rounded-2xl hover:bg-white/70 hover:scale-105 hover:shadow-2xl">
-                  <div className="flex items-start space-x-4">
-                    <div className="p-3 transition-all duration-300 border bg-cyan-100 backdrop-blur-sm rounded-xl group-hover:bg-cyan-200 border-cyan-200">
-                      <Clock className="w-6 h-6 text-cyan-600" />
+                <div className="p-3 transition-all duration-300 border shadow-lg bg-white/50 backdrop-blur-lg border-white/80 rounded-xl hover:bg-white/70 hover:scale-105 hover:shadow-2xl">
+                  <div className="flex items-start space-x-3">
+                    <div className="p-2 transition-all duration-300 border bg-cyan-100 backdrop-blur-sm rounded-lg group-hover:bg-cyan-200 border-cyan-200">
+                      <Clock className="w-5 h-5 text-cyan-600" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="mb-1 text-lg font-semibold text-gray-800">24/7 Access</h3>
-                      <p className="text-sm text-gray-600">Round-the-clock access for authorized staff</p>
+                      <h3 className="mb-1 text-sm font-semibold text-gray-800">24/7 Access</h3>
+                      <p className="text-xs text-gray-600">Round-the-clock access for authorized staff</p>
                     </div>
                   </div>
                 </div>
@@ -210,11 +210,11 @@ const Login = () => {
             </div>
 
             {/* Footer */}
-            <div className="relative z-20 pt-6 mt-8 border-t border-gray-300">
+            <div className="relative z-20 pt-4 mt-4 border-t border-gray-300">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Phone className="w-4 h-4 text-gray-600" />
-                  <span className="text-sm text-gray-700">Need help? Call 0172-2746018</span>
+                  <span className="text-xs text-gray-700">Need help? Call 0172-2746018</span>
                 </div>
                 <div className="text-xs text-gray-600">
                   T&C apply*
@@ -225,10 +225,10 @@ const Login = () => {
         </div>
 
         {/* Right Panel - Login Form (50%) */}
-        <div className="flex items-center justify-center w-full p-8 lg:w-1/2">
+        <div className="flex items-center justify-center w-full p-6 lg:w-1/2">
           <div className="w-full max-w-md">
             {/* Mobile Logo */}
-            <div className="mb-8 text-center lg:hidden">
+            <div className="mb-6 text-center lg:hidden">
               <div className="inline-flex items-center justify-center w-16 h-16 mb-4 border shadow-lg bg-white/60 backdrop-blur-lg border-white/80 rounded-2xl">
                 <img src={PGI_Logo} alt="PGIMER Logo" className="object-contain w-10 h-10" />
               </div>
@@ -237,23 +237,23 @@ const Login = () => {
             </div>
 
             {/* Desktop Logo */}
-            <div className="hidden mb-8 text-center lg:block">
-              <div className="inline-flex items-center justify-center mb-6">
-                <img src={PGI_Logo} alt="PGIMER Logo" className="object-contain w-24 h-24 drop-shadow-2xl" />
+            <div className="hidden mb-6 text-center lg:block">
+              <div className="inline-flex items-center justify-center mb-4">
+                <img src={PGI_Logo} alt="PGIMER Logo" className="object-contain w-20 h-20 drop-shadow-2xl" />
               </div>
-              <h2 className="mb-2 text-2xl font-bold text-gray-800"> Department of Psychiatry</h2>
+              <h2 className="mb-2 text-xl font-bold text-gray-800"> Department of Psychiatry</h2>
               <p className="text-sm text-gray-600">PGIMER Chandigarh</p>
             </div>
 
             {/* Glassmorphism Login Form - WHITE THEME */}
-            <div className="p-8 border shadow-2xl bg-white/50 backdrop-blur-2xl border-white/80 rounded-3xl">
-              <div className="mb-8 text-center">
-                <h2 className="mb-2 text-3xl font-bold text-gray-800">Sign in</h2>
+            <div className="p-6 border shadow-2xl bg-white/50 backdrop-blur-2xl border-white/80 rounded-3xl">
+              <div className="mb-6 text-center">
+                <h2 className="mb-2 text-2xl font-bold text-gray-800">Sign in</h2>
                 <p className="text-gray-600">Welcome back! Please enter your details.</p>
               </div>
 
               {!otpRequired ? (
-                <form className="space-y-6" onSubmit={handleLogin}>
+                <form className="space-y-4" onSubmit={handleLogin}>
                   <div>
                     <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-700">
                       Email Address
@@ -269,7 +269,7 @@ const Login = () => {
                         required
                         value={formData.email}
                         onChange={handleChange}
-                        className="block w-full pl-12 pr-4 py-3.5 bg-white/60 border border-gray-300 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all backdrop-blur-lg shadow-inner"
+                        className="block w-full pl-12 pr-4 py-3 bg-white/60 border border-gray-300 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all backdrop-blur-lg shadow-inner"
                         placeholder="Enter your email"
                       />
                     </div>
@@ -290,7 +290,7 @@ const Login = () => {
                         required
                         value={formData.password}
                         onChange={handleChange}
-                        className="block w-full pl-12 pr-12 py-3.5 bg-white/60 border border-gray-300 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all backdrop-blur-lg shadow-inner"
+                        className="block w-full pl-12 pr-12 py-3 bg-white/60 border border-gray-300 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all backdrop-blur-lg shadow-inner"
                         placeholder="Enter your password"
                       />
                       <button
@@ -325,7 +325,7 @@ const Login = () => {
                   <button
                     type="submit"
                     disabled={isLoggingIn}
-                    className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-base font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
+                    className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-base font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
                   >
                     {isLoggingIn ? (
                       <div className="flex items-center">
@@ -338,8 +338,8 @@ const Login = () => {
                   </button>
                 </form>
               ) : (
-                <div className="space-y-6">
-                  <div className="mb-6 text-center">
+                <div className="space-y-4">
+                  <div className="mb-4 text-center">
                     <div className="inline-flex items-center justify-center w-16 h-16 mb-4 bg-blue-100 border border-blue-200 rounded-full shadow-lg backdrop-blur-lg">
                       <Mail className="w-8 h-8 text-blue-600" />
                     </div>
@@ -350,7 +350,7 @@ const Login = () => {
                     </p>
                   </div>
 
-                  <form className="space-y-6" onSubmit={handleOTPVerify}>
+                  <form className="space-y-4" onSubmit={handleOTPVerify}>
                     <div>
                       <label htmlFor="otp" className="block mb-2 text-sm font-medium text-gray-700">
                         Verification Code
@@ -368,7 +368,7 @@ const Login = () => {
                           required
                           value={formData.otp}
                           onChange={handleChange}
-                          className="block w-full pl-12 pr-4 py-3.5 bg-white/60 border border-gray-300 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all text-center text-2xl font-mono tracking-widest backdrop-blur-lg shadow-inner"
+                          className="block w-full pl-12 pr-4 py-3 bg-white/60 border border-gray-300 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all text-center text-2xl font-mono tracking-widest backdrop-blur-lg shadow-inner"
                           placeholder="000000"
                         />
                       </div>
@@ -377,7 +377,7 @@ const Login = () => {
                     <button
                       type="submit"
                       disabled={isVerifying || formData.otp.length !== 6}
-                      className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-base font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
+                      className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-base font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
                     >
                       {isVerifying ? (
                         <div className="flex items-center">
@@ -407,7 +407,7 @@ const Login = () => {
             </div>
 
             {/* Footer */}
-            <div className="mt-8 text-center">
+            <div className="mt-4 text-center">
               <p className="text-xs text-gray-500">
                 © 2025 Post Graduate Institute of Medical Education & Research, Chandigarh
               </p>
