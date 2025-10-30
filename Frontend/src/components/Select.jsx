@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { FiChevronDown, FiCheck } from 'react-icons/fi';
+import { createPortal } from 'react-dom';
 
 const Select = ({
   label,
@@ -12,17 +13,23 @@ const Select = ({
   required = false,
   disabled = false,
   className = '',
+  containerClassName = '',
+  dropdownZIndex = 999999,
+  usePortal = true,
   ...props
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const triggerRef = useRef(null);
+  const [menuStyle, setMenuStyle] = useState({ top: 0, left: 0, width: 0 });
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target) && 
-          triggerRef.current && !triggerRef.current.contains(event.target)) {
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(event.target) && 
+        triggerRef.current && !triggerRef.current.contains(event.target)
+      ) {
         setIsOpen(false);
       }
     };
@@ -30,6 +37,26 @@ const Select = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Update portal menu position when open/resize/scroll
+  useEffect(() => {
+    if (!isOpen || !triggerRef.current) return;
+    const updatePosition = () => {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setMenuStyle({
+        top: rect.bottom + 8, // 8px gap
+        left: rect.left,
+        width: rect.width,
+      });
+    };
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [isOpen]);
 
   const selectedOption = options.find(opt => opt.value === value);
 
@@ -44,8 +71,49 @@ const Select = ({
     setIsOpen(false);
   };
 
+  const Menu = (
+    <div
+      ref={dropdownRef}
+      className="bg-white border-2 border-primary-200 rounded-xl shadow-2xl overflow-hidden"
+      style={{
+        maxHeight: '240px',
+        zIndex: dropdownZIndex,
+      }}
+    >
+      <div className="overflow-y-auto py-1" style={{ maxHeight: '232px' }}>
+        {options.length === 0 ? (
+          <div className="px-4 py-3 text-sm text-gray-500 text-center">
+            No options available
+          </div>
+        ) : (
+          options.map((option, index) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => handleSelect(option.value)}
+              className={`
+                w-full px-4 py-3 text-left
+                flex items-center justify-between
+                transition-colors duration-150
+                ${value === option.value
+                  ? 'bg-primary-50 text-primary-700 font-semibold'
+                  : 'text-gray-700 hover:bg-gray-50'}
+                ${index !== 0 ? 'border-t border-gray-100' : ''}
+              `}
+            >
+              <span className="flex-1">{option.label}</span>
+              {value === option.value && (
+                <FiCheck className="h-5 w-5 text-primary-600 flex-shrink-0 ml-2" />
+              )}
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="w-full relative" ref={dropdownRef}>
+    <div className={`w-full relative overflow-visible ${containerClassName}`}>
       {label && (
         <label
           htmlFor={name}
@@ -113,48 +181,35 @@ const Select = ({
 
         {/* Dropdown menu */}
         {isOpen && !disabled && (
-          <div
-            ref={dropdownRef}
-            className="absolute bg-white border-2 border-primary-200 rounded-xl shadow-2xl overflow-hidden"
-            style={{
-              top: 'calc(100% + 8px)',
-              left: 0,
-              right: 0,
-              maxHeight: '240px',
-              zIndex: 999999
-            }}
-          >
-            <div className="overflow-y-auto py-1" style={{ maxHeight: '232px' }}>
-              {options.length === 0 ? (
-                <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                  No options available
-                </div>
-              ) : (
-                options.map((option, index) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => handleSelect(option.value)}
-                    className={`
-                      w-full px-4 py-3 text-left
-                      flex items-center justify-between
-                      transition-colors duration-150
-                      ${value === option.value
-                        ? 'bg-primary-50 text-primary-700 font-semibold'
-                        : 'text-gray-700 hover:bg-gray-50'
-                      }
-                      ${index !== 0 ? 'border-t border-gray-100' : ''}
-                    `}
-                  >
-                    <span className="flex-1">{option.label}</span>
-                    {value === option.value && (
-                      <FiCheck className="h-5 w-5 text-primary-600 flex-shrink-0 ml-2" />
-                    )}
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
+          usePortal
+            ? createPortal(
+                <div
+                  style={{
+                    position: 'fixed',
+                    top: menuStyle.top,
+                    left: menuStyle.left,
+                    width: menuStyle.width,
+                    zIndex: dropdownZIndex,
+                  }}
+                >
+                  {Menu}
+                </div>,
+                document.body
+              )
+            : (
+              <div
+                ref={dropdownRef}
+                className="absolute"
+                style={{
+                  top: 'calc(100% + 8px)',
+                  left: 0,
+                  right: 0,
+                  zIndex: dropdownZIndex,
+                }}
+              >
+                {Menu}
+              </div>
+            )
         )}
       </div>
 

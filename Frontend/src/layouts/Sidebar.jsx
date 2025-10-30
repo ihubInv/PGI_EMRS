@@ -152,7 +152,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const navigation = [
     { name: 'Dashboard', to: '/', icon: FiHome, roles: ['Admin', 'JR', 'SR', 'MWO'] },
     { name: 'Patients', to: '/patients', icon: FiUsers, roles: ['Admin', 'JR', 'SR', 'MWO'] },
-    { name: "Today's Patients", to: '/today-patients', icon: FiCalendar, roles: ['Admin', 'JR', 'SR'] },
+    { name: "Today's Patients", to: '/clinical-today-patients', icon: FiCalendar, roles: ['Admin', 'JR', 'SR'] },
     { name: 'Outpatient Records', to: '/outpatient', icon: FiClipboard, roles: ['Admin', 'MWO'] },
     { name: 'Clinical Proforma', to: '/clinical', icon: FiFileText, roles: ['Admin', 'JR', 'SR'] },
     { name: 'ADL Files', to: '/adl-files', icon: FiFolder, roles: ['Admin', 'JR', 'SR'] },

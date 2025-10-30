@@ -86,6 +86,10 @@ export const patientsApiSlice = apiSlice.injectEndpoints({
       }),
       providesTags: ['Patient'],
     }),
+    getPatientsStats: builder.query({
+      query: () => '/patients/stats',
+      providesTags: ['Stats'],
+    }),
   }),
 });
 
@@ -102,5 +106,6 @@ export const {
   useAssignPatientMutation,
   useCheckCRNumberExistsQuery,
   useGetTodayPatientsQuery,
+  useGetPatientsStatsQuery,
 } = patientsApiSlice;
 

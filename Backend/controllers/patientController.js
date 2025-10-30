@@ -167,6 +167,27 @@ class PatientController {
   //   }
   // }
 
+  static async getPatientStats(req, res) {
+    try {
+      const stats = await Patient.getStats();
+
+      res.json({
+        success: true,
+        data: {
+          stats
+        }
+      });
+    } catch (error) {
+      console.error('Get patient stats error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get patient statistics',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+
+  
 
   static async createPatient(req, res) {
     try {
@@ -964,6 +985,145 @@ class PatientController {
       endOfDay.setHours(23, 59, 59, 999);
 
       const db = require('../config/database');
+
+      // Check if date filter is provided for today's patients
+      if (req.query.date) {
+        const targetDate = new Date(req.query.date);
+        const dateString = targetDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        
+        const pageNum = parseInt(page, 10);
+        const limitNum = parseInt(limit, 10);
+        const offset = (pageNum - 1) * limitNum;
+
+        // Base query to get patients registered on the specified date by MWO users
+        let query = `
+          SELECT 
+            p.*,
+            opr.age_group,
+            opr.marital_status,
+            opr.year_of_marriage,
+            opr.no_of_children,
+            opr.occupation,
+            opr.actual_occupation,
+            opr.education_level,
+            opr.completed_years_of_education,
+            opr.patient_income,
+            opr.family_income,
+            opr.religion,
+            opr.family_type,
+            opr.locality,
+            opr.head_name,
+            opr.head_age,
+            opr.head_relationship,
+            opr.head_education,
+            opr.head_occupation,
+            opr.head_income,
+            opr.distance_from_hospital,
+            opr.mobility,
+            opr.referred_by,
+            opr.exact_source,
+            opr.present_address,
+            opr.permanent_address,
+            opr.local_address,
+            opr.school_college_office,
+            opr.contact_number,
+            u.name as filled_by_name,
+            u.role as filled_by_role
+          FROM patients p
+          INNER JOIN outpatient_record opr ON p.id = opr.patient_id
+          INNER JOIN users u ON opr.filled_by = u.id
+          WHERE u.role = 'MWO'
+            AND DATE(opr.created_at) = DATE($1)
+        `;
+        
+        let countQuery = `
+          SELECT COUNT(*) as total
+          FROM patients p
+          INNER JOIN outpatient_record opr ON p.id = opr.patient_id
+          INNER JOIN users u ON opr.filled_by = u.id
+          WHERE u.role = 'MWO'
+            AND DATE(opr.created_at) = DATE($1)
+        `;
+        
+        const params = [dateString];
+        // If JR/SR, restrict to assigned doctor
+        if (req.user?.role === 'JR' || req.user?.role === 'SR') {
+          query += ` AND p.assigned_doctor_id = $2`;
+          countQuery += ` AND p.assigned_doctor_id = $2`;
+          params.push(req.user.id);
+        }
+        
+        query += ` ORDER BY opr.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        const queryParams = [...params, limitNum, offset];
+
+        const [patientsResult, countResult] = await Promise.all([
+          db.query(query, queryParams),
+          db.query(countQuery, params)
+        ]);
+
+        const patients = patientsResult.rows.map(row => ({
+          id: row.id,
+          cr_no: row.cr_no,
+          psy_no: row.psy_no,
+          adl_no: row.adl_no,
+          special_clinic_no: row.special_clinic_no,
+          name: row.name,
+          sex: row.sex,
+          actual_age: row.actual_age,
+          age_group: row.age_group,
+          marital_status: row.marital_status,
+          year_of_marriage: row.year_of_marriage,
+          no_of_children: row.no_of_children,
+          occupation: row.occupation,
+          actual_occupation: row.actual_occupation,
+          education_level: row.education_level,
+          completed_years_of_education: row.completed_years_of_education,
+          patient_income: row.patient_income,
+          family_income: row.family_income,
+          religion: row.religion,
+          family_type: row.family_type,
+          locality: row.locality,
+          head_name: row.head_name,
+          head_age: row.head_age,
+          head_relationship: row.head_relationship,
+          head_education: row.head_education,
+          head_occupation: row.head_occupation,
+          head_income: row.head_income,
+          distance_from_hospital: row.distance_from_hospital,
+          mobility: row.mobility,
+          referred_by: row.referred_by,
+          exact_source: row.exact_source,
+          present_address: row.present_address,
+          permanent_address: row.permanent_address,
+          local_address: row.local_address,
+          school_college_office: row.school_college_office,
+          contact_number: row.contact_number,
+          filled_by_name: row.filled_by_name,
+          filled_by_role: row.filled_by_role,
+          created_at: row.created_at,
+          has_adl_file: row.has_adl_file,
+          file_status: row.file_status,
+          case_complexity: row.case_complexity,
+          assigned_room: row.assigned_room,
+          assigned_doctor_id: row.assigned_doctor_id || null,
+        }));
+
+        const total = parseInt(countResult.rows[0].total, 10);
+
+        return res.json({
+          success: true,
+          data: {
+            patients,
+            pagination: {
+              page: pageNum,
+              limit: limitNum,
+              total,
+              pages: Math.ceil(total / limitNum)
+            },
+            date: dateString
+          }
+        });
+      }
 
       // Query to get patients registered today by MWO users
       const query = `

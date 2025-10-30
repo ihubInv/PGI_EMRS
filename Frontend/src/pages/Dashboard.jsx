@@ -2,7 +2,7 @@ import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { FiUsers, FiFileText, FiFolder, FiClipboard, FiTrendingUp, FiEye, FiEdit, FiTrash2, FiUserPlus } from 'react-icons/fi';
 import { selectCurrentUser } from '../features/auth/authSlice';
-import { useGetPatientStatsQuery } from '../features/patients/patientsApiSlice';
+import { useGetAllPatientsQuery, useGetPatientsStatsQuery, useGetPatientStatsQuery } from '../features/patients/patientsApiSlice';
 import { useGetClinicalStatsQuery, useGetCasesBySeverityQuery, useGetCasesByDecisionQuery, useGetMyProformasQuery } from '../features/clinical/clinicalApiSlice';
 import { useGetADLStatsQuery, useGetFilesByStatusQuery } from '../features/adl/adlApiSlice';
 import { useGetOutpatientStatsQuery, useGetMyRecordsQuery } from '../features/outpatient/outpatientApiSlice';
@@ -86,10 +86,22 @@ const Dashboard = () => {
 
   // Role-specific stats for MWO
   const isMwo = user?.role === 'MWO';
-  const { data: outpatientStats } = useGetOutpatientStatsQuery(undefined, { skip: !isMwo, refetchOnMountOrArgChange: true });
+  // const { data: outpatientStats } = useGetOutpatientStatsQuery(undefined, { skip: !isMwo, refetchOnMountOrArgChange: true });
+  const { data: outpatientStats } = useGetPatientsStatsQuery(undefined, { skip: !isMwo, refetchOnMountOrArgChange: true });
+ 
+  
   const { data: adlByStatus } = useGetFilesByStatusQuery(undefined, { skip: !isMwo });
-  const { data: myRecords } = useGetMyRecordsQuery({ page: 1, limit: 10 }, { skip: !isMwo, refetchOnMountOrArgChange: true });
+  // const { data: myRecords } = useGetMyRecordsQuery({ page: 1, limit: 10 }, { skip: !isMwo, refetchOnMountOrArgChange: true });
+  const { data: myRecords } = useGetAllPatientsQuery({ page: 1, limit: 10 }, { skip: !isMwo, refetchOnMountOrArgChange: true });
 
+  // const { data, isLoading, isFetching, refetch, error } = useGetAllPatientsQuery({
+  //   page:1,
+  //   limit,
+  //   search: search.trim() || undefined // Only include search if it has a value
+  // }, {
+  //   pollingInterval: 30000, // Auto-refresh every 30 seconds
+  //   refetchOnMountOrArgChange: true,
+  // });
   // Helpers
   const sumValues = (obj) => Object.values(obj || {}).reduce((acc, v) => acc + (Number(v) || 0), 0);
 
@@ -231,10 +243,10 @@ const Dashboard = () => {
         )}
         {isMwo && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard title="Total Outpatient Records" value={outpatientStats?.data?.stats?.total_records || 0} icon={FiClipboard} color="bg-blue-500" to="/outpatient" />
-            <StatCard title="My Records" value={myRecords?.data?.pagination?.total || 0} icon={FiFileText} color="bg-green-500" to="/outpatient" />
+            <StatCard title="Total Patients Records" value={outpatientStats?.data?.stats?.total_records || 0} icon={FiClipboard} color="bg-blue-500" to="/patients" />
+            {/* <StatCard title="My Records" value={myRecords?.data?.pagination?.total || 0} icon={FiFileText} color="bg-green-500" to="/outpatient" /> */}
             <StatCard title="All Patients" value={myRecords?.data?.pagination?.total || 0} icon={FiUsers} color="bg-purple-500" to="/patients" />
-            <StatCard title="Register New" value="+" icon={FiTrendingUp} color="bg-orange-500" to="/outpatient/new" />
+            <StatCard title="Register New" value="+" icon={FiTrendingUp} color="bg-orange-500" to="/patients/new" />
           </div>
         )}
 

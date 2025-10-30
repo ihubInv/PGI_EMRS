@@ -1072,7 +1072,9 @@ const CreatePatient = () => {
                 <span className="text-xl font-bold text-gray-900">Basic Information</span>
               </div>
             }
-            className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+            // className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
+            className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm overflow-visible"  // Added overflow-visible
+            >
             <div className="space-y-8">
               {/* Patient Identification */}
               <div className="space-y-6">
@@ -1189,7 +1191,8 @@ const CreatePatient = () => {
             <div className="border-t border-gray-200"></div>
 
               {/* Appointment & Assignment */}
-              <div className="space-y-6">
+              
+              {/* <div className="space-y-6">
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full"></div>
                   <h4 className="text-xl font-bold text-gray-900">Appointment & Assignment</h4>
@@ -1209,7 +1212,7 @@ const CreatePatient = () => {
                     value={formData.worked_up_on}
                     onChange={handleChange}
                   />
-                  <div className="space-y-2">
+                  <div className="space-y-2 ">
                     <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                       <FiUser className="w-4 h-4 text-primary-600" />
                       Assign Doctor (JR/SR)
@@ -1226,8 +1229,47 @@ const CreatePatient = () => {
                     />
                   </div>
                 </div>
-              </div>
-
+              </div> */}
+<div className="space-y-6">
+  <div className="flex items-center gap-3">
+    <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full"></div>
+    <h4 className="text-xl font-bold text-gray-900">Appointment & Assignment</h4>
+  </div>
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <DateInput
+      icon={<FiCalendar className="w-4 h-4" />}
+      label="Seen in Walk-in-on"
+      name="seen_in_walk_in_on"
+      value={formData.seen_in_walk_in_on}
+      onChange={handleChange}
+    />
+    <DateInput
+      icon={<FiCalendar className="w-4 h-4" />}
+      label="Worked up on"
+      name="worked_up_on"
+      value={formData.worked_up_on}
+      onChange={handleChange}
+    />
+    <div className="space-y-2">
+      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+        <FiUser className="w-4 h-4 text-primary-600" />
+        Assign Doctor (JR/SR)
+      </label>
+      <Select
+        name="assigned_doctor_id"
+        value={formData.assigned_doctor_id}
+        onChange={handlePatientChange}
+        options={(usersData?.data?.users || [])
+          .filter(u => u.role === 'JR' || u.role === 'SR')
+          .map(u => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
+        placeholder="Select doctor (optional)"
+        className="bg-gradient-to-r from-violet-50 to-purple-50"
+        containerClassName="relative z-[9999]"
+        dropdownZIndex={2147483647}
+      />
+    </div>
+  </div>
+</div>
           </div>
         </Card>
 
@@ -1241,7 +1283,9 @@ const CreatePatient = () => {
                 <span className="text-xl font-bold text-gray-900">Personal Information</span>
               </div>
             }
-            className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+            // className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
+            className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm overflow-visible"  // Added overflow-visible
+            >
             <div className="space-y-8">
               <RadioGroup
                 label="Marital Status"

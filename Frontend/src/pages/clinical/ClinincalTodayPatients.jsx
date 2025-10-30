@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiCalendar, FiUser, FiPhone, FiMapPin, FiClock, FiEye, FiFilter, FiRefreshCw } from 'react-icons/fi';
-import { useGetTodayPatientsQuery } from '../../features/patients/patientsApiSlice';
+import { FiCalendar, FiUser, FiPhone, FiMapPin, FiClock, FiEye, FiFilter, FiRefreshCw, FiPlusCircle } from 'react-icons/fi';
+import { useGetAllPatientsQuery, useGetTodayPatientsQuery } from '../../features/patients/patientsApiSlice';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '../../features/auth/authSlice';
 
-const TodayPatients = () => {
+const ClinicalTodayPatients = () => {
   const navigate = useNavigate();
+  const currentUser = useSelector(selectCurrentUser);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [showFilters, setShowFilters] = useState(false);
@@ -24,11 +27,30 @@ const TodayPatients = () => {
     case_complexity: '',
   });
 
-  const { data, error, isLoading, refetch } = useGetTodayPatientsQuery({
+  // const { data, error, isLoading, refetch } = useGetTodayPatientsQuery({
+  //   page: currentPage,
+  //   limit: 10,
+  //   date: selectedDate,
+  // });
+
+
+  // const { data, error, isLoading, refetch } = useGetAllPatientsQuery({
+  //   page: currentPage,
+  //   limit: 10,
+  // });
+
+
+  const { data, isLoading, isFetching, refetch, error } = useGetAllPatientsQuery({
     page: currentPage,
     limit: 10,
-    date: selectedDate,
+    // search: search.trim() || undefined // Only include search if it has a value
+  }, {
+    pollingInterval: 30000, // Auto-refresh every 30 seconds
+    refetchOnMountOrArgChange: true,
   });
+
+
+
 
   const handleDateChange = (e) => {
     setSelectedDate(e.target.value);
@@ -57,12 +79,85 @@ const TodayPatients = () => {
     });
   };
 
-  const filteredPatients = data?.data?.patients?.filter(patient => {
+  // Filter function to show only today's patients
+  // const filterTodayPatients = (patients) => {
+  //   debugger
+  //   if (!patients || !Array.isArray(patients)) return [];
+    
+  //   const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+    
+  //   return patients.filter(patient => {
+  //     // Check if patient has created_at date
+  //     if (!patient.created_at) return false;
+      
+  //     // Convert patient's created_at to date string
+  //     const patientDate = new Date(patient.created_at).toISOString().split('T')[0];
+      
+  //     // Return true if patient was created today
+  //     return patientDate === today;
+  //   });
+  // };
+
+  // Helper: get YYYY-MM-DD string in IST for any date-like input
+  const toISTDateString = (dateInput) => {
+    try {
+      const d = new Date(dateInput);
+      return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // YYYY-MM-DD
+    } catch (_) {
+      return '';
+    }
+  };
+
+  // Filter to only include patients created on selectedDate (IST) and by MWO when info is available
+  const filterTodayPatients = (patients) => {
+    if (!Array.isArray(patients)) return [];
+
+    const targetDate = toISTDateString(selectedDate || new Date());
+
+    return patients.filter((patient) => {
+      if (!patient?.created_at) return false;
+
+      const patientDateIST = toISTDateString(patient.created_at);
+      if (patientDateIST !== targetDate) return false;
+
+      // If API provides who filled the record, ensure it's MWO; otherwise accept
+      if (patient?.filled_by_role && patient.filled_by_role !== 'MWO') return false;
+
+      return true;
+    });
+  };
+
+  // Safely derive patients from API (handles both {data:{patients}} and {patients})
+  const apiPatients = data?.data?.patients || data?.patients || [];
+  const apiPagination = data?.data?.pagination || data?.pagination || undefined;
+
+  const todayPatients = filterTodayPatients(apiPatients).filter((p) => {
+    if (!currentUser) return false;
+    if (currentUser.role === 'Admin') return true;
+    // Only allow JR/SR to see patients assigned to them
+    if ((currentUser.role === 'JR' || currentUser.role === 'SR')) {
+      // Prefer direct field; fallback to latest assignment fields if present
+      if (p.assigned_doctor_id) return Number(p.assigned_doctor_id) === Number(currentUser.id);
+      if (p.assigned_doctor) return Number(p.assigned_doctor) === Number(currentUser.id);
+      if (p.assigned_doctor_name && p.assigned_doctor_role) {
+        // If role exists but id missing, be conservative: hide
+        return false;
+      }
+      // If no assignment info present, hide for doctors
+      return false;
+    }
+    // Other roles: default deny
+    return false;
+  });
+  console.log("Today's patients:", todayPatients);
+  
+  
+  const filteredPatients = todayPatients.filter(patient => {
     return Object.entries(filters).every(([key, value]) => {
       if (!value) return true;
       return patient[key]?.toString().toLowerCase().includes(value.toLowerCase());
     });
-  }) || [];
+  });
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
@@ -126,152 +221,36 @@ const TodayPatients = () => {
   return (
     <div className="w-full px-6 space-y-6">
       {/* Header */}
-      <div className="text-center space-y-2 mb-6">
-        <p className="text-sm text-gray-700 font-medium">Department of Psychiatry</p>
-        <p className="text-xs text-gray-600">Postgraduate Institute of Medical Education & Research, Chandigarh</p>
-        <h1 className="text-3xl font-bold text-gray-900 tracking-wide flex items-center justify-center gap-3">
-          <FiCalendar className="w-8 h-8 text-primary-600" />
-          Today's Patients
-        </h1>
-        <p className="text-sm text-gray-600">
-          Patients registered by MWO on {formatDate(selectedDate)}
-        </p>
-      </div>
-
-      {/* Controls */}
-      <Card className="mb-6">
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            <div className="flex items-center gap-2">
-              <FiCalendar className="w-5 h-5 text-primary-600" />
-              <label className="text-sm font-medium text-gray-700">Date:</label>
+      <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-600/10 to-primary-800/10 rounded-3xl"></div>
+          <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20">
+            <div className="flex justify-between items-center">
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-lg">
+                    <FiUser className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-4xl  font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
+                    Today's Patients
+                    </h1>
+                    <p className="text-gray-600 mt-2 text-lg">
+                      Department of Psychiatry
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Postgraduate Institute of Medical Education & Research, Chandigarh
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <Input
-              type="date"
-              value={selectedDate}
-              onChange={handleDateChange}
-              className="w-48"
-            />
-          </div>
-
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2"
-            >
-              <FiFilter className="w-4 h-4" />
-              {showFilters ? 'Hide Filters' : 'Show Filters'}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => refetch()}
-              className="flex items-center gap-2"
-            >
-              <FiRefreshCw className="w-4 h-4" />
-              Refresh
-            </Button>
           </div>
         </div>
-
-        {/* Filters */}
-        {showFilters && (
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Select
-                label="Sex"
-                name="sex"
-                value={filters.sex}
-                onChange={handleFilterChange}
-                options={[
-                  { value: '', label: 'All Sex' },
-                  { value: 'M', label: 'Male' },
-                  { value: 'F', label: 'Female' },
-                  { value: 'Other', label: 'Other' },
-                ]}
-              />
-              <Select
-                label="Age Group"
-                name="age_group"
-                value={filters.age_group}
-                onChange={handleFilterChange}
-                options={[
-                  { value: '', label: 'All Age Groups' },
-                  { value: '0-15', label: '0-15' },
-                  { value: '15-30', label: '15-30' },
-                  { value: '30-45', label: '30-45' },
-                  { value: '45-60', label: '45-60' },
-                  { value: '60+', label: '60+' },
-                ]}
-              />
-              <Select
-                label="Marital Status"
-                name="marital_status"
-                value={filters.marital_status}
-                onChange={handleFilterChange}
-                options={[
-                  { value: '', label: 'All Marital Status' },
-                  { value: 'Single', label: 'Single' },
-                  { value: 'Married', label: 'Married' },
-                  { value: 'Divorced', label: 'Divorced' },
-                  { value: 'Widowed', label: 'Widowed' },
-                ]}
-              />
-              <Select
-                label="Occupation"
-                name="occupation"
-                value={filters.occupation}
-                onChange={handleFilterChange}
-                options={[
-                  { value: '', label: 'All Occupations' },
-                  { value: 'Employed', label: 'Employed' },
-                  { value: 'Unemployed', label: 'Unemployed' },
-                  { value: 'Student', label: 'Student' },
-                  { value: 'Retired', label: 'Retired' },
-                  { value: 'Housewife', label: 'Housewife' },
-                ]}
-              />
-              <Select
-                label="Religion"
-                name="religion"
-                value={filters.religion}
-                onChange={handleFilterChange}
-                options={[
-                  { value: '', label: 'All Religions' },
-                  { value: 'Hinduism', label: 'Hinduism' },
-                  { value: 'Islam', label: 'Islam' },
-                  { value: 'Christianity', label: 'Christianity' },
-                  { value: 'Sikhism', label: 'Sikhism' },
-                  { value: 'Other', label: 'Other' },
-                ]}
-              />
-              <Select
-                label="Family Type"
-                name="family_type"
-                value={filters.family_type}
-                onChange={handleFilterChange}
-                options={[
-                  { value: '', label: 'All Family Types' },
-                  { value: 'Nuclear', label: 'Nuclear' },
-                  { value: 'Joint', label: 'Joint' },
-                  { value: 'Extended', label: 'Extended' },
-                ]}
-              />
-            </div>
-            <div className="mt-4 flex justify-end">
-              <Button variant="outline" onClick={clearFilters}>
-                Clear Filters
-              </Button>
-            </div>
-          </div>
-        )}
-      </Card>
-
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card className="text-center">
-          <div className="text-2xl font-bold text-primary-600">{data?.data?.pagination?.total || 0}</div>
-          <div className="text-sm text-gray-600">Total Patients</div>
+          <div className="text-2xl font-bold text-primary-600">{todayPatients.length}</div>
+          <div className="text-sm text-gray-600">Today's Patients</div>
         </Card>
         <Card className="text-center">
           <div className="text-2xl font-bold text-green-600">
@@ -297,7 +276,7 @@ const TodayPatients = () => {
       <Card>
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">
-            Patients ({filteredPatients.length} of {data?.data?.pagination?.total || 0})
+            Today's Patients ({filteredPatients.length} of {todayPatients.length})
           </h3>
         </div>
 
@@ -307,8 +286,8 @@ const TodayPatients = () => {
             <h3 className="text-lg font-medium text-gray-900 mb-2">No patients found</h3>
             <p className="text-gray-600">
               {Object.values(filters).some(f => f) 
-                ? 'No patients match the current filters for the selected date.'
-                : 'No patients were registered by MWO on the selected date.'
+                ? 'No patients match the current filters for today.'
+                : 'No patients were registered by MWO today.'
               }
             </p>
           </div>
@@ -442,6 +421,17 @@ const TodayPatients = () => {
                       View Details
                     </Button>
                   </div>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/clinical/new?patient_id=${patient.id}`)}
+                      className="flex items-center gap-2"
+                    >
+                      <FiPlusCircle className="w-4 h-4" />
+                      Create a Proforma
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -449,11 +439,11 @@ const TodayPatients = () => {
         )}
 
         {/* Pagination */}
-        {data?.data?.pagination?.pages > 1 && (
+        {apiPagination?.pages > 1 && (
           <div className="px-6 py-4 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-700">
-                Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, data.data.pagination.total)} of {data.data.pagination.total} patients
+                Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, apiPagination.total)} of {apiPagination.total} patients
               </div>
               <div className="flex gap-2">
                 <Button
@@ -465,13 +455,13 @@ const TodayPatients = () => {
                   Previous
                 </Button>
                 <span className="px-3 py-2 text-sm text-gray-700">
-                  Page {currentPage} of {data.data.pagination.pages}
+                  Page {currentPage} of {apiPagination.pages}
                 </span>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(data.data.pagination.pages, prev + 1))}
-                  disabled={currentPage === data.data.pagination.pages}
+                  onClick={() => setCurrentPage(prev => Math.min(apiPagination.pages, prev + 1))}
+                  disabled={currentPage === apiPagination.pages}
                 >
                   Next
                 </Button>
@@ -484,4 +474,4 @@ const TodayPatients = () => {
   );
 };
 
-export default TodayPatients;
+export default ClinicalTodayPatients;

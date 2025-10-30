@@ -460,6 +460,12 @@ router.post('/register-complete', authenticateToken, authorizeRoles('MWO'), vali
  *         schema:
  *           type: string
  *         description: Filter by assigned room
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: When provided (YYYY-MM-DD), returns patients registered on that date by MWO. For JR/SR roles, only patients assigned to the logged-in doctor are returned. Admin sees all.
  *     responses:
  *       200:
  *         description: Patients retrieved successfully
@@ -1035,6 +1041,25 @@ router.get('/psy/:psy_no', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR
  *       500:
  *         description: Server error
  */
-router.get('/adl/:adl_no', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), PatientController.getPatientByADLNo);
+router.get('/adl/:adl_no', authenticateToken,  PatientController.getPatientByADLNo);
+
+/**
+ * @swagger
+ * /api/patients/stats:
+ *   get:
+ *     summary: Get patient record statistics
+ *     tags: [Patient Records]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Statistics retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.get('/stats', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), PatientController.getPatientStats);
+
 
 module.exports = router;

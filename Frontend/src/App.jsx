@@ -18,7 +18,7 @@ import PatientsPage from './pages/patients/PatientsPage';
 import CreatePatient from './pages/patients/CreatePatient';
 import PatientDetails from './pages/patients/PatientDetails';
 import SelectExistingPatient from './pages/patients/SelectExistingPatient';
-import TodayPatients from './pages/patients/TodayPatients';
+
 
 // Clinical Proforma Pages
 import ClinicalProformaPage from './pages/clinical/ClinicalProformaPage';
@@ -45,6 +45,7 @@ import Profile from './pages/Profile';
 
 // API Test (Development only)
 import ApiTest from './pages/ApiTest';
+import ClinicalTodayPatients from './pages/clinical/ClinincalTodayPatients';
 
 function App() {
   const isAuthenticated = useSelector(selectIsAuthenticated);
@@ -85,9 +86,10 @@ function App() {
               {/* <Route path="/patients/:id/edit" element={<EditPatient />} /> */}
 
               {/* Today's Patients - JR, SR, and Admin */}
-              <Route element={<ProtectedRoute allowedRoles={['Admin', 'JR', 'SR']} />}>
-                <Route path="/today-patients" element={<TodayPatients />} />
-              </Route>
+              {/* <Route element={<ProtectedRoute allowedRoles={['Admin', 'JR', 'SR']} />}> */}
+                {/* <Route path="/today-patients" element={<TodayPatients />} /> */}
+               
+              {/* </Route> */}
 
               {/* Outpatient Records - MWO and Admin only */}
               {/* <Route element={<ProtectedRoute allowedRoles={['Admin', 'MWO']} />}>
@@ -103,6 +105,7 @@ function App() {
                 <Route path="/clinical" element={<ClinicalProformaPage />} />
                 <Route path="/clinical/new" element={<CreateClinicalProforma />} />
                 <Route path="/clinical/:id" element={<ClinicalProformaDetails />} />
+                <Route path="/clinical-today-patients" element={<ClinicalTodayPatients />} />
                 <Route path="/clinical/:id/edit" element={<div>Edit Clinical Proforma</div>} />
               </Route>
 
