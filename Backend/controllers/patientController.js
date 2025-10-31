@@ -191,8 +191,41 @@ class PatientController {
 
   static async createPatient(req, res) {
     try {
-      const { name, sex, actual_age, assigned_room, cr_no, psy_no } = req.body;
-  
+      const { name, sex, actual_age, assigned_room, cr_no, psy_no, patient_id } = req.body;
+
+      // If patient_id is provided, this is a visit for an existing patient
+      if (patient_id) {
+        // Find the existing patient
+        const existingPatient = await Patient.findById(patient_id);
+        if (!existingPatient) {
+          return res.status(404).json({
+            success: false,
+            message: 'Patient not found'
+          });
+        }
+
+        // Create a visit record for the existing patient
+        const visit = await PatientVisit.assignPatient({
+          patient_id: parseInt(patient_id),
+          assigned_doctor: existingPatient.assigned_doctor_id || null,
+          room_no: existingPatient.assigned_room || assigned_room || null,
+          visit_date: new Date().toISOString().slice(0, 10),
+          visit_type: 'follow_up',
+          notes: `Visit created via Existing Patient flow`
+        });
+
+        // Return the existing patient with visit info
+        return res.status(201).json({
+          success: true,
+          message: 'Visit record created successfully',
+          data: {
+            patient: existingPatient.toJSON(),
+            visit: visit
+          }
+        });
+      }
+
+      // Otherwise, create a new patient
       const patient = await Patient.create({
         name,
         sex,
@@ -201,7 +234,7 @@ class PatientController {
         cr_no,
         psy_no
       });
-  
+
       res.status(201).json({
         success: true,
         message: 'Patient registered successfully',
@@ -400,18 +433,27 @@ class PatientController {
 
       const result = await Patient.findAll(page, limit, filters);
 
-      // Enrich with latest assignment info (assigned doctor) for each patient
+      // Enrich with latest assignment info (assigned doctor) and visit info for each patient
       try {
         const db = require('../config/database');
         const client = db.getClient();
         const patientIds = (result.patients || []).map(p => p.id);
         if (patientIds.length > 0) {
+          const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD format
+          
           // Fetch latest visit per patient (ordered by visit_date desc) and join doctor user
           const { data: visits, error } = await client
             .from('patient_visits')
             .select(`patient_id, visit_date, assigned_doctor, users:assigned_doctor(id, name, role)`) 
             .in('patient_id', patientIds)
             .order('visit_date', { ascending: false });
+
+          // Fetch patients with visits today
+          const { data: visitsToday, error: visitsTodayError } = await client
+            .from('patient_visits')
+            .select(`patient_id, visit_date, assigned_doctor, users:assigned_doctor(id, name, role)`) 
+            .in('patient_id', patientIds)
+            .eq('visit_date', today);
 
           if (!error && Array.isArray(visits)) {
             const latestByPatient = new Map();
@@ -420,14 +462,29 @@ class PatientController {
                 latestByPatient.set(v.patient_id, v);
               }
             }
+            
+            // Create a set of patient IDs with visits today
+            const patientsWithVisitToday = new Set();
+            if (!visitsTodayError && Array.isArray(visitsToday)) {
+              visitsToday.forEach(v => patientsWithVisitToday.add(v.patient_id));
+            }
+            
             result.patients = result.patients.map(p => {
               const latest = latestByPatient.get(p.id);
+              const hasVisitToday = patientsWithVisitToday.has(p.id);
+              // If patient has visit today, use that visit's info, otherwise use latest
+              const visitInfo = hasVisitToday && visitsToday?.find(v => v.patient_id === p.id) 
+                ? visitsToday.find(v => v.patient_id === p.id)
+                : latest;
+              
               return {
                 ...p,
-                assigned_doctor_id: latest?.assigned_doctor || null,
-                assigned_doctor_name: latest?.users?.name || null,
-                assigned_doctor_role: latest?.users?.role || null,
+                assigned_doctor_id: visitInfo?.assigned_doctor || latest?.assigned_doctor || null,
+                assigned_doctor_name: visitInfo?.users?.name || latest?.users?.name || null,
+                assigned_doctor_role: visitInfo?.users?.role || latest?.users?.role || null,
                 last_assigned_date: latest?.visit_date || null,
+                visit_date: visitInfo?.visit_date || null, // Include visit_date for today's filter
+                has_visit_today: hasVisitToday,
               };
             });
           }

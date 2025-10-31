@@ -121,7 +121,7 @@ const CreatePatient = () => {
   const [assignPatient, { isLoading: isAssigning }] = useAssignPatientMutation();
   // const [createPatientComplete] = useCreatePatientCompleteMutation();
   const { data: usersData } = useGetDoctorsQuery({ page: 1, limit: 100 });
-  
+
   // State declarations first
   const [errors, setErrors] = useState({});
   const [crValidationTimeout, setCrValidationTimeout] = useState(null);
@@ -601,12 +601,12 @@ const CreatePatient = () => {
 
   const handleSubmit = async (e) => {
   debugger;
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!validate()) {
-    toast.error('Please fix the errors in the form');
-    return;
-  }
+    if (!validate()) {
+      toast.error('Please fix the errors in the form');
+      return;
+    }
 
   // Get patient data early for validation
   const patientName = (formData.name || formData.top_name || '').trim();
@@ -653,35 +653,35 @@ const CreatePatient = () => {
       seen_in_walk_in_on: formData.seen_in_walk_in_on || formData.top_date,
       worked_up_on: formData.worked_up_on,
       special_clinic_no: formData.special_clinic_no,
-      age_group: formData.age_group,
-      marital_status: formData.marital_status,
+        age_group: formData.age_group,
+        marital_status: formData.marital_status,
       ...(formData.year_of_marriage && { year_of_marriage: parseInt(formData.year_of_marriage) }),
       ...(formData.no_of_children && { no_of_children: parseInt(formData.no_of_children) }),
       ...(formData.no_of_children_male && { no_of_children_male: parseInt(formData.no_of_children_male) }),
       ...(formData.no_of_children_female && { no_of_children_female: parseInt(formData.no_of_children_female) }),
-      occupation: formData.occupation,
-      actual_occupation: formData.actual_occupation,
-      education_level: formData.education_level,
+        occupation: formData.occupation,
+        actual_occupation: formData.actual_occupation,
+        education_level: formData.education_level,
       ...(formData.completed_years_of_education && { completed_years_of_education: parseInt(formData.completed_years_of_education) }),
       ...(formData.patient_income && { patient_income: parseFloat(formData.patient_income) }),
       ...(formData.family_income && { family_income: parseFloat(formData.family_income) }),
-      religion: formData.religion,
-      family_type: formData.family_type,
-      locality: formData.locality,
+        religion: formData.religion,
+        family_type: formData.family_type,
+        locality: formData.locality,
       head_name: formData.head_name || formData.top_father_name,
       ...(formData.head_age && { head_age: parseInt(formData.head_age) }),
-      head_relationship: formData.head_relationship,
-      head_education: formData.head_education,
-      head_occupation: formData.head_occupation,
+        head_relationship: formData.head_relationship,
+        head_education: formData.head_education,
+        head_occupation: formData.head_occupation,
       ...(formData.head_income && { head_income: parseFloat(formData.head_income) }),
-      distance_from_hospital: formData.distance_from_hospital,
-      mobility: formData.mobility,
-      referred_by: formData.referred_by,
-      exact_source: formData.exact_source,
-      present_address: formData.present_address,
-      permanent_address: formData.permanent_address,
-      local_address: formData.local_address,
-      school_college_office: formData.school_college_office,
+        distance_from_hospital: formData.distance_from_hospital,
+        mobility: formData.mobility,
+        referred_by: formData.referred_by,
+        exact_source: formData.exact_source,
+        present_address: formData.present_address,
+        permanent_address: formData.permanent_address,
+        local_address: formData.local_address,
+        school_college_office: formData.school_college_office,
       contact_number: formData.contact_number || formData.top_mobile_no,
       
       // Quick Entry fields
@@ -740,14 +740,14 @@ const CreatePatient = () => {
       } catch (_) {}
     }
 
-    // Reset form after successful submission
-    dispatch(resetPatientRegistrationForm());
+      // Reset form after successful submission
+      dispatch(resetPatientRegistrationForm());
 
-    // Navigate to patients list
-    navigate('/patients');
+      // Navigate to patients list
+      navigate('/patients');
 
-  } catch (err) {
-    console.error('Submission error:', err);
+    } catch (err) {
+      console.error('Submission error:', err);
     
     // Handle specific error cases
     if (err?.data?.message?.includes('duplicate key value violates unique constraint "patients_cr_no_key"') || 
@@ -775,7 +775,7 @@ const CreatePatient = () => {
                   <div className="p-3 bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-lg">
                     <FiUser className="w-8 h-8 text-white" />
                   </div>
-                  <div>
+      <div>
                     <h1 className="text-4xl  font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
                       Register New Patient
                     </h1>
@@ -790,7 +790,7 @@ const CreatePatient = () => {
               </div>
             </div>
           </div>
-        </div>
+      </div>
 
         {/* Quick Entry Section */}
         <Card
@@ -872,8 +872,8 @@ const CreatePatient = () => {
                   icon={<FiHeart className="w-4 h-4" />}
                   className="bg-gradient-to-r from-pink-50 to-rose-50 p-4 rounded-lg"
                   error={errors.patientSex}
-                />
-              </div>
+              />
+            </div>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                   <FiShield className="w-4 h-4 text-primary-600" />
@@ -963,7 +963,7 @@ const CreatePatient = () => {
                   </label>
                   <div className="text-sm text-gray-600 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-100 font-medium">
                     Mon, Tue, Wed, Thu, Fri, Sat
-                  </div>
+          </div>
                 </div>
               </div>
             </div>
@@ -974,18 +974,18 @@ const CreatePatient = () => {
               <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
                 <div className="p-2 bg-primary-100 rounded-lg">
                   <FiMapPin className="w-6 h-6 text-primary-600" />
-                </div>
+            </div>
                 Address Details
               </h4>
               
-              <div className="space-y-6">
+          <div className="space-y-6">
                 {/* Address Line 1 */}
                 <IconInput
                   icon={<FiHome className="w-4 h-4" />}
                   label="Address Line 1 (House No., Street, Locality)"
                   name="top_address_line_1"
                   value={formData.top_address_line_1 || ''}
-                  onChange={handleChange}
+                onChange={handleChange}
                   placeholder="Enter house number, street, locality"
                   required
                   className="bg-gradient-to-r from-green-50 to-emerald-50"
@@ -1008,10 +1008,10 @@ const CreatePatient = () => {
                       <FiMapPin className="w-4 h-4 text-primary-600" />
                       State
                     </label>
-                    <Select
+              <Select
                       name="top_state"
                       value={formData.top_state || ''}
-                      onChange={handleChange}
+                onChange={handleChange}
                       options={INDIAN_STATES}
                       placeholder="Select state"
                       required
@@ -1023,7 +1023,7 @@ const CreatePatient = () => {
                     label="District"
                     name="top_district"
                     value={formData.top_district || ''}
-                    onChange={handleChange}
+                onChange={handleChange}
                     placeholder="Enter district"
                     required
                     className="bg-gradient-to-r from-orange-50 to-yellow-50"
@@ -1037,7 +1037,7 @@ const CreatePatient = () => {
                     label="City / Town / Village"
                     name="top_city_town_village"
                     value={formData.top_city_town_village || ''}
-                    onChange={handleChange}
+                onChange={handleChange}
                     placeholder="Enter city, town or village"
                     required
                     className="bg-gradient-to-r from-teal-50 to-cyan-50"
@@ -1052,9 +1052,9 @@ const CreatePatient = () => {
                     type="number"
                     required
                     className="bg-gradient-to-r from-pink-50 to-rose-50"
-                  />
-                </div>
-              </div>
+              />
+            </div>
+          </div>
             </div>
 
        
@@ -1063,21 +1063,21 @@ const CreatePatient = () => {
 
       <form onSubmit={handleSubmit}>
           {/* Basic Information */}
-          <Card
-            title={
+  <Card
+    title={
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-primary-100 rounded-lg">
                   <FiUser className="w-6 h-6 text-primary-600" />
                 </div>
                 <span className="text-xl font-bold text-gray-900">Basic Information</span>
-              </div>
-            }
+      </div>
+    }
             // className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
             className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm overflow-visible"  // Added overflow-visible
             >
             <div className="space-y-8">
               {/* Patient Identification */}
-              <div className="space-y-6">
+    <div className="space-y-6">
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full"></div>
                   <h4 className="text-xl font-bold text-gray-900">Patient Identification</h4>
@@ -1144,33 +1144,33 @@ const CreatePatient = () => {
                   <IconInput
                     icon={<FiUser className="w-4 h-4" />}
                     label="Name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handlePatientChange}
-                    placeholder="Enter full name"
-                    error={errors.patientName}
-                    required
+        name="name"
+        value={formData.name}
+        onChange={handlePatientChange}
+        placeholder="Enter full name"
+        error={errors.patientName}
+        required
                     className="bg-gradient-to-r from-green-50 to-emerald-50"
                   />
                   <IconInput
                     icon={<FiClock className="w-4 h-4" />}
                     label="Actual Age"
-                    name="actual_age"
-                    value={formData.actual_age}
-                    onChange={handlePatientChange}
+          name="actual_age"
+          value={formData.actual_age}
+          onChange={handlePatientChange}
                     type="number"
-                    placeholder="Enter age"
-                    error={errors.patientAge}
-                    required
-                    min="0"
-                    max="150"
+          placeholder="Enter age"
+          error={errors.patientAge}
+          required
+          min="0"
+          max="150"
                     className="bg-gradient-to-r from-orange-50 to-yellow-50"
                   />
                   <RadioGroup
                     label="Sex M/F/Other"
                     name="sex"
                     value={formData.sex}
-                    onChange={handlePatientChange}
+        onChange={handlePatientChange}
                     options={SEX_OPTIONS}
                     icon={<FiHeart className="w-4 h-4" />}
                     className="bg-gradient-to-r from-pink-50 to-rose-50 p-4 rounded-lg"
@@ -1185,7 +1185,7 @@ const CreatePatient = () => {
                     className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg"
                   />
                 </div>
-              </div>
+      </div>
 
             {/* Divider */}
             <div className="border-t border-gray-200"></div>
@@ -1217,38 +1217,38 @@ const CreatePatient = () => {
                       <FiUser className="w-4 h-4 text-primary-600" />
                       Assign Doctor (JR/SR)
                     </label>
-                    <Select
-                      name="assigned_doctor_id"
-                      value={formData.assigned_doctor_id}
-                      onChange={handlePatientChange}
-                      options={(usersData?.data?.users || [])
-                        .filter(u => u.role === 'JR' || u.role === 'SR')
-                        .map(u => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
-                      placeholder="Select doctor (optional)"
+        <Select
+          name="assigned_doctor_id"
+          value={formData.assigned_doctor_id}
+          onChange={handlePatientChange}
+          options={(usersData?.data?.users || [])
+            .filter(u => u.role === 'JR' || u.role === 'SR')
+            .map(u => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
+          placeholder="Select doctor (optional)"
                       className="bg-gradient-to-r from-violet-50 to-purple-50"
-                    />
-                  </div>
-                </div>
+        />
+      </div>
+    </div>
               </div> */}
-<div className="space-y-6">
+    <div className="space-y-6">
   <div className="flex items-center gap-3">
     <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full"></div>
     <h4 className="text-xl font-bold text-gray-900">Appointment & Assignment</h4>
-  </div>
+        </div>
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <DateInput
       icon={<FiCalendar className="w-4 h-4" />}
       label="Seen in Walk-in-on"
       name="seen_in_walk_in_on"
       value={formData.seen_in_walk_in_on}
-      onChange={handleChange}
-    />
+          onChange={handleChange}
+        />
     <DateInput
       icon={<FiCalendar className="w-4 h-4" />}
       label="Worked up on"
       name="worked_up_on"
       value={formData.worked_up_on}
-      onChange={handleChange}
+          onChange={handleChange}
     />
     <div className="space-y-2">
       <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
@@ -1266,33 +1266,33 @@ const CreatePatient = () => {
         className="bg-gradient-to-r from-violet-50 to-purple-50"
         containerClassName="relative z-[9999]"
         dropdownZIndex={2147483647}
-      />
+        />
+      </div>
     </div>
-  </div>
 </div>
           </div>
         </Card>
 
-          {/* Personal Information */}
-          <Card
-            title={
+{/* Personal Information */}
+<Card
+  title={
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-primary-100 rounded-lg">
                   <FiUsers className="w-6 h-6 text-primary-600" />
                 </div>
                 <span className="text-xl font-bold text-gray-900">Personal Information</span>
-              </div>
-            }
+    </div>
+  }
             // className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
             className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm overflow-visible"  // Added overflow-visible
             >
             <div className="space-y-8">
               <RadioGroup
-                label="Marital Status"
-                name="marital_status"
-                value={formData.marital_status}
-                onChange={handleChange}
-                options={MARITAL_STATUS}
+          label="Marital Status"
+          name="marital_status"
+          value={formData.marital_status}
+          onChange={handleChange}
+          options={MARITAL_STATUS}
                 icon={<FiHeart className="w-4 h-4" />}
                 className="bg-gradient-to-r from-pink-50 to-rose-50 p-6 rounded-lg"
               />
@@ -1301,9 +1301,9 @@ const CreatePatient = () => {
                 <IconInput
                   icon={<FiCalendar className="w-4 h-4" />}
                   label="Year of marriage"
-                  name="year_of_marriage"
-                  value={formData.year_of_marriage}
-                  onChange={handleChange}
+        name="year_of_marriage"
+        value={formData.year_of_marriage}
+        onChange={handleChange}
                   type="number"
                   placeholder="Enter year of marriage"
                   min="1900"
@@ -1316,7 +1316,7 @@ const CreatePatient = () => {
                   name="no_of_children_male"
                   value={formData.no_of_children_male}
                   onChange={handleChange}
-                  type="number"
+        type="number"
                   placeholder="Male"
                   min="0"
                   max="20"
@@ -1327,27 +1327,27 @@ const CreatePatient = () => {
                   label="No. of Children: F"
                   name="no_of_children_female"
                   value={formData.no_of_children_female}
-                  onChange={handleChange}
+        onChange={handleChange}
                   type="number"
                   placeholder="Female"
-                  min="0"
+        min="0"
                   max="20"
                   className="bg-gradient-to-r from-pink-50 to-rose-50"
-                />
-              </div>
-            </div>
+      />
+    </div>
+  </div>
 </Card>
 
-          {/* Occupation & Education */}
-          <Card
-            title={
+        {/* Occupation & Education */}
+        <Card
+          title={
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-primary-100 rounded-lg">
                   <FiBriefcase className="w-6 h-6 text-primary-600" />
                 </div>
                 <span className="text-xl font-bold text-gray-900">Occupation & Education</span>
-              </div>
-            }
+            </div>
+          }
             className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
             <div className="space-y-8">
               <RadioGroup
@@ -1382,10 +1382,10 @@ const CreatePatient = () => {
                       <label key={option.value} className="flex items-center space-x-3 cursor-pointer group">
                         <input
                           type="radio"
-                          name="education_level"
+                name="education_level"
                           value={option.value}
                           checked={formData.education_level === option.value}
-                          onChange={handleChange}
+                onChange={handleChange}
                           className="w-4 h-4 text-primary-600 border-2 border-gray-300 focus:ring-primary-500 focus:ring-2 rounded-full transition-all duration-200 group-hover:border-primary-400"
                         />
                         <span className="text-sm text-gray-700 group-hover:text-primary-700 transition-colors duration-200">{option.label}</span>
@@ -1410,85 +1410,85 @@ const CreatePatient = () => {
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-gray-600 font-medium">Completed years of education:</span>
                       <input
-                        type="number"
-                        name="completed_years_of_education"
-                        value={formData.completed_years_of_education}
-                        onChange={handleChange}
+                type="number"
+                name="completed_years_of_education"
+                value={formData.completed_years_of_education}
+                onChange={handleChange}
                         placeholder="Years"
-                        min="0"
+                min="0"
                         max="30"
                         className="w-24 px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
-                      />
+              />
                     </div>
                   </div>
                 </div>
-              </div>
             </div>
+          </div>
         </Card>
 
-          {/* Financial Information */}
-          <Card
-            title={
+        {/* Financial Information */}
+        <Card
+          title={
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-primary-100 rounded-lg">
                   <FiDollarSign className="w-6 h-6 text-primary-600" />
                 </div>
                 <span className="text-xl font-bold text-gray-900">Financial Information</span>
-              </div>
-            }
+            </div>
+          }
             className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <IconInput
                   icon={<FiTrendingUp className="w-4 h-4" />}
                   label="Exact income of patient (₹)"
-                  name="patient_income"
-                  value={formData.patient_income}
-                  onChange={handleChange}
+              name="patient_income"
+              value={formData.patient_income}
+              onChange={handleChange}
                   type="number"
-                  placeholder="Monthly income"
-                  min="0"
+              placeholder="Monthly income"
+              min="0"
                   className="bg-gradient-to-r from-green-50 to-emerald-50"
                 />
                 <IconInput
                   icon={<FiTrendingUp className="w-4 h-4" />}
                   label="Exact income of family (₹)"
-                  name="family_income"
-                  value={formData.family_income}
-                  onChange={handleChange}
+              name="family_income"
+              value={formData.family_income}
+              onChange={handleChange}
                   type="number"
-                  placeholder="Total monthly family income"
-                  min="0"
+              placeholder="Total monthly family income"
+              min="0"
                   className="bg-gradient-to-r from-blue-50 to-indigo-50"
-                />
+            />
               </div>
-            </div>
-          </Card>
+          </div>
+        </Card>
 
-          {/* Family Information */}
-          <Card
-            title={
+        {/* Family Information */}
+        <Card
+          title={
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-primary-100 rounded-lg">
                   <FiHome className="w-6 h-6 text-primary-600" />
                 </div>
                 <span className="text-xl font-bold text-gray-900">Family Information</span>
-              </div>
-            }
+            </div>
+          }
             className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
             <div className="space-y-8">
               {/* Religion Section */}
-              <div className="space-y-6">
+          <div className="space-y-6">
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full"></div>
                   <h4 className="text-xl font-bold text-gray-900">Religion</h4>
                 </div>
                 <RadioGroup
                   label=""
-                  name="religion"
-                  value={formData.religion}
-                  onChange={handleChange}
-                  options={RELIGION}
+                name="religion"
+                value={formData.religion}
+                onChange={handleChange}
+                options={RELIGION}
                   icon={<FiShield className="w-4 h-4" />}
                   className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg"
                 />
@@ -1505,10 +1505,10 @@ const CreatePatient = () => {
                 </div>
                 <RadioGroup
                   label=""
-                  name="family_type"
-                  value={formData.family_type}
-                  onChange={handleChange}
-                  options={FAMILY_TYPE}
+                name="family_type"
+                value={formData.family_type}
+                onChange={handleChange}
+                options={FAMILY_TYPE}
                   icon={<FiUsers className="w-4 h-4" />}
                   className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg"
                 />
@@ -1525,14 +1525,14 @@ const CreatePatient = () => {
                 </div>
                 <RadioGroup
                   label=""
-                  name="locality"
-                  value={formData.locality}
-                  onChange={handleChange}
-                  options={LOCALITY}
+                name="locality"
+                value={formData.locality}
+                onChange={handleChange}
+                options={LOCALITY}
                   icon={<FiMapPin className="w-4 h-4" />}
                   className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg"
-                />
-              </div>
+              />
+            </div>
 
               <div className="border-t pt-8">
                 <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
@@ -1543,84 +1543,84 @@ const CreatePatient = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <IconInput
                       icon={<FiUser className="w-4 h-4" />}
-                      label="Name"
-                      name="head_name"
-                      value={formData.head_name}
-                      onChange={handleChange}
+                label="Name"
+                name="head_name"
+                value={formData.head_name}
+                onChange={handleChange}
                       placeholder="Enter head of family name"
                       className="bg-gradient-to-r from-blue-50 to-indigo-50"
-                    />
+              />
                     <IconInput
                       icon={<FiClock className="w-4 h-4" />}
-                      label="Age"
-                      name="head_age"
-                      value={formData.head_age}
-                      onChange={handleChange}
+                label="Age"
+                name="head_age"
+                value={formData.head_age}
+                onChange={handleChange}
                       type="number"
                       placeholder="Enter age"
-                      min="0"
+                min="0"
                       max="150"
                       className="bg-gradient-to-r from-orange-50 to-yellow-50"
-                    />
+              />
                     <IconInput
                       icon={<FiUsers className="w-4 h-4" />}
-                      label="Relationship"
-                      name="head_relationship"
-                      value={formData.head_relationship}
-                      onChange={handleChange}
+                label="Relationship"
+                name="head_relationship"
+                value={formData.head_relationship}
+                onChange={handleChange}
                       placeholder="Enter relationship"
                       className="bg-gradient-to-r from-green-50 to-emerald-50"
-                    />
+              />
                     <IconInput
                       icon={<FiBookOpen className="w-4 h-4" />}
-                      label="Education"
-                      name="head_education"
-                      value={formData.head_education}
-                      onChange={handleChange}
+                label="Education"
+                name="head_education"
+                value={formData.head_education}
+                onChange={handleChange}
                       placeholder="Enter education level"
                       className="bg-gradient-to-r from-purple-50 to-pink-50"
-                    />
+              />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <IconInput
                       icon={<FiBriefcase className="w-4 h-4" />}
-                      label="Occupation"
-                      name="head_occupation"
-                      value={formData.head_occupation}
-                      onChange={handleChange}
+                label="Occupation"
+                name="head_occupation"
+                value={formData.head_occupation}
+                onChange={handleChange}
                       placeholder="Enter occupation"
                       className="bg-gradient-to-r from-teal-50 to-cyan-50"
-                    />
+              />
                     <IconInput
                       icon={<FiTrendingUp className="w-4 h-4" />}
-                      label="Income (₹)"
-                      name="head_income"
-                      value={formData.head_income}
-                      onChange={handleChange}
+                label="Income (₹)"
+                name="head_income"
+                value={formData.head_income}
+                onChange={handleChange}
                       type="number"
                       placeholder="Monthly income"
-                      min="0"
+                min="0"
                       className="bg-gradient-to-r from-amber-50 to-orange-50"
-                    />
+              />
                   </div>
                 </div>
-              </div>
+            </div>
           </div>
         </Card>
 
           {/* Referral & Mobility */}
-          <Card
-            title={
+        <Card
+          title={
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-primary-100 rounded-lg">
                   <FiMapPin className="w-6 h-6 text-primary-600" />
                 </div>
                 <span className="text-xl font-bold text-gray-900">Referral & Mobility</span>
-              </div>
-            }
+            </div>
+          }
             className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-            <div className="space-y-6">
+          <div className="space-y-6">
               <IconInput
                 icon={<FiNavigation className="w-4 h-4" />}
                 label="Exact distance from hospital"
@@ -1644,9 +1644,9 @@ const CreatePatient = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <RadioGroup
                   label="Referred by"
-                  name="referred_by"
-                  value={formData.referred_by}
-                  onChange={handleChange}
+                name="referred_by"
+                value={formData.referred_by}
+                onChange={handleChange}
                   options={REFERRED_BY_OPTIONS}
                   icon={<FiUsers className="w-4 h-4" />}
                   className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg"
@@ -1654,31 +1654,31 @@ const CreatePatient = () => {
                 <IconInput
                   icon={<FiEdit3 className="w-4 h-4" />}
                   label="Exact source"
-                  name="exact_source"
-                  value={formData.exact_source}
-                  onChange={handleChange}
+                name="exact_source"
+                value={formData.exact_source}
+                onChange={handleChange}
                   placeholder="Enter exact source"
                   className="bg-gradient-to-r from-orange-50 to-yellow-50"
-                />
-              </div>
+              />
             </div>
-          </Card>
+          </div>
+        </Card>
 
-          {/* Contact Information */}
-          <Card
-            title={
+        {/* Contact Information */}
+        <Card
+          title={
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-primary-100 rounded-lg">
                   <FiPhone className="w-6 h-6 text-primary-600" />
                 </div>
                 <span className="text-xl font-bold text-gray-900">Contact Information</span>
-              </div>
-            }
+            </div>
+          }
             className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
             <div className="space-y-8">
 
               {/* Present Address */}
-              <div className="space-y-6">
+          <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xl font-bold text-gray-900 flex items-center gap-3">
                     <div className="p-2 bg-primary-100 rounded-lg">
@@ -1704,7 +1704,7 @@ const CreatePatient = () => {
                     label="Address Line 1 (House No., Street, Locality)"
                     name="present_address_line_1"
                     value={formData.present_address_line_1}
-                    onChange={handleChange}
+              onChange={handleChange}
                     placeholder="Enter house number, street, locality"
                     required
                     className="bg-gradient-to-r from-green-50 to-emerald-50"
@@ -1717,7 +1717,7 @@ const CreatePatient = () => {
                       label="Country"
                       name="present_country"
                       value={formData.present_country}
-                      onChange={handleChange}
+              onChange={handleChange}
                       placeholder="Enter country"
                       defaultValue="India"
                       className="bg-gradient-to-r from-blue-50 to-cyan-50"
@@ -1756,7 +1756,7 @@ const CreatePatient = () => {
                       label="City / Town / Village"
                       name="present_city_town_village"
                       value={formData.present_city_town_village}
-                      onChange={handleChange}
+              onChange={handleChange}
                       placeholder="Enter city, town or village"
                       required
                       className="bg-gradient-to-r from-teal-50 to-cyan-50"
@@ -1792,7 +1792,7 @@ const CreatePatient = () => {
                     label="Address Line 1 (House No., Street, Locality)"
                     name="permanent_address_line_1"
                     value={formData.permanent_address_line_1}
-                    onChange={handleChange}
+              onChange={handleChange}
                     placeholder="Enter house number, street, locality"
                     required
                     className="bg-gradient-to-r from-green-50 to-emerald-50"
@@ -1883,10 +1883,10 @@ const CreatePatient = () => {
                   </div>
                   <IconInput
                     icon={<FiPhone className="w-4 h-4" />}
-                    label="Contact Number"
-                    name="contact_number"
-                    value={formData.contact_number}
-                    onChange={handleChange}
+              label="Contact Number"
+              name="contact_number"
+              value={formData.contact_number}
+              onChange={handleChange}
                     placeholder="Enter contact number"
                     className="bg-gradient-to-r from-blue-50 to-indigo-50"
                   />
@@ -1926,7 +1926,7 @@ const CreatePatient = () => {
               {isLoading || isCreatingPatient || isAssigning ? 'Creating Record...' : 'Register Patient'}
             </Button>
           </div>
-        </form>
+      </form>
       </div>
     </div>
   );

@@ -533,7 +533,7 @@ const Dashboard = () => {
         />
         
         <StatCard
-          title="ADL Files"
+          title="Additional Detail File"
           value={adlStats?.data?.stats?.total_files}
           icon={FiFolder}
           color="bg-purple-500"
@@ -668,7 +668,7 @@ const Dashboard = () => {
               <Badge variant="info">{patientStats?.data?.stats?.female_patients || 0}</Badge>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Patients with ADL Files</span>
+              <span className="text-gray-600">Patients with Additional Detail File</span>
               <Badge variant="success">{patientStats?.data?.stats?.patients_with_adl || 0}</Badge>
             </div>
             <div className="flex justify-between items-center">
@@ -748,7 +748,7 @@ const Dashboard = () => {
                 className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center"
               >
                 <FiFolder className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                <p className="font-medium">Manage ADL Files</p>
+                <p className="font-medium">Manage Additional Detail File</p>
               </Link>
             </>
           )}

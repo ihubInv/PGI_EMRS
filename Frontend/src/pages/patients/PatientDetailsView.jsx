@@ -319,7 +319,7 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
                 <div className="p-2 bg-purple-100 rounded-lg">
                   <FiFolder className="h-5 w-5 text-purple-600" />
                 </div>
-                <p className="text-sm font-semibold text-gray-700">ADL Files</p>
+                <p className="text-sm font-semibold text-gray-700">Additional Detail File</p>
               </div>
               <p className="text-4xl font-bold text-gray-900">
                 {adlData?.data?.files?.length || 0}

@@ -393,7 +393,7 @@ Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         description: 'Clinical assessment and documentation (Doctor)',
       },
       {
-        name: 'ADL Files',
+        name: 'Additional Detail File',
         description: 'ADL file management for complex cases',
       },
     ],

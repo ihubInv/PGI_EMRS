@@ -21,6 +21,7 @@ const PatientDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const returnTab = searchParams.get('returnTab'); // Get returnTab from URL
   const [isEditing, setIsEditing] = useState(false);
 
   // Check for edit query parameter on mount
@@ -502,8 +503,12 @@ const handleSave = async () => {
     toast.success("Patient updated successfully!");
     setIsEditing(false);
 
-
-    navigate(`/patients`);
+    // Navigate back to Today Patients with preserved tab if returnTab exists
+    if (returnTab) {
+      navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
+    } else {
+      navigate(`/patients`);
+    }
 
   } catch (err) {
     toast.error(err?.data?.message || "Failed to update patient");
@@ -521,9 +526,18 @@ const handleSave = async () => {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500">Patient not found</p>
-        <Link to="/patients">
-          <Button className="mt-4">Back to Patients</Button>
-        </Link>
+        <Button 
+          className="mt-4" 
+          onClick={() => {
+            if (returnTab) {
+              navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
+            } else {
+              navigate('/patients');
+            }
+          }}
+        >
+          Back to Patients
+        </Button>
       </div>
     );
   }
@@ -556,7 +570,16 @@ const handleSave = async () => {
 
           {/* Action buttons below the view content */}
           <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
-            <Button variant="outline" onClick={() => navigate("/patients")}>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                if (returnTab) {
+                  navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
+                } else {
+                  navigate("/patients");
+                }
+              }}
+            >
               <FiX className="mr-2" /> Cancel
             </Button>
             <Button onClick={() => setIsEditing(true)}>
@@ -574,7 +597,16 @@ const handleSave = async () => {
 
           {/* Action buttons below the form in edit mode */}
           <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
-            <Button variant="outline" onClick={() => navigate("/patients")}>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                if (returnTab) {
+                  navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
+                } else {
+                  navigate("/patients");
+                }
+              }}
+            >
               <FiX className="mr-2" /> Cancel
             </Button>
             <Button onClick={handleSave} loading={isUpdating  || isAssigning}>

@@ -153,9 +153,9 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Dashboard', to: '/', icon: FiHome, roles: ['Admin', 'JR', 'SR', 'MWO'] },
     { name: 'Patients', to: '/patients', icon: FiUsers, roles: ['Admin', 'JR', 'SR', 'MWO'] },
     { name: "Today's Patients", to: '/clinical-today-patients', icon: FiCalendar, roles: ['Admin', 'JR', 'SR'] },
-    { name: 'Outpatient Records', to: '/outpatient', icon: FiClipboard, roles: ['Admin', 'MWO'] },
-    { name: 'Clinical Proforma', to: '/clinical', icon: FiFileText, roles: ['Admin', 'JR', 'SR'] },
-    { name: 'ADL Files', to: '/adl-files', icon: FiFolder, roles: ['Admin', 'JR', 'SR'] },
+    // { name: 'Outpatient Records', to: '/outpatient', icon: FiClipboard, roles: ['Admin', 'MWO'] },
+    // { name: 'Clinical Proforma', to: '/clinical', icon: FiFileText, roles: ['Admin',] },
+    { name: 'Additional Detail File', to: '/adl-files', icon: FiFolder, roles: ['Admin', 'JR', 'SR'] },
     { name: 'Users', to: '/users', icon: FiSettings, roles: ['Admin'] },
   ];
 
@@ -211,33 +211,41 @@ const Sidebar = ({ isOpen, onClose }) => {
               // Other roles navigation (Admin, JR, SR)
               filteredNavigation.map((item) => {
                 const location = window.location.pathname;
-                const isActive = location === item.to || location.startsWith(item.to + '/');
+                
+                // Special handling for "Today's Patients" - keep it active when on related pages
+                let isActive = false;
+                if (item.to === '/clinical-today-patients') {
+                  // Keep "Today's Patients" active when on:
+                  // - Today's Patients page itself
+                  // - Create Proforma page (when coming from Today's Patients)
+                  // - Prescribe Medication page (when coming from Today's Patients)
+                  isActive = location === item.to || 
+                             location === '/clinical/new' ||
+                             location === '/clinical/prescribe-medication';
+                } else {
+                  // For other routes, use standard matching
+                  isActive = location === item.to || location.startsWith(item.to + '/');
+                }
 
                 return (
                   <NavLink
                     key={item.name}
                     to={item.to}
                     onClick={onClose}
-                    className={({ isActive }) =>
-                      `group flex items-center px-4 py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${
-                        isActive
-                          ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
-                          : 'text-gray-700 hover:bg-white/40 hover:text-primary-700 hover:shadow-md'
-                      }`
-                    }
+                    className={`group flex items-center px-4 py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${
+                      isActive
+                        ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
+                        : 'text-gray-700 hover:bg-white/40 hover:text-primary-700 hover:shadow-md'
+                    }`}
                   >
-                    {({ isActive }) => (
-                      <>
-                        <div className={`p-2 rounded-lg mr-3 transition-colors ${
-                          isActive
-                            ? 'bg-white/20'
-                            : 'bg-gray-100 group-hover:bg-primary-100'
-                        }`}>
-                          <item.icon className="h-5 w-5" />
-                        </div>
-                        <span>{item.name}</span>
-                      </>
-                    )}
+                    <div className={`p-2 rounded-lg mr-3 transition-colors ${
+                      isActive
+                        ? 'bg-white/20'
+                        : 'bg-gray-100 group-hover:bg-primary-100'
+                    }`}>
+                      <item.icon className="h-5 w-5" />
+                    </div>
+                    <span>{item.name}</span>
                   </NavLink>
                 );
               })

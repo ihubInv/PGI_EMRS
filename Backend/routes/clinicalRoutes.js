@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const ClinicalController = require('../controllers/clinicalController');
 const { authenticateToken, requireDoctor, requireAdmin, authorizeRoles } = require('../middleware/auth');
+const ClinicalOptionsController = require('../controllers/clinicalOptionsController');
 const {
   validateClinicalProforma,
   validateId,
@@ -733,5 +734,84 @@ router.get('/patient/:patient_id', authenticateToken, ClinicalController.getClin
  *         description: Server error
  */
 router.get('/room/:room_no', authenticateToken, validatePagination, ClinicalController.getCasesByRoom);
+
+// Dynamic clinical options
+/**
+ * @swagger
+ * /api/clinical-proformas/options/{group}:
+ *   get:
+ *     summary: Get options for a clinical group
+ *     tags: [Clinical Proforma]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: group
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Options fetched
+ */
+router.get('/options/:group', authenticateToken, ClinicalOptionsController.getGroup);
+
+/**
+ * @swagger
+ * /api/clinical-proformas/options/{group}:
+ *   post:
+ *     summary: Add an option to a clinical group
+ *     tags: [Clinical Proforma]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: group
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               label:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Option added
+ */
+router.post('/options/:group', authenticateToken, ClinicalOptionsController.addOption);
+
+/**
+ * @swagger
+ * /api/clinical-proformas/options/{group}:
+ *   delete:
+ *     summary: Delete an option from a clinical group
+ *     tags: [Clinical Proforma]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: group
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               label:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Option deleted
+ */
+router.delete('/options/:group', authenticateToken, ClinicalOptionsController.deleteOption);
 
 module.exports = router;

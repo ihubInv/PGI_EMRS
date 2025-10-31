@@ -2,6 +2,28 @@ import { apiSlice } from '../../app/api/apiSlice';
 
 export const clinicalApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
+    // Dynamic options for clinical groups
+    getClinicalOptions: builder.query({
+      query: (group) => `/clinical-proformas/options/${group}`,
+      providesTags: (result, error, group) => [{ type: 'ClinicalOptions', id: group }],
+      transformResponse: (resp) => resp?.data?.options || [],
+    }),
+    addClinicalOption: builder.mutation({
+      query: ({ group, label }) => ({
+        url: `/clinical-proformas/options/${group}`,
+        method: 'POST',
+        body: { label },
+      }),
+      invalidatesTags: (result, error, { group }) => [{ type: 'ClinicalOptions', id: group }],
+    }),
+    deleteClinicalOption: builder.mutation({
+      query: ({ group, label }) => ({
+        url: `/clinical-proformas/options/${group}`,
+        method: 'DELETE',
+        body: { label },
+      }),
+      invalidatesTags: (result, error, { group }) => [{ type: 'ClinicalOptions', id: group }],
+    }),
     getAllClinicalProformas: builder.query({
       query: ({ page = 1, limit = 10, ...filters }) => ({
         url: '/clinical-proformas',
@@ -89,5 +111,8 @@ export const {
   useGetCasesBySeverityQuery,
   useGetCasesByDecisionQuery,
   useGetCasesByRoomQuery,
+  useGetClinicalOptionsQuery,
+  useAddClinicalOptionMutation,
+  useDeleteClinicalOptionMutation,
 } = clinicalApiSlice;
 

@@ -122,7 +122,7 @@ const {
  * /api/adl-files:
  *   get:
  *     summary: Get all ADL files with pagination and filters
- *     tags: [ADL Files]
+ *     tags: [Additional Detail File]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -187,7 +187,7 @@ router.get('/', authenticateToken, validatePagination, ADLController.getAllADLFi
  * /api/adl-files/stats:
  *   get:
  *     summary: Get ADL file statistics
- *     tags: [ADL Files]
+ *     tags: [Additional Detail File]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -205,7 +205,7 @@ router.get('/stats', authenticateToken, requireAdmin, ADLController.getADLStats)
  * /api/adl-files/status-stats:
  *   get:
  *     summary: Get files by status statistics
- *     tags: [ADL Files]
+ *     tags: [Additional Detail File]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -223,7 +223,7 @@ router.get('/status-stats', authenticateToken, ADLController.getFilesByStatus);
  * /api/adl-files/to-retrieve:
  *   get:
  *     summary: Get files that need to be retrieved
- *     tags: [ADL Files]
+ *     tags: [Additional Detail File]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -241,7 +241,7 @@ router.get('/to-retrieve', authenticateToken, ADLController.getFilesToRetrieve);
  * /api/adl-files/active:
  *   get:
  *     summary: Get active files (currently retrieved)
- *     tags: [ADL Files]
+ *     tags: [Additional Detail File]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -259,7 +259,7 @@ router.get('/active', authenticateToken, ADLController.getActiveFiles);
  * /api/adl-files/bulk-retrieve:
  *   post:
  *     summary: Bulk retrieve multiple ADL files
- *     tags: [ADL Files]
+ *     tags: [Additional Detail File]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -285,7 +285,7 @@ router.post('/bulk-retrieve', authenticateToken, ADLController.bulkRetrieveFiles
  * /api/adl-files/bulk-return:
  *   post:
  *     summary: Bulk return multiple ADL files to storage
- *     tags: [ADL Files]
+ *     tags: [Additional Detail File]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -311,7 +311,7 @@ router.post('/bulk-return', authenticateToken, ADLController.bulkReturnFiles);
  * /api/adl-files/{id}:
  *   get:
  *     summary: Get ADL file by ID
- *     tags: [ADL Files]
+ *     tags: [Additional Detail File]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -338,7 +338,7 @@ router.get('/:id', authenticateToken, validateId, ADLController.getADLFileById);
  * /api/adl-files/{id}:
  *   put:
  *     summary: Update ADL file
- *     tags: [ADL Files]
+ *     tags: [Additional Detail File]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -371,7 +371,7 @@ router.put('/:id', authenticateToken, validateId, ADLController.updateADLFile);
  * /api/adl-files/{id}:
  *   delete:
  *     summary: Delete ADL file (soft delete by archiving)
- *     tags: [ADL Files]
+ *     tags: [Additional Detail File]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -398,7 +398,7 @@ router.delete('/:id', authenticateToken, validateId, ADLController.deleteADLFile
  * /api/adl-files/{id}/retrieve:
  *   post:
  *     summary: Retrieve ADL file from storage
- *     tags: [ADL Files]
+ *     tags: [Additional Detail File]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -427,7 +427,7 @@ router.post('/:id/retrieve', authenticateToken, validateId, ADLController.retrie
  * /api/adl-files/{id}/return:
  *   post:
  *     summary: Return ADL file to storage
- *     tags: [ADL Files]
+ *     tags: [Additional Detail File]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -456,7 +456,7 @@ router.post('/:id/return', authenticateToken, validateId, ADLController.returnAD
  * /api/adl-files/{id}/archive:
  *   post:
  *     summary: Archive ADL file
- *     tags: [ADL Files]
+ *     tags: [Additional Detail File]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -485,7 +485,7 @@ router.post('/:id/archive', authenticateToken, validateId, ADLController.archive
  * /api/adl-files/{id}/movement-history:
  *   get:
  *     summary: Get ADL file movement history
- *     tags: [ADL Files]
+ *     tags: [Additional Detail File]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -512,7 +512,7 @@ router.get('/:id/movement-history', authenticateToken, validateId, ADLController
  * /api/adl-files/adl/{adl_no}:
  *   get:
  *     summary: Get ADL file by ADL number
- *     tags: [ADL Files]
+ *     tags: [Additional Detail File]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -539,7 +539,7 @@ router.get('/adl/:adl_no', authenticateToken, ADLController.getADLFileByADLNo);
  * /api/adl-files/patient/{patient_id}:
  *   get:
  *     summary: Get ADL files by patient ID
- *     tags: [ADL Files]
+ *     tags: [Additional Detail File]
  *     security:
  *       - bearerAuth: []
  *     parameters:

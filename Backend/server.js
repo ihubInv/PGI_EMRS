@@ -266,7 +266,7 @@ const server = app.listen(PORT, () => {
    - Patients: http://localhost:${PORT}/api/patients
    - Outpatient Records: http://localhost:${PORT}/api/outpatient-records
    - Clinical Proformas: http://localhost:${PORT}/api/clinical-proformas
-   - ADL Files: http://localhost:${PORT}/api/adl-files
+   - Additional Detail File: http://localhost:${PORT}/api/adl-files
   `);
 });
 

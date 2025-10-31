@@ -24,6 +24,7 @@ import SelectExistingPatient from './pages/patients/SelectExistingPatient';
 import ClinicalProformaPage from './pages/clinical/ClinicalProformaPage';
 import CreateClinicalProforma from './pages/clinical/CreateClinicalProforma';
 import ClinicalProformaDetails from './pages/clinical/ClinicalProformaDetails';
+import PrescribeMedication from './pages/clinical/PrescribeMedication';
 
 // Outpatient Record Pages
 // import OutpatientPage from './pages/outpatient/OutpatientPage';
@@ -104,12 +105,13 @@ function App() {
               <Route element={<ProtectedRoute allowedRoles={['Admin', 'JR', 'SR']} />}>
                 <Route path="/clinical" element={<ClinicalProformaPage />} />
                 <Route path="/clinical/new" element={<CreateClinicalProforma />} />
-                <Route path="/clinical/:id" element={<ClinicalProformaDetails />} />
                 <Route path="/clinical-today-patients" element={<ClinicalTodayPatients />} />
+                <Route path="/clinical/prescribe-medication" element={<PrescribeMedication />} />
+                <Route path="/clinical/:id" element={<ClinicalProformaDetails />} />
                 <Route path="/clinical/:id/edit" element={<div>Edit Clinical Proforma</div>} />
               </Route>
 
-              {/* ADL Files - JR, SR, and Admin */}
+              {/* Additional Detail File - JR, SR, and Admin */}
               <Route element={<ProtectedRoute allowedRoles={['Admin', 'JR', 'SR']} />}>
                 <Route path="/adl-files" element={<ADLFilesPage />} />
                 <Route path="/adl-files/:id" element={<ADLFileDetails />} />

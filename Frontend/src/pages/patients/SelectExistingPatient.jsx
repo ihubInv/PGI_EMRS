@@ -122,6 +122,7 @@ const SelectExistingPatient = () => {
   };
 
   const handleSubmit = async (e) => {
+    debugger;
     e.preventDefault();
 
     if (!selectedPatient) {
@@ -131,7 +132,7 @@ const SelectExistingPatient = () => {
 
     try {
       // Create outpatient visit record
-      await createRecord({ patient_id: parseInt(selectedPatient.id) }).unwrap();
+      await createRecord({ name: selectedPatient.name, patient_id: parseInt(selectedPatient.id) }).unwrap();
       toast.success('Visit record created successfully!');
       navigate('/patients');
     } catch (err) {
@@ -514,7 +515,7 @@ const SelectExistingPatient = () => {
                 </div>
               </div>
             )}
-
+  {console.log(existingDemo)}
             {existingDemo && (
               <>
                 {/* Personal Information */}

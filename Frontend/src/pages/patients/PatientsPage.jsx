@@ -312,7 +312,7 @@ const PatientsPage = () => {
                         <FiFileText className="w-5 h-5 text-purple-600" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">ADL Files</p>
+                        <p className="text-sm text-gray-600">Additional Detail File</p>
                         <p className="text-2xl font-bold text-gray-900">
                           {data?.data?.patients?.filter(p => p.has_adl_file).length || 0}
                         </p>

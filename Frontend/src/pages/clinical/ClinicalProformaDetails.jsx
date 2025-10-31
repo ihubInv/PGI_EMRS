@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FiEdit, FiTrash2, FiArrowLeft, FiPrinter } from 'react-icons/fi';
 import {
@@ -14,6 +14,8 @@ import { formatDate } from '../../utils/formatters';
 const ClinicalProformaDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTab = searchParams.get('returnTab'); // Get returnTab from URL
 
   const { data, isLoading } = useGetClinicalProformaByIdQuery(id);
   const [deleteProforma, { isLoading: isDeleting }] = useDeleteClinicalProformaMutation();
@@ -23,10 +25,24 @@ const ClinicalProformaDetails = () => {
       try {
         await deleteProforma(id).unwrap();
         toast.success('Clinical proforma deleted successfully');
-        navigate('/clinical');
+        // Navigate back to Today Patients with preserved tab if returnTab exists
+        if (returnTab) {
+          navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
+        } else {
+          navigate('/clinical');
+        }
       } catch (err) {
         toast.error(err?.data?.message || 'Failed to delete proforma');
       }
+    }
+  };
+
+  const handleBack = () => {
+    // Navigate back to Today Patients with preserved tab if returnTab exists
+    if (returnTab) {
+      navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
+    } else {
+      navigate('/clinical');
     }
   };
 
@@ -44,9 +60,19 @@ const ClinicalProformaDetails = () => {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500">Clinical proforma not found</p>
-        <Link to="/clinical">
-          <Button className="mt-4">Back to Clinical Records</Button>
-        </Link>
+        <Button 
+          className="mt-4" 
+          onClick={() => {
+            const returnTab = new URLSearchParams(window.location.search).get('returnTab');
+            if (returnTab) {
+              navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
+            } else {
+              navigate('/clinical');
+            }
+          }}
+        >
+          Back to Clinical Records
+        </Button>
       </div>
     );
   }
@@ -72,11 +98,9 @@ const ClinicalProformaDetails = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between no-print">
         <div className="flex items-center gap-4">
-          <Link to="/clinical">
-            <Button variant="ghost" size="sm">
-              <FiArrowLeft className="mr-2" /> Back
-            </Button>
-          </Link>
+          <Button variant="ghost" size="sm" onClick={handleBack}>
+            <FiArrowLeft className="mr-2" /> Back
+          </Button>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Clinical Proforma</h1>
             <p className="text-gray-600 mt-1">View clinical assessment details</p>

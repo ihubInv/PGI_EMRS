@@ -63,7 +63,7 @@ const ADLFileDetails = () => {
       <div className="text-center py-12">
         <p className="text-gray-500">ADL file not found</p>
         <Link to="/adl-files">
-          <Button className="mt-4">Back to ADL Files</Button>
+          <Button className="mt-4">Back to Additional Detail File</Button>
         </Link>
       </div>
     );
