@@ -84,7 +84,7 @@ const ADLFilesPage = () => {
       accessor: 'adl_no',
       render: (row) => (
         <div className="flex items-center gap-2">
-          <span className="font-mono font-semibold">{row.adl_no}</span>
+        <span className="font-mono font-semibold">{row.adl_no}</span>
           {row.clinical_proforma_id && (
             <Badge variant="danger" className="text-xs">
               <FiActivity className="w-3 h-3 mr-1" />
@@ -218,9 +218,9 @@ const ADLFilesPage = () => {
             <FiActivity className="mr-2" />
             {showOnlyComplexCases ? 'Complex Cases Only' : 'Show All Files'}
           </Button>
-          <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
-            <FiRefreshCw className={`mr-2 ${isFetching ? 'animate-spin' : ''}`} /> Refresh
-          </Button>
+        <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
+          <FiRefreshCw className={`mr-2 ${isFetching ? 'animate-spin' : ''}`} /> Refresh
+        </Button>
         </div>
       </div>
 
@@ -328,11 +328,11 @@ const ADLFilesPage = () => {
                 </p>
               </div>
             ) : (
-              <Table
-                columns={columns}
-                data={data?.data?.files || []}
-                loading={isLoading}
-              />
+            <Table
+              columns={columns}
+              data={data?.data?.files || []}
+              loading={isLoading}
+            />
             )}
 
             {data?.data?.pagination && (

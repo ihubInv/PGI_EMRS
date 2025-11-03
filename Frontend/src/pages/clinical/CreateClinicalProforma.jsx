@@ -1147,10 +1147,36 @@ const CreateClinicalProforma = () => {
     try {
       const stepData = prepareFormData(step);
       
+      // Log Step 3 data for debugging
+      if (step === 3) {
+        console.log('[CreateClinicalProforma] Step 3 (ADL) data being saved:', {
+          doctor_decision: stepData.doctor_decision,
+          requires_adl_file: stepData.requires_adl_file,
+          adl_reasoning: stepData.adl_reasoning,
+          complexCaseFieldsCount: Object.keys(stepData).filter(key => 
+            key.includes('history_') || key.includes('informants') || key.includes('complaints_') ||
+            key.includes('past_history_') || key.includes('family_history_') || key.includes('physical_') ||
+            key.includes('mse_') || key.includes('education_') || key.includes('occupation_') ||
+            key.includes('sexual_') || key.includes('religion_') || key.includes('living_') ||
+            key.includes('home_situation_') || key.includes('personal_') || key.includes('development_') ||
+            key.includes('diagnostic_') || key.includes('premorbid_') || key.includes('provisional_diagnosis') ||
+            key.includes('treatment_plan') || key.includes('consultant_comments')
+          ).length,
+          sampleComplexCaseFields: Object.keys(stepData).filter(key => 
+            key.includes('history_') || key.includes('informants') || key.includes('physical_')
+          ).slice(0, 5)
+        });
+      }
+      
       if (savedProformaId) {
         // Update existing proforma
         const result = await updateProforma({ id: savedProformaId, ...stepData }).unwrap();
         toast.success(`${getStepLabel(step)} saved successfully!`);
+        
+        if (step === 3 && result.data?.proforma?.adl_file_id) {
+          toast.info(`ADL File updated and saved to adl_files table`);
+        }
+        
         return result.data?.proforma;
       } else {
         // Create new proforma (for step 1)
@@ -1159,7 +1185,7 @@ const CreateClinicalProforma = () => {
         toast.success(`${getStepLabel(step)} saved successfully!`);
         
         if (result.data?.adl_file?.created) {
-          toast.info(`ADL File created: ${result.data.adl_file.adl_no}`);
+          toast.info(`ADL File created: ${result.data.adl_file.adl_no} - Data saved to adl_files table`);
         }
         return result.data?.proforma;
       }

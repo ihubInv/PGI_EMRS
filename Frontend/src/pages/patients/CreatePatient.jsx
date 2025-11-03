@@ -643,83 +643,117 @@ const CreatePatient = () => {
     // }
 
     // Step 1: Create complete patient record with ALL data (only ONE API call)
+    // Helper function to safely parse integers (returns null if invalid)
+    const parseIntSafe = (val) => {
+      if (val === '' || val === undefined || val === null) return null;
+      const parsed = parseInt(val);
+      return isNaN(parsed) ? null : parsed;
+    };
+    
+    // Helper function to safely parse floats (returns null if invalid)
+    const parseFloatSafe = (val) => {
+      if (val === '' || val === undefined || val === null) return null;
+      const parsed = parseFloat(val);
+      return isNaN(parsed) ? null : parsed;
+    };
+
     const completePatientData = {
+      // Required basic fields
       name: patientName,
       sex: patientSex,
-      actual_age: parseInt(patientAge),
-      assigned_room: formData.assigned_room,
+      actual_age: parseIntSafe(patientAge),
+      assigned_room: formData.assigned_room || null,
       ...(patientCRNo && { cr_no: patientCRNo }),
-      psy_no: formData.psy_no,
-      seen_in_walk_in_on: formData.seen_in_walk_in_on || formData.top_date,
-      worked_up_on: formData.worked_up_on,
-      special_clinic_no: formData.special_clinic_no,
-        age_group: formData.age_group,
-        marital_status: formData.marital_status,
-      ...(formData.year_of_marriage && { year_of_marriage: parseInt(formData.year_of_marriage) }),
-      ...(formData.no_of_children && { no_of_children: parseInt(formData.no_of_children) }),
-      ...(formData.no_of_children_male && { no_of_children_male: parseInt(formData.no_of_children_male) }),
-      ...(formData.no_of_children_female && { no_of_children_female: parseInt(formData.no_of_children_female) }),
-        occupation: formData.occupation,
-        actual_occupation: formData.actual_occupation,
-        education_level: formData.education_level,
-      ...(formData.completed_years_of_education && { completed_years_of_education: parseInt(formData.completed_years_of_education) }),
-      ...(formData.patient_income && { patient_income: parseFloat(formData.patient_income) }),
-      ...(formData.family_income && { family_income: parseFloat(formData.family_income) }),
-        religion: formData.religion,
-        family_type: formData.family_type,
-        locality: formData.locality,
-      head_name: formData.head_name || formData.top_father_name,
-      ...(formData.head_age && { head_age: parseInt(formData.head_age) }),
-        head_relationship: formData.head_relationship,
-        head_education: formData.head_education,
-        head_occupation: formData.head_occupation,
-      ...(formData.head_income && { head_income: parseFloat(formData.head_income) }),
-        distance_from_hospital: formData.distance_from_hospital,
-        mobility: formData.mobility,
-        referred_by: formData.referred_by,
-        exact_source: formData.exact_source,
-        present_address: formData.present_address,
-        permanent_address: formData.permanent_address,
-        local_address: formData.local_address,
-        school_college_office: formData.school_college_office,
-      contact_number: formData.contact_number || formData.top_mobile_no,
+      psy_no: formData.psy_no || null,
+      seen_in_walk_in_on: formData.seen_in_walk_in_on || formData.top_date || null,
+      worked_up_on: formData.worked_up_on || null,
+      special_clinic_no: formData.special_clinic_no || null,
+      
+      // Personal Information
+      age_group: formData.age_group || null,
+      marital_status: formData.marital_status || null,
+      year_of_marriage: parseIntSafe(formData.year_of_marriage),
+      no_of_children: parseIntSafe(formData.no_of_children),
+      no_of_children_male: parseIntSafe(formData.no_of_children_male),
+      no_of_children_female: parseIntSafe(formData.no_of_children_female),
+      
+      // Occupation & Education
+      occupation: formData.occupation || null,
+      actual_occupation: formData.actual_occupation || null,
+      education_level: formData.education_level || null,
+      completed_years_of_education: parseIntSafe(formData.completed_years_of_education),
+      
+      // Financial Information
+      patient_income: parseFloatSafe(formData.patient_income),
+      family_income: parseFloatSafe(formData.family_income),
+      
+      // Family Information
+      religion: formData.religion || null,
+      family_type: formData.family_type || null,
+      locality: formData.locality || null,
+      head_name: formData.head_name || formData.top_father_name || null,
+      head_age: parseIntSafe(formData.head_age),
+      head_relationship: formData.head_relationship || null,
+      head_education: formData.head_education || null,
+      head_occupation: formData.head_occupation || null,
+      head_income: parseFloatSafe(formData.head_income),
+      
+      // Referral & Mobility
+      distance_from_hospital: formData.distance_from_hospital || null,
+      mobility: formData.mobility || null,
+      referred_by: formData.referred_by || null,
+      exact_source: formData.exact_source || null,
+      
+      // Contact Information (legacy fields)
+      present_address: formData.present_address || null,
+      permanent_address: formData.permanent_address || null,
+      local_address: formData.local_address || null,
+      school_college_office: formData.school_college_office || null,
+      contact_number: formData.contact_number || formData.top_mobile_no || null,
       
       // Quick Entry fields
-      department: formData.department,
-      unit_consit: formData.unit_consit,
-      room_no: formData.room_no,
-      serial_no: formData.serial_no,
-      file_no: formData.file_no,
-      unit_days: formData.unit_days,
+      department: formData.department || null,
+      unit_consit: formData.unit_consit || null,
+      room_no: formData.room_no || null,
+      serial_no: formData.serial_no || null,
+      file_no: formData.file_no || null,
+      unit_days: formData.unit_days || null,
       
       // Address fields (Quick Entry)
-      address_line_1: formData.top_address_line_1,
-      country: formData.top_country,
-      state: formData.top_state,
-      district: formData.top_district,
-      city_town_village: formData.top_city_town_village,
-      pin_code: formData.top_pin_code,
+      address_line_1: formData.top_address_line_1 || formData.address_line_1 || null,
+      address_line_2: formData.top_address_line_2 || formData.address_line_2 || null,
+      country: formData.top_country || formData.country || null,
+      state: formData.top_state || formData.state || null,
+      district: formData.top_district || formData.district || null,
+      city_town_village: formData.top_city_town_village || formData.city_town_village || null,
+      pin_code: formData.top_pin_code || formData.pin_code || null,
       
       // Present Address fields
-      present_address_line_1: formData.present_address_line_1,
-      present_country: formData.present_country,
-      present_state: formData.present_state,
-      present_district: formData.present_district,
-      present_city_town_village: formData.present_city_town_village,
-      present_pin_code: formData.present_pin_code,
+      present_address_line_1: formData.present_address_line_1 || null,
+      present_address_line_2: formData.present_address_line_2 || null,
+      present_country: formData.present_country || null,
+      present_state: formData.present_state || null,
+      present_district: formData.present_district || null,
+      present_city_town_village: formData.present_city_town_village || null,
+      present_pin_code: formData.present_pin_code || null,
       
       // Permanent Address fields
-      permanent_address_line_1: formData.permanent_address_line_1,
-      permanent_country: formData.permanent_country,
-      permanent_state: formData.permanent_state,
-      permanent_district: formData.permanent_district,
-      permanent_city_town_village: formData.permanent_city_town_village,
-      permanent_pin_code: formData.permanent_pin_code,
+      permanent_address_line_1: formData.permanent_address_line_1 || null,
+      permanent_address_line_2: formData.permanent_address_line_2 || null,
+      permanent_country: formData.permanent_country || null,
+      permanent_state: formData.permanent_state || null,
+      permanent_district: formData.permanent_district || null,
+      permanent_city_town_village: formData.permanent_city_town_village || null,
+      permanent_pin_code: formData.permanent_pin_code || null,
       
       // Additional fields
-      category: formData.category,
-      ...(formData.assigned_doctor_id && { assigned_doctor_id: parseInt(formData.assigned_doctor_id) }),
+      category: formData.category || formData.top_category || null,
+      ...(formData.assigned_doctor_id && { assigned_doctor_id: parseIntSafe(formData.assigned_doctor_id) }),
     };
+    
+    // Remove null/undefined values to clean up the payload (backend will handle nulls properly)
+    // But actually, we want to send nulls so the backend knows these fields exist but are empty
+    // So we'll keep them, but the backend Patient.create() will skip null/undefined/empty string values
 
     console.log('completePatientData', completePatientData);
     

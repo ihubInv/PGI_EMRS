@@ -96,7 +96,7 @@ async function executeAggregationQuery(text, params, startTime) {
       const searchPattern = params[0].replace(/%/g, '');
       query = query.or(`name.ilike.%${searchPattern}%,cr_no.ilike.%${searchPattern}%,psy_no.ilike.%${searchPattern}%,adl_no.ilike.%${searchPattern}%`);
     }
-    
+
     // Handle WHERE conditions for adl_files COUNT query
     if (tableName === 'adl_files' && text.includes('WHERE') && params.length > 0) {
       // Handle file_status filter
@@ -467,7 +467,7 @@ async function executeJoinQuery(text, params, startTime) {
           const assignedDoctor = proforma && doctorsMap[proforma.assigned_doctor];
           
           return {
-            ...item,
+      ...item,
             patient_name: patient?.name || null,
             cr_no: patient?.cr_no || null,
             psy_no: patient?.psy_no || null,
@@ -1000,44 +1000,142 @@ async function executeInsertQuery(text, params, startTime) {
 // Execute UPDATE queries
 async function executeUpdateQuery(text, params, startTime) {
   try {
+    console.log('[executeUpdateQuery] Processing UPDATE query:', {
+      textPreview: text.substring(0, 200) + '...',
+      paramsCount: params.length,
+      paramsPreview: params.slice(0, 5)
+    });
+    
     // Extract table name from UPDATE statement
     const tableMatch = text.match(/UPDATE\s+(\w+)/i);
-    if (!tableMatch) throw new Error('Could not parse table name from UPDATE statement');
+    if (!tableMatch) {
+      console.error('[executeUpdateQuery] Could not parse table name from:', text.substring(0, 100));
+      throw new Error('Could not parse table name from UPDATE statement');
+    }
     
     const tableName = tableMatch[1];
+    console.log('[executeUpdateQuery] Table name:', tableName);
     
-    // Extract SET clause
-    const setMatch = text.match(/SET\s+(.+?)(?:\s+WHERE|\s*$)/i);
-    if (!setMatch) throw new Error('Could not parse SET clause from UPDATE statement');
+    // Extract SET clause - use non-greedy match to stop at WHERE
+    const setMatch = text.match(/SET\s+(.+?)(?:\s+WHERE|\s+RETURNING|\s*$)/is);
+    if (!setMatch) {
+      console.error('[executeUpdateQuery] Could not parse SET clause from:', text.substring(0, 500));
+      throw new Error('Could not parse SET clause from UPDATE statement');
+    }
     
-    const setClause = setMatch[1];
+    const setClause = setMatch[1].trim();
+    console.log('[executeUpdateQuery] SET clause extracted, length:', setClause.length);
     
     // Parse SET clause to extract column=value pairs
-    const setPairs = setClause.split(',').map(pair => pair.trim());
+    // Handle commas properly by splitting on comma that's not inside parentheses or quotes
+    const setPairs = [];
+    let currentPair = '';
+    let parenDepth = 0;
+    let inQuotes = false;
+    let quoteChar = null;
+    
+    for (let i = 0; i < setClause.length; i++) {
+      const char = setClause[i];
+      
+      // Handle quotes
+      if ((char === '"' || char === "'") && (i === 0 || setClause[i-1] !== '\\')) {
+        if (!inQuotes) {
+          inQuotes = true;
+          quoteChar = char;
+        } else if (char === quoteChar) {
+          inQuotes = false;
+          quoteChar = null;
+        }
+      }
+      
+      // Only split on comma if not in quotes or parentheses
+      if (char === '(' && !inQuotes) parenDepth++;
+      else if (char === ')' && !inQuotes) parenDepth--;
+      else if (char === ',' && parenDepth === 0 && !inQuotes) {
+        if (currentPair.trim()) {
+          setPairs.push(currentPair.trim());
+        }
+        currentPair = '';
+        continue;
+      }
+      
+      currentPair += char;
+    }
+    if (currentPair.trim()) {
+      setPairs.push(currentPair.trim());
+    }
+    
+    console.log('[executeUpdateQuery] Parsed SET pairs count:', setPairs.length);
+    
     const updateData = {};
     let paramIndex = 0;
     
-    setPairs.forEach(pair => {
-      const [column, value] = pair.split('=').map(item => item.trim());
-      if (value === `$${paramIndex + 1}`) {
-        updateData[column] = params[paramIndex];
-        paramIndex++;
-      } else if (value === 'CURRENT_TIMESTAMP') {
+    setPairs.forEach((pair, index) => {
+      // Handle cases like "column = $5" or "column = $5::jsonb" or "column = CURRENT_TIMESTAMP"
+      // Match column names with underscores (using [\w_]+) and allow optional schema prefix
+      const match = pair.match(/^([\w_]+)\s*=\s*(.+)$/);
+      if (!match) {
+        console.warn(`[executeUpdateQuery] Could not parse SET pair ${index}: ${pair.substring(0, 100)}`);
+        return;
+      }
+      
+      const column = match[1];
+      const valueExpr = match[2].trim();
+      
+      // Safety check: if valueExpr is just a number without $, skip it with warning
+      if (/^\d+$/.test(valueExpr) && !valueExpr.startsWith('$')) {
+        console.error(`[executeUpdateQuery] CRITICAL: Found bare number "${valueExpr}" without $ prefix for column "${column}". This will cause Supabase to interpret it as a table name!`);
+        console.error(`[executeUpdateQuery] Full pair: ${pair}`);
+        throw new Error(`Invalid UPDATE query: Parameter placeholder missing $ prefix. Column "${column}" has value "${valueExpr}" which should be "${valueExpr.startsWith('$') ? valueExpr : '$' + valueExpr}"`);
+      }
+      
+      // Check for parameter placeholder like $1, $2, etc. (with optional ::jsonb or ::text)
+      // Must start with $ followed by digits, optionally followed by ::type
+      const paramMatch = valueExpr.match(/^\$(\d+)(?:::\w+)?$/);
+      if (paramMatch) {
+        const paramNum = parseInt(paramMatch[1]) - 1;
+        if (params[paramNum] !== undefined) {
+          // Convert JSONB strings back to objects if needed for Supabase
+          let paramValue = params[paramNum];
+          if (valueExpr.includes('::jsonb') && typeof paramValue === 'string') {
+            try {
+              paramValue = JSON.parse(paramValue);
+            } catch (e) {
+              // Keep as string if JSON parsing fails
+            }
+          }
+          updateData[column] = paramValue;
+          paramIndex = Math.max(paramIndex, paramNum + 1);
+        } else {
+          console.warn(`[executeUpdateQuery] Parameter $${paramMatch[1]} not found in params array (length: ${params.length})`);
+        }
+      } else if (valueExpr === 'CURRENT_TIMESTAMP') {
         // Handle CURRENT_TIMESTAMP - use JavaScript Date
         updateData[column] = new Date().toISOString();
-      } else if (!value.includes('$')) {
-        // Handle other direct values
-        updateData[column] = value;
+      } else if (!valueExpr.includes('$')) {
+        // Handle other direct values (like strings or numbers without parameters)
+        // Try to parse as number if possible
+        if (/^\d+(\.\d+)?$/.test(valueExpr)) {
+          updateData[column] = parseFloat(valueExpr);
+        } else if (valueExpr.toLowerCase() === 'true' || valueExpr.toLowerCase() === 'false') {
+          updateData[column] = valueExpr.toLowerCase() === 'true';
+        } else {
+          // Remove quotes if present
+          updateData[column] = valueExpr.replace(/^['"]|['"]$/g, '');
+        }
+      } else {
+        // If valueExpr contains $ but doesn't match parameter pattern, log warning
+        console.warn(`[executeUpdateQuery] Unmatched value expression: ${valueExpr} for column: ${column}`);
       }
     });
     
     // Extract WHERE clause if present
     let whereConditions = {};
-    const whereMatch = text.match(/WHERE\s+(.+?)(?:\s+RETURNING|\s*$)/i);
+    const whereMatch = text.match(/WHERE\s+(.+?)(?:\s+RETURNING|\s*$)/is);
     if (whereMatch) {
       const whereClause = whereMatch[1];
       
-      // Handle simple WHERE conditions like "id = $2"
+      // Handle simple WHERE conditions like "id = $2" or "id = $5"
       const wherePairMatch = whereClause.match(/(\w+)\s*=\s*\$(\d+)/i);
       if (wherePairMatch) {
         const column = wherePairMatch[1];
@@ -1048,8 +1146,24 @@ async function executeUpdateQuery(text, params, startTime) {
       }
     }
     
+    // Filter out undefined values from updateData (Supabase doesn't like undefined)
+    const filteredUpdateData = {};
+    Object.keys(updateData).forEach(key => {
+      if (updateData[key] !== undefined) {
+        filteredUpdateData[key] = updateData[key];
+      }
+    });
+    
+    console.log('[executeUpdateQuery] Prepared update:', {
+      tableName,
+      fieldsCount: Object.keys(filteredUpdateData).length,
+      fieldNames: Object.keys(filteredUpdateData).slice(0, 10),
+      whereConditions,
+      hasReturning: text.includes('RETURNING')
+    });
+    
     // Execute the update using Supabase
-    let query = supabaseAdmin.from(tableName).update(updateData);
+    let query = supabaseAdmin.from(tableName).update(filteredUpdateData);
     
     // Apply WHERE conditions
     Object.keys(whereConditions).forEach(column => {
@@ -1061,7 +1175,32 @@ async function executeUpdateQuery(text, params, startTime) {
       ? await query.select()
       : await query;
     
-    if (error) throw error;
+    if (error) {
+      console.error('[executeUpdateQuery] Supabase UPDATE error:', error);
+      console.error('[executeUpdateQuery] Query details:', { 
+        tableName, 
+        updateDataKeys: Object.keys(filteredUpdateData), 
+        updateDataSample: Object.fromEntries(Object.entries(filteredUpdateData).slice(0, 5)),
+        whereConditions, 
+        paramsLength: params.length,
+        originalQueryPreview: text.substring(0, 300)
+      });
+      
+      // If error mentions table name like "public.5", provide better error message
+      if (error.message && error.message.includes('table') && error.message.includes('public')) {
+        const tableMatchInError = error.message.match(/table\s+['"]?([^'"]+)['"]?/i);
+        if (tableMatchInError && /^\d+$/.test(tableMatchInError[1])) {
+          console.error('[executeUpdateQuery] CRITICAL: Parameter number interpreted as table name!');
+          console.error('[executeUpdateQuery] This suggests a parameter placeholder is missing $ prefix in the SQL query');
+          console.error('[executeUpdateQuery] Original query text:', text);
+          console.error('[executeUpdateQuery] Parsed updateData:', filteredUpdateData);
+          console.error('[executeUpdateQuery] Params:', params);
+          throw new Error(`Invalid parameter reference in UPDATE query. A parameter number (${tableMatchInError[1]}) was interpreted as a table name. This usually means a parameter placeholder is missing the $ prefix. Original error: ${error.message}`);
+        }
+      }
+      
+      throw error;
+    }
     
     const duration = Date.now() - startTime;
     console.log('Update query executed successfully', { duration, rows: result ? result.length : 0 });
@@ -1073,6 +1212,8 @@ async function executeUpdateQuery(text, params, startTime) {
     };
   } catch (error) {
     console.error('Update query error:', error);
+    console.error('Query text:', text);
+    console.error('Params:', params);
     throw error;
   }
 }

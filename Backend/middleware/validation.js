@@ -252,9 +252,20 @@ const validatePatientRegistration = [
     .isLength({ max: 50 })
     .withMessage('File number must not exceed 50 characters'),
   body('unit_days')
-    .optional()
-    .isIn(['mon', 'tue', 'wed', 'thu', 'fri', 'sat'])
-    .withMessage('Unit days must be one of: Mon, Tue, Wed, Thu, Fri, Sat'),
+    .optional({ nullable: true })
+    .custom((value) => {
+      // Allow null, undefined, or empty string
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      // If provided, must be one of the allowed values (case-insensitive)
+      const allowedValues = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+      const lowerValue = String(value).toLowerCase();
+      if (!allowedValues.includes(lowerValue)) {
+        throw new Error('Unit days must be one of: Mon, Tue, Wed, Thu, Fri, Sat');
+      }
+      return true;
+    }),
   
   // Address Information
   body('address_line_1')

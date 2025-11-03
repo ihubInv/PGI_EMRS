@@ -704,23 +704,120 @@ class Patient {
   // Create new patient record
   static async create(patientData) {
     try {
+      // Extract basic required fields
       const {
-        name, sex, actual_age, assigned_room, cr_no, psy_no, assigned_doctor_id, contact_number
+        name, sex, actual_age, assigned_room, cr_no, psy_no, assigned_doctor_id, contact_number,
+        // All other fields that might be provided
+        filled_by, special_clinic_no, seen_in_walk_in_on, worked_up_on,
+        age_group, marital_status, year_of_marriage, no_of_children, 
+        no_of_children_male, no_of_children_female,
+        occupation, actual_occupation, education_level, completed_years_of_education,
+        patient_income, family_income,
+        religion, family_type, locality, head_name, head_age, head_relationship,
+        head_education, head_occupation, head_income,
+        distance_from_hospital, mobility, referred_by, exact_source,
+        school_college_office,
+        department, unit_consit, room_no, serial_no, file_no, unit_days,
+        address_line_1, address_line_2, country, state, district, 
+        city_town_village, pin_code,
+        present_address_line_1, present_address_line_2, present_country, 
+        present_state, present_district, present_city_town_village, present_pin_code,
+        permanent_address_line_1, permanent_address_line_2, permanent_country, 
+        permanent_state, permanent_district, permanent_city_town_village, 
+        permanent_pin_code,
+        // Legacy address fields
+        present_address, permanent_address, local_address,
+        category, has_adl_file, file_status, case_complexity
       } = patientData;
 
+      // Generate CR and PSY numbers if not provided
       const final_cr_no = cr_no || Patient.generateCRNo();
       const final_psy_no = psy_no || Patient.generatePSYNo();
 
-      const result = await db.query(
-        `INSERT INTO patients 
-          (cr_no, psy_no, name, sex, actual_age, assigned_room, assigned_doctor_id, contact_number, created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,CURRENT_TIMESTAMP)
-         RETURNING *`,
-        [final_cr_no, final_psy_no, name, sex, actual_age, assigned_room, assigned_doctor_id, contact_number]
-      );
+      // Build dynamic INSERT query with all provided fields
+      const fields = [];
+      const values = [];
+      const placeholders = [];
+      let paramCount = 0;
+
+      // Required fields (always included)
+      fields.push('cr_no');
+      placeholders.push(`$${++paramCount}`);
+      values.push(final_cr_no);
+
+      fields.push('psy_no');
+      placeholders.push(`$${++paramCount}`);
+      values.push(final_psy_no);
+
+      fields.push('name');
+      placeholders.push(`$${++paramCount}`);
+      values.push(name);
+
+      fields.push('sex');
+      placeholders.push(`$${++paramCount}`);
+      values.push(sex);
+
+      fields.push('actual_age');
+      placeholders.push(`$${++paramCount}`);
+      values.push(actual_age);
+
+      // Optional fields - only include if they have values
+      const optionalFields = {
+        assigned_room, assigned_doctor_id, contact_number, filled_by,
+        special_clinic_no, seen_in_walk_in_on, worked_up_on,
+        age_group, marital_status, year_of_marriage, no_of_children,
+        no_of_children_male, no_of_children_female,
+        occupation, actual_occupation, education_level, completed_years_of_education,
+        patient_income, family_income,
+        religion, family_type, locality, head_name, head_age, head_relationship,
+        head_education, head_occupation, head_income,
+        distance_from_hospital, mobility, referred_by, exact_source,
+        school_college_office,
+        department, unit_consit, room_no, serial_no, file_no, unit_days,
+        address_line_1, address_line_2, country, state, district,
+        city_town_village, pin_code,
+        present_address_line_1, present_address_line_2, present_country,
+        present_state, present_district, present_city_town_village, present_pin_code,
+        permanent_address_line_1, permanent_address_line_2, permanent_country,
+        permanent_state, permanent_district, permanent_city_town_village,
+        permanent_pin_code,
+        // Legacy address fields
+        present_address, permanent_address, local_address,
+        category, has_adl_file, file_status, case_complexity
+      };
+
+      // Add optional fields that have values
+      for (const [fieldName, fieldValue] of Object.entries(optionalFields)) {
+        if (fieldValue !== undefined && fieldValue !== null && fieldValue !== '') {
+          fields.push(fieldName);
+          placeholders.push(`$${++paramCount}`);
+          values.push(fieldValue);
+        }
+      }
+
+      // Add created_at timestamp
+      fields.push('created_at');
+      placeholders.push('CURRENT_TIMESTAMP');
+
+      // Build and execute INSERT query
+      const query = `
+        INSERT INTO patients (${fields.join(', ')})
+        VALUES (${placeholders.join(', ')})
+        RETURNING *
+      `;
+
+      console.log(`[Patient.create] Inserting patient with ${fields.length} fields`);
+      console.log(`[Patient.create] Fields:`, fields.slice(0, 10), '...');
+
+      const result = await db.query(query, values);
+
+      if (result.rows.length === 0) {
+        throw new Error('Failed to create patient: No row returned');
+      }
 
       return new Patient(result.rows[0]);
     } catch (error) {
+      console.error('[Patient.create] Error creating patient:', error);
       throw error;
     }
   }

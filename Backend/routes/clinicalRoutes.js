@@ -161,9 +161,9 @@ const {
  *           type: boolean
  *         adl_reasoning:
  *           type: string
- *         adl_file_id:
- *           type: integer
- *           description: Reference to ADL file for complex cases (set automatically by backend when doctor_decision is complex_case)
+     *         adl_file_id:
+     *           type: integer
+     *           description: Reference to ADL file for complex cases (set automatically by backend when doctor_decision is complex_case). All complex case data is stored in the ADL file, not in clinical_proforma.
  *         created_at:
  *           type: string
  *           format: date-time
@@ -749,23 +749,26 @@ const {
  * @swagger
  * /api/clinical-proformas:
  *   post:
- *     summary: Create a new clinical proforma (Admin, JR/SR Doctor only)
- *     description: |
- *       Creates a new clinical proforma with comprehensive patient data.
- *       
- *       **Complex Case Handling:**
- *       - When `doctor_decision` is set to `complex_case`, the system automatically:
- *         1. Creates an ADL file for the patient (if one doesn't exist)
- *         2. Links the clinical proforma to the ADL file via `clinical_proforma_id` in adl_files
- *         3. Sets `adl_file_id` in clinical_proforma for bidirectional linking
- *         4. Sets `requires_adl_file` to `true` automatically
- *       
- *       - For `simple_case`: All data is stored in clinical_proforma table only (no ADL file created)
- *       
- *       **Transaction Safety:**
- *       - If ADL file creation fails, the clinical proforma creation will still succeed (ADL creation error is logged)
- *       - All form fields are stored in clinical_proforma regardless of case type
- *       - Complex case ADL details are accessible via the linked clinical_proforma record
+     *     summary: Create a new clinical proforma (Admin, JR/SR Doctor only)
+     *     description: |
+     *       Creates a new clinical proforma with comprehensive patient data.
+     *       
+     *       **Complex Case Handling:**
+     *       - When `doctor_decision` is set to `complex_case`, the system automatically:
+     *         1. Extracts all complex case fields from the request body
+     *         2. Creates an ADL file with all complex case data stored in the `adl_files` table
+     *         3. Links the clinical proforma to the ADL file via `adl_file_id` in clinical_proforma
+     *         4. Sets `clinical_proforma_id` in adl_files for bidirectional linking
+     *         5. Sets `requires_adl_file` to `true` automatically
+     *       
+     *       - For `simple_case`: Only basic proforma data is stored in `clinical_proforma` table (no ADL file created, complex case fields are ignored)
+     *       
+     *       **Data Storage:**
+     *       - Basic proforma fields: Stored in `clinical_proforma` table
+     *       - Complex case fields (when `doctor_decision` = `complex_case`): Stored in `adl_files` table
+     *       - Complex case fields include: history_narrative, informants, past_history_*, family_history_*, physical_*, mse_*, education_*, occupation_jobs, sexual_*, religion_*, living_*, home_situation_*, personal_*, development_*, provisional_diagnosis, treatment_plan, consultant_comments
+     *       
+     *       **Note:** All complex case fields can be included in the request body. They will be automatically routed to the appropriate table based on `doctor_decision`.
  *     tags: [Clinical Proforma]
  *     security:
  *       - bearerAuth: []

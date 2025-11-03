@@ -135,89 +135,103 @@ const PatientDetails = () => {
   });
 
   // Update form data when patient data changes
+  // This ensures ALL patient fields from the database are populated into formData
   useEffect(() => {
     if (patientData?.data?.patient) {
       const patient = patientData.data.patient;
-      // Patient data updated
+      // Patient data updated - use patient data directly with fallbacks to empty string
+      // This ensures all fields are available in formData for display
       setFormData(prev => ({
         ...prev,
-        name: patient.name || '',
-        sex: patient.sex || '',
-        actual_age: patient.actual_age || '',
-        assigned_room: patient.assigned_room || '',
+        // Basic info
+        name: patient.name ?? '',
+        sex: patient.sex ?? '',
+        actual_age: patient.actual_age ?? '',
+        assigned_room: patient.assigned_room ?? '',
         assigned_doctor_id: patient.assigned_doctor_id ? String(patient.assigned_doctor_id) : '',
-        // Include additional patient fields that might be in the basic patient record
-        age_group: patient.age_group || '',
-        marital_status: patient.marital_status || '',
-        year_of_marriage: patient.year_of_marriage || '',
-        no_of_children: patient.no_of_children || '',
-        no_of_children_male: patient.no_of_children_male || '',
-        no_of_children_female: patient.no_of_children_female || '',
-        occupation: patient.occupation || '',
-        actual_occupation: patient.actual_occupation || '',
-        education_level: patient.education_level || '',
-        completed_years_of_education: patient.completed_years_of_education || '',
-        patient_income: patient.patient_income || '',
-        family_income: patient.family_income || '',
-        religion: patient.religion || '',
-        family_type: patient.family_type || '',
-        locality: patient.locality || '',
-        head_name: patient.head_name || '',
-        head_age: patient.head_age || '',
-        head_relationship: patient.head_relationship || '',
-        head_education: patient.head_education || '',
-        head_occupation: patient.head_occupation || '',
-        head_income: patient.head_income || '',
-        distance_from_hospital: patient.distance_from_hospital || '',
-        mobility: patient.mobility || '',
-        referred_by: patient.referred_by || '',
-        exact_source: patient.exact_source || '',
-        seen_in_walk_in_on: patient.seen_in_walk_in_on || '',
-        worked_up_on: patient.worked_up_on || '',
+        contact_number: patient.contact_number ?? '',
+        
+        // Personal information
+        age_group: patient.age_group ?? prev.age_group ?? '',
+        marital_status: patient.marital_status ?? prev.marital_status ?? '',
+        year_of_marriage: patient.year_of_marriage ?? prev.year_of_marriage ?? '',
+        no_of_children: patient.no_of_children ?? prev.no_of_children ?? '',
+        no_of_children_male: patient.no_of_children_male ?? prev.no_of_children_male ?? '',
+        no_of_children_female: patient.no_of_children_female ?? prev.no_of_children_female ?? '',
+        
+        // Occupation & Education
+        occupation: patient.occupation ?? prev.occupation ?? '',
+        actual_occupation: patient.actual_occupation ?? prev.actual_occupation ?? '',
+        education_level: patient.education_level ?? prev.education_level ?? '',
+        completed_years_of_education: patient.completed_years_of_education ?? prev.completed_years_of_education ?? '',
+        
+        // Financial Information
+        patient_income: patient.patient_income ?? prev.patient_income ?? '',
+        family_income: patient.family_income ?? prev.family_income ?? '',
+        
+        // Family Information
+        religion: patient.religion ?? prev.religion ?? '',
+        family_type: patient.family_type ?? prev.family_type ?? '',
+        locality: patient.locality ?? prev.locality ?? '',
+        head_name: patient.head_name ?? prev.head_name ?? '',
+        head_age: patient.head_age ?? prev.head_age ?? '',
+        head_relationship: patient.head_relationship ?? prev.head_relationship ?? '',
+        head_education: patient.head_education ?? prev.head_education ?? '',
+        head_occupation: patient.head_occupation ?? prev.head_occupation ?? '',
+        head_income: patient.head_income ?? prev.head_income ?? '',
+        
+        // Referral & Mobility
+        distance_from_hospital: patient.distance_from_hospital ?? prev.distance_from_hospital ?? '',
+        mobility: patient.mobility ?? prev.mobility ?? '',
+        referred_by: patient.referred_by ?? prev.referred_by ?? '',
+        exact_source: patient.exact_source ?? prev.exact_source ?? '',
+        seen_in_walk_in_on: patient.seen_in_walk_in_on ?? prev.seen_in_walk_in_on ?? '',
+        worked_up_on: patient.worked_up_on ?? prev.worked_up_on ?? '',
         
         // Legacy address fields
-        present_address: patient.present_address || patient.present_address_line_1 || '',
-        permanent_address: patient.permanent_address || patient.permanent_address_line_1 || '',
-        local_address: patient.local_address || '',
-        school_college_office: patient.school_college_office || '',
-        contact_number: patient.contact_number || '',
+        present_address: patient.present_address ?? patient.present_address_line_1 ?? prev.present_address ?? '',
+        permanent_address: patient.permanent_address ?? patient.permanent_address_line_1 ?? prev.permanent_address ?? '',
+        local_address: patient.local_address ?? prev.local_address ?? '',
+        school_college_office: patient.school_college_office ?? prev.school_college_office ?? '',
         
-        // Detailed address fields
-        present_address_line_1: patient.present_address_line_1 || '',
-        present_address_line_2: patient.present_address_line_2 || '',
-        present_city_town_village: patient.present_city_town_village || '',
-        present_district: patient.present_district || '',
-        present_state: patient.present_state || '',
-        present_pin_code: patient.present_pin_code || '',
-        present_country: patient.present_country || '',
+        // Detailed address fields - Present Address
+        present_address_line_1: patient.present_address_line_1 ?? prev.present_address_line_1 ?? '',
+        present_address_line_2: patient.present_address_line_2 ?? prev.present_address_line_2 ?? '',
+        present_city_town_village: patient.present_city_town_village ?? prev.present_city_town_village ?? '',
+        present_district: patient.present_district ?? prev.present_district ?? '',
+        present_state: patient.present_state ?? prev.present_state ?? '',
+        present_pin_code: patient.present_pin_code ?? prev.present_pin_code ?? '',
+        present_country: patient.present_country ?? prev.present_country ?? '',
         
-        permanent_address_line_1: patient.permanent_address_line_1 || '',
-        permanent_address_line_2: patient.permanent_address_line_2 || '',
-        permanent_city_town_village: patient.permanent_city_town_village || '',
-        permanent_district: patient.permanent_district || '',
-        permanent_state: patient.permanent_state || '',
-        permanent_pin_code: patient.permanent_pin_code || '',
-        permanent_country: patient.permanent_country || '',
+        // Detailed address fields - Permanent Address
+        permanent_address_line_1: patient.permanent_address_line_1 ?? prev.permanent_address_line_1 ?? '',
+        permanent_address_line_2: patient.permanent_address_line_2 ?? prev.permanent_address_line_2 ?? '',
+        permanent_city_town_village: patient.permanent_city_town_village ?? prev.permanent_city_town_village ?? '',
+        permanent_district: patient.permanent_district ?? prev.permanent_district ?? '',
+        permanent_state: patient.permanent_state ?? prev.permanent_state ?? '',
+        permanent_pin_code: patient.permanent_pin_code ?? prev.permanent_pin_code ?? '',
+        permanent_country: patient.permanent_country ?? prev.permanent_country ?? '',
         
-        address_line_1: patient.address_line_1 || '',
-        address_line_2: patient.address_line_2 || '',
-        city_town_village: patient.city_town_village || '',
-        district: patient.district || '',
-        state: patient.state || '',
-        pin_code: patient.pin_code || '',
-        country: patient.country || '',
+        // Detailed address fields - Quick Entry Address
+        address_line_1: patient.address_line_1 ?? prev.address_line_1 ?? '',
+        address_line_2: patient.address_line_2 ?? prev.address_line_2 ?? '',
+        city_town_village: patient.city_town_village ?? prev.city_town_village ?? '',
+        district: patient.district ?? prev.district ?? '',
+        state: patient.state ?? prev.state ?? '',
+        pin_code: patient.pin_code ?? prev.pin_code ?? '',
+        country: patient.country ?? prev.country ?? '',
         
         // Registration details
-        department: patient.department || '',
-        unit_consit: patient.unit_consit || '',
-        room_no: patient.room_no || '',
-        serial_no: patient.serial_no || '',
-        file_no: patient.file_no || '',
-        unit_days: patient.unit_days || '',
+        department: patient.department ?? prev.department ?? '',
+        unit_consit: patient.unit_consit ?? prev.unit_consit ?? '',
+        room_no: patient.room_no ?? prev.room_no ?? '',
+        serial_no: patient.serial_no ?? prev.serial_no ?? '',
+        file_no: patient.file_no ?? prev.file_no ?? '',
+        unit_days: patient.unit_days ?? prev.unit_days ?? '',
         
         // Additional fields
-        category: patient.category || '',
-        special_clinic_no: patient.special_clinic_no || '',
+        category: patient.category ?? prev.category ?? '',
+        special_clinic_no: patient.special_clinic_no ?? prev.special_clinic_no ?? '',
       }));
     }
   }, [patientData]);
@@ -507,7 +521,7 @@ const handleSave = async () => {
     if (returnTab) {
       navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
     } else {
-      navigate(`/patients`);
+    navigate(`/patients`);
     }
 
   } catch (err) {
@@ -542,6 +556,32 @@ const handleSave = async () => {
     );
   }
 
+  // Merge patient data with formData to ensure all fields are available
+  // This ensures that any fields in formData (from patient table or outpatient record) are included
+  const mergedPatient = {
+    ...patient,
+    ...formData,
+    // Ensure basic fields from patient object take precedence
+    id: patient.id,
+    cr_no: patient.cr_no,
+    psy_no: patient.psy_no,
+    adl_no: patient.adl_no,
+    name: patient.name || formData.name,
+    sex: patient.sex || formData.sex,
+    actual_age: patient.actual_age || formData.actual_age,
+    assigned_room: patient.assigned_room || formData.assigned_room,
+    assigned_doctor_id: patient.assigned_doctor_id || formData.assigned_doctor_id,
+    assigned_doctor_name: patient.assigned_doctor_name,
+    assigned_doctor_role: patient.assigned_doctor_role,
+    case_complexity: patient.case_complexity,
+    has_adl_file: patient.has_adl_file,
+    file_status: patient.file_status,
+    is_active: patient.is_active,
+    filled_by_name: patient.filled_by_name,
+    created_at: patient.created_at,
+    updated_at: patient.updated_at,
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -561,7 +601,7 @@ const handleSave = async () => {
       {!isEditing ? (
         <>
           <PatientDetailsView
-            patient={patient}
+            patient={mergedPatient}
             formData={formData}
             clinicalData={clinicalData}
             adlData={adlData}

@@ -255,6 +255,25 @@ class PatientController {
   // Comprehensive patient registration (includes all patient information for MWO)
   static async registerPatientWithDetails(req, res) {
     try {
+      // Log received data for debugging
+      console.log('[patientController.registerPatientWithDetails] Received request body with keys:', Object.keys(req.body).length);
+      console.log('[patientController.registerPatientWithDetails] Sample fields:', {
+        name: req.body.name,
+        sex: req.body.sex,
+        actual_age: req.body.actual_age,
+        age_group: req.body.age_group,
+        marital_status: req.body.marital_status,
+        occupation: req.body.occupation,
+        contact_number: req.body.contact_number,
+        unit_days: req.body.unit_days,
+        year_of_marriage: req.body.year_of_marriage,
+        no_of_children: req.body.no_of_children,
+        completed_years_of_education: req.body.completed_years_of_education,
+        present_address: req.body.present_address,
+        permanent_address: req.body.permanent_address,
+        local_address: req.body.local_address
+      });
+
       const {
         // Basic patient information
         name, sex, actual_age, assigned_room, cr_no, psy_no,
@@ -291,110 +310,79 @@ class PatientController {
       } = req.body;
   
       // Create patient record with all information
+      // Pass req.body directly to Patient.create() - it will dynamically handle all fields
+      // Add filled_by field (MWO user ID)
       const patient = await Patient.create({
-        // Basic information
-        name,
-        sex,
-        actual_age,
-        assigned_room,
-        cr_no,
-        psy_no,
-        special_clinic_no,
-        has_adl_file,
-        file_status,
-        case_complexity,
-        
-        // Filled by (MWO user ID)
-        filled_by: req.user.id,
-        
-        // Visit information
-        seen_in_walk_in_on,
-        worked_up_on,
-        
-        // Personal Information
-        age_group,
-        marital_status,
-        year_of_marriage,
-        no_of_children,
-        no_of_children_male,
-        no_of_children_female,
-        
-        // Occupation & Education
-        occupation,
-        actual_occupation,
-        education_level,
-        completed_years_of_education,
-        
-        // Financial Information
-        patient_income,
-        family_income,
-        
-        // Family Information
-        religion,
-        family_type,
-        locality,
-        head_name,
-        head_age,
-        head_relationship,
-        head_education,
-        head_occupation,
-        head_income,
-        
-        // Referral & Mobility
-        distance_from_hospital,
-        mobility,
-        referred_by,
-        exact_source,
-        
-        // Contact Information
-        school_college_office,
-        contact_number,
-        
-        // Department/Unit fields
-        department,
-        unit_consit,
-        room_no,
-        serial_no,
-        file_no,
-        unit_days,
-        
-        // Local/Current Address
-        address_line_1,
-        address_line_2,
-        country,
-        state,
-        district,
-        city_town_village,
-        pin_code,
-        
-        // Present Address
-        present_address_line_1,
-        present_address_line_2,
-        present_country,
-        present_state,
-        present_district,
-        present_city_town_village,
-        present_pin_code,
-        
-        // Permanent Address
-        permanent_address_line_1,
-        permanent_address_line_2,
-        permanent_country,
-        permanent_state,
-        permanent_district,
-        permanent_city_town_village,
-        permanent_pin_code,
-        
-        // Additional fields
-        category,
-        assigned_doctor_id
+        ...req.body,
+        filled_by: req.user.id
+      });
+
+      // Fetch related data to populate joined fields in response
+      let assignedDoctorName = null;
+      let assignedDoctorRole = null;
+      let filledByName = null;
+
+      // Fetch assigned doctor info if assigned_doctor_id exists
+      if (patient.assigned_doctor_id) {
+        try {
+          const db = require('../config/database');
+          const doctorResult = await db.query(
+            'SELECT name, role FROM users WHERE id = $1',
+            [patient.assigned_doctor_id]
+          );
+          if (doctorResult.rows.length > 0) {
+            assignedDoctorName = doctorResult.rows[0].name;
+            assignedDoctorRole = doctorResult.rows[0].role;
+          }
+        } catch (err) {
+          console.error('[patientController] Error fetching assigned doctor:', err);
+        }
+      }
+
+      // Fetch filled_by user info (MWO who registered the patient)
+      if (patient.filled_by) {
+        try {
+          const db = require('../config/database');
+          const filledByResult = await db.query(
+            'SELECT name FROM users WHERE id = $1',
+            [patient.filled_by]
+          );
+          if (filledByResult.rows.length > 0) {
+            filledByName = filledByResult.rows[0].name;
+          }
+        } catch (err) {
+          console.error('[patientController] Error fetching filled_by user:', err);
+        }
+      }
+
+      // Build response with populated related fields
+      const patientResponse = {
+        ...patient.toJSON(),
+        assigned_doctor_name: assignedDoctorName,
+        assigned_doctor_role: assignedDoctorRole,
+        filled_by_name: filledByName
+      };
+
+      // Log response for debugging
+      console.log('[patientController.registerPatientWithDetails] Patient created successfully. ID:', patient.id);
+      console.log('[patientController.registerPatientWithDetails] Response fields check:', {
+        unit_days: patientResponse.unit_days,
+        year_of_marriage: patientResponse.year_of_marriage,
+        no_of_children: patientResponse.no_of_children,
+        completed_years_of_education: patientResponse.completed_years_of_education,
+        present_address: patientResponse.present_address,
+        permanent_address: patientResponse.permanent_address,
+        local_address: patientResponse.local_address,
+        assigned_doctor_name: patientResponse.assigned_doctor_name,
+        filled_by_name: patientResponse.filled_by_name,
+        adl_no: patientResponse.adl_no // This will be null on initial registration (expected)
       });
   
       res.status(201).json({
         success: true,
         message: 'Patient registered successfully with complete information',
         data: {
-          patient: patient.toJSON()
+          patient: patientResponse
         }
       });
     } catch (error) {
