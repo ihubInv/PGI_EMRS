@@ -174,7 +174,58 @@ const {
  *         description: Filter to date
  *     responses:
  *       200:
- *         description: ADL files retrieved successfully
+ *         description: ADL files retrieved successfully with patient and doctor details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     files:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                           patient_name:
+ *                             type: string
+ *                             description: Patient name from patients table join
+ *                           cr_no:
+ *                             type: string
+ *                             description: CR number from patients table join
+ *                           assigned_doctor_name:
+ *                             type: string
+ *                             description: Assigned doctor name from clinical_proforma join
+ *                           assigned_doctor_role:
+ *                             type: string
+ *                             description: Assigned doctor role
+ *                           proforma_visit_date:
+ *                             type: string
+ *                             format: date
+ *                             description: Visit date from clinical proforma
+ *                           clinical_proforma_id:
+ *                             type: integer
+ *                             description: Link to clinical proforma for complex cases
+ *                           file_created_date:
+ *                             type: string
+ *                             format: date
+ *                             description: ADL file creation date
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         page:
+ *                           type: integer
+ *                         limit:
+ *                           type: integer
+ *                         total:
+ *                           type: integer
+ *                         pages:
+ *                           type: integer
  *       401:
  *         description: Unauthorized
  *       500:

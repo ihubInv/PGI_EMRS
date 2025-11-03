@@ -96,6 +96,57 @@ async function executeAggregationQuery(text, params, startTime) {
       const searchPattern = params[0].replace(/%/g, '');
       query = query.or(`name.ilike.%${searchPattern}%,cr_no.ilike.%${searchPattern}%,psy_no.ilike.%${searchPattern}%,adl_no.ilike.%${searchPattern}%`);
     }
+    
+    // Handle WHERE conditions for adl_files COUNT query
+    if (tableName === 'adl_files' && text.includes('WHERE') && params.length > 0) {
+      // Handle file_status filter
+      const fileStatusMatch = text.match(/AND\s+af\.file_status\s*=\s*\$(\d+)/i);
+      if (fileStatusMatch) {
+        const paramIndex = parseInt(fileStatusMatch[1]) - 1;
+        const fileStatus = params[paramIndex];
+        query = query.eq('file_status', fileStatus);
+      }
+      
+      // Handle is_active filter
+      const isActiveMatch = text.match(/AND\s+af\.is_active\s*=\s*\$(\d+)/i);
+      if (isActiveMatch) {
+        const paramIndex = parseInt(isActiveMatch[1]) - 1;
+        const isActive = params[paramIndex];
+        query = query.eq('is_active', isActive);
+      }
+      
+      // Handle created_by filter
+      const createdByMatch = text.match(/AND\s+af\.created_by\s*=\s*\$(\d+)/i);
+      if (createdByMatch) {
+        const paramIndex = parseInt(createdByMatch[1]) - 1;
+        const createdBy = params[paramIndex];
+        query = query.eq('created_by', createdBy);
+      }
+      
+      // Handle last_accessed_by filter
+      const lastAccessedMatch = text.match(/AND\s+af\.last_accessed_by\s*=\s*\$(\d+)/i);
+      if (lastAccessedMatch) {
+        const paramIndex = parseInt(lastAccessedMatch[1]) - 1;
+        const lastAccessedBy = params[paramIndex];
+        query = query.eq('last_accessed_by', lastAccessedBy);
+      }
+      
+      // Handle date_from filter
+      const dateFromMatch = text.match(/AND\s+af\.file_created_date\s*>=\s*\$(\d+)/i);
+      if (dateFromMatch) {
+        const paramIndex = parseInt(dateFromMatch[1]) - 1;
+        const dateFrom = params[paramIndex];
+        query = query.gte('file_created_date', dateFrom);
+      }
+      
+      // Handle date_to filter
+      const dateToMatch = text.match(/AND\s+af\.file_created_date\s*<=\s*\$(\d+)/i);
+      if (dateToMatch) {
+        const paramIndex = parseInt(dateToMatch[1]) - 1;
+        const dateTo = params[paramIndex];
+        query = query.lte('file_created_date', dateTo);
+      }
+    }
 
     const { count, error } = await query;
 
@@ -212,27 +263,341 @@ async function executeJoinQuery(text, params, startTime) {
   
   // For adl_files joins
   if (mainTable === 'adl_files') {
-    const { data, error } = await supabaseAdmin
+    // Extract WHERE conditions and apply filters
+    // Use simplest Supabase relationship syntax - let Supabase auto-detect
+    // If auto-detection fails, Supabase needs foreign keys to be properly set up
+    let query = supabaseAdmin
       .from('adl_files')
       .select(`
         *,
-        patients:patient_id(id, name, cr_no, psy_no),
-        created_by_user:created_by(id, name),
-        last_accessed_by_user:last_accessed_by(id, name)
-      `)
-      .range(offset, offset + limit - 1)
-      .order('file_created_date', { ascending: false });
+        patients(id, name, cr_no, psy_no),
+        users!created_by(id, name, role),
+        clinical_proforma(id, assigned_doctor, visit_date)
+      `);
     
-    if (error) throw error;
+    // Apply WHERE conditions if present in the SQL query
+    if (text.includes('WHERE') && params.length > 0) {
+      // Handle file_status filter
+      const fileStatusMatch = text.match(/AND\s+af\.file_status\s*=\s*\$(\d+)/i);
+      if (fileStatusMatch) {
+        const paramIndex = parseInt(fileStatusMatch[1]) - 1;
+        const fileStatus = params[paramIndex];
+        query = query.eq('file_status', fileStatus);
+      }
+      
+      // Handle is_active filter
+      const isActiveMatch = text.match(/AND\s+af\.is_active\s*=\s*\$(\d+)/i);
+      if (isActiveMatch) {
+        const paramIndex = parseInt(isActiveMatch[1]) - 1;
+        const isActive = params[paramIndex];
+        query = query.eq('is_active', isActive);
+      }
+      
+      // Handle created_by filter
+      const createdByMatch = text.match(/AND\s+af\.created_by\s*=\s*\$(\d+)/i);
+      if (createdByMatch) {
+        const paramIndex = parseInt(createdByMatch[1]) - 1;
+        const createdBy = params[paramIndex];
+        query = query.eq('created_by', createdBy);
+      }
+      
+      // Handle last_accessed_by filter
+      const lastAccessedMatch = text.match(/AND\s+af\.last_accessed_by\s*=\s*\$(\d+)/i);
+      if (lastAccessedMatch) {
+        const paramIndex = parseInt(lastAccessedMatch[1]) - 1;
+        const lastAccessedBy = params[paramIndex];
+        query = query.eq('last_accessed_by', lastAccessedBy);
+      }
+      
+      // Handle date_from filter
+      const dateFromMatch = text.match(/AND\s+af\.file_created_date\s*>=\s*\$(\d+)/i);
+      if (dateFromMatch) {
+        const paramIndex = parseInt(dateFromMatch[1]) - 1;
+        const dateFrom = params[paramIndex];
+        query = query.gte('file_created_date', dateFrom);
+      }
+      
+      // Handle date_to filter
+      const dateToMatch = text.match(/AND\s+af\.file_created_date\s*<=\s*\$(\d+)/i);
+      if (dateToMatch) {
+        const paramIndex = parseInt(dateToMatch[1]) - 1;
+        const dateTo = params[paramIndex];
+        query = query.lte('file_created_date', dateTo);
+      }
+    }
     
-    const transformedData = data.map(item => ({
-      ...item,
-      patient_name: item.patients?.name,
-      cr_no: item.patients?.cr_no,
-      psy_no: item.patients?.psy_no,
-      created_by_name: item.created_by_user?.name,
-      last_accessed_by_name: item.last_accessed_by_user?.name
-    }));
+    // Apply ordering and pagination
+    query = query
+      .order('file_created_date', { ascending: false })
+      .range(offset, offset + limit - 1);
+    
+    let data, error;
+    
+    try {
+      const result = await query;
+      data = result.data;
+      error = result.error;
+    } catch (queryError) {
+      console.error('Supabase query execution error:', queryError);
+      error = queryError;
+    }
+    
+    // If relationship error occurs, fallback to fetching without joins
+    if (error && (error.message?.includes('relationship') || error.message?.includes('schema cache') || error.code === 'PGRST116')) {
+      console.warn('Supabase relationship error detected, using fallback query without joins');
+      
+      // Fallback: Fetch ADL files without joins, then fetch related data separately
+      let fallbackQuery = supabaseAdmin.from('adl_files').select('*');
+      
+      // Apply filters
+      if (text.includes('WHERE') && params.length > 0) {
+        const fileStatusMatch = text.match(/AND\s+af\.file_status\s*=\s*\$(\d+)/i);
+        if (fileStatusMatch) {
+          const paramIndex = parseInt(fileStatusMatch[1]) - 1;
+          fallbackQuery = fallbackQuery.eq('file_status', params[paramIndex]);
+        }
+        
+        const isActiveMatch = text.match(/AND\s+af\.is_active\s*=\s*\$(\d+)/i);
+        if (isActiveMatch) {
+          const paramIndex = parseInt(isActiveMatch[1]) - 1;
+          fallbackQuery = fallbackQuery.eq('is_active', params[paramIndex]);
+        }
+        
+        const createdByMatch = text.match(/AND\s+af\.created_by\s*=\s*\$(\d+)/i);
+        if (createdByMatch) {
+          const paramIndex = parseInt(createdByMatch[1]) - 1;
+          fallbackQuery = fallbackQuery.eq('created_by', params[paramIndex]);
+        }
+        
+        const lastAccessedMatch = text.match(/AND\s+af\.last_accessed_by\s*=\s*\$(\d+)/i);
+        if (lastAccessedMatch) {
+          const paramIndex = parseInt(lastAccessedMatch[1]) - 1;
+          fallbackQuery = fallbackQuery.eq('last_accessed_by', params[paramIndex]);
+        }
+        
+        const dateFromMatch = text.match(/AND\s+af\.file_created_date\s*>=\s*\$(\d+)/i);
+        if (dateFromMatch) {
+          const paramIndex = parseInt(dateFromMatch[1]) - 1;
+          fallbackQuery = fallbackQuery.gte('file_created_date', params[paramIndex]);
+        }
+        
+        const dateToMatch = text.match(/AND\s+af\.file_created_date\s*<=\s*\$(\d+)/i);
+        if (dateToMatch) {
+          const paramIndex = parseInt(dateToMatch[1]) - 1;
+          fallbackQuery = fallbackQuery.lte('file_created_date', params[paramIndex]);
+        }
+      }
+      
+      fallbackQuery = fallbackQuery.order('file_created_date', { ascending: false }).range(offset, offset + limit - 1);
+      
+      const fallbackResult = await fallbackQuery;
+      
+      if (fallbackResult.error) {
+        console.error('Fallback query also failed:', fallbackResult.error);
+        throw fallbackResult.error;
+      }
+      
+      data = fallbackResult.data;
+      
+      // Fetch related data separately
+      if (data && data.length > 0) {
+        const patientIds = [...new Set(data.map(item => item.patient_id).filter(id => id))];
+        const userIds = [...new Set([
+          ...data.map(item => item.created_by).filter(id => id),
+          ...data.map(item => item.last_accessed_by).filter(id => id)
+        ])];
+        const clinicalProformaIds = [...new Set(data.map(item => item.clinical_proforma_id).filter(id => id))];
+        
+        // Fetch patients
+        let patientsMap = {};
+        if (patientIds.length > 0) {
+          const { data: patients } = await supabaseAdmin
+            .from('patients')
+            .select('id, name, cr_no, psy_no')
+            .in('id', patientIds);
+          if (patients) {
+            patientsMap = patients.reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
+          }
+        }
+        
+        // Fetch users
+        let usersMap = {};
+        if (userIds.length > 0) {
+          const { data: users } = await supabaseAdmin
+            .from('users')
+            .select('id, name, role')
+            .in('id', userIds);
+          if (users) {
+            usersMap = users.reduce((acc, u) => ({ ...acc, [u.id]: u }), {});
+          }
+        }
+        
+        // Fetch clinical proformas and their assigned doctors
+        let proformasMap = {};
+        let assignedDoctorIds = [];
+        if (clinicalProformaIds.length > 0) {
+          const { data: proformas } = await supabaseAdmin
+            .from('clinical_proforma')
+            .select('id, assigned_doctor, visit_date')
+            .in('id', clinicalProformaIds);
+          if (proformas) {
+            proformasMap = proformas.reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
+            assignedDoctorIds = proformas.map(p => p.assigned_doctor).filter(id => id);
+          }
+        }
+        
+        // Fetch assigned doctors
+        let doctorsMap = {};
+        if (assignedDoctorIds.length > 0) {
+          const { data: doctors } = await supabaseAdmin
+            .from('users')
+            .select('id, name, role')
+            .in('id', [...new Set(assignedDoctorIds)]);
+          if (doctors) {
+            doctorsMap = doctors.reduce((acc, d) => ({ ...acc, [d.id]: d }), {});
+          }
+        }
+        
+        // Transform data with all relationships
+        data = data.map(item => {
+          const patient = patientsMap[item.patient_id];
+          const createdByUser = usersMap[item.created_by];
+          const lastAccessedByUser = usersMap[item.last_accessed_by];
+          const proforma = proformasMap[item.clinical_proforma_id];
+          const assignedDoctor = proforma && doctorsMap[proforma.assigned_doctor];
+          
+          return {
+            ...item,
+            patient_name: patient?.name || null,
+            cr_no: patient?.cr_no || null,
+            psy_no: patient?.psy_no || null,
+            created_by_name: createdByUser?.name || null,
+            created_by_role: createdByUser?.role || null,
+            last_accessed_by_name: lastAccessedByUser?.name || null,
+            clinical_proforma_id: proforma?.id || null,
+            assigned_doctor: proforma?.assigned_doctor || null,
+            assigned_doctor_name: assignedDoctor?.name || null,
+            assigned_doctor_role: assignedDoctor?.role || null,
+            proforma_visit_date: proforma?.visit_date || null
+          };
+        });
+      }
+      
+      // Skip the transformation below since we already transformed in fallback
+      const duration = Date.now() - startTime;
+      console.log('Fallback join query executed successfully', { duration, rows: data.length });
+      
+      return {
+        rows: data,
+        rowCount: data.length,
+        command: 'SELECT'
+      };
+    } else if (error) {
+      console.error('Supabase query error:', error);
+      throw error;
+    }
+    
+    // Transform data to match expected format with all joined fields (only if not using fallback)
+    // Handle Supabase's response format (can be object or array)
+    const transformedData = data.map(item => {
+      // Supabase may return relationships as arrays or objects
+      const patient = Array.isArray(item.patients) ? item.patients[0] : item.patients;
+      const createdByUser = Array.isArray(item.users) ? item.users[0] : item.users;
+      const clinicalProforma = Array.isArray(item.clinical_proforma) 
+        ? item.clinical_proforma[0] 
+        : item.clinical_proforma;
+      
+      return {
+        ...item,
+        patient_name: patient?.name || null,
+        cr_no: patient?.cr_no || null,
+        psy_no: patient?.psy_no || null,
+        created_by_name: createdByUser?.name || null,
+        created_by_role: createdByUser?.role || null,
+        last_accessed_by_name: null, // Will fetch separately
+        clinical_proforma_id: clinicalProforma?.id || null,
+        assigned_doctor: clinicalProforma?.assigned_doctor || null,
+        assigned_doctor_name: null, // Will fetch separately
+        assigned_doctor_role: null, // Will fetch separately
+        proforma_visit_date: clinicalProforma?.visit_date || null
+      };
+    });
+    
+    // Fetch last_accessed_by users separately (since we can't join same table twice easily)
+    const lastAccessedByIds = transformedData
+      .map(item => item.last_accessed_by)
+      .filter(id => id && id !== item.created_by);
+    
+    const uniqueLastAccessedIds = [...new Set(lastAccessedByIds)];
+    
+    if (uniqueLastAccessedIds.length > 0) {
+      const { data: lastAccessedUsers, error: lastAccessError } = await supabaseAdmin
+        .from('users')
+        .select('id, name')
+        .in('id', uniqueLastAccessedIds);
+      
+      if (!lastAccessError && lastAccessedUsers) {
+        const lastAccessMap = lastAccessedUsers.reduce((acc, u) => ({ ...acc, [u.id]: u }), {});
+        transformedData.forEach(item => {
+          if (item.last_accessed_by && lastAccessMap[item.last_accessed_by]) {
+            item.last_accessed_by_name = lastAccessMap[item.last_accessed_by].name;
+          } else if (item.last_accessed_by === item.created_by) {
+            item.last_accessed_by_name = item.created_by_name;
+          }
+        });
+      }
+    } else {
+      // If last_accessed_by matches created_by, use created_by_name
+      transformedData.forEach(item => {
+        if (item.last_accessed_by === item.created_by && item.created_by_name) {
+          item.last_accessed_by_name = item.created_by_name;
+        }
+      });
+    }
+    
+    // Fetch assigned doctor information separately if needed (since Supabase nested joins can be complex)
+    const clinicalProformaIds = transformedData
+      .map(item => item.clinical_proforma_id)
+      .filter(id => id);
+    
+    if (clinicalProformaIds.length > 0) {
+      const { data: proformas, error: proformaError } = await supabaseAdmin
+        .from('clinical_proforma')
+        .select('id, assigned_doctor')
+        .in('id', clinicalProformaIds);
+      
+      if (!proformaError && proformas) {
+        const assignedDoctorIds = proformas
+          .map(p => p.assigned_doctor)
+          .filter(id => id);
+        
+        if (assignedDoctorIds.length > 0) {
+          const { data: doctors, error: doctorsError } = await supabaseAdmin
+            .from('users')
+            .select('id, name, role')
+            .in('id', assignedDoctorIds);
+          
+          if (!doctorsError && doctors) {
+            const doctorsMap = doctors.reduce((acc, d) => ({ ...acc, [d.id]: d }), {});
+            const proformasMap = proformas.reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
+            
+            transformedData.forEach(item => {
+              if (item.clinical_proforma_id) {
+                const proforma = proformasMap[item.clinical_proforma_id];
+                if (proforma && proforma.assigned_doctor) {
+                  const doctor = doctorsMap[proforma.assigned_doctor];
+                  if (doctor) {
+                    item.assigned_doctor = doctor.id;
+                    item.assigned_doctor_name = doctor.name;
+                    item.assigned_doctor_role = doctor.role;
+                  }
+                }
+              }
+            });
+          }
+        }
+      }
+    }
     
     const duration = Date.now() - startTime;
     console.log('Join query executed successfully', { duration, rows: transformedData.length });

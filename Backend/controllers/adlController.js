@@ -3,6 +3,7 @@ const Patient = require('../models/Patient');
 
 class ADLController {
   // Get all ADL files with pagination and filters
+  // By default, only returns ADL files associated with complex cases
   static async getAllADLFiles(req, res) {
     try {
       const page = parseInt(req.query.page) || 1;
@@ -16,6 +17,12 @@ class ADLController {
       if (req.query.last_accessed_by) filters.last_accessed_by = req.query.last_accessed_by;
       if (req.query.date_from) filters.date_from = req.query.date_from;
       if (req.query.date_to) filters.date_to = req.query.date_to;
+      
+      // Allow showing all ADL files (including non-complex cases) if explicitly requested
+      // By default, only show complex cases (clinical_proforma_id IS NOT NULL)
+      if (req.query.include_all === 'true') {
+        filters.include_all = true;
+      }
 
       const result = await ADLFile.findAll(page, limit, filters);
 

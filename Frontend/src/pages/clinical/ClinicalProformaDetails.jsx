@@ -1,10 +1,11 @@
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FiEdit, FiTrash2, FiArrowLeft, FiPrinter } from 'react-icons/fi';
+import { FiEdit, FiTrash2, FiArrowLeft, FiPrinter, FiFileText, FiActivity } from 'react-icons/fi';
 import {
   useGetClinicalProformaByIdQuery,
   useDeleteClinicalProformaMutation,
 } from '../../features/clinical/clinicalApiSlice';
+import { useGetADLFileByIdQuery } from '../../features/adl/adlApiSlice';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import Badge from '../../components/Badge';
@@ -19,6 +20,15 @@ const ClinicalProformaDetails = () => {
 
   const { data, isLoading } = useGetClinicalProformaByIdQuery(id);
   const [deleteProforma, { isLoading: isDeleting }] = useDeleteClinicalProformaMutation();
+  
+  // Fetch ADL file data if this is a complex case
+  const proforma = data?.data?.proforma;
+  const isComplexCase = proforma?.doctor_decision === 'complex_case' && proforma?.adl_file_id;
+  const { data: adlFileData, isLoading: adlFileLoading } = useGetADLFileByIdQuery(
+    proforma?.adl_file_id,
+    { skip: !isComplexCase }
+  );
+  const adlFile = adlFileData?.data?.file;
 
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this clinical proforma?')) {
@@ -53,8 +63,6 @@ const ClinicalProformaDetails = () => {
   if (isLoading) {
     return <LoadingSpinner size="lg" className="h-96" />;
   }
-
-  const proforma = data?.data?.proforma;
 
   if (!proforma) {
     return (
@@ -254,8 +262,15 @@ const ClinicalProformaDetails = () => {
       {proforma.requires_adl_file && (
         <Card title="ADL File Requirements">
           <div className="space-y-4">
-            <div>
+            <div className="flex items-center gap-2">
               <Badge variant="warning">Requires ADL File</Badge>
+              {isComplexCase && adlFile && (
+                <Link to={`/adl-files/${adlFile.id}`}>
+                  <Button variant="outline" size="sm">
+                    <FiFileText className="mr-2" /> View ADL File Details
+                  </Button>
+                </Link>
+              )}
             </div>
             {proforma.adl_reasoning && (
               <div>
@@ -265,6 +280,160 @@ const ClinicalProformaDetails = () => {
             )}
           </div>
         </Card>
+      )}
+
+      {/* Complex Case - Additional Detail Data (from ADL File) */}
+      {isComplexCase && adlFile && (
+        <>
+          <Card title="Complex Case - Additional Details" className="border-2 border-red-200 bg-red-50/30">
+            <div className="mb-4 flex items-center gap-2">
+              <FiActivity className="w-5 h-5 text-red-600" />
+              <Badge variant="danger" className="text-sm font-semibold">
+                Complex Case - Data from ADL File
+              </Badge>
+              <Link to={`/adl-files/${adlFile.id}`}>
+                <Button variant="outline" size="sm">
+                  <FiFileText className="mr-2" /> View Full ADL File
+                </Button>
+              </Link>
+            </div>
+
+            {adlFileLoading ? (
+              <LoadingSpinner className="h-32" />
+            ) : (
+              <div className="space-y-6">
+                {/* History of Present Illness - Expanded */}
+                {(adlFile.history_narrative || adlFile.history_specific_enquiry || adlFile.history_drug_intake) && (
+                  <InfoSection
+                    title="History of Present Illness (Expanded)"
+                    data={{
+                      'Narrative': adlFile.history_narrative,
+                      'Specific Enquiry': adlFile.history_specific_enquiry,
+                      'Drug Intake': adlFile.history_drug_intake,
+                      'Treatment Place': adlFile.history_treatment_place,
+                      'Treatment Dates': adlFile.history_treatment_dates,
+                      'Treatment Drugs': adlFile.history_treatment_drugs,
+                      'Treatment Response': adlFile.history_treatment_response,
+                    }}
+                  />
+                )}
+
+                {/* Informants */}
+                {adlFile.informants && Array.isArray(adlFile.informants) && adlFile.informants.length > 0 && (
+                  <Card title="Informants" className="mt-4">
+                    <div className="space-y-3">
+                      {adlFile.informants.map((informant, index) => (
+                        <div key={index} className="p-3 border border-gray-200 rounded">
+                          <p className="font-medium">{informant.name || `Informant ${index + 1}`}</p>
+                          {informant.relation && <p className="text-sm text-gray-600">Relation: {informant.relation}</p>}
+                          {informant.age && <p className="text-sm text-gray-600">Age: {informant.age}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+
+                {/* Past History - Detailed */}
+                {(adlFile.past_history_medical || adlFile.past_history_psychiatric_dates || adlFile.past_history_psychiatric_diagnosis) && (
+                  <InfoSection
+                    title="Past History (Detailed)"
+                    data={{
+                      'Medical History': adlFile.past_history_medical,
+                      'Psychiatric Dates': adlFile.past_history_psychiatric_dates,
+                      'Psychiatric Diagnosis': adlFile.past_history_psychiatric_diagnosis,
+                      'Psychiatric Treatment': adlFile.past_history_psychiatric_treatment,
+                      'Interim Period': adlFile.past_history_psychiatric_interim,
+                      'Recovery': adlFile.past_history_psychiatric_recovery,
+                    }}
+                  />
+                )}
+
+                {/* Family History - Detailed */}
+                {(adlFile.family_history_father_age || adlFile.family_history_mother_age) && (
+                  <InfoSection
+                    title="Family History (Detailed)"
+                    data={{
+                      'Father - Age': adlFile.family_history_father_age,
+                      'Father - Education': adlFile.family_history_father_education,
+                      'Father - Occupation': adlFile.family_history_father_occupation,
+                      'Father - Personality': adlFile.family_history_father_personality,
+                      'Father - Deceased': adlFile.family_history_father_deceased ? 'Yes' : 'No',
+                      'Mother - Age': adlFile.family_history_mother_age,
+                      'Mother - Education': adlFile.family_history_mother_education,
+                      'Mother - Occupation': adlFile.family_history_mother_occupation,
+                      'Mother - Personality': adlFile.family_history_mother_personality,
+                      'Mother - Deceased': adlFile.family_history_mother_deceased ? 'Yes' : 'No',
+                    }}
+                  />
+                )}
+
+                {/* Mental Status Examination - Expanded */}
+                {(adlFile.mse_general_demeanour || adlFile.mse_affect_subjective || adlFile.mse_thought_flow) && (
+                  <InfoSection
+                    title="Mental Status Examination (Expanded)"
+                    data={{
+                      'General Demeanour': adlFile.mse_general_demeanour,
+                      'General Awareness': adlFile.mse_general_awareness,
+                      'Affect - Subjective': adlFile.mse_affect_subjective,
+                      'Affect - Tone': adlFile.mse_affect_tone,
+                      'Thought Flow': adlFile.mse_thought_flow,
+                      'Thought Form': adlFile.mse_thought_form,
+                      'Thought Content': adlFile.mse_thought_content,
+                      'Cognitive - Consciousness': adlFile.mse_cognitive_consciousness,
+                      'Insight - Understanding': adlFile.mse_insight_understanding,
+                      'Insight - Judgement': adlFile.mse_insight_judgement,
+                    }}
+                  />
+                )}
+
+                {/* Physical Examination - Comprehensive */}
+                {(adlFile.physical_appearance || adlFile.physical_pulse || adlFile.physical_bp) && (
+                  <InfoSection
+                    title="Physical Examination (Comprehensive)"
+                    data={{
+                      'Appearance': adlFile.physical_appearance,
+                      'Body Build': adlFile.physical_body_build,
+                      'Pulse': adlFile.physical_pulse,
+                      'Blood Pressure': adlFile.physical_bp,
+                      'Height': adlFile.physical_height,
+                      'Weight': adlFile.physical_weight,
+                      'CVS Apex': adlFile.physical_cvs_apex,
+                      'CVS Heart Sounds': adlFile.physical_cvs_heart_sounds,
+                      'CNS Cranial': adlFile.physical_cns_cranial,
+                    }}
+                  />
+                )}
+
+                {/* Provisional Diagnosis and Treatment Plan */}
+                {(adlFile.provisional_diagnosis || adlFile.treatment_plan) && (
+                  <Card title="Provisional Diagnosis and Treatment Plan" className="border-2 border-blue-200 bg-blue-50/30">
+                    <div className="space-y-4">
+                      {adlFile.provisional_diagnosis && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Provisional Diagnosis</label>
+                          <p className="text-gray-900 mt-1 whitespace-pre-wrap">{adlFile.provisional_diagnosis}</p>
+                        </div>
+                      )}
+                      {adlFile.treatment_plan && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Treatment Plan</label>
+                          <p className="text-gray-900 mt-1 whitespace-pre-wrap">{adlFile.treatment_plan}</p>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                )}
+
+                {/* Comments of the Consultant */}
+                {adlFile.consultant_comments && (
+                  <Card title="Comments of the Consultant" className="border-2 border-purple-200 bg-purple-50/30">
+                    <p className="text-gray-900 whitespace-pre-wrap">{adlFile.consultant_comments}</p>
+                  </Card>
+                )}
+              </div>
+            )}
+          </Card>
+        </>
       )}
     </div>
   );

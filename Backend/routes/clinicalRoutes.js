@@ -39,6 +39,9 @@ const {
  *         room_no:
  *           type: string
  *           maxLength: 10
+ *         assigned_doctor:
+ *           type: integer
+ *           description: Doctor assigned to the patient for this visit (references users.id)
  *         informant_present:
  *           type: boolean
  *         nature_of_information:
@@ -116,6 +119,38 @@ const {
  *           type: string
  *         treatment_prescribed:
  *           type: string
+ *           description: Plain text prescription (legacy field, also auto-generated from prescriptions array)
+ *         prescriptions:
+ *           type: array
+ *           description: Array of prescription objects (when provided, creates entries in prescriptions table linked via clinical_proforma_id). Each prescription object should contain medicine, dosage, when, frequency, duration, qty, details, and notes fields.
+ *           items:
+ *             type: object
+ *             properties:
+ *               medicine:
+ *                 type: string
+ *                 description: Name of the medication (required)
+ *               dosage:
+ *                 type: string
+ *                 description: Dosage instructions (e.g., 1-0-1, 500mg)
+ *               when:
+ *                 type: string
+ *                 description: When to take (e.g., before/after food, morning, evening)
+ *               frequency:
+ *                 type: string
+ *                 description: Frequency (e.g., daily, twice daily, SOS)
+ *               duration:
+ *                 type: string
+ *                 description: Duration (e.g., 5 days, 1 month)
+ *               qty:
+ *                 type: string
+ *                 description: Quantity prescribed
+ *               details:
+ *                 type: string
+ *                 description: Additional details
+ *               notes:
+ *                 type: string
+ *                 description: Additional notes or instructions
+ *           note: Prescriptions are stored in a separate 'prescriptions' table with a foreign key relationship to clinical_proforma. Use /api/prescriptions endpoints for CRUD operations.
  *         doctor_decision:
  *           type: string
  *           enum: [simple_case, complex_case]
@@ -126,6 +161,9 @@ const {
  *           type: boolean
  *         adl_reasoning:
  *           type: string
+ *         adl_file_id:
+ *           type: integer
+ *           description: Reference to ADL file for complex cases (set automatically by backend when doctor_decision is complex_case)
  *         created_at:
  *           type: string
  *           format: date-time
@@ -156,11 +194,17 @@ const {
  *         visit_date:
  *           type: string
  *           format: date
+ *         assigned_doctor:
+ *           type: integer
+ *           description: Doctor assigned to the patient for this visit (references users.id)
  *         visit_type:
  *           type: string
  *           enum: [first_visit, follow_up]
  *         room_no:
  *           type: string
+ *         adl_file_id:
+ *           type: integer
+ *           description: Reference to ADL file for complex cases (set automatically by backend, optional)
  *         informant_present:
  *           type: boolean
  *         nature_of_information:
@@ -233,6 +277,38 @@ const {
  *           type: string
  *         treatment_prescribed:
  *           type: string
+ *           description: Plain text prescription (legacy field, also auto-generated from prescriptions array)
+ *         prescriptions:
+ *           type: array
+ *           description: Array of prescription objects (when provided, creates entries in prescriptions table linked via clinical_proforma_id). Each prescription object should contain medicine, dosage, when, frequency, duration, qty, details, and notes fields.
+ *           items:
+ *             type: object
+ *             properties:
+ *               medicine:
+ *                 type: string
+ *                 description: Name of the medication (required)
+ *               dosage:
+ *                 type: string
+ *                 description: Dosage instructions (e.g., 1-0-1, 500mg)
+ *               when:
+ *                 type: string
+ *                 description: When to take (e.g., before/after food, morning, evening)
+ *               frequency:
+ *                 type: string
+ *                 description: Frequency (e.g., daily, twice daily, SOS)
+ *               duration:
+ *                 type: string
+ *                 description: Duration (e.g., 5 days, 1 month)
+ *               qty:
+ *                 type: string
+ *                 description: Quantity prescribed
+ *               details:
+ *                 type: string
+ *                 description: Additional details
+ *               notes:
+ *                 type: string
+ *                 description: Additional notes or instructions
+ *           note: Prescriptions are stored in a separate 'prescriptions' table with a foreign key relationship to clinical_proforma. Use /api/prescriptions endpoints for CRUD operations.
  *         doctor_decision:
  *           type: string
  *           enum: [simple_case, complex_case]
@@ -243,6 +319,429 @@ const {
  *           type: boolean
  *         adl_reasoning:
  *           type: string
+ *         # History of Present Illness - Expanded
+ *         history_narrative:
+ *           type: string
+ *         history_specific_enquiry:
+ *           type: string
+ *         history_drug_intake:
+ *           type: string
+ *         history_treatment_place:
+ *           type: string
+ *         history_treatment_dates:
+ *           type: string
+ *         history_treatment_drugs:
+ *           type: string
+ *         history_treatment_response:
+ *           type: string
+ *         # Multiple Informants (JSON array)
+ *         informants:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               relationship:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               reliability:
+ *                 type: string
+ *         # Complaints and Duration (JSON arrays)
+ *         complaints_patient:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               complaint:
+ *                 type: string
+ *               duration:
+ *                 type: string
+ *         complaints_informant:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               complaint:
+ *                 type: string
+ *               duration:
+ *                 type: string
+ *         # Past History - Detailed
+ *         past_history_medical:
+ *           type: string
+ *         past_history_psychiatric_dates:
+ *           type: string
+ *         past_history_psychiatric_diagnosis:
+ *           type: string
+ *         past_history_psychiatric_treatment:
+ *           type: string
+ *         past_history_psychiatric_interim:
+ *           type: string
+ *         past_history_psychiatric_recovery:
+ *           type: string
+ *         # Family History - Detailed
+ *         family_history_father_age:
+ *           type: string
+ *         family_history_father_education:
+ *           type: string
+ *         family_history_father_occupation:
+ *           type: string
+ *         family_history_father_personality:
+ *           type: string
+ *         family_history_father_deceased:
+ *           type: boolean
+ *         family_history_father_death_age:
+ *           type: string
+ *         family_history_father_death_date:
+ *           type: string
+ *           format: date
+ *         family_history_father_death_cause:
+ *           type: string
+ *         family_history_mother_age:
+ *           type: string
+ *         family_history_mother_education:
+ *           type: string
+ *         family_history_mother_occupation:
+ *           type: string
+ *         family_history_mother_personality:
+ *           type: string
+ *         family_history_mother_deceased:
+ *           type: boolean
+ *         family_history_mother_death_age:
+ *           type: string
+ *         family_history_mother_death_date:
+ *           type: string
+ *           format: date
+ *         family_history_mother_death_cause:
+ *           type: string
+ *         family_history_siblings:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               age:
+ *                 type: string
+ *               sex:
+ *                 type: string
+ *               education:
+ *                 type: string
+ *               occupation:
+ *                 type: string
+ *               marital_status:
+ *                 type: string
+ *         # Diagnostic Formulation
+ *         diagnostic_formulation_summary:
+ *           type: string
+ *         diagnostic_formulation_features:
+ *           type: string
+ *         diagnostic_formulation_psychodynamic:
+ *           type: string
+ *         # Premorbid Personality
+ *         premorbid_personality_passive_active:
+ *           type: string
+ *         premorbid_personality_assertive:
+ *           type: string
+ *         premorbid_personality_introvert_extrovert:
+ *           type: string
+ *         premorbid_personality_traits:
+ *           type: array
+ *           items:
+ *             type: string
+ *         premorbid_personality_hobbies:
+ *           type: string
+ *         premorbid_personality_habits:
+ *           type: string
+ *         premorbid_personality_alcohol_drugs:
+ *           type: string
+ *         # Physical Examination - Comprehensive
+ *         physical_appearance:
+ *           type: string
+ *         physical_body_build:
+ *           type: string
+ *         physical_pallor:
+ *           type: boolean
+ *         physical_icterus:
+ *           type: boolean
+ *         physical_oedema:
+ *           type: boolean
+ *         physical_lymphadenopathy:
+ *           type: boolean
+ *         physical_pulse:
+ *           type: string
+ *         physical_bp:
+ *           type: string
+ *         physical_height:
+ *           type: string
+ *         physical_weight:
+ *           type: string
+ *         physical_waist:
+ *           type: string
+ *         physical_fundus:
+ *           type: string
+ *         physical_cvs_apex:
+ *           type: string
+ *         physical_cvs_regularity:
+ *           type: string
+ *         physical_cvs_heart_sounds:
+ *           type: string
+ *         physical_cvs_murmurs:
+ *           type: string
+ *         physical_chest_expansion:
+ *           type: string
+ *         physical_chest_percussion:
+ *           type: string
+ *         physical_chest_adventitious:
+ *           type: string
+ *         physical_abdomen_tenderness:
+ *           type: string
+ *         physical_abdomen_mass:
+ *           type: string
+ *         physical_abdomen_bowel_sounds:
+ *           type: string
+ *         physical_cns_cranial:
+ *           type: string
+ *         physical_cns_motor_sensory:
+ *           type: string
+ *         physical_cns_rigidity:
+ *           type: string
+ *         physical_cns_involuntary:
+ *           type: string
+ *         physical_cns_superficial_reflexes:
+ *           type: string
+ *         physical_cns_dtrs:
+ *           type: string
+ *         physical_cns_plantar:
+ *           type: string
+ *         physical_cns_cerebellar:
+ *           type: string
+ *         # Mental Status Examination - Expanded
+ *         mse_general_demeanour:
+ *           type: string
+ *         mse_general_tidy:
+ *           type: string
+ *         mse_general_awareness:
+ *           type: string
+ *         mse_general_cooperation:
+ *           type: string
+ *         mse_psychomotor_verbalization:
+ *           type: string
+ *         mse_psychomotor_pressure:
+ *           type: string
+ *         mse_psychomotor_tension:
+ *           type: string
+ *         mse_psychomotor_posture:
+ *           type: string
+ *         mse_psychomotor_mannerism:
+ *           type: string
+ *         mse_psychomotor_catatonic:
+ *           type: string
+ *         mse_affect_subjective:
+ *           type: string
+ *         mse_affect_tone:
+ *           type: string
+ *         mse_affect_resting:
+ *           type: string
+ *         mse_affect_fluctuation:
+ *           type: string
+ *         mse_thought_flow:
+ *           type: string
+ *         mse_thought_form:
+ *           type: string
+ *         mse_thought_content:
+ *           type: string
+ *         mse_cognitive_consciousness:
+ *           type: string
+ *         mse_cognitive_orientation_time:
+ *           type: string
+ *         mse_cognitive_orientation_place:
+ *           type: string
+ *         mse_cognitive_orientation_person:
+ *           type: string
+ *         mse_cognitive_memory_immediate:
+ *           type: string
+ *         mse_cognitive_memory_recent:
+ *           type: string
+ *         mse_cognitive_memory_remote:
+ *           type: string
+ *         mse_cognitive_subtraction:
+ *           type: string
+ *         mse_cognitive_digit_span:
+ *           type: string
+ *         mse_cognitive_counting:
+ *           type: string
+ *         mse_cognitive_general_knowledge:
+ *           type: string
+ *         mse_cognitive_calculation:
+ *           type: string
+ *         mse_cognitive_similarities:
+ *           type: string
+ *         mse_cognitive_proverbs:
+ *           type: string
+ *         mse_insight_understanding:
+ *           type: string
+ *         mse_insight_judgement:
+ *           type: string
+ *         # Educational History
+ *         education_start_age:
+ *           type: string
+ *         education_highest_class:
+ *           type: string
+ *         education_performance:
+ *           type: string
+ *         education_disciplinary:
+ *           type: string
+ *         education_peer_relationship:
+ *           type: string
+ *         education_hobbies:
+ *           type: string
+ *         education_special_abilities:
+ *           type: string
+ *         education_discontinue_reason:
+ *           type: string
+ *         # Occupational History (JSON array)
+ *         occupation_jobs:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               job:
+ *                 type: string
+ *               dates:
+ *                 type: string
+ *               adjustment:
+ *                 type: string
+ *               difficulties:
+ *                 type: string
+ *               promotions:
+ *                 type: string
+ *               change_reason:
+ *                 type: string
+ *         # Sexual and Marital History
+ *         sexual_menarche_age:
+ *           type: string
+ *         sexual_menarche_reaction:
+ *           type: string
+ *         sexual_education:
+ *           type: string
+ *         sexual_masturbation:
+ *           type: string
+ *         sexual_contact:
+ *           type: string
+ *         sexual_premarital_extramarital:
+ *           type: string
+ *         sexual_marriage_arranged:
+ *           type: string
+ *         sexual_marriage_date:
+ *           type: string
+ *           format: date
+ *         sexual_spouse_age:
+ *           type: string
+ *         sexual_spouse_occupation:
+ *           type: string
+ *         sexual_adjustment_general:
+ *           type: string
+ *         sexual_adjustment_sexual:
+ *           type: string
+ *         sexual_children:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               age:
+ *                 type: string
+ *               sex:
+ *                 type: string
+ *               sexual_problems:
+ *                 type: string
+ *         sexual_problems:
+ *           type: string
+ *         # Religion
+ *         religion_type:
+ *           type: string
+ *         religion_participation:
+ *           type: string
+ *         religion_changes:
+ *           type: string
+ *         # Present Living Situation
+ *         living_residents:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               relationship:
+ *                 type: string
+ *               age:
+ *                 type: string
+ *         living_income_sharing:
+ *           type: string
+ *         living_expenses:
+ *           type: string
+ *         living_kitchen:
+ *           type: string
+ *         living_domestic_conflicts:
+ *           type: string
+ *         living_social_class:
+ *           type: string
+ *         living_inlaws:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               relationship:
+ *                 type: string
+ *               age:
+ *                 type: string
+ *         # General Home Situation and Early Development
+ *         home_situation_childhood:
+ *           type: string
+ *         home_situation_parents_relationship:
+ *           type: string
+ *         home_situation_socioeconomic:
+ *           type: string
+ *         home_situation_interpersonal:
+ *           type: string
+ *         personal_birth_date:
+ *           type: string
+ *           format: date
+ *         personal_birth_place:
+ *           type: string
+ *         personal_delivery_type:
+ *           type: string
+ *         personal_complications_prenatal:
+ *           type: string
+ *         personal_complications_natal:
+ *           type: string
+ *         personal_complications_postnatal:
+ *           type: string
+ *         development_weaning_age:
+ *           type: string
+ *         development_first_words:
+ *           type: string
+ *         development_three_words:
+ *           type: string
+ *         development_walking:
+ *           type: string
+ *         development_neurotic_traits:
+ *           type: string
+ *         development_nail_biting:
+ *           type: string
+ *         development_bedwetting:
+ *           type: string
+ *         development_phobias:
+ *           type: string
+ *         development_childhood_illness:
+ *           type: string
+ *         # Provisional Diagnosis and Treatment Plan
+ *         provisional_diagnosis:
+ *           type: string
+ *         treatment_plan:
+ *           type: string
+ *         # Comments of the Consultant
+ *         consultant_comments:
+ *           type: string
  */
 
 // Doctor-only routes (JR/SR)
@@ -251,6 +750,22 @@ const {
  * /api/clinical-proformas:
  *   post:
  *     summary: Create a new clinical proforma (Admin, JR/SR Doctor only)
+ *     description: |
+ *       Creates a new clinical proforma with comprehensive patient data.
+ *       
+ *       **Complex Case Handling:**
+ *       - When `doctor_decision` is set to `complex_case`, the system automatically:
+ *         1. Creates an ADL file for the patient (if one doesn't exist)
+ *         2. Links the clinical proforma to the ADL file via `clinical_proforma_id` in adl_files
+ *         3. Sets `adl_file_id` in clinical_proforma for bidirectional linking
+ *         4. Sets `requires_adl_file` to `true` automatically
+ *       
+ *       - For `simple_case`: All data is stored in clinical_proforma table only (no ADL file created)
+ *       
+ *       **Transaction Safety:**
+ *       - If ADL file creation fails, the clinical proforma creation will still succeed (ADL creation error is logged)
+ *       - All form fields are stored in clinical_proforma regardless of case type
+ *       - Complex case ADL details are accessible via the linked clinical_proforma record
  *     tags: [Clinical Proforma]
  *     security:
  *       - bearerAuth: []
@@ -260,6 +775,29 @@ const {
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/ClinicalProformaCreate'
+ *           examples:
+ *             simple_case:
+ *               summary: Simple case example
+ *               value:
+ *                 patient_id: 1
+ *                 visit_date: "2024-01-15"
+ *                 visit_type: "first_visit"
+ *                 assigned_doctor: 5
+ *                 room_no: "Room 101"
+ *                 doctor_decision: "simple_case"
+ *                 case_severity: "mild"
+ *             complex_case:
+ *               summary: Complex case example (triggers ADL file creation)
+ *               value:
+ *                 patient_id: 1
+ *                 visit_date: "2024-01-15"
+ *                 visit_type: "first_visit"
+ *                 assigned_doctor: 5
+ *                 room_no: "Room 101"
+ *                 doctor_decision: "complex_case"
+ *                 case_severity: "severe"
+ *                 requires_adl_file: true
+ *                 adl_reasoning: "Patient requires comprehensive ADL assessment due to complex psychiatric presentation"
  *     responses:
  *       201:
  *         description: Clinical proforma created successfully

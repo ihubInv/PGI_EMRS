@@ -16,6 +16,7 @@ const patientRoutes = require('./routes/patientRoutes');
 const outpatientRoutes = require('./routes/outpatientRoutes');
 const clinicalRoutes = require('./routes/clinicalRoutes');
 const adlRoutes = require('./routes/adlRoutes');
+const prescriptionRoutes = require('./routes/prescriptionRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 2025;
@@ -145,6 +146,7 @@ app.use('/api/patients', patientRoutes);
 app.use('/api/outpatient-records', outpatientRoutes);
 app.use('/api/clinical-proformas', clinicalRoutes);
 app.use('/api/adl-files', adlRoutes);
+app.use('/api/prescriptions', prescriptionRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -159,7 +161,8 @@ app.get('/', (req, res) => {
       patients: '/api/patients',
       outpatientRecords: '/api/outpatient-records',
       clinicalProformas: '/api/clinical-proformas',
-      adlFiles: '/api/adl-files'
+      adlFiles: '/api/adl-files',
+      prescriptions: '/api/prescriptions'
     }
   });
 });
@@ -183,7 +186,9 @@ app.use('*', (req, res) => {
       'GET /api/clinical-proformas',
       'POST /api/clinical-proformas',
       'GET /api/adl-files',
-      'POST /api/adl-files'
+      'POST /api/adl-files',
+      'GET /api/prescriptions',
+      'POST /api/prescriptions'
     ]
   });
 });
@@ -267,6 +272,7 @@ const server = app.listen(PORT, () => {
    - Outpatient Records: http://localhost:${PORT}/api/outpatient-records
    - Clinical Proformas: http://localhost:${PORT}/api/clinical-proformas
    - Additional Detail File: http://localhost:${PORT}/api/adl-files
+   - Prescriptions: http://localhost:${PORT}/api/prescriptions
   `);
 });
 
