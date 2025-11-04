@@ -62,166 +62,133 @@ const PatientRow = ({ patient, activeTab, navigate }) => {
   };
 
   return (
-    <div className="p-6 hover:bg-gray-50 transition-colors">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-1">
+    <div className="p-5 sm:p-6 hover:bg-gradient-to-r hover:from-gray-50 hover:to-white transition-all duration-200 border-b border-gray-200 last:border-b-0 bg-white rounded-lg mb-3 shadow-sm hover:shadow-md">
+      <div className="flex flex-col lg:flex-row lg:items-start gap-5 lg:gap-6">
+        {/* Patient Information Section */}
+        <div className="flex-1 min-w-0 space-y-4">
+          {/* Header with name, info, and badges */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <h4 className="text-xl font-bold text-gray-900 mb-3 break-words">
                 {patient.name}
               </h4>
-              <div className="flex items-center gap-4 text-sm text-gray-600">
-                <span className="flex items-center gap-1">
-                  <FiUser className="w-4 h-4" />
-                  {patient.sex}, {patient.actual_age} years
+              <div className="flex flex-wrap items-center gap-4 sm:gap-5 text-sm text-gray-600">
+                <span className="flex items-center gap-1.5 whitespace-nowrap bg-gray-50 px-2.5 py-1 rounded-md">
+                  <FiUser className="w-4 h-4 flex-shrink-0 text-gray-500" />
+                  <span className="font-medium">{patient.sex}</span>
+                  <span className="text-gray-400">•</span>
+                  <span>{patient.actual_age} years</span>
                 </span>
                 {patient.contact_number && (
-                  <span className="flex items-center gap-1">
-                    <FiPhone className="w-4 h-4" />
-                    {patient.contact_number}
+                  <span className="flex items-center gap-1.5 whitespace-nowrap bg-gray-50 px-2.5 py-1 rounded-md">
+                    <FiPhone className="w-4 h-4 flex-shrink-0 text-gray-500" />
+                    <span>{patient.contact_number}</span>
                   </span>
                 )}
-                <span className="flex items-center gap-1">
-                  <FiClock className="w-4 h-4" />
-                  {formatTime(patient.created_at)}
+                <span className="flex items-center gap-1.5 whitespace-nowrap bg-gray-50 px-2.5 py-1 rounded-md">
+                  <FiClock className="w-4 h-4 flex-shrink-0 text-gray-500" />
+                  <span>{formatTime(patient.created_at)}</span>
                 </span>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+            {/* Badges */}
+            <div className="flex flex-wrap gap-2 shrink-0">
               {patient.age_group && (
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getAgeGroupColor(patient.age_group)}`}>
+                <span className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap shadow-sm ${getAgeGroupColor(patient.age_group)}`}>
                   {patient.age_group}
                 </span>
               )}
               {patient.case_complexity && (
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCaseComplexityColor(patient.case_complexity)}`}>
+                <span className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap shadow-sm ${getCaseComplexityColor(patient.case_complexity)}`}>
                   {patient.case_complexity}
                 </span>
               )}
               {patient.has_adl_file && (
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 whitespace-nowrap shadow-sm">
                   ADL File
                 </span>
               )}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-            <div>
-              <span className="font-medium text-gray-700">CR No:</span>
-              <span className="ml-2 text-gray-600">{patient.cr_no}</span>
+          {/* Patient Details - Essential fields only */}
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-sm">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-semibold text-gray-700 whitespace-nowrap">CR No:</span>
+              <span className="text-gray-900 font-medium break-words">{patient.cr_no}</span>
             </div>
             {patient.psy_no && (
-              <div>
-                <span className="font-medium text-gray-700">PSY No:</span>
-                <span className="ml-2 text-gray-600">{patient.psy_no}</span>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="font-semibold text-gray-700 whitespace-nowrap">PSY No:</span>
+                <span className="text-gray-900 font-medium break-words">{patient.psy_no}</span>
               </div>
             )}
-            {patient.special_clinic_no && (
-              <div>
-                <span className="font-medium text-gray-700">Special Clinic:</span>
-                <span className="ml-2 text-gray-600">{patient.special_clinic_no}</span>
-              </div>
-            )}
-            {patient.marital_status && (
-              <div>
-                <span className="font-medium text-gray-700">Marital Status:</span>
-                <span className="ml-2 text-gray-600">{patient.marital_status}</span>
-              </div>
-            )}
-            {patient.occupation && (
-              <div>
-                <span className="font-medium text-gray-700">Occupation:</span>
-                <span className="ml-2 text-gray-600">{patient.occupation}</span>
-              </div>
-            )}
-            {patient.education_level && (
-              <div>
-                <span className="font-medium text-gray-700">Education:</span>
-                <span className="ml-2 text-gray-600">{patient.education_level}</span>
-              </div>
-            )}
-            {patient.religion && (
-              <div>
-                <span className="font-medium text-gray-700">Religion:</span>
-                <span className="ml-2 text-gray-600">{patient.religion}</span>
-              </div>
-            )}
-            {patient.family_type && (
-              <div>
-                <span className="font-medium text-gray-700">Family Type:</span>
-                <span className="ml-2 text-gray-600">{patient.family_type}</span>
-              </div>
-            )}
-            {patient.locality && (
-              <div>
-                <span className="font-medium text-gray-700">Locality:</span>
-                <span className="ml-2 text-gray-600">{patient.locality}</span>
+            {patient.assigned_room && (
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="font-semibold text-gray-700 whitespace-nowrap">Room:</span>
+                <span className="text-gray-900 font-medium break-words">{patient.assigned_room}</span>
               </div>
             )}
           </div>
 
-          {patient.assigned_room && (
-            <div className="mt-3 pt-3 border-t border-gray-200">
-              <div className="text-sm">
-                <span className="font-medium text-gray-700">Assigned Room:</span>
-                <span className="ml-2 text-gray-600">{patient.assigned_room}</span>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-3 pt-3 border-t border-gray-200">
-            <div className="text-sm text-gray-600">
-              <span className="font-medium">Registered by:</span>
-              <span className="ml-2">{patient.filled_by_name} (MWO)</span>
+          {/* Footer Info */}
+          <div className="pt-3 border-t border-gray-200">
+            <div className="text-sm text-gray-500">
+              <span className="font-medium text-gray-600">Registered by:</span>
+              <span className="ml-2">{patient.filled_by_name}</span>
+              <span className="ml-1 text-gray-400">(MWO)</span>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(`/patients/${patient.id}?returnTab=${activeTab}`)}
-            className="flex items-center gap-2"
-          >
-            <FiEye className="w-4 h-4" />
-            View Details
-          </Button>
-        </div>
-        <div className="flex flex-col gap-2">
-          {hasExistingProforma ? (
+        {/* Action Buttons Section */}
+        <div className="lg:w-48 xl:w-56 shrink-0">
+          <div className="flex flex-row lg:flex-col gap-2.5">
+            {/* View Details Button */}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`/clinical/${latestProformaId}?returnTab=${activeTab}`)}
-              className="flex items-center gap-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+              onClick={() => navigate(`/patients/${patient.id}?returnTab=${activeTab}`)}
+              className="flex items-center justify-center gap-2 w-full lg:w-full px-4 py-2.5 text-sm font-medium transition-all hover:shadow-md"
             >
-              <FiFileText className="w-4 h-4" />
-              View Proforma
+              <FiEye className="w-4 h-4 flex-shrink-0" />
+              <span className="whitespace-nowrap">View Details</span>
             </Button>
-          ) : (
+            
+            {/* Clinical Proforma Button */}
+            {hasExistingProforma ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/clinical/${latestProformaId}?returnTab=${activeTab}`)}
+                className="flex items-center justify-center gap-2 w-full lg:w-full px-4 py-2.5 text-sm font-medium bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 hover:border-blue-400 transition-all hover:shadow-md"
+              >
+                <FiFileText className="w-4 h-4 flex-shrink-0" />
+                <span className="whitespace-nowrap">View Proforma</span>
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/clinical/new?patient_id=${patient.id}&returnTab=${activeTab}`)}
+                className="flex items-center justify-center gap-2 w-full lg:w-full px-4 py-2.5 text-sm font-medium transition-all hover:shadow-md"
+              >
+                <FiPlusCircle className="w-4 h-4 flex-shrink-0" />
+                <span className="whitespace-nowrap">Clinical Proforma</span>
+              </Button>
+            )}
+            
+            {/* Prescribe Medication Button */}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`/clinical/new?patient_id=${patient.id}&returnTab=${activeTab}`)}
-              className="flex items-center gap-2"
+              onClick={() => navigate(`/clinical/prescribe-medication?patient_id=${patient.id}&returnTab=${activeTab}`)}
+              className="flex items-center justify-center gap-2 w-full lg:w-full px-4 py-2.5 text-sm font-medium transition-all hover:shadow-md"
             >
-              <FiPlusCircle className="w-4 h-4" />
-              Clinical Proforma
+              <FiPlusCircle className="w-4 h-4 flex-shrink-0" />
+              <span className="whitespace-nowrap">Prescribe</span>
             </Button>
-          )}
-        </div>
-        <div className="flex flex-col gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(`/clinical/prescribe-medication?patient_id=${patient.id}&returnTab=${activeTab}`)}
-            className="flex items-center gap-2"
-          >
-            <FiPlusCircle className="w-4 h-4" />
-            Prescribe Medication
-          </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -608,7 +575,7 @@ const ClinicalTodayPatients = () => {
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y-0 space-y-0">
             {filteredPatients.map((patient) => (
               <PatientRow 
                 key={patient.id} 

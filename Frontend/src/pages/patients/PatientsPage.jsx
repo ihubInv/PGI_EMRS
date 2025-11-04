@@ -187,28 +187,34 @@ const PatientsPage = () => {
           <span className="font-semibold">Status</span>
         </div>
       ),
-      render: (row) => (
-        <div className="space-y-2">
-          <Badge 
-            variant={row.case_complexity === 'complex' ? 'warning' : 'success'}
-            className={`${
-              row.case_complexity === 'complex' 
-                ? 'bg-gradient-to-r from-orange-100 to-yellow-100 text-orange-800 border-orange-200' 
-                : 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200'
-            }`}
-          >
-            {row.case_complexity || 'simple'}
-          </Badge>
-          <div className="flex items-center gap-1">
-            <div className={`w-2 h-2 rounded-full ${
-              row.has_adl_file ? 'bg-green-500' : 'bg-gray-300'
-            }`}></div>
-            <span className="text-xs text-gray-600">
-              ADL: {row.has_adl_file ? 'Yes' : 'No'}
-            </span>
+      render: (row) => {
+        // If patient has ADL file, status should be "complex"
+        const isComplex = row.has_adl_file || row.case_complexity === 'complex';
+        const statusText = isComplex ? 'complex' : 'simple';
+        
+        return (
+          <div className="space-y-2">
+            <Badge 
+              variant={isComplex ? 'warning' : 'success'}
+              className={`${
+                isComplex
+                  ? 'bg-gradient-to-r from-orange-100 to-yellow-100 text-orange-800 border-orange-200' 
+                  : 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200'
+              }`}
+            >
+              {statusText}
+            </Badge>
+            <div className="flex items-center gap-1">
+              <div className={`w-2 h-2 rounded-full ${
+                row.has_adl_file ? 'bg-green-500' : 'bg-gray-300'
+              }`}></div>
+              <span className="text-xs text-gray-600">
+                ADL: {row.has_adl_file ? 'Yes' : 'No'}
+              </span>
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       header: (
@@ -223,7 +229,8 @@ const PatientsPage = () => {
             <Button 
               variant="ghost" 
               size="sm"
-              className="h-8 w-8 p-0 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200"
+              className="h-9 w-9 p-0 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
+              title="View Details"
             >
               <FiEye className="w-4 h-4 text-blue-600" />
             </Button>
@@ -232,7 +239,8 @@ const PatientsPage = () => {
             <Button 
               variant="ghost" 
               size="sm"
-              className="h-8 w-8 p-0 bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 border border-green-200"
+              className="h-9 w-9 p-0 bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 border border-green-200 hover:border-green-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
+              title="Edit Patient"
             >
               <FiEdit className="w-4 h-4 text-green-600" />
             </Button>
@@ -243,7 +251,8 @@ const PatientsPage = () => {
               size="sm" 
               onClick={() => handleAssign(row)} 
               disabled={isAssigning}
-              className="h-8 w-8 p-0 bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border border-purple-200"
+              className="h-9 w-9 p-0 bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border border-purple-200 hover:border-purple-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
+              title="Assign Doctor"
             >
               <FiUserPlus className="w-4 h-4 text-purple-600" />
             </Button>
@@ -254,100 +263,116 @@ const PatientsPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="space-y-8 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="space-y-6 p-4 sm:p-6 lg:p-8">
         {/* Header Section */}
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-600/10 to-primary-800/10 rounded-3xl"></div>
-          <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20">
-            <div className="flex justify-between items-center">
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-lg">
-                    <FiUsers className="w-8 h-8 text-white" />
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-primary-600/10 to-primary-800/5 rounded-2xl"></div>
+          <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-6 sm:p-8 shadow-lg border border-white/50">
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6">
+              <div className="flex-1 space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl blur-sm opacity-50"></div>
+                    <div className="relative p-4 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl shadow-lg">
+                      <FiUsers className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+                    </div>
                   </div>
-                  <div>
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
-                      Patients
+                  <div className="flex-1">
+                    <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 bg-clip-text text-transparent">
+                      Patient Management
                     </h1>
-                    <p className="text-gray-600 mt-2 text-lg">
+                    <p className="text-gray-600 mt-2 text-base sm:text-lg">
                       {user?.role === 'MWO' 
-                        ? 'View patient records' 
-                        : 'Manage patient records and medical information'}
+                        ? 'View and manage patient records' 
+                        : 'Comprehensive patient records and medical information management'}
                     </p>
                   </div>
                 </div>
                 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <FiUsers className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Total Patients</p>
-                        <p className="text-2xl font-bold text-gray-900">{data?.data?.pagination?.total || 0}</p>
+                {/* Enhanced Stats Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-sm">
+                          <FiUsers className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Total Patients</p>
+                          <p className="text-2xl font-bold text-gray-900 mt-1">{data?.data?.pagination?.total || 0}</p>
+                        </div>
                       </div>
                     </div>
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-blue-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   </div>
                   
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <FiHeart className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Active Cases</p>
-                        <p className="text-2xl font-bold text-gray-900">
-                          {data?.data?.patients?.filter(p => p.case_complexity === 'complex').length || 0}
-                        </p>
+                  <div className="group relative bg-gradient-to-br from-amber-50 to-orange-100/50 rounded-xl p-5 border border-amber-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg shadow-sm">
+                          <FiHeart className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Complex Cases</p>
+                          <p className="text-2xl font-bold text-gray-900 mt-1">
+                            {data?.data?.patients?.filter(p => p.has_adl_file || p.case_complexity === 'complex').length || 0}
+                          </p>
+                        </div>
                       </div>
                     </div>
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-orange-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   </div>
                   
-                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-purple-100 rounded-lg">
-                        <FiFileText className="w-5 h-5 text-purple-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Additional Detail File</p>
-                        <p className="text-2xl font-bold text-gray-900">
-                          {data?.data?.patients?.filter(p => p.has_adl_file).length || 0}
-                        </p>
+                  <div className="group relative bg-gradient-to-br from-purple-50 to-pink-100/50 rounded-xl p-5 border border-purple-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg shadow-sm">
+                          <FiFileText className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">ADL Files</p>
+                          <p className="text-2xl font-bold text-gray-900 mt-1">
+                            {data?.data?.patients?.filter(p => p.has_adl_file).length || 0}
+                          </p>
+                        </div>
                       </div>
                     </div>
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-400 to-pink-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   </div>
                   
-                  <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl p-4 border border-orange-100">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-orange-100 rounded-lg">
-                        <FiShield className="w-5 h-5 text-orange-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Assigned</p>
-                        <p className="text-2xl font-bold text-gray-900">
-                          {data?.data?.patients?.filter(p => p.assigned_doctor_name).length || 0}
-                        </p>
+                  <div className="group relative bg-gradient-to-br from-emerald-50 to-green-100/50 rounded-xl p-5 border border-emerald-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg shadow-sm">
+                          <FiShield className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Assigned</p>
+                          <p className="text-2xl font-bold text-gray-900 mt-1">
+                            {data?.data?.patients?.filter(p => p.assigned_doctor_name).length || 0}
+                          </p>
+                        </div>
                       </div>
                     </div>
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-green-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   </div>
                 </div>
               </div>
               
               {user?.role !== 'MWO' && (
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3 lg:flex-col xl:flex-row">
                   <Button
                     variant="outline"
-                    className="bg-white/50 border-primary-200 hover:bg-primary-50"
+                    className="bg-white/80 border-2 border-primary-200 hover:bg-primary-50 hover:border-primary-300 shadow-sm transition-all duration-200 whitespace-nowrap"
                     onClick={() => refetch()}
+                    disabled={isFetching}
                   >
-                    <FiRefreshCw className="mr-2" />
-                    Refresh
+                    <FiRefreshCw className={`mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+                    {isFetching ? 'Refreshing...' : 'Refresh'}
                   </Button>
                   <Link to="/patients/new">
-                    <Button className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-lg">
+                    <Button className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-lg hover:shadow-xl transition-all duration-200 whitespace-nowrap">
                       <FiPlus className="mr-2" />
                       Add Patient
                     </Button>
@@ -373,46 +398,39 @@ const PatientsPage = () => {
         )} */}
 
         {/* Main Content Card */}
-        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+        <Card className="shadow-lg border border-gray-200/50 bg-white/90 backdrop-blur-sm">
           {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-100 rounded-lg">
+            <div className="mb-6 bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-200 rounded-xl p-5 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="p-2.5 bg-red-100 rounded-lg flex-shrink-0">
                   <FiShield className="w-5 h-5 text-red-600" />
                 </div>
-                <div>
-                  <p className="text-red-800 font-medium">Error Loading Patients</p>
+                <div className="flex-1">
+                  <p className="text-red-800 font-semibold text-base mb-1">Error Loading Patients</p>
                   <p className="text-red-600 text-sm">{error?.data?.message || 'Failed to load patients. Please try again.'}</p>
                 </div>
               </div>
             </div>
           )}
           
-          {/* Search and Filter Section */}
+          {/* Enhanced Search and Filter Section */}
           <div className="mb-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FiSearch className="w-5 h-5 text-gray-400" />
+                  <FiSearch className="w-5 h-5 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
                 </div>
                 <Input
-                  placeholder="Search patients by name, CR number, or PSY number..."
+                  placeholder="Search by name, CR number, or PSY number..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-12 h-12 bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
+                  className="pl-12 h-12 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-200 shadow-sm hover:shadow-md"
                 />
               </div>
               <div className="flex gap-3">
-                {/* <Button
-                  variant="outline"
-                  className="h-12 px-6 bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200 hover:bg-gray-100"
-                >
-                  <FiFilter className="mr-2" />
-                  Filter
-                </Button> */}
                 <Button
                   variant="outline"
-                  className="h-12 px-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:bg-blue-100"
+                  className="h-12 px-5 bg-white border-2 border-primary-200 hover:bg-primary-50 hover:border-primary-300 shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={handleExport}
                   disabled={!data?.data?.patients || data.data.patients.length === 0}
                 >
@@ -424,14 +442,35 @@ const PatientsPage = () => {
           </div>
 
           {(isLoading || isFetching) ? (
-            <div className="flex flex-col items-center justify-center py-16">
+            <div className="flex flex-col items-center justify-center py-20">
               <div className="relative">
-                <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
+                <div className="w-20 h-20 border-4 border-primary-100 border-t-primary-600 rounded-full animate-spin"></div>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <FiUsers className="w-6 h-6 text-primary-600" />
+                  <FiUsers className="w-8 h-8 text-primary-600" />
                 </div>
               </div>
-              <p className="mt-4 text-gray-600 font-medium">Loading patients...</p>
+              <p className="mt-6 text-gray-600 font-medium text-lg">Loading patients...</p>
+              <p className="mt-2 text-gray-500 text-sm">Please wait while we fetch the data</p>
+            </div>
+          ) : data?.data?.patients?.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-6">
+                <FiUsers className="w-12 h-12 text-gray-400" />
+              </div>
+              <p className="text-xl font-semibold text-gray-700 mb-2">No patients found</p>
+              <p className="text-gray-500 text-center max-w-md">
+                {search 
+                  ? `No patients match your search "${search}". Try a different search term.`
+                  : 'There are no patients in the system yet. Add your first patient to get started.'}
+              </p>
+              {user?.role !== 'MWO' && !search && (
+                <Link to="/patients/new" className="mt-6">
+                  <Button className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-lg">
+                    <FiPlus className="mr-2" />
+                    Add First Patient
+                  </Button>
+                </Link>
+              )}
             </div>
           ) : (
             <>
@@ -443,8 +482,8 @@ const PatientsPage = () => {
                 />
               </div>
 
-              {data?.data?.pagination && (
-                <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+              {data?.data?.pagination && data.data.pagination.pages > 1 && (
+                <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mt-4">
                   <Pagination
                     currentPage={data.data.pagination.page}
                     totalPages={data.data.pagination.pages}

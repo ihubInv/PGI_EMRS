@@ -750,25 +750,34 @@ const {
  * /api/clinical-proformas:
  *   post:
      *     summary: Create a new clinical proforma (Admin, JR/SR Doctor only)
-     *     description: |
-     *       Creates a new clinical proforma with comprehensive patient data.
-     *       
-     *       **Complex Case Handling:**
-     *       - When `doctor_decision` is set to `complex_case`, the system automatically:
-     *         1. Extracts all complex case fields from the request body
-     *         2. Creates an ADL file with all complex case data stored in the `adl_files` table
-     *         3. Links the clinical proforma to the ADL file via `adl_file_id` in clinical_proforma
-     *         4. Sets `clinical_proforma_id` in adl_files for bidirectional linking
-     *         5. Sets `requires_adl_file` to `true` automatically
-     *       
-     *       - For `simple_case`: Only basic proforma data is stored in `clinical_proforma` table (no ADL file created, complex case fields are ignored)
-     *       
-     *       **Data Storage:**
-     *       - Basic proforma fields: Stored in `clinical_proforma` table
-     *       - Complex case fields (when `doctor_decision` = `complex_case`): Stored in `adl_files` table
-     *       - Complex case fields include: history_narrative, informants, past_history_*, family_history_*, physical_*, mse_*, education_*, occupation_jobs, sexual_*, religion_*, living_*, home_situation_*, personal_*, development_*, provisional_diagnosis, treatment_plan, consultant_comments
-     *       
-     *       **Note:** All complex case fields can be included in the request body. They will be automatically routed to the appropriate table based on `doctor_decision`.
+ *     description: |
+ *       Creates a new clinical proforma with comprehensive patient data.
+ *       
+ *       **Complex Case Handling:**
+ *       - When `doctor_decision` is set to `complex_case`, the system automatically:
+ *         1. Creates the clinical_proforma record first (with `adl_file_id` as null)
+ *         2. Extracts all complex case fields from the request body
+ *         3. Creates an ADL file with all complex case data stored in the `adl_files` table
+ *         4. Sets `adl_files.clinical_proforma_id` to reference the created clinical_proforma
+ *         5. Updates `clinical_proforma.adl_file_id` to reference the created ADL file (bidirectional linking)
+ *         6. **Automatically updates patient record**: Sets `patient.has_adl_file = true` and `patient.case_complexity = 'complex'`
+ *         7. Sets `requires_adl_file` to `true` automatically
+ *         8. **Transaction-based flow**: If ADL creation or linking fails, the clinical_proforma is rolled back (deleted)
+ *       
+ *       - For `simple_case`: Only basic proforma data is stored in `clinical_proforma` table (no ADL file created, complex case fields are ignored)
+ *       
+ *       **Data Storage:**
+ *       - Basic proforma fields: Stored in `clinical_proforma` table
+ *       - Complex case fields (when `doctor_decision` = `complex_case`): Stored in `adl_files` table
+ *       - Complex case fields include: history_narrative, informants, past_history_*, family_history_*, physical_*, mse_*, education_*, occupation_jobs, sexual_*, religion_*, living_*, home_situation_*, personal_*, development_*, provisional_diagnosis, treatment_plan, consultant_comments
+ *       
+ *       **Patient Status Auto-Update:**
+ *       - When an ADL file is created for a complex case, the patient's status is automatically updated:
+ *         - `patient.has_adl_file` is set to `true`
+ *         - `patient.case_complexity` is set to `'complex'`
+ *       - This ensures patient status is consistent across the system
+ *       
+ *       **Note:** All complex case fields can be included in the request body. They will be automatically routed to the appropriate table based on `doctor_decision`.
  *     tags: [Clinical Proforma]
  *     security:
  *       - bearerAuth: []
@@ -811,13 +820,63 @@ const {
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
+ *                   example: "Complex case with ADL file saved successfully" | "Clinical proforma created successfully"
  *                 data:
  *                   type: object
  *                   properties:
- *                     proforma:
+ *                     clinical_proforma:
  *                       $ref: '#/components/schemas/ClinicalProforma'
+ *                       description: The created clinical proforma record
+ *                     adl_file:
+ *                       $ref: '#/components/schemas/ADLFile'
+ *                       description: The created ADL file (only present when doctor_decision is 'complex_case')
+ *                       nullable: true
+ *                 prescriptions:
+ *                   type: object
+ *                   nullable: true
+ *                   properties:
+ *                     count:
+ *                       type: integer
+ *                       example: 2
+ *                     prescriptions:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                   description: Prescription data if provided
+ *             examples:
+ *               simple_case:
+ *                 summary: Simple case response
+ *                 value:
+ *                   success: true
+ *                   message: "Clinical proforma created successfully"
+ *                   data:
+ *                     clinical_proforma:
+ *                       id: 1
+ *                       patient_id: 1
+ *                       visit_date: "2024-01-15"
+ *                       doctor_decision: "simple_case"
+ *                       adl_file_id: null
+ *                     adl_file: null
+ *               complex_case:
+ *                 summary: Complex case response with ADL file
+ *                 value:
+ *                   success: true
+ *                   message: "Complex case with ADL file saved successfully"
+ *                   data:
+ *                     clinical_proforma:
+ *                       id: 1
+ *                       patient_id: 1
+ *                       visit_date: "2024-01-15"
+ *                       doctor_decision: "complex_case"
+ *                       adl_file_id: 5
+ *                     adl_file:
+ *                       id: 5
+ *                       patient_id: 1
+ *                       clinical_proforma_id: 1
+ *                       adl_no: "ADL-2024-001"
  *       400:
  *         description: Validation error
  *       401:
@@ -827,7 +886,21 @@ const {
  *       404:
  *         description: Patient not found
  *       500:
- *         description: Server error
+ *         description: Server error (or transaction rollback if ADL creation fails)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to handle ADL file for complex case"
+ *                 error:
+ *                   type: string
+ *                   description: Detailed error message
  */
 router.post('/', authenticateToken, authorizeRoles('Admin', 'JR', 'SR'), validateClinicalProforma, ClinicalController.createClinicalProforma);
 
@@ -1061,6 +1134,26 @@ router.get('/:id', authenticateToken, validateId, ClinicalController.getClinical
  * /api/clinical-proformas/{id}:
  *   put:
  *     summary: Update clinical proforma
+ *     description: |
+ *       Updates an existing clinical proforma with comprehensive patient data.
+ *       
+ *       **Complex Case Handling:**
+ *       - When `doctor_decision` is set to `complex_case`, the system automatically:
+ *         1. Checks if an ADL file already exists for this clinical_proforma
+ *         2. If ADL file exists: Updates the existing ADL file with complex case data
+ *         3. If ADL file doesn't exist: Creates a new ADL file with complex case data
+ *         4. Sets `adl_files.clinical_proforma_id` to reference the clinical_proforma
+ *         5. Updates `clinical_proforma.adl_file_id` to reference the ADL file (bidirectional linking)
+ *         6. **Automatically updates patient record**: Sets `patient.has_adl_file = true` and `patient.case_complexity = 'complex'`
+ *       
+ *       - When updating from `simple_case` to `complex_case`: A new ADL file is automatically created
+ *       - When updating from `complex_case` to `simple_case`: The ADL file remains but is not updated
+ *       
+ *       **Patient Status Auto-Update:**
+ *       - When an ADL file is created or updated for a complex case, the patient's status is automatically updated:
+ *         - `patient.has_adl_file` is set to `true`
+ *         - `patient.case_complexity` is set to `'complex'`
+ *       - This ensures patient status is consistent across the system
  *     tags: [Clinical Proforma]
  *     security:
  *       - bearerAuth: []
@@ -1171,6 +1264,69 @@ router.get('/:id', authenticateToken, validateId, ClinicalController.getClinical
  *     responses:
  *       200:
  *         description: Proforma updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Clinical proforma updated successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     clinical_proforma:
+ *                       $ref: '#/components/schemas/ClinicalProforma'
+ *                       description: The updated clinical proforma record
+ *                     adl_file:
+ *                       $ref: '#/components/schemas/ADLFile'
+ *                       description: The associated ADL file (only present when doctor_decision is 'complex_case' and ADL file exists)
+ *                       nullable: true
+ *                     prescriptions:
+ *                       type: object
+ *                       nullable: true
+ *                       properties:
+ *                         count:
+ *                           type: integer
+ *                         prescriptions:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                       description: Prescription data if provided
+ *             examples:
+ *               simple_case:
+ *                 summary: Simple case update response
+ *                 value:
+ *                   success: true
+ *                   message: "Clinical proforma updated successfully"
+ *                   data:
+ *                     clinical_proforma:
+ *                       id: 1
+ *                       patient_id: 1
+ *                       visit_date: "2024-01-15"
+ *                       doctor_decision: "simple_case"
+ *                       adl_file_id: null
+ *                     adl_file: null
+ *               complex_case:
+ *                 summary: Complex case update response with ADL file
+ *                 value:
+ *                   success: true
+ *                   message: "Clinical proforma updated successfully"
+ *                   data:
+ *                     clinical_proforma:
+ *                       id: 1
+ *                       patient_id: 1
+ *                       visit_date: "2024-01-15"
+ *                       doctor_decision: "complex_case"
+ *                       adl_file_id: 5
+ *                     adl_file:
+ *                       id: 5
+ *                       patient_id: 1
+ *                       clinical_proforma_id: 1
+ *                       adl_no: "ADL-2024-001"
  *       400:
  *         description: Validation error
  *       401:

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useCreateClinicalProformaMutation, useUpdateClinicalProformaMutation } from '../../features/clinical/clinicalApiSlice';
@@ -10,7 +10,7 @@ import Input from '../../components/Input';
 import Select from '../../components/Select';
 import Textarea from '../../components/Textarea';
 import Button from '../../components/Button';
-import { FiEdit3, FiClipboard, FiCheckSquare, FiList, FiActivity, FiHeart, FiUser, FiFileText, FiPlus, FiX, FiSave, FiClock, FiPackage, FiChevronDown, FiChevronUp, FiArrowRight, FiArrowLeft, FiCheck, FiTrash2 } from 'react-icons/fi';
+import { FiEdit3, FiClipboard, FiCheckSquare, FiList, FiActivity, FiHeart, FiUser, FiFileText, FiPlus, FiX, FiSave, FiClock, FiChevronDown, FiChevronUp, FiArrowRight, FiArrowLeft, FiCheck, FiTrash2 } from 'react-icons/fi';
 import { VISIT_TYPES, CASE_SEVERITY, DOCTOR_DECISION } from '../../utils/constants';
 import { useGetClinicalOptionsQuery, useAddClinicalOptionMutation, useDeleteClinicalOptionMutation } from '../../features/clinical/clinicalApiSlice';
 import icd11Codes from '../../assets/ICD11_Codes.json';
@@ -764,8 +764,8 @@ const CreateClinicalProforma = ({
     setPrescriptions([{ medicine: '', dosage: '', when: '', frequency: '', duration: '', qty: '', details: '', notes: '' }]);
   };
   
-  // Always 4 steps: Basic Info, Clinical Proforma, Additional Detail (conditional), Prescribe Medication
-  const totalSteps = 4;
+  // Always 3 steps: Basic Info, Clinical Proforma, Additional Detail (conditional)
+  const totalSteps = 3;
   
   // Determine if step 3 (ADL) should be shown
   const showADLStep = formData.doctor_decision === 'complex_case';
@@ -820,6 +820,10 @@ const CreateClinicalProforma = ({
   const { data: adlFileData } = useGetADLFileByIdQuery(adlFileId, { skip: !adlFileId || currentStep !== 3 });
   const [updateADLFile] = useUpdateADLFileMutation();
   
+  // Track if data has been loaded in edit mode to prevent overwriting user input
+  const proformaDataLoadedRef = useRef(false);
+  const adlDataLoadedRef = useRef(false);
+  
   // Helper function to normalize array fields (handles JSONB fields that might be strings or arrays)
   const normalizeArrayField = (value) => {
     if (Array.isArray(value)) return value;
@@ -855,7 +859,8 @@ const CreateClinicalProforma = ({
 
   // ✅ Load existing proforma and ADL file data into form when in edit mode
   useEffect(() => {
-    if (editMode && existingProforma) {
+    // Only load once - don't reload if user has already made changes
+    if (editMode && existingProforma && !proformaDataLoadedRef.current) {
       // Map all proforma fields to formData
       const proformaFormData = {
         patient_id: existingProforma.patient_id?.toString() || '',
@@ -919,12 +924,16 @@ const CreateClinicalProforma = ({
         );
         setPrescriptions(normalizedPrescriptions);
       }
+      
+      // Mark proforma data as loaded
+      proformaDataLoadedRef.current = true;
     }
   }, [editMode, existingProforma]);
   
   // ✅ Load ADL file data into form when in edit mode
   useEffect(() => {
-    if (editMode && existingAdlFile) {
+    // Only load once - don't reload if user has already made changes
+    if (editMode && existingAdlFile && !adlDataLoadedRef.current) {
       // Map all ADL file fields to formData (excluding metadata fields)
       const adlFormData = {};
       
@@ -959,6 +968,9 @@ const CreateClinicalProforma = ({
       });
       
       setFormData(prev => ({ ...prev, ...adlFormData }));
+      
+      // Mark ADL data as loaded
+      adlDataLoadedRef.current = true;
     }
   }, [editMode, existingAdlFile]);
   
@@ -1544,7 +1556,11 @@ const CreateClinicalProforma = ({
       
       // Skip step 3 if it's not needed (simple case)
       if (nextStep === 3 && !showADLStep) {
-        nextStep = 4;
+        // For simple cases, we're done after Step 2 - submit the form
+        // Create a synthetic event for form submission
+        const syntheticEvent = { preventDefault: () => {} };
+        handleSubmit(syntheticEvent);
+        return;
       }
       
       if (nextStep <= totalSteps) {
@@ -1585,7 +1601,6 @@ const CreateClinicalProforma = ({
       case 1: return 'Basic Information';
       case 2: return 'Clinical Proforma';
       case 3: return 'Additional Detail (ADL)';
-      case 4: return 'Prescribe Medication';
       default: return '';
     }
   };
@@ -1628,9 +1643,14 @@ const CreateClinicalProforma = ({
         const result = await updateProforma({ id: savedProformaId, ...submitData }).unwrap();
         
         // Clear saved prescription from localStorage after successful submission
-        if (storedPrescriptions[formData.patient_id]) {
-          delete storedPrescriptions[formData.patient_id];
-          localStorage.setItem('patient_prescriptions', JSON.stringify(storedPrescriptions));
+        try {
+          const storedPrescriptions = JSON.parse(localStorage.getItem('patient_prescriptions') || '{}');
+          if (storedPrescriptions[formData.patient_id]) {
+            delete storedPrescriptions[formData.patient_id];
+            localStorage.setItem('patient_prescriptions', JSON.stringify(storedPrescriptions));
+          }
+        } catch (e) {
+          // Ignore localStorage errors
         }
         
         toast.success(editMode ? 'Clinical proforma updated successfully!' : 'Clinical proforma completed successfully!');
@@ -1646,9 +1666,14 @@ const CreateClinicalProforma = ({
         const result = await createProforma(submitData).unwrap();
         
         // Clear saved prescription from localStorage after successful submission
-        if (storedPrescriptions[formData.patient_id]) {
-          delete storedPrescriptions[formData.patient_id];
-          localStorage.setItem('patient_prescriptions', JSON.stringify(storedPrescriptions));
+        try {
+          const storedPrescriptions = JSON.parse(localStorage.getItem('patient_prescriptions') || '{}');
+          if (storedPrescriptions[formData.patient_id]) {
+            delete storedPrescriptions[formData.patient_id];
+            localStorage.setItem('patient_prescriptions', JSON.stringify(storedPrescriptions));
+          }
+        } catch (e) {
+          // Ignore localStorage errors
         }
         
         toast.success('Clinical proforma created successfully!');
@@ -1757,9 +1782,9 @@ const CreateClinicalProforma = ({
         <Card className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
           <div className="px-4 py-6">
             <div className="flex items-center justify-between">
-              {[1, 2, 3, 4].filter(step => step !== 3 || showADLStep).map((step, index, arr) => {
+              {[1, 2, 3].filter(step => step !== 3 || showADLStep).map((step, index, arr) => {
                 const isActive = currentStep === step;
-                const isCompleted = currentStep > step || (currentStep === 4 && step === 3 && !showADLStep);
+                const isCompleted = currentStep > step;
                 const isAccessible = currentStep >= step;
                 
                 return (
@@ -2445,14 +2470,43 @@ const CreateClinicalProforma = ({
               <FiArrowLeft className="w-4 h-4" />
               Previous
             </Button>
-            <Button
-              type="button"
-              onClick={handleNext}
-              className="flex items-center gap-2"
-            >
-              Next Step
-              <FiArrowRight className="w-4 h-4" />
-            </Button>
+            <div className="flex gap-3">
+              {showADLStep ? (
+                <Button
+                  type="button"
+                  onClick={handleNext}
+                  className="flex items-center gap-2"
+                >
+                  Next Step
+                  <FiArrowRight className="w-4 h-4" />
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      if (returnTab) {
+                        navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
+                      } else {
+                        navigate('/clinical-today-patients');
+                      }
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    loading={isCreating || isUpdating}
+                    disabled={isCreating || isUpdating}
+                    className="flex items-center gap-2 bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700"
+                  >
+                    <FiSave className="w-4 h-4" />
+                    {isCreating || isUpdating ? 'Saving...' : (editMode ? 'Update Clinical Proforma' : 'Create Clinical Proforma')}
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </Card>
             </div>
@@ -4468,321 +4522,36 @@ const CreateClinicalProforma = ({
                 <FiArrowLeft className="w-4 h-4" />
                 Previous
               </Button>
-              <Button
-                type="button"
-                onClick={handleNext}
-                disabled={isCreating || isUpdating}
-                className="flex items-center gap-2"
-              >
-                {isCreating || isUpdating ? (
-                  <>
-                    <span className="animate-spin">⏳</span>
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    Next Step
-                    <FiArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    if (returnTab) {
+                      navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
+                    } else {
+                      navigate('/clinical-today-patients');
+                    }
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  loading={isCreating || isUpdating}
+                  disabled={isCreating || isUpdating}
+                  className="flex items-center gap-2 bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700"
+                >
+                  <FiSave className="w-4 h-4" />
+                  {isCreating || isUpdating ? 'Saving...' : (editMode ? 'Update Clinical Proforma' : 'Create Clinical Proforma')}
+                </Button>
+              </div>
             </div>
           </Card>
             </div>
           </React.Fragment>
         )}
 
-        {/* Step 4: Prescribe Medication */}
-        {currentStep === 4 && (
-          <React.Fragment>
-          <div className="space-y-6">
-            <Card 
-              title={
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <FiPackage className="w-6 h-6 text-green-600" />
-                  </div>
-                  <span className="text-xl font-bold text-gray-900">Prescribe Medication</span>
-                </div>
-              }
-              className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-            >
-              {!formData.patient_id ? (
-                <div className="text-center py-8">
-                  <p className="text-red-600 font-medium">
-                    Patient must be selected in Step 1 to prescribe medication.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="overflow-auto bg-white border border-green-200 rounded-lg">
-                    <table className="min-w-full text-sm">
-                      <thead className="bg-gray-50 text-gray-700">
-                        <tr>
-                          <th className="px-3 py-2 text-left w-10">#</th>
-                          <th className="px-3 py-2 text-left">Medicine</th>
-                          <th className="px-3 py-2 text-left">Dosage</th>
-                          <th className="px-3 py-2 text-left">When</th>
-                          <th className="px-3 py-2 text-left">Frequency</th>
-                          <th className="px-3 py-2 text-left">Duration</th>
-                          <th className="px-3 py-2 text-left">Qty</th>
-                          <th className="px-3 py-2 text-left">Details</th>
-                          <th className="px-3 py-2 text-left">Notes</th>
-                          <th className="px-3 py-2"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {prescriptions.map((row, idx) => (
-                          <tr key={idx} className="border-t hover:bg-gray-50">
-                            <td className="px-3 py-2 text-gray-600">{idx + 1}</td>
-                            <td className="px-3 py-2">
-                              <input
-                                type="text"
-                                value={row.medicine}
-                                onChange={(e) => updatePrescriptionCell(idx, 'medicine', e.target.value)}
-                                className="w-full border rounded px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                placeholder="Add Medicine"
-                              />
-                            </td>
-                            <td className="px-3 py-2">
-                              <input
-                                type="text"
-                                value={row.dosage}
-                                onChange={(e) => updatePrescriptionCell(idx, 'dosage', e.target.value)}
-                                className="w-full border rounded px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                placeholder="e.g., 1-0-1"
-                                list={`dosageOptions`}
-                              />
-                            </td>
-                            <td className="px-3 py-2">
-                              <input
-                                type="text"
-                                value={row.when}
-                                onChange={(e) => updatePrescriptionCell(idx, 'when', e.target.value)}
-                                className="w-full border rounded px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                placeholder="before/after food"
-                                list={`whenOptions`}
-                              />
-                            </td>
-                            <td className="px-3 py-2">
-                              <input
-                                type="text"
-                                value={row.frequency}
-                                onChange={(e) => updatePrescriptionCell(idx, 'frequency', e.target.value)}
-                                className="w-full border rounded px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                placeholder="daily"
-                                list={`frequencyOptions`}
-                              />
-                            </td>
-                            <td className="px-3 py-2">
-                              <input
-                                type="text"
-                                value={row.duration}
-                                onChange={(e) => updatePrescriptionCell(idx, 'duration', e.target.value)}
-                                className="w-full border rounded px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                placeholder="5 days"
-                                list={`durationOptions`}
-                              />
-                            </td>
-                            <td className="px-3 py-2">
-                              <input
-                                type="text"
-                                value={row.qty}
-                                onChange={(e) => updatePrescriptionCell(idx, 'qty', e.target.value)}
-                                className="w-full border rounded px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                placeholder="Qty"
-                                list={`quantityOptions`}
-                              />
-                            </td>
-                            <td className="px-3 py-2">
-                              <input
-                                type="text"
-                                value={row.details}
-                                onChange={(e) => updatePrescriptionCell(idx, 'details', e.target.value)}
-                                className="w-full border rounded px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                placeholder="Details"
-                              />
-                            </td>
-                            <td className="px-3 py-2">
-                              <input
-                                type="text"
-                                value={row.notes}
-                                onChange={(e) => updatePrescriptionCell(idx, 'notes', e.target.value)}
-                                className="w-full border rounded px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                placeholder="Notes"
-                              />
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              <button 
-                                type="button" 
-                                onClick={() => removePrescriptionRow(idx)} 
-                                className="text-red-600 hover:text-red-800 hover:underline text-xs flex items-center gap-1"
-                              >
-                                <FiTrash2 className="w-3 h-3" />
-                                Remove
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Datalist suggestions for prescription fields */}
-                  <datalist id="dosageOptions">
-                    <option value="1-0-1" />
-                    <option value="1-1-1" />
-                    <option value="1-0-0" />
-                    <option value="0-1-0" />
-                    <option value="0-0-1" />
-                    <option value="1-1-0" />
-                    <option value="0-1-1" />
-                    <option value="1-0-1½" />
-                    <option value="½-0-½" />
-                    <option value="SOS" />
-                    <option value="STAT" />
-                    <option value="PRN" />
-                    <option value="OD" />
-                    <option value="BD" />
-                    <option value="TDS" />
-                    <option value="QID" />
-                    <option value="HS" />
-                    <option value="Q4H" />
-                    <option value="Q6H" />
-                    <option value="Q8H" />
-                  </datalist>
-                  <datalist id="whenOptions">
-                    <option value="Before Food" />
-                    <option value="After Food" />
-                    <option value="With Food" />
-                    <option value="Empty Stomach" />
-                    <option value="Bedtime" />
-                    <option value="Morning" />
-                    <option value="Afternoon" />
-                    <option value="Evening" />
-                    <option value="Night" />
-                    <option value="Any Time" />
-                    <option value="Before Breakfast" />
-                    <option value="After Breakfast" />
-                    <option value="Before Lunch" />
-                    <option value="After Lunch" />
-                    <option value="Before Dinner" />
-                    <option value="After Dinner" />
-                  </datalist>
-                  <datalist id="frequencyOptions">
-                    <option value="Once Daily" />
-                    <option value="Twice Daily" />
-                    <option value="Thrice Daily" />
-                    <option value="Four Times Daily" />
-                    <option value="Every Hour" />
-                    <option value="Every 2 Hours" />
-                    <option value="Every 4 Hours" />
-                    <option value="Every 6 Hours" />
-                    <option value="Every 8 Hours" />
-                    <option value="Every 12 Hours" />
-                    <option value="Alternate Day" />
-                    <option value="Weekly" />
-                    <option value="Monthly" />
-                    <option value="SOS" />
-                    <option value="Continuous" />
-                    <option value="Once" />
-                    <option value="Tapering Dose" />
-                  </datalist>
-                  <datalist id="durationOptions">
-                    <option value="3 Days" />
-                    <option value="5 Days" />
-                    <option value="7 Days" />
-                    <option value="10 Days" />
-                    <option value="14 Days" />
-                    <option value="21 Days" />
-                    <option value="1 Month" />
-                    <option value="2 Months" />
-                    <option value="3 Months" />
-                    <option value="6 Months" />
-                    <option value="Until Symptoms Subside" />
-                    <option value="Continuous" />
-                    <option value="As Directed" />
-                  </datalist>
-                  <datalist id="quantityOptions">
-                    <option value="1" />
-                    <option value="2" />
-                    <option value="3" />
-                    <option value="5" />
-                    <option value="7" />
-                    <option value="10" />
-                    <option value="15" />
-                    <option value="20" />
-                    <option value="30" />
-                    <option value="60" />
-                    <option value="90" />
-                    <option value="100" />
-                    <option value="Custom" />
-                  </datalist>
-
-                  <div className="flex items-center gap-3 pt-3 border-t border-gray-200">
-                    <Button
-                      type="button"
-                      onClick={addPrescriptionRow}
-                      variant="outline"
-                      className="flex items-center gap-2"
-                    >
-                      <FiPlus className="w-4 h-4" />
-                      Add Medicine
-                    </Button>
-                    <button 
-                      type="button" 
-                      onClick={clearAllPrescriptions} 
-                      className="text-sm text-gray-600 hover:text-gray-800 hover:underline flex items-center gap-1"
-                    >
-                      <FiTrash2 className="w-4 h-4" />
-                      Clear All
-                    </button>
-                  </div>
-                </div>
-              )}
-            </Card>
-            
-            {/* Step 4 Navigation */}
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
-              <div className="flex justify-between gap-3">
-            <Button
-              type="button"
-              variant="outline"
-                  onClick={handlePrevious}
-                  className="flex items-center gap-2"
-                >
-                  <FiArrowLeft className="w-4 h-4" />
-                  Previous
-                </Button>
-                <div className="flex gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      if (returnTab) {
-                        navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
-                      } else {
-                        navigate('/clinical-today-patients');
-                      }
-                    }}
-            >
-              Cancel
-            </Button>
-                  <Button 
-                    type="submit" 
-                    loading={isCreating || isUpdating}
-                    disabled={isCreating || isUpdating}
-                    className="flex items-center gap-2 bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700"
-                  >
-                    <FiSave className="w-4 h-4" />
-                    {isCreating || isUpdating ? 'Saving...' : 'Create Clinical Proforma'}
-                  </Button>
-                </div>
-          </div>
-        </Card>
-          </div>
-          </React.Fragment>
-        )}
       </form>
       </div>
     </div>

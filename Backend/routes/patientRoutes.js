@@ -46,7 +46,7 @@ const {
  *           description: Patient's actual age
  *         has_adl_file:
  *           type: boolean
- *           description: Whether patient has an ADL file
+ *           description: Whether patient has an ADL file. **Automatically set to `true` when a complex case clinical proforma is created with an ADL file.**
  *         file_status:
  *           type: string
  *           enum: [none, created, stored, retrieved, active]
@@ -57,7 +57,7 @@ const {
  *         case_complexity:
  *           type: string
  *           enum: [simple, complex]
- *           description: Case complexity level
+ *           description: Case complexity level. **Automatically set to `'complex'` when a complex case clinical proforma is created with an ADL file.**
  *         created_at:
  *           type: string
  *           format: date-time

@@ -1012,6 +1012,23 @@ static async createClinicalProforma(req, res) {
 
         console.log(`[createClinicalProforma] ✅ Step 3: Updated Clinical Proforma ${clinicalRecord.id} with adl_file_id: ${adlFile.id}`);
 
+        // ✅ STEP 4: Update patient record to reflect complex case status
+        try {
+          const patient = await Patient.findById(data.patient_id);
+          if (patient) {
+            await patient.update({
+              has_adl_file: true,
+              case_complexity: 'complex'
+            });
+            console.log(`[createClinicalProforma] ✅ Step 4: Updated patient ${data.patient_id} - has_adl_file=true, case_complexity=complex`);
+          } else {
+            console.warn(`[createClinicalProforma] ⚠️ Patient ${data.patient_id} not found for status update`);
+          }
+        } catch (patientUpdateError) {
+          console.error('[createClinicalProforma] ❌ Failed to update patient status:', patientUpdateError);
+          // Non-critical error - continue with response
+        }
+
         // Refresh clinical record to get updated adl_file_id
         const { data: updatedClinical } = await supabaseAdmin
           .from('clinical_proforma')
@@ -1360,6 +1377,20 @@ static async createClinicalProforma(req, res) {
                   adlFileUpdated = true;
                   console.log(`[updateClinicalProforma] ✅ Updated existing ADL file ${adlFile.id}`);
                 }
+                
+                // ✅ Ensure patient status is updated (has_adl_file=true, case_complexity=complex)
+                try {
+                  const patient = await Patient.findById(proforma.patient_id);
+                  if (patient) {
+                    await patient.update({
+                      has_adl_file: true,
+                      case_complexity: 'complex'
+                    });
+                    console.log(`[updateClinicalProforma] ✅ Updated patient ${proforma.patient_id} status (existing ADL file)`);
+                  }
+                } catch (patientUpdateError) {
+                  console.error('[updateClinicalProforma] ❌ Failed to update patient status:', patientUpdateError);
+                }
               }
             } catch (err) {
               console.warn(`[updateClinicalProforma] Could not fetch existing ADL file: ${err.message}`);
@@ -1437,6 +1468,21 @@ static async createClinicalProforma(req, res) {
 
             adlFileUpdated = true;
             console.log(`[updateClinicalProforma] ✅ Created ADL file ${adlFile.id} and linked to clinical_proforma ${proforma.id}`);
+            
+            // ✅ Update patient record to reflect complex case status
+            try {
+              const patient = await Patient.findById(proforma.patient_id);
+              if (patient) {
+                await patient.update({
+                  has_adl_file: true,
+                  case_complexity: 'complex'
+                });
+                console.log(`[updateClinicalProforma] ✅ Updated patient ${proforma.patient_id} - has_adl_file=true, case_complexity=complex`);
+              }
+            } catch (patientUpdateError) {
+              console.error('[updateClinicalProforma] ❌ Failed to update patient status:', patientUpdateError);
+              // Non-critical error - continue
+            }
           }
         } catch (adlError) {
           console.error('[updateClinicalProforma] ❌ Error handling ADL file:', adlError);
