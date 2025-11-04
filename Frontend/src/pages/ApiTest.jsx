@@ -9,9 +9,12 @@ const ApiTest = () => {
   const [testOutpatient, setTestOutpatient] = useState(false);
   const [testPatients, setTestPatients] = useState(false);
 
-  const { data: outpatientData, isLoading: outpatientLoading, error: outpatientError } = 
-    useGetAllOutpatientRecordsQuery({ page: 1, limit: 10 }, { skip: !testOutpatient });
+  // const { data: outpatientData, isLoading: outpatientLoading, error: outpatientError } = 
+  //   useGetAllOutpatientRecordsQuery({ page: 1, limit: 10 }, { skip: !testOutpatient });
 
+
+    const { data: outpatientData, isLoading: outpatientLoading, error: outpatientError } = 
+    useGetAllPatientsQuery({ page: 1, limit: 10 }, { skip: !testOutpatient });
   const { data: patientsData, isLoading: patientsLoading, error: patientsError } = 
     useGetAllPatientsQuery({ page: 1, limit: 10 }, { skip: !testPatients });
 

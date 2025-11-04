@@ -5,7 +5,6 @@ import { selectCurrentUser } from '../features/auth/authSlice';
 import { useGetAllPatientsQuery, useGetPatientsStatsQuery, useGetPatientStatsQuery } from '../features/patients/patientsApiSlice';
 import { useGetClinicalStatsQuery, useGetCasesBySeverityQuery, useGetCasesByDecisionQuery, useGetMyProformasQuery } from '../features/clinical/clinicalApiSlice';
 import { useGetADLStatsQuery, useGetFilesByStatusQuery } from '../features/adl/adlApiSlice';
-import { useGetOutpatientStatsQuery, useGetMyRecordsQuery } from '../features/outpatient/outpatientApiSlice';
 import Card from '../components/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Badge from '../components/Badge';
@@ -86,12 +85,12 @@ const Dashboard = () => {
 
   // Role-specific stats for MWO
   const isMwo = user?.role === 'MWO';
-  // const { data: outpatientStats } = useGetOutpatientStatsQuery(undefined, { skip: !isMwo, refetchOnMountOrArgChange: true });
+  
   const { data: outpatientStats } = useGetPatientsStatsQuery(undefined, { skip: !isMwo, refetchOnMountOrArgChange: true });
  
   
   const { data: adlByStatus } = useGetFilesByStatusQuery(undefined, { skip: !isMwo });
-  // const { data: myRecords } = useGetMyRecordsQuery({ page: 1, limit: 10 }, { skip: !isMwo, refetchOnMountOrArgChange: true });
+ 
   const { data: myRecords } = useGetAllPatientsQuery({ page: 1, limit: 10 }, { skip: !isMwo, refetchOnMountOrArgChange: true });
 
   // const { data, isLoading, isFetching, refetch, error } = useGetAllPatientsQuery({
@@ -701,11 +700,11 @@ const Dashboard = () => {
       </div>
 
       {/* Role-based Quick Actions */}
-      <Card title="Quick Actions">
+      {/* <Card title="Quick Actions">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {user?.role === 'MWO' ? (
             <Link
-              to="/outpatient/new"
+              to="/patients/new"
               className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center"
             >
               <FiUsers className="h-8 w-8 mx-auto mb-2 text-gray-400" />
@@ -753,7 +752,7 @@ const Dashboard = () => {
             </>
           )}
         </div>
-      </Card>
+      </Card> */}
     </div>
   );
 };
