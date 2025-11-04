@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useCreateClinicalProformaMutation, useUpdateClinicalProformaMutation } from '../../features/clinical/clinicalApiSlice';
+import { useGetADLFileByIdQuery, useUpdateADLFileMutation } from '../../features/adl/adlApiSlice';
 import { useSearchPatientsQuery, useGetPatientByIdQuery } from '../../features/patients/patientsApiSlice';
 import { useGetDoctorsQuery } from '../../features/users/usersApiSlice';
 import Card from '../../components/Card';
@@ -479,7 +480,12 @@ const ICD11CodeSelector = ({ value, onChange, error }) => {
   );
 };
 
-const CreateClinicalProforma = () => {
+const CreateClinicalProforma = ({ 
+  editMode = false, 
+  existingProforma = null, 
+  existingAdlFile = null,
+  proformaId = null 
+} = {}) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const patientIdFromQuery = searchParams.get('patient_id');
@@ -489,7 +495,8 @@ const CreateClinicalProforma = () => {
   const [updateProforma, { isLoading: isUpdating }] = useUpdateClinicalProformaMutation();
   
   // Track created proforma ID for step-wise saving
-  const [savedProformaId, setSavedProformaId] = useState(null);
+  // In edit mode, set it immediately from props
+  const [savedProformaId, setSavedProformaId] = useState(editMode && proformaId ? proformaId : null);
   const [patientSearch, setPatientSearch] = useState('');
   const { data: patientsData } = useSearchPatientsQuery(
     { search: patientSearch, limit: 10 },
@@ -787,6 +794,7 @@ const CreateClinicalProforma = () => {
 
   useEffect(() => {
     if (formData.doctor_decision === 'complex_case') {
+      // Automatically enable ADL file requirement for complex cases
       setFormData(prev => ({ ...prev, requires_adl_file: true }));
     } else {
       // If changed from complex to simple, reset ADL fields
@@ -801,6 +809,196 @@ const CreateClinicalProforma = () => {
       setCurrentStep(4);
     }
   }, [formData.doctor_decision, showADLStep, currentStep]);
+
+  // Track ADL file ID for fetching ADL data when Step 3 loads
+  // In edit mode, set it from existing proforma if available
+  const [adlFileId, setAdlFileId] = useState(
+    editMode && existingProforma?.adl_file_id ? existingProforma.adl_file_id : null
+  );
+  
+  // Fetch ADL file data when Step 3 loads and adl_file_id exists
+  const { data: adlFileData } = useGetADLFileByIdQuery(adlFileId, { skip: !adlFileId || currentStep !== 3 });
+  const [updateADLFile] = useUpdateADLFileMutation();
+  
+  // Helper function to normalize array fields (handles JSONB fields that might be strings or arrays)
+  const normalizeArrayField = (value) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : (parsed ? [parsed] : []);
+      } catch {
+        return value ? [value] : [];
+      }
+    }
+    return value ? [value] : [];
+  };
+
+  // Helper function to normalize object array fields (for JSONB fields like prescriptions, informants, etc.)
+  const normalizeObjectArrayField = (value, defaultStructure = {}) => {
+    if (Array.isArray(value)) {
+      return value.length > 0 ? value : [defaultStructure];
+    }
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          return parsed.length > 0 ? parsed : [defaultStructure];
+        }
+        return parsed ? [parsed] : [defaultStructure];
+      } catch {
+        return [defaultStructure];
+      }
+    }
+    return [defaultStructure];
+  };
+
+  // ✅ Load existing proforma and ADL file data into form when in edit mode
+  useEffect(() => {
+    if (editMode && existingProforma) {
+      // Map all proforma fields to formData
+      const proformaFormData = {
+        patient_id: existingProforma.patient_id?.toString() || '',
+        visit_date: existingProforma.visit_date || new Date().toISOString().split('T')[0],
+        visit_type: existingProforma.visit_type || 'first_visit',
+        room_no: existingProforma.room_no || '',
+        assigned_doctor: existingProforma.assigned_doctor?.toString() || '',
+        informant_present: existingProforma.informant_present ?? true,
+        nature_of_information: existingProforma.nature_of_information || '',
+        onset_duration: existingProforma.onset_duration || '',
+        course: existingProforma.course || '',
+        precipitating_factor: existingProforma.precipitating_factor || '',
+        illness_duration: existingProforma.illness_duration || '',
+        current_episode_since: existingProforma.current_episode_since || '',
+        mood: normalizeArrayField(existingProforma.mood),
+        behaviour: normalizeArrayField(existingProforma.behaviour),
+        speech: normalizeArrayField(existingProforma.speech),
+        thought: normalizeArrayField(existingProforma.thought),
+        perception: normalizeArrayField(existingProforma.perception),
+        somatic: normalizeArrayField(existingProforma.somatic),
+        bio_functions: normalizeArrayField(existingProforma.bio_functions),
+        adjustment: normalizeArrayField(existingProforma.adjustment),
+        cognitive_function: normalizeArrayField(existingProforma.cognitive_function),
+        fits: normalizeArrayField(existingProforma.fits),
+        sexual_problem: normalizeArrayField(existingProforma.sexual_problem),
+        substance_use: normalizeArrayField(existingProforma.substance_use),
+        past_history: existingProforma.past_history || '',
+        family_history: existingProforma.family_history || '',
+        associated_medical_surgical: normalizeArrayField(existingProforma.associated_medical_surgical),
+        mse_behaviour: normalizeArrayField(existingProforma.mse_behaviour),
+        mse_affect: normalizeArrayField(existingProforma.mse_affect),
+        mse_thought: existingProforma.mse_thought || '',
+        mse_delusions: existingProforma.mse_delusions || '',
+        mse_perception: normalizeArrayField(existingProforma.mse_perception),
+        mse_cognitive_function: normalizeArrayField(existingProforma.mse_cognitive_function),
+        gpe: existingProforma.gpe || '',
+        diagnosis: existingProforma.diagnosis || '',
+        icd_code: existingProforma.icd_code || '',
+        disposal: existingProforma.disposal || '',
+        workup_appointment: existingProforma.workup_appointment || '',
+        referred_to: existingProforma.referred_to || '',
+        treatment_prescribed: existingProforma.treatment_prescribed || '',
+        doctor_decision: existingProforma.doctor_decision || 'simple_case',
+        case_severity: existingProforma.case_severity || '',
+        requires_adl_file: existingProforma.requires_adl_file || false,
+        adl_reasoning: existingProforma.adl_reasoning || '',
+      };
+      
+      setFormData(prev => ({ ...prev, ...proformaFormData }));
+      
+      // Set ADL file ID if it exists
+      if (existingProforma.adl_file_id) {
+        setAdlFileId(existingProforma.adl_file_id);
+      }
+      
+      // Load prescriptions if they exist (prescriptions is JSONB array)
+      if (existingProforma.prescriptions) {
+        const normalizedPrescriptions = normalizeObjectArrayField(
+          existingProforma.prescriptions,
+          { medicine: '', dosage: '', when: '', frequency: '', duration: '', qty: '', details: '', notes: '' }
+        );
+        setPrescriptions(normalizedPrescriptions);
+      }
+    }
+  }, [editMode, existingProforma]);
+  
+  // ✅ Load ADL file data into form when in edit mode
+  useEffect(() => {
+    if (editMode && existingAdlFile) {
+      // Map all ADL file fields to formData (excluding metadata fields)
+      const adlFormData = {};
+      
+      // JSONB fields that need special handling
+      const jsonbFields = {
+        'informants': { relationship: '', name: '', reliability: '' },
+        'complaints_patient': { complaint: '', duration: '' },
+        'complaints_informant': { complaint: '', duration: '' },
+        'family_history_siblings': { age: '', sex: '', education: '', occupation: '', marital_status: '' },
+        'premorbid_personality_traits': [],
+        'occupation_jobs': { job: '', dates: '', adjustment: '', difficulties: '', promotions: '', change_reason: '' },
+        'sexual_children': { age: '', sex: '' },
+        'living_residents': { name: '', relationship: '', age: '' },
+        'living_inlaws': { name: '', relationship: '', age: '' }
+      };
+      
+      Object.keys(existingAdlFile).forEach(key => {
+        if (key !== 'id' && key !== 'created_at' && key !== 'updated_at' && 
+            key !== 'patient_id' && key !== 'adl_no' && key !== 'created_by' &&
+            key !== 'clinical_proforma_id' && key !== 'file_status' && 
+            key !== 'file_created_date' && key !== 'total_visits' && key !== 'is_active' &&
+            key !== 'last_accessed_date' && key !== 'last_accessed_by' && key !== 'notes') {
+          
+          // Handle JSONB fields
+          if (jsonbFields.hasOwnProperty(key)) {
+            adlFormData[key] = normalizeObjectArrayField(existingAdlFile[key], jsonbFields[key]);
+          } else {
+            // Regular fields
+            adlFormData[key] = existingAdlFile[key] ?? '';
+          }
+        }
+      });
+      
+      setFormData(prev => ({ ...prev, ...adlFormData }));
+    }
+  }, [editMode, existingAdlFile]);
+  
+  // ✅ Prefill Step 3 form when ADL file data is loaded
+  useEffect(() => {
+    if (currentStep === 3 && adlFileData?.data?.adlFile && Object.keys(formData).some(key => 
+      key.includes('history_') || key.includes('informants') || key.includes('physical_') ||
+      key.includes('mse_') || key.includes('education_') || key.includes('occupation_') ||
+      key.includes('sexual_') || key.includes('living_') || key.includes('personal_') ||
+      key.includes('development_') || key.includes('diagnostic_') || key.includes('premorbid_')
+    )) {
+      const adlFile = adlFileData.data.adlFile;
+      // Only prefill if formData is empty for these fields (don't overwrite user input)
+      const hasExistingData = Object.keys(formData).some(key => 
+        (key.includes('history_') || key.includes('informants') || key.includes('physical_') ||
+         key.includes('mse_') || key.includes('education_') || key.includes('occupation_') ||
+         key.includes('sexual_') || key.includes('living_') || key.includes('personal_') ||
+         key.includes('development_') || key.includes('diagnostic_') || key.includes('premorbid_')) &&
+        formData[key] !== undefined && formData[key] !== null && formData[key] !== ''
+      );
+      
+      if (!hasExistingData) {
+        Object.keys(adlFile).forEach(key => {
+          if (key !== 'id' && key !== 'created_at' && key !== 'updated_at' && 
+              key !== 'patient_id' && key !== 'adl_no' && key !== 'created_by' &&
+              key !== 'clinical_proforma_id' && key !== 'file_status' && 
+              key !== 'file_created_date' && key !== 'total_visits' && key !== 'is_active' &&
+              adlFile[key] !== undefined && adlFile[key] !== null && adlFile[key] !== '') {
+            setFormData(prev => {
+              // Only set if current value is empty
+              if (prev[key] === undefined || prev[key] === null || prev[key] === '') {
+                return { ...prev, [key]: adlFile[key] };
+              }
+              return prev;
+            });
+          }
+        });
+      }
+    }
+  }, [currentStep, adlFileData, formData]);
 
   // Auto-populate ALL patient details when patient data is fetched
   useEffect(() => {
@@ -1153,6 +1351,7 @@ const CreateClinicalProforma = () => {
           doctor_decision: stepData.doctor_decision,
           requires_adl_file: stepData.requires_adl_file,
           adl_reasoning: stepData.adl_reasoning,
+          adlFileId: adlFileId,
           complexCaseFieldsCount: Object.keys(stepData).filter(key => 
             key.includes('history_') || key.includes('informants') || key.includes('complaints_') ||
             key.includes('past_history_') || key.includes('family_history_') || key.includes('physical_') ||
@@ -1168,26 +1367,162 @@ const CreateClinicalProforma = () => {
         });
       }
       
+      // ✅ Step 3: Update ADL file directly if it exists
+      if (step === 3 && adlFileId) {
+        try {
+          // Extract only complex case fields for ADL update
+          const complexCaseFields = [
+            'history_narrative', 'history_specific_enquiry', 'history_drug_intake',
+            'history_treatment_place', 'history_treatment_dates', 'history_treatment_drugs', 'history_treatment_response',
+            'informants', 'complaints_patient', 'complaints_informant',
+            'past_history_medical', 'past_history_psychiatric_dates', 'past_history_psychiatric_diagnosis',
+            'past_history_psychiatric_treatment', 'past_history_psychiatric_interim', 'past_history_psychiatric_recovery',
+            'family_history_father_age', 'family_history_father_education', 'family_history_father_occupation',
+            'family_history_father_personality', 'family_history_father_deceased', 'family_history_father_death_age',
+            'family_history_father_death_date', 'family_history_father_death_cause',
+            'family_history_mother_age', 'family_history_mother_education', 'family_history_mother_occupation',
+            'family_history_mother_personality', 'family_history_mother_deceased', 'family_history_mother_death_age',
+            'family_history_mother_death_date', 'family_history_mother_death_cause', 'family_history_siblings',
+            'diagnostic_formulation_summary', 'diagnostic_formulation_features', 'diagnostic_formulation_psychodynamic',
+            'premorbid_personality_passive_active', 'premorbid_personality_assertive', 'premorbid_personality_introvert_extrovert',
+            'premorbid_personality_traits', 'premorbid_personality_hobbies', 'premorbid_personality_habits', 'premorbid_personality_alcohol_drugs',
+            'physical_appearance', 'physical_body_build', 'physical_pallor', 'physical_icterus', 'physical_oedema', 'physical_lymphadenopathy',
+            'physical_pulse', 'physical_bp', 'physical_height', 'physical_weight', 'physical_waist', 'physical_fundus',
+            'physical_cvs_apex', 'physical_cvs_regularity', 'physical_cvs_heart_sounds', 'physical_cvs_murmurs',
+            'physical_chest_expansion', 'physical_chest_percussion', 'physical_chest_adventitious',
+            'physical_abdomen_tenderness', 'physical_abdomen_mass', 'physical_abdomen_bowel_sounds',
+            'physical_cns_cranial', 'physical_cns_motor_sensory', 'physical_cns_rigidity', 'physical_cns_involuntary',
+            'physical_cns_superficial_reflexes', 'physical_cns_dtrs', 'physical_cns_plantar', 'physical_cns_cerebellar',
+            'mse_general_demeanour', 'mse_general_tidy', 'mse_general_awareness', 'mse_general_cooperation',
+            'mse_psychomotor_verbalization', 'mse_psychomotor_pressure', 'mse_psychomotor_tension', 'mse_psychomotor_posture',
+            'mse_psychomotor_mannerism', 'mse_psychomotor_catatonic', 'mse_affect_subjective', 'mse_affect_tone',
+            'mse_affect_resting', 'mse_affect_fluctuation', 'mse_thought_flow', 'mse_thought_form', 'mse_thought_content',
+            'mse_cognitive_consciousness', 'mse_cognitive_orientation_time', 'mse_cognitive_orientation_place',
+            'mse_cognitive_orientation_person', 'mse_cognitive_memory_immediate', 'mse_cognitive_memory_recent',
+            'mse_cognitive_memory_remote', 'mse_cognitive_subtraction', 'mse_cognitive_digit_span', 'mse_cognitive_counting',
+            'mse_cognitive_general_knowledge', 'mse_cognitive_calculation', 'mse_cognitive_similarities', 'mse_cognitive_proverbs',
+            'mse_insight_understanding', 'mse_insight_judgement',
+            'education_start_age', 'education_highest_class', 'education_performance', 'education_disciplinary',
+            'education_peer_relationship', 'education_hobbies', 'education_special_abilities', 'education_discontinue_reason',
+            'occupation_jobs', 'sexual_menarche_age', 'sexual_menarche_reaction', 'sexual_education', 'sexual_masturbation',
+            'sexual_contact', 'sexual_premarital_extramarital', 'sexual_marriage_arranged', 'sexual_marriage_date',
+            'sexual_spouse_age', 'sexual_spouse_occupation', 'sexual_adjustment_general', 'sexual_adjustment_sexual',
+            'sexual_children', 'sexual_problems', 'religion_type', 'religion_participation', 'religion_changes',
+            'living_residents', 'living_income_sharing', 'living_expenses', 'living_kitchen', 'living_domestic_conflicts',
+            'living_social_class', 'living_inlaws', 'home_situation_childhood', 'home_situation_parents_relationship',
+            'home_situation_socioeconomic', 'home_situation_interpersonal', 'personal_birth_date', 'personal_birth_place',
+            'personal_delivery_type', 'personal_complications_prenatal', 'personal_complications_natal', 'personal_complications_postnatal',
+            'development_weaning_age', 'development_first_words', 'development_three_words', 'development_walking',
+            'development_neurotic_traits', 'development_nail_biting', 'development_bedwetting', 'development_phobias',
+            'development_childhood_illness', 'provisional_diagnosis', 'treatment_plan', 'consultant_comments'
+          ];
+          
+          const adlUpdateData = {};
+          complexCaseFields.forEach(field => {
+            if (stepData[field] !== undefined && stepData[field] !== null) {
+              adlUpdateData[field] = stepData[field];
+            }
+          });
+          
+          if (Object.keys(adlUpdateData).length > 0) {
+            await updateADLFile({ id: adlFileId, ...adlUpdateData }).unwrap();
+            console.log('[CreateClinicalProforma] ✅ Step 3: ADL file updated directly');
+          }
+        } catch (adlError) {
+          console.error('[CreateClinicalProforma] Failed to update ADL file directly:', adlError);
+          // Continue with clinical_proforma update even if ADL update fails
+        }
+      }
+      
       if (savedProformaId) {
         // Update existing proforma
         const result = await updateProforma({ id: savedProformaId, ...stepData }).unwrap();
         toast.success(`${getStepLabel(step)} saved successfully!`);
         
-        if (step === 3 && result.data?.proforma?.adl_file_id) {
-          toast.info(`ADL File updated and saved to adl_files table`);
+        // Handle ADL file update response
+        const proforma = result.data?.clinical_proforma || result.data?.proforma || result.data?.clinical;
+        const adlFile = result.data?.adl_file || result.data?.adl;
+        
+        if (step === 3 && adlFile) {
+          toast.info(`ADL File ${adlFile.adl_no || 'updated'} - Data saved to adl_files table`);
         }
         
-        return result.data?.proforma;
+        // ✅ If Step 2 is saved and complex_case with ADL file, auto-open Step 3 and prefill
+        if (step === 2 && adlFile && proforma?.doctor_decision === 'complex_case') {
+          // Set ADL file ID for fetching later if needed
+          if (adlFile.id) {
+            setAdlFileId(adlFile.id);
+          }
+          
+          // Prefill ADL form fields with adl_file data
+          if (adlFile) {
+            Object.keys(adlFile).forEach(key => {
+              if (key !== 'id' && key !== 'created_at' && key !== 'updated_at' && 
+                  key !== 'patient_id' && key !== 'adl_no' && key !== 'created_by' &&
+                  key !== 'clinical_proforma_id' && key !== 'file_status' && 
+                  key !== 'file_created_date' && key !== 'total_visits' && key !== 'is_active') {
+                // Only set if formData doesn't already have a value (don't overwrite user input)
+                if (formData[key] === undefined || formData[key] === null || formData[key] === '') {
+                  setFormData(prev => ({ ...prev, [key]: adlFile[key] }));
+                }
+              }
+            });
+          }
+          
+          // Auto-open Step 3
+          setTimeout(() => {
+            setCurrentStep(3);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            toast.info('ADL form opened automatically. Please complete the additional details.');
+          }, 500);
+        } else if (step === 2 && proforma?.adl_file_id) {
+          // If editing existing proforma with ADL file, set ID for fetching
+          setAdlFileId(proforma.adl_file_id);
+        }
+        
+        return proforma;
       } else {
         // Create new proforma (for step 1)
         const result = await createProforma(stepData).unwrap();
-        setSavedProformaId(result.data?.proforma?.id);
+        const proforma = result.data?.clinical_proforma || result.data?.proforma || result.data?.clinical;
+        setSavedProformaId(proforma?.id);
         toast.success(`${getStepLabel(step)} saved successfully!`);
         
-        if (result.data?.adl_file?.created) {
-          toast.info(`ADL File created: ${result.data.adl_file.adl_no} - Data saved to adl_files table`);
+        // ✅ Handle ADL file creation response - auto-open Step 3 and prefill
+        const adlFile = result.data?.adl_file || result.data?.adl;
+        if (adlFile && step === 2 && proforma?.doctor_decision === 'complex_case') {
+          // Set ADL file ID for fetching later if needed
+          if (adlFile.id) {
+            setAdlFileId(adlFile.id);
+          }
+          
+          // Prefill ADL form fields with adl_file data
+          Object.keys(adlFile).forEach(key => {
+            if (key !== 'id' && key !== 'created_at' && key !== 'updated_at' && 
+                key !== 'patient_id' && key !== 'adl_no' && key !== 'created_by' &&
+                key !== 'clinical_proforma_id' && key !== 'file_status' && 
+                key !== 'file_created_date' && key !== 'total_visits' && key !== 'is_active') {
+              // Only set if formData doesn't already have a value
+              if (formData[key] === undefined || formData[key] === null || formData[key] === '') {
+                setFormData(prev => ({ ...prev, [key]: adlFile[key] }));
+              }
+            }
+          });
+          
+          // Auto-open Step 3
+          setTimeout(() => {
+            setCurrentStep(3);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            toast.info(`ADL File created: ${adlFile.adl_no || 'ADL-XXXXXX'}. Please complete the additional details.`);
+          }, 500);
+        } else if (adlFile && (step === 2 || step === 3)) {
+          // Set ADL file ID for future fetches
+          if (adlFile.id) {
+            setAdlFileId(adlFile.id);
+          }
+          toast.info(`ADL File created: ${adlFile.adl_no || 'ADL-XXXXXX'} - Data saved to adl_files table`);
         }
-        return result.data?.proforma;
+        return proforma;
       }
     } catch (err) {
       toast.error(err?.data?.message || `Failed to save ${getStepLabel(step)}`);
@@ -1298,13 +1633,13 @@ const CreateClinicalProforma = () => {
           localStorage.setItem('patient_prescriptions', JSON.stringify(storedPrescriptions));
         }
         
-        toast.success('Clinical proforma completed successfully!');
+        toast.success(editMode ? 'Clinical proforma updated successfully!' : 'Clinical proforma completed successfully!');
         
         // Navigate to proforma details, or back to Today Patients if returnTab exists
         if (returnTab) {
           navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
         } else {
-          navigate(`/clinical/${savedProformaId}`);
+          navigate(`/clinical/${savedProformaId}${editMode && returnTab ? '?returnTab=' + returnTab : ''}`);
         }
       } else {
         // This shouldn't happen if step-wise saving works, but handle it as fallback
@@ -1318,15 +1653,18 @@ const CreateClinicalProforma = () => {
         
         toast.success('Clinical proforma created successfully!');
         
-        if (result.data?.adl_file?.created) {
-          toast.info(`ADL File created: ${result.data.adl_file.adl_no}`);
+        // Handle ADL file creation in final submit
+        const proforma = result.data?.proforma || result.data?.clinical;
+        const adlFile = result.data?.adl_file || result.data?.adl;
+        if (adlFile && (adlFile.adl_no || adlFile.created)) {
+          toast.info(`ADL File created: ${adlFile.adl_no || 'ADL-XXXXXX'}`);
         }
         
         // Navigate to proforma details, or back to Today Patients if returnTab exists
         if (returnTab) {
           navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
         } else {
-          navigate(`/clinical/${result.data.proforma.id}`);
+          navigate(`/clinical/${proforma?.id || savedProformaId}`);
         }
       }
     } catch (err) {
@@ -1404,9 +1742,11 @@ const CreateClinicalProforma = () => {
               </div>
       <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-fuchsia-600 to-indigo-800 bg-clip-text text-transparent">
-                  Clinical Proforma
+                  {editMode ? 'Edit Clinical Proforma' : 'Clinical Proforma'}
                 </h1>
-                <p className="text-gray-600 mt-1">Walk-in Clinical Proforma</p>
+                <p className="text-gray-600 mt-1">
+                  {editMode ? 'Update existing clinical proforma' : 'Walk-in Clinical Proforma'}
+                </p>
               </div>
             </div>
           </div>

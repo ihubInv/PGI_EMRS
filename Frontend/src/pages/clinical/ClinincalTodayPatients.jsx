@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { FiCalendar, FiUser, FiPhone, FiMapPin, FiClock, FiEye, FiFilter, FiRefreshCw, FiPlusCircle, FiFileText } from 'react-icons/fi';
 import { useGetAllPatientsQuery, useGetTodayPatientsQuery } from '../../features/patients/patientsApiSlice';
 import { useGetClinicalProformaByPatientIdQuery } from '../../features/clinical/clinicalApiSlice';
@@ -12,10 +12,30 @@ import { selectCurrentUser } from '../../features/auth/authSlice';
 
 // Component to check for existing proforma and render patient row
 const PatientRow = ({ patient, activeTab, navigate }) => {
-  const { data: proformaData } = useGetClinicalProformaByPatientIdQuery(patient.id, { skip: !patient.id });
+  const { data: proformaData, refetch: refetchProformas, isLoading: proformasLoading } = useGetClinicalProformaByPatientIdQuery(
+    patient.id, 
+    { 
+      skip: !patient.id,
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    }
+  );
   const proformas = proformaData?.data?.proformas || [];
   const hasExistingProforma = proformas.length > 0;
   const latestProformaId = hasExistingProforma ? proformas[0].id : null;
+  
+  // Refetch proformas when component becomes visible (e.g., after returning from deletion)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && patient.id) {
+        refetchProformas();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [patient.id, refetchProformas]);
 
   const formatTime = (dateString) => {
     return new Date(dateString).toLocaleTimeString('en-IN', {
@@ -210,6 +230,7 @@ const PatientRow = ({ patient, activeTab, navigate }) => {
 
 const ClinicalTodayPatients = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const currentUser = useSelector(selectCurrentUser);
   const [currentPage, setCurrentPage] = useState(1);
@@ -218,17 +239,6 @@ const ClinicalTodayPatients = () => {
   // Get tab from URL params - single source of truth
   const tabFromUrl = searchParams.get('tab');
   const activeTab = tabFromUrl === 'existing' ? 'existing' : 'new';
-  
-  // Update URL when tab changes
-  const handleTabChange = (tab) => {
-    const newSearchParams = new URLSearchParams(searchParams);
-    if (tab === 'new') {
-      newSearchParams.delete('tab');
-    } else {
-      newSearchParams.set('tab', tab);
-    }
-    setSearchParams(newSearchParams, { replace: true });
-  };
   
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
@@ -243,19 +253,7 @@ const ClinicalTodayPatients = () => {
     case_complexity: '',
   });
 
-  // const { data, error, isLoading, refetch } = useGetTodayPatientsQuery({
-  //   page: currentPage,
-  //   limit: 10,
-  //   date: selectedDate,
-  // });
-
-
-  // const { data, error, isLoading, refetch } = useGetAllPatientsQuery({
-  //   page: currentPage,
-  //   limit: 10,
-  // });
-
-
+  // Fetch patients data - must be defined before useEffects that use refetch
   const { data, isLoading, isFetching, refetch, error } = useGetAllPatientsQuery({
     page: currentPage,
     limit: 10,
@@ -263,7 +261,53 @@ const ClinicalTodayPatients = () => {
   }, {
     pollingInterval: 30000, // Auto-refresh every 30 seconds
     refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
   });
+  
+  // Track previous location to detect navigation changes
+  const prevLocationRef = useRef(location.pathname);
+  
+  useEffect(() => {
+    // If we navigated away and came back, refetch the data
+    if (prevLocationRef.current !== location.pathname && location.pathname === '/clinical-today-patients') {
+      refetch();
+    }
+    prevLocationRef.current = location.pathname;
+  }, [location.pathname, refetch]);
+  
+  // Refetch when window comes into focus (user returns to tab)
+  useEffect(() => {
+    const handleFocus = () => {
+      refetch();
+    };
+    
+    // Refetch when component becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refetch();
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refetch]);
+  
+  // Update URL when tab changes
+  const handleTabChange = (tab) => {
+    const newSearchParams = new URLSearchParams(searchParams);
+    if (tab === 'new') {
+      newSearchParams.delete('tab');
+    } else {
+      newSearchParams.set('tab', tab);
+    }
+    setSearchParams(newSearchParams, { replace: true });
+  };
 
 
 

@@ -19,14 +19,14 @@ import { formatDate, formatDateTime } from '../../utils/formatters';
 const ADLFileDetails = () => {
   const { id } = useParams();
 
-  const { data, isLoading } = useGetADLFileByIdQuery(id);
+  const { data, isLoading, error, isError } = useGetADLFileByIdQuery(id);
   const { data: movementsData } = useGetFileMovementHistoryQuery(id);
   const [retrieveFile] = useRetrieveFileMutation();
   const [returnFile] = useReturnFileMutation();
   const [archiveFile] = useArchiveFileMutation();
   
   // Fetch full patient details for complex case
-  const file = data?.data?.file;
+  const file = data?.data?.adlFile || data?.data?.file; // Support both response formats
   const { data: patientData, isLoading: patientLoading } = useGetPatientByIdQuery(
     file?.patient_id,
     { skip: !file?.patient_id }
@@ -68,16 +68,25 @@ const ADLFileDetails = () => {
   };
 
   if (isLoading) {
-    return <LoadingSpinner size="lg" className="h-96" />;
+    return (
+      <div className="flex items-center justify-center h-96">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
   }
 
-  if (!file) {
+  if (isError || !file) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">ADL file not found</p>
-        <Link to="/adl-files">
-          <Button className="mt-4">Back to Additional Detail File</Button>
-        </Link>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
+          <p className="text-red-600 font-semibold mb-2">Error Loading ADL File</p>
+          <p className="text-gray-600 text-sm mb-4">
+            {error?.data?.message || 'ADL file not found or could not be loaded'}
+          </p>
+          <Link to="/adl-files">
+            <Button variant="primary">Back to ADL Files</Button>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -98,141 +107,176 @@ const ADLFileDetails = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link to="/adl-files">
-            <Button variant="ghost" size="sm">
-              <FiArrowLeft className="mr-2" /> Back
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 font-mono">{file.adl_no}</h1>
-            <p className="text-gray-600 mt-1">ADL File Details</p>
+    <div className="space-y-6 pb-8">
+      {/* Header Section */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-4">
+            <Link to="/adl-files">
+              <Button variant="ghost" size="sm" className="hover:bg-gray-100">
+                <FiArrowLeft className="mr-2" /> Back to Files
+              </Button>
+            </Link>
+            <div className="border-l border-gray-300 pl-4">
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold text-gray-900 font-mono">{file.adl_no}</h1>
+                {isComplexCase && (
+                  <Badge variant="danger" className="text-sm">
+                    <FiActivity className="w-3 h-3 mr-1" />
+                    Complex Case
+                  </Badge>
+                )}
+              </div>
+              <p className="text-gray-600 mt-1 text-sm">ADL File Details</p>
+            </div>
           </div>
-        </div>
-        <div className="flex gap-2">
-          {file.file_status === 'stored' && (
-            <Button variant="primary" onClick={handleRetrieve}>
-              <FiDownload className="mr-2" /> Retrieve File
-            </Button>
-          )}
-          {file.file_status === 'retrieved' && (
-            <Button variant="success" onClick={handleReturn}>
-              <FiUpload className="mr-2" /> Return File
-            </Button>
-          )}
-          {file.is_active && (
-            <Button variant="outline" onClick={handleArchive}>
-              <FiArchive className="mr-2" /> Archive
-            </Button>
-          )}
+          <div className="flex gap-2 flex-wrap">
+            {file.file_status === 'stored' && (
+              <Button variant="primary" onClick={handleRetrieve} size="sm">
+                <FiDownload className="mr-2" /> Retrieve File
+              </Button>
+            )}
+            {file.file_status === 'retrieved' && (
+              <Button variant="success" onClick={handleReturn} size="sm">
+                <FiUpload className="mr-2" /> Return File
+              </Button>
+            )}
+            {file.is_active && (
+              <Button variant="outline" onClick={handleArchive} size="sm">
+                <FiArchive className="mr-2" /> Archive
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* File Information */}
-      <Card title="File Information">
+      {/* File Information - Enhanced */}
+      <Card title="File Information" className="border-2 border-blue-100">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div>
-            <label className="text-sm font-medium text-gray-500">ADL Number</label>
-            <p className="text-lg font-semibold font-mono">{file.adl_no}</p>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">ADL Number</label>
+            <p className="text-lg font-bold font-mono text-gray-900 mt-1">{file.adl_no}</p>
           </div>
-          <div>
-            <label className="text-sm font-medium text-gray-500">Patient Name</label>
-            <p className="text-lg">{file.patient_name}</p>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Patient Name</label>
+            <p className="text-lg font-semibold text-gray-900 mt-1">{file.patient_name || 'N/A'}</p>
           </div>
-          <div>
-            <label className="text-sm font-medium text-gray-500">CR Number</label>
-            <p className="text-lg font-semibold">{file.cr_no}</p>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">CR Number</label>
+            <p className="text-lg font-semibold font-mono text-gray-900 mt-1">{file.cr_no || 'N/A'}</p>
           </div>
-          <div>
-            <label className="text-sm font-medium text-gray-500">PSY Number</label>
-            <p className="text-lg">{file.psy_no}</p>
+          {file.psy_no && (
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">PSY Number</label>
+              <p className="text-lg font-semibold text-gray-900 mt-1">{file.psy_no}</p>
+            </div>
+          )}
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">File Status</label>
+            <div className="mt-1">
+              <Badge variant={getStatusVariant(file.file_status)} className="text-sm font-semibold">
+                {file.file_status?.charAt(0).toUpperCase() + file.file_status?.slice(1)}
+              </Badge>
+            </div>
           </div>
-          <div>
-            <label className="text-sm font-medium text-gray-500">File Status</label>
-            <Badge variant={getStatusVariant(file.file_status)} className="mt-1">
-              {file.file_status}
-            </Badge>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Active Status</label>
+            <div className="mt-1">
+              <Badge variant={file.is_active ? 'success' : 'default'} className="text-sm font-semibold">
+                {file.is_active ? 'Active' : 'Inactive'}
+              </Badge>
+            </div>
           </div>
-          <div>
-            <label className="text-sm font-medium text-gray-500">Active Status</label>
-            <Badge variant={file.is_active ? 'success' : 'default'} className="mt-1">
-              {file.is_active ? 'Active' : 'Inactive'}
-            </Badge>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Created By</label>
+            <p className="text-lg text-gray-900 mt-1">
+              {file.created_by_name || 'N/A'}
+              {file.created_by_role && <span className="text-sm text-gray-500 ml-1">({file.created_by_role})</span>}
+            </p>
           </div>
-          <div>
-            <label className="text-sm font-medium text-gray-500">Created By</label>
-            <p className="text-lg">{file.created_by_name} ({file.created_by_role})</p>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">File Created</label>
+            <p className="text-lg font-semibold text-gray-900 mt-1">{formatDate(file.file_created_date)}</p>
           </div>
-          <div>
-            <label className="text-sm font-medium text-gray-500">File Created</label>
-            <p className="text-lg">{formatDate(file.file_created_date)}</p>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-500">Total Visits</label>
-            <p className="text-lg font-semibold">{file.total_visits}</p>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Visits</label>
+            <p className="text-2xl font-bold text-primary-600 mt-1">{file.total_visits || 0}</p>
           </div>
           {file.physical_file_location && (
-            <div>
-              <label className="text-sm font-medium text-gray-500">Physical Location</label>
-              <p className="text-lg">{file.physical_file_location}</p>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Physical Location</label>
+              <p className="text-lg text-gray-900 mt-1">{file.physical_file_location}</p>
             </div>
           )}
           {file.last_accessed_date && (
-            <div>
-              <label className="text-sm font-medium text-gray-500">Last Accessed</label>
-              <p className="text-lg">{formatDate(file.last_accessed_date)}</p>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Last Accessed</label>
+              <p className="text-lg text-gray-900 mt-1">{formatDate(file.last_accessed_date)}</p>
             </div>
           )}
           {file.last_accessed_by_name && (
-            <div>
-              <label className="text-sm font-medium text-gray-500">Last Accessed By</label>
-              <p className="text-lg">{file.last_accessed_by_name}</p>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Last Accessed By</label>
+              <p className="text-lg text-gray-900 mt-1">{file.last_accessed_by_name}</p>
             </div>
           )}
         </div>
 
         {file.notes && (
-          <div className="mt-6">
-            <label className="text-sm font-medium text-gray-500">Notes</label>
-            <p className="text-gray-900 mt-1 whitespace-pre-wrap">{file.notes}</p>
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <label className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2 block">Notes</label>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">{file.notes}</p>
+            </div>
           </div>
         )}
       </Card>
 
-      {/* Movement History */}
-      {movementsData?.data?.movements && movementsData.data.movements.length > 0 && (
-        <Card title="File Movement History">
-          <div className="space-y-4">
-            {movementsData.data.movements.map((movement, index) => (
+      {/* Movement History - Enhanced */}
+      {(movementsData?.data?.movements || movementsData?.data?.movementHistory) && 
+       (movementsData.data.movements || movementsData.data.movementHistory)?.length > 0 && (
+        <Card title="File Movement History" className="border-2 border-purple-100">
+          <div className="space-y-3">
+            {(movementsData.data.movements || movementsData.data.movementHistory || []).map((movement, index, array) => (
               <div
                 key={index}
-                className="flex items-start gap-4 p-4 border border-gray-200 rounded-lg"
+                className="flex items-start gap-4 p-4 bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
               >
                 <div className="flex-shrink-0">
-                  <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                    <span className="text-primary-600 font-semibold">
-                      {index + 1}
+                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm">
+                    <span className="text-white font-bold text-sm">
+                      {array.length - index}
                     </span>
                   </div>
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {movement.movement_type.charAt(0).toUpperCase() + movement.movement_type.slice(1)}
-                      </p>
-                      <p className="text-sm text-gray-600 mt-1">
-                        From: {movement.from_location} → To: {movement.to_location}
-                      </p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant={movement.movement_type === 'retrieve' ? 'warning' : 'success'} className="text-xs">
+                          {movement.movement_type?.charAt(0).toUpperCase() + movement.movement_type?.slice(1) || 'Movement'}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                        <span className="font-medium text-gray-700">From:</span>
+                        <span className="bg-gray-100 px-2 py-1 rounded">{movement.from_location || 'N/A'}</span>
+                        <span className="text-primary-600">→</span>
+                        <span className="font-medium text-gray-700">To:</span>
+                        <span className="bg-gray-100 px-2 py-1 rounded">{movement.to_location || 'N/A'}</span>
+                      </div>
                       {movement.notes && (
-                        <p className="text-sm text-gray-500 mt-1">{movement.notes}</p>
+                        <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-gray-700">
+                          <span className="font-medium text-blue-700">Note:</span> {movement.notes}
+                        </div>
                       )}
                     </div>
-                    <div className="text-right text-sm text-gray-500">
-                      <p>{formatDateTime(movement.movement_date)}</p>
-                      <p className="mt-1">By: {movement.moved_by_name}</p>
+                    <div className="text-right text-sm flex-shrink-0">
+                      <p className="font-semibold text-gray-900">{formatDateTime(movement.movement_date)}</p>
+                      {movement.moved_by_name && (
+                        <p className="text-gray-600 mt-1 text-xs">
+                          <span className="text-gray-500">By:</span> {movement.moved_by_name}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -951,29 +995,40 @@ const ADLFileDetails = () => {
         </>
       )}
 
-      {/* Quick Links */}
-      <Card title="Related Records">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link to={`/patients/${file.patient_id}`}>
-            <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center cursor-pointer">
-              <FiUser className="w-6 h-6 mx-auto mb-2 text-gray-600" />
-              <p className="font-medium">View Patient Record</p>
-            </div>
-          </Link>
-          <Link to={`/clinical?patient_id=${file.patient_id}`}>
-            <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center cursor-pointer">
-              <FiFileText className="w-6 h-6 mx-auto mb-2 text-gray-600" />
-              <p className="font-medium">Clinical Records</p>
-            </div>
-          </Link>
-          <Link to={`/clinical/new?patient_id=${file.patient_id}`}>
-            <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center cursor-pointer">
-              <FiActivity className="w-6 h-6 mx-auto mb-2 text-gray-600" />
-              <p className="font-medium">New Clinical Record</p>
-            </div>
-          </Link>
-        </div>
-      </Card>
+      {/* Quick Links - Enhanced */}
+      {file.patient_id && (
+        <Card title="Related Records" className="border-2 border-indigo-100">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Link to={`/patients/${file.patient_id}`}>
+              <div className="p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 hover:shadow-md transition-all duration-200 text-center cursor-pointer group">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary-100 flex items-center justify-center group-hover:bg-primary-500 transition-colors">
+                  <FiUser className="w-6 h-6 text-primary-600 group-hover:text-white transition-colors" />
+                </div>
+                <p className="font-semibold text-gray-900 group-hover:text-primary-600">View Patient Record</p>
+                <p className="text-xs text-gray-500 mt-1">View full patient details</p>
+              </div>
+            </Link>
+            <Link to={`/clinical?patient_id=${file.patient_id}`}>
+              <div className="p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 hover:shadow-md transition-all duration-200 text-center cursor-pointer group">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-500 transition-colors">
+                  <FiFileText className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
+                </div>
+                <p className="font-semibold text-gray-900 group-hover:text-blue-600">Clinical Records</p>
+                <p className="text-xs text-gray-500 mt-1">Browse all clinical proformas</p>
+              </div>
+            </Link>
+            <Link to={`/clinical/new?patient_id=${file.patient_id}`}>
+              <div className="p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 hover:shadow-md transition-all duration-200 text-center cursor-pointer group">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-green-100 flex items-center justify-center group-hover:bg-green-500 transition-colors">
+                  <FiActivity className="w-6 h-6 text-green-600 group-hover:text-white transition-colors" />
+                </div>
+                <p className="font-semibold text-gray-900 group-hover:text-green-600">New Clinical Record</p>
+                <p className="text-xs text-gray-500 mt-1">Create new proforma</p>
+              </div>
+            </Link>
+          </div>
+        </Card>
+      )}
     </div>
   );
 };

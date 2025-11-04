@@ -338,208 +338,546 @@ class ClinicalController {
       return result[0];
     }
   
-    // 🏥 Main Method
-    static async createClinicalProforma(req, res) {
-      try {
-        const data = req.body;
+    // // 🏥 Main Method
+    // static async createClinicalProforma(req, res) {
+    //   try {
+    //     const data = req.body;
   
-        // 🔹 Basic validation
-        if (!data.patient_id || !data.visit_date) {
-          return res.status(400).json({
-            success: false,
-            message: "Missing required fields",
-          });
-        }
+    //     // 🔹 Basic validation
+    //     if (!data.patient_id || !data.visit_date) {
+    //       return res.status(400).json({
+    //         success: false,
+    //         message: "Missing required fields",
+    //       });
+    //     }
   
-        // 🔹 Complex Case (with ADL)
-        if (data.doctor_decision === "complex_case" && data.requires_adl_file === true) {
-          // Extract complex case fields (extended fields only, NOT basic clinical fields)
-          // Basic clinical fields go to clinical_proforma, complex case fields go to ADL
-          const complexCaseFields = [
-            'history_narrative', 'history_specific_enquiry', 'history_drug_intake',
-            'history_treatment_place', 'history_treatment_dates', 'history_treatment_drugs', 'history_treatment_response',
-            'informants', 'complaints_patient', 'complaints_informant',
-            'past_history_medical', 'past_history_psychiatric_dates', 'past_history_psychiatric_diagnosis',
-            'past_history_psychiatric_treatment', 'past_history_psychiatric_interim', 'past_history_psychiatric_recovery',
-            'family_history_father_age', 'family_history_father_education', 'family_history_father_occupation',
-            'family_history_father_personality', 'family_history_father_deceased', 'family_history_father_death_age',
-            'family_history_father_death_date', 'family_history_father_death_cause',
-            'family_history_mother_age', 'family_history_mother_education', 'family_history_mother_occupation',
-            'family_history_mother_personality', 'family_history_mother_deceased', 'family_history_mother_death_age',
-            'family_history_mother_death_date', 'family_history_mother_death_cause', 'family_history_siblings',
-            'diagnostic_formulation_summary', 'diagnostic_formulation_features', 'diagnostic_formulation_psychodynamic',
-            'premorbid_personality_passive_active', 'premorbid_personality_assertive', 'premorbid_personality_introvert_extrovert',
-            'premorbid_personality_traits', 'premorbid_personality_hobbies', 'premorbid_personality_habits', 'premorbid_personality_alcohol_drugs',
-            'physical_appearance', 'physical_body_build', 'physical_pallor', 'physical_icterus', 'physical_oedema', 'physical_lymphadenopathy',
-            'physical_pulse', 'physical_bp', 'physical_height', 'physical_weight', 'physical_waist', 'physical_fundus',
-            'physical_cvs_apex', 'physical_cvs_regularity', 'physical_cvs_heart_sounds', 'physical_cvs_murmurs',
-            'physical_chest_expansion', 'physical_chest_percussion', 'physical_chest_adventitious',
-            'physical_abdomen_tenderness', 'physical_abdomen_mass', 'physical_abdomen_bowel_sounds',
-            'physical_cns_cranial', 'physical_cns_motor_sensory', 'physical_cns_rigidity', 'physical_cns_involuntary',
-            'physical_cns_superficial_reflexes', 'physical_cns_dtrs', 'physical_cns_plantar', 'physical_cns_cerebellar',
-            'mse_general_demeanour', 'mse_general_tidy', 'mse_general_awareness', 'mse_general_cooperation',
-            'mse_psychomotor_verbalization', 'mse_psychomotor_pressure', 'mse_psychomotor_tension', 'mse_psychomotor_posture',
-            'mse_psychomotor_mannerism', 'mse_psychomotor_catatonic', 'mse_affect_subjective', 'mse_affect_tone',
-            'mse_affect_resting', 'mse_affect_fluctuation', 'mse_thought_flow', 'mse_thought_form', 'mse_thought_content',
-            'mse_cognitive_consciousness', 'mse_cognitive_orientation_time', 'mse_cognitive_orientation_place',
-            'mse_cognitive_orientation_person', 'mse_cognitive_memory_immediate', 'mse_cognitive_memory_recent',
-            'mse_cognitive_memory_remote', 'mse_cognitive_subtraction', 'mse_cognitive_digit_span', 'mse_cognitive_counting',
-            'mse_cognitive_general_knowledge', 'mse_cognitive_calculation', 'mse_cognitive_similarities', 'mse_cognitive_proverbs',
-            'mse_insight_understanding', 'mse_insight_judgement',
-            'education_start_age', 'education_highest_class', 'education_performance', 'education_disciplinary',
-            'education_peer_relationship', 'education_hobbies', 'education_special_abilities', 'education_discontinue_reason',
-            'occupation_jobs', 'sexual_menarche_age', 'sexual_menarche_reaction', 'sexual_education', 'sexual_masturbation',
-            'sexual_contact', 'sexual_premarital_extramarital', 'sexual_marriage_arranged', 'sexual_marriage_date',
-            'sexual_spouse_age', 'sexual_spouse_occupation', 'sexual_adjustment_general', 'sexual_adjustment_sexual',
-            'sexual_children', 'sexual_problems', 'religion_type', 'religion_participation', 'religion_changes',
-            'living_residents', 'living_income_sharing', 'living_expenses', 'living_kitchen', 'living_domestic_conflicts',
-            'living_social_class', 'living_inlaws', 'home_situation_childhood', 'home_situation_parents_relationship',
-            'home_situation_socioeconomic', 'home_situation_interpersonal', 'personal_birth_date', 'personal_birth_place',
-            'personal_delivery_type', 'personal_complications_prenatal', 'personal_complications_natal', 'personal_complications_postnatal',
-            'development_weaning_age', 'development_first_words', 'development_three_words', 'development_walking',
-            'development_neurotic_traits', 'development_nail_biting', 'development_bedwetting', 'development_phobias',
-            'development_childhood_illness', 'provisional_diagnosis', 'treatment_plan', 'consultant_comments'
-          ];
+    //     // 🔹 Complex Case (with ADL)
+    //     if (data.doctor_decision === "complex_case" && data.requires_adl_file === true) {
+    //       // Extract complex case fields (extended fields only, NOT basic clinical fields)
+    //       // Basic clinical fields go to clinical_proforma, complex case fields go to ADL
+    //       const complexCaseFields = [
+    //         'history_narrative', 'history_specific_enquiry', 'history_drug_intake',
+    //         'history_treatment_place', 'history_treatment_dates', 'history_treatment_drugs', 'history_treatment_response',
+    //         'informants', 'complaints_patient', 'complaints_informant',
+    //         'past_history_medical', 'past_history_psychiatric_dates', 'past_history_psychiatric_diagnosis',
+    //         'past_history_psychiatric_treatment', 'past_history_psychiatric_interim', 'past_history_psychiatric_recovery',
+    //         'family_history_father_age', 'family_history_father_education', 'family_history_father_occupation',
+    //         'family_history_father_personality', 'family_history_father_deceased', 'family_history_father_death_age',
+    //         'family_history_father_death_date', 'family_history_father_death_cause',
+    //         'family_history_mother_age', 'family_history_mother_education', 'family_history_mother_occupation',
+    //         'family_history_mother_personality', 'family_history_mother_deceased', 'family_history_mother_death_age',
+    //         'family_history_mother_death_date', 'family_history_mother_death_cause', 'family_history_siblings',
+    //         'diagnostic_formulation_summary', 'diagnostic_formulation_features', 'diagnostic_formulation_psychodynamic',
+    //         'premorbid_personality_passive_active', 'premorbid_personality_assertive', 'premorbid_personality_introvert_extrovert',
+    //         'premorbid_personality_traits', 'premorbid_personality_hobbies', 'premorbid_personality_habits', 'premorbid_personality_alcohol_drugs',
+    //         'physical_appearance', 'physical_body_build', 'physical_pallor', 'physical_icterus', 'physical_oedema', 'physical_lymphadenopathy',
+    //         'physical_pulse', 'physical_bp', 'physical_height', 'physical_weight', 'physical_waist', 'physical_fundus',
+    //         'physical_cvs_apex', 'physical_cvs_regularity', 'physical_cvs_heart_sounds', 'physical_cvs_murmurs',
+    //         'physical_chest_expansion', 'physical_chest_percussion', 'physical_chest_adventitious',
+    //         'physical_abdomen_tenderness', 'physical_abdomen_mass', 'physical_abdomen_bowel_sounds',
+    //         'physical_cns_cranial', 'physical_cns_motor_sensory', 'physical_cns_rigidity', 'physical_cns_involuntary',
+    //         'physical_cns_superficial_reflexes', 'physical_cns_dtrs', 'physical_cns_plantar', 'physical_cns_cerebellar',
+    //         'mse_general_demeanour', 'mse_general_tidy', 'mse_general_awareness', 'mse_general_cooperation',
+    //         'mse_psychomotor_verbalization', 'mse_psychomotor_pressure', 'mse_psychomotor_tension', 'mse_psychomotor_posture',
+    //         'mse_psychomotor_mannerism', 'mse_psychomotor_catatonic', 'mse_affect_subjective', 'mse_affect_tone',
+    //         'mse_affect_resting', 'mse_affect_fluctuation', 'mse_thought_flow', 'mse_thought_form', 'mse_thought_content',
+    //         'mse_cognitive_consciousness', 'mse_cognitive_orientation_time', 'mse_cognitive_orientation_place',
+    //         'mse_cognitive_orientation_person', 'mse_cognitive_memory_immediate', 'mse_cognitive_memory_recent',
+    //         'mse_cognitive_memory_remote', 'mse_cognitive_subtraction', 'mse_cognitive_digit_span', 'mse_cognitive_counting',
+    //         'mse_cognitive_general_knowledge', 'mse_cognitive_calculation', 'mse_cognitive_similarities', 'mse_cognitive_proverbs',
+    //         'mse_insight_understanding', 'mse_insight_judgement',
+    //         'education_start_age', 'education_highest_class', 'education_performance', 'education_disciplinary',
+    //         'education_peer_relationship', 'education_hobbies', 'education_special_abilities', 'education_discontinue_reason',
+    //         'occupation_jobs', 'sexual_menarche_age', 'sexual_menarche_reaction', 'sexual_education', 'sexual_masturbation',
+    //         'sexual_contact', 'sexual_premarital_extramarital', 'sexual_marriage_arranged', 'sexual_marriage_date',
+    //         'sexual_spouse_age', 'sexual_spouse_occupation', 'sexual_adjustment_general', 'sexual_adjustment_sexual',
+    //         'sexual_children', 'sexual_problems', 'religion_type', 'religion_participation', 'religion_changes',
+    //         'living_residents', 'living_income_sharing', 'living_expenses', 'living_kitchen', 'living_domestic_conflicts',
+    //         'living_social_class', 'living_inlaws', 'home_situation_childhood', 'home_situation_parents_relationship',
+    //         'home_situation_socioeconomic', 'home_situation_interpersonal', 'personal_birth_date', 'personal_birth_place',
+    //         'personal_delivery_type', 'personal_complications_prenatal', 'personal_complications_natal', 'personal_complications_postnatal',
+    //         'development_weaning_age', 'development_first_words', 'development_three_words', 'development_walking',
+    //         'development_neurotic_traits', 'development_nail_biting', 'development_bedwetting', 'development_phobias',
+    //         'development_childhood_illness', 'provisional_diagnosis', 'treatment_plan', 'consultant_comments'
+    //       ];
 
-          // Extract only complex case fields for ADL file
-          const complexCaseData = {};
-          complexCaseFields.forEach(field => {
-            if (data[field] !== undefined && data[field] !== null && data[field] !== '') {
-              complexCaseData[field] = data[field];
-            }
-          });
+    //       // Extract only complex case fields for ADL file
+    //       const complexCaseData = {};
+    //       complexCaseFields.forEach(field => {
+    //         if (data[field] !== undefined && data[field] !== null && data[field] !== '') {
+    //           // Handle arrays - check if they have meaningful content
+    //           if (Array.isArray(data[field])) {
+    //             if (data[field].length > 0 && data[field].some(item => {
+    //               if (typeof item === 'object' && item !== null) {
+    //                 return Object.values(item).some(val => val !== '' && val !== null);
+    //               }
+    //               return item !== '' && item !== null;
+    //             })) {
+    //               complexCaseData[field] = data[field];
+    //             }
+    //           } else {
+    //             complexCaseData[field] = data[field];
+    //           }
+    //         }
+    //       });
 
-          // Generate ADL number
-          const adlNoResult = await supabaseAdmin
-            .from('adl_files')
-            .select('adl_no')
-            .like('adl_no', 'ADL-%')
-            .order('adl_no', { ascending: false })
-            .limit(1);
+    //       // ✅ STEP 1: Create ADL file FIRST (with NULL clinical_proforma_id initially)
+    //       let adlFile = null;
+    //       let adlFileId = null;
           
-          let nextAdlNo = 'ADL-000001';
-          if (adlNoResult.data && adlNoResult.data.length > 0) {
-            const lastNo = adlNoResult.data[0].adl_no;
-            const lastNum = parseInt(lastNo.replace('ADL-', '')) || 0;
-            nextAdlNo = `ADL-${String(lastNum + 1).padStart(6, '0')}`;
-          }
+    //       try {
+    //         // Generate ADL number
+    //         const adlNoResult = await supabaseAdmin
+    //           .from('adl_files')
+    //           .select('adl_no')
+    //           .like('adl_no', 'ADL-%')
+    //           .order('adl_no', { ascending: false })
+    //           .limit(1);
+            
+    //         let nextAdlNo = 'ADL-000001';
+    //         if (adlNoResult.data && adlNoResult.data.length > 0) {
+    //           const lastNo = adlNoResult.data[0].adl_no;
+    //           const lastNum = parseInt(lastNo.replace('ADL-', '')) || 0;
+    //           nextAdlNo = `ADL-${String(lastNum + 1).padStart(6, '0')}`;
+    //         }
 
-          // ✅ Step 1: Create Clinical Proforma first (contains all basic clinical data)
-          const clinicalData = {
-            patient_id: data.patient_id,
-            visit_date: data.visit_date,
-            visit_type: data.visit_type,
-            room_no: data.room_no,
-            assigned_doctor: data.assigned_doctor,
-            filled_by: req.user.id,
-            informant_present: data.informant_present,
-            nature_of_information: data.nature_of_information,
-            onset_duration: data.onset_duration,
-            course: data.course,
-            precipitating_factor: data.precipitating_factor,
-            illness_duration: data.illness_duration,
-            current_episode_since: data.current_episode_since,
-            mood: data.mood,
-            behaviour: data.behaviour,
-            speech: data.speech,
-            thought: data.thought,
-            perception: data.perception,
-            somatic: data.somatic,
-            bio_functions: data.bio_functions,
-            adjustment: data.adjustment,
-            cognitive_function: data.cognitive_function,
-            fits: data.fits,
-            sexual_problem: data.sexual_problem,
-            substance_use: data.substance_use,
-            past_history: data.past_history,
-            family_history: data.family_history,
-            associated_medical_surgical: data.associated_medical_surgical,
-            mse_behaviour: data.mse_behaviour,
-            mse_affect: data.mse_affect,
-            mse_thought: data.mse_thought,
-            mse_delusions: data.mse_delusions,
-            mse_perception: data.mse_perception,
-            mse_cognitive_function: data.mse_cognitive_function,
-            gpe: data.gpe,
-            diagnosis: data.diagnosis,
-            icd_code: data.icd_code,
-            disposal: data.disposal,
-            workup_appointment: data.workup_appointment,
-            referred_to: data.referred_to,
-            treatment_prescribed: data.treatment_prescribed,
-            doctor_decision: data.doctor_decision,
-            case_severity: data.case_severity,
-            requires_adl_file: true,
-            adl_reasoning: data.adl_reasoning,
-          };
+    //         // ✅ Prepare ADL data matching the schema exactly
+    //         // JSONB fields need to be arrays (Supabase will handle JSONB conversion automatically)
+    //         const adlData = {
+    //           // Basic ADL file fields (from schema)
+    //           patient_id: data.patient_id,
+    //           adl_no: nextAdlNo,
+    //           created_by: req.user.id,
+    //           clinical_proforma_id: null, // Will be updated after clinical_proforma is created
+    //           file_status: 'created',
+    //           file_created_date: data.visit_date || new Date().toISOString().split('T')[0],
+    //           total_visits: 1,
+    //           is_active: true,
+    //           // Complex case fields (all ADL-specific fields from schema)
+    //           ...complexCaseData
+    //         };
+            
+    //         // ✅ Ensure JSONB fields are properly formatted (arrays for Supabase)
+    //         // Supabase automatically converts JavaScript arrays/objects to JSONB
+    //         const jsonbFields = ['informants', 'complaints_patient', 'complaints_informant', 
+    //           'family_history_siblings', 'premorbid_personality_traits', 'occupation_jobs', 
+    //           'sexual_children', 'living_residents', 'living_inlaws'];
+            
+    //         jsonbFields.forEach(field => {
+    //           if (adlData[field] !== undefined && adlData[field] !== null) {
+    //             // Ensure it's an array (Supabase will convert to JSONB)
+    //             if (!Array.isArray(adlData[field])) {
+    //               // If it's a string, try to parse it
+    //               if (typeof adlData[field] === 'string') {
+    //                 try {
+    //                   adlData[field] = JSON.parse(adlData[field]);
+    //                 } catch {
+    //                   adlData[field] = [];
+    //                 }
+    //               } else {
+    //                 adlData[field] = [];
+    //               }
+    //             }
+    //           } else {
+    //             // Set default empty array for JSONB fields if not provided
+    //             adlData[field] = [];
+    //           }
+    //         });
 
-          const clinicalRecord = await ClinicalController.createRecord("clinical_proforma", clinicalData);
+    //         adlFile = await ClinicalController.createRecord("adl_files", adlData);
+    //         adlFileId = adlFile.id;
+    //         console.log(`[createClinicalProforma] ✅ Step 1: Created ADL file ${adlFileId} (${adlFile.adl_no})`);
+    //       } catch (adlError) {
+    //         console.error('[createClinicalProforma] ❌ Step 1: Failed to create ADL file:', adlError);
+    //         throw new Error(`Failed to create ADL file: ${adlError.message}`);
+    //       }
 
-          // ✅ Step 2: Create ADL file with complex case data only
-          const adlData = {
-            patient_id: data.patient_id,
-            adl_no: nextAdlNo,
-            created_by: req.user.id,
-            clinical_proforma_id: clinicalRecord.id,
-            file_status: 'created',
-            file_created_date: data.visit_date || new Date().toISOString().split('T')[0],
-            total_visits: 1,
-            is_active: true,
-            ...complexCaseData // Only complex case fields
-          };
+    //       // ✅ STEP 2: Create Clinical Proforma with adl_file_id reference
+    //       // IMPORTANT: Only include fields that exist in clinical_proforma schema
+    //       // ADL-specific fields (history_narrative, informants, physical_appearance, etc.) are NOT included here
+    //       let clinicalRecord = null;
+    //       try {
+    //         // ✅ Build clinical_data object matching the schema exactly
+    //         // Exclude all ADL-specific fields - they belong only in adl_files table
+    //         const clinicalData = {
+    //           // Core fields
+    //           patient_id: data.patient_id,
+    //           filled_by: req.user.id,
+    //           visit_date: data.visit_date,
+    //           visit_type: data.visit_type || 'first_visit',
+    //           room_no: data.room_no,
+    //           assigned_doctor: data.assigned_doctor,
+    //           // History fields (basic, not ADL-extended)
+    //           informant_present: data.informant_present,
+    //           nature_of_information: data.nature_of_information,
+    //           onset_duration: data.onset_duration,
+    //           course: data.course,
+    //           precipitating_factor: data.precipitating_factor,
+    //           illness_duration: data.illness_duration,
+    //           current_episode_since: data.current_episode_since,
+    //           // Basic clinical fields
+    //           mood: data.mood,
+    //           behaviour: data.behaviour,
+    //           speech: data.speech,
+    //           thought: data.thought,
+    //           perception: data.perception,
+    //           somatic: data.somatic,
+    //           bio_functions: data.bio_functions,
+    //           adjustment: data.adjustment,
+    //           cognitive_function: data.cognitive_function,
+    //           fits: data.fits,
+    //           sexual_problem: data.sexual_problem,
+    //           substance_use: data.substance_use,
+    //           past_history: data.past_history, // Basic past history, not ADL-extended
+    //           family_history: data.family_history, // Basic family history, not ADL-extended
+    //           associated_medical_surgical: data.associated_medical_surgical,
+    //           // MSE fields (basic, not ADL-extended)
+    //           mse_behaviour: data.mse_behaviour,
+    //           mse_affect: data.mse_affect,
+    //           mse_thought: data.mse_thought,
+    //           mse_delusions: data.mse_delusions,
+    //           mse_perception: data.mse_perception,
+    //           mse_cognitive_function: data.mse_cognitive_function,
+    //           // Examination and diagnosis
+    //           gpe: data.gpe,
+    //           diagnosis: data.diagnosis,
+    //           icd_code: data.icd_code,
+    //           disposal: data.disposal,
+    //           workup_appointment: data.workup_appointment,
+    //           referred_to: data.referred_to,
+    //           treatment_prescribed: data.treatment_prescribed,
+    //           // Decision and ADL flags
+    //           doctor_decision: data.doctor_decision,
+    //           case_severity: data.case_severity,
+    //           requires_adl_file: true,
+    //           adl_reasoning: data.adl_reasoning,
+    //           // ✅ Foreign key reference to ADL file (matches schema)
+    //           adl_file_id: adlFileId,
+    //           // Prescriptions (JSONB array)
+    //           prescriptions: data.prescriptions || []
+    //         };
+            
+    //         // ✅ Remove any ADL-specific fields that might have been accidentally included
+    //         // These fields should NOT be in clinical_proforma table
+    //         const adlFieldsToRemove = [
+    //           'history_narrative', 'history_specific_enquiry', 'history_drug_intake',
+    //           'history_treatment_place', 'history_treatment_dates', 'history_treatment_drugs', 'history_treatment_response',
+    //           'informants', 'complaints_patient', 'complaints_informant',
+    //           'past_history_medical', 'past_history_psychiatric_dates', 'past_history_psychiatric_diagnosis',
+    //           'past_history_psychiatric_treatment', 'past_history_psychiatric_interim', 'past_history_psychiatric_recovery',
+    //           'family_history_father_age', 'family_history_father_education', 'family_history_father_occupation',
+    //           'family_history_father_personality', 'family_history_father_deceased', 'family_history_father_death_age',
+    //           'family_history_father_death_date', 'family_history_father_death_cause',
+    //           'family_history_mother_age', 'family_history_mother_education', 'family_history_mother_occupation',
+    //           'family_history_mother_personality', 'family_history_mother_deceased', 'family_history_mother_death_age',
+    //           'family_history_mother_death_date', 'family_history_mother_death_cause', 'family_history_siblings',
+    //           'diagnostic_formulation_summary', 'diagnostic_formulation_features', 'diagnostic_formulation_psychodynamic',
+    //           'premorbid_personality_passive_active', 'premorbid_personality_assertive', 'premorbid_personality_introvert_extrovert',
+    //           'premorbid_personality_traits', 'premorbid_personality_hobbies', 'premorbid_personality_habits', 'premorbid_personality_alcohol_drugs',
+    //           'physical_appearance', 'physical_body_build', 'physical_pallor', 'physical_icterus', 'physical_oedema', 'physical_lymphadenopathy',
+    //           'physical_pulse', 'physical_bp', 'physical_height', 'physical_weight', 'physical_waist', 'physical_fundus',
+    //           'physical_cvs_apex', 'physical_cvs_regularity', 'physical_cvs_heart_sounds', 'physical_cvs_murmurs',
+    //           'physical_chest_expansion', 'physical_chest_percussion', 'physical_chest_adventitious',
+    //           'physical_abdomen_tenderness', 'physical_abdomen_mass', 'physical_abdomen_bowel_sounds',
+    //           'physical_cns_cranial', 'physical_cns_motor_sensory', 'physical_cns_rigidity', 'physical_cns_involuntary',
+    //           'physical_cns_superficial_reflexes', 'physical_cns_dtrs', 'physical_cns_plantar', 'physical_cns_cerebellar',
+    //           'mse_general_demeanour', 'mse_general_tidy', 'mse_general_awareness', 'mse_general_cooperation',
+    //           'mse_psychomotor_verbalization', 'mse_psychomotor_pressure', 'mse_psychomotor_tension', 'mse_psychomotor_posture',
+    //           'mse_psychomotor_mannerism', 'mse_psychomotor_catatonic', 'mse_affect_subjective', 'mse_affect_tone',
+    //           'mse_affect_resting', 'mse_affect_fluctuation', 'mse_thought_flow', 'mse_thought_form', 'mse_thought_content',
+    //           'mse_cognitive_consciousness', 'mse_cognitive_orientation_time', 'mse_cognitive_orientation_place',
+    //           'mse_cognitive_orientation_person', 'mse_cognitive_memory_immediate', 'mse_cognitive_memory_recent',
+    //           'mse_cognitive_memory_remote', 'mse_cognitive_subtraction', 'mse_cognitive_digit_span', 'mse_cognitive_counting',
+    //           'mse_cognitive_general_knowledge', 'mse_cognitive_calculation', 'mse_cognitive_similarities', 'mse_cognitive_proverbs',
+    //           'mse_insight_understanding', 'mse_insight_judgement',
+    //           'education_start_age', 'education_highest_class', 'education_performance', 'education_disciplinary',
+    //           'education_peer_relationship', 'education_hobbies', 'education_special_abilities', 'education_discontinue_reason',
+    //           'occupation_jobs', 'sexual_menarche_age', 'sexual_menarche_reaction', 'sexual_education', 'sexual_masturbation',
+    //           'sexual_contact', 'sexual_premarital_extramarital', 'sexual_marriage_arranged', 'sexual_marriage_date',
+    //           'sexual_spouse_age', 'sexual_spouse_occupation', 'sexual_adjustment_general', 'sexual_adjustment_sexual',
+    //           'sexual_children', 'sexual_problems', 'religion_type', 'religion_participation', 'religion_changes',
+    //           'living_residents', 'living_income_sharing', 'living_expenses', 'living_kitchen', 'living_domestic_conflicts',
+    //           'living_social_class', 'living_inlaws', 'home_situation_childhood', 'home_situation_parents_relationship',
+    //           'home_situation_socioeconomic', 'home_situation_interpersonal', 'personal_birth_date', 'personal_birth_place',
+    //           'personal_delivery_type', 'personal_complications_prenatal', 'personal_complications_natal', 'personal_complications_postnatal',
+    //           'development_weaning_age', 'development_first_words', 'development_three_words', 'development_walking',
+    //           'development_neurotic_traits', 'development_nail_biting', 'development_bedwetting', 'development_phobias',
+    //           'development_childhood_illness', 'provisional_diagnosis', 'treatment_plan', 'consultant_comments'
+    //         ];
+            
+    //         // Remove any ADL fields that might have been accidentally included
+    //         adlFieldsToRemove.forEach(field => {
+    //           delete clinicalData[field];
+    //         });
 
-          const adlFile = await ClinicalController.createRecord("adl_files", adlData);
+    //         clinicalRecord = await ClinicalController.createRecord("clinical_proforma", clinicalData);
+    //         console.log(`[createClinicalProforma] ✅ Step 2: Created Clinical Proforma ${clinicalRecord.id} with adl_file_id: ${adlFileId}`);
+    //       } catch (clinicalError) {
+    //         console.error('[createClinicalProforma] ❌ Step 2: Failed to create Clinical Proforma. Rolling back ADL file...');
+    //         // ✅ ROLLBACK: Delete ADL file if clinical_proforma creation fails
+    //         try {
+    //           await supabaseAdmin
+    //             .from('adl_files')
+    //             .delete()
+    //             .eq('id', adlFileId);
+    //           console.log(`[createClinicalProforma] ✅ Rollback: Deleted ADL file ${adlFileId}`);
+    //         } catch (rollbackError) {
+    //           console.error('[createClinicalProforma] ❌ Rollback failed:', rollbackError);
+    //         }
+    //         throw new Error(`Failed to create Clinical Proforma: ${clinicalError.message}`);
+    //       }
 
-          // ✅ Step 3: Update clinical_proforma with adl_file_id reference
-          await supabaseAdmin
-            .from('clinical_proforma')
-            .update({ adl_file_id: adlFile.id })
-            .eq('id', clinicalRecord.id);
+    //       // ✅ STEP 3: Update ADL file with clinical_proforma_id (bidirectional link)
+    //       try {
+    //         await supabaseAdmin
+    //           .from('adl_files')
+    //           .update({ clinical_proforma_id: clinicalRecord.id })
+    //           .eq('id', adlFileId);
+    //         console.log(`[createClinicalProforma] ✅ Step 3: Updated ADL file ${adlFileId} with clinical_proforma_id: ${clinicalRecord.id}`);
+    //       } catch (updateError) {
+    //         console.error('[createClinicalProforma] ⚠️ Step 3: Failed to update ADL file with clinical_proforma_id. Link is still valid via adl_file_id in clinical_proforma.');
+    //         // Non-critical error - the link is already established via adl_file_id
+    //       }
 
-          // Refresh clinical record
-          const updatedClinical = await supabaseAdmin
-            .from('clinical_proforma')
-            .select('*')
-            .eq('id', clinicalRecord.id)
-            .single();
+    //       // Refresh clinical record to get latest data
+    //       const updatedClinical = await supabaseAdmin
+    //         .from('clinical_proforma')
+    //         .select('*')
+    //         .eq('id', clinicalRecord.id)
+    //         .single();
 
-          // Handle prescriptions if provided
-          let createdPrescriptions = [];
-          if (data.prescriptions && Array.isArray(data.prescriptions) && data.prescriptions.length > 0) {
-            try {
-              const prescriptionsWithProformaId = data.prescriptions.map(prescription => ({
-                ...prescription,
-                clinical_proforma_id: clinicalRecord.id
-              }));
-              createdPrescriptions = await Prescription.createBulk(prescriptionsWithProformaId);
-            } catch (prescriptionError) {
-              console.error('Failed to create prescriptions:', prescriptionError);
-              // Don't fail the entire request, just log the error
-            }
-          }
+    //       // Refresh ADL file to get latest data (including clinical_proforma_id)
+    //       const updatedAdlFile = await supabaseAdmin
+    //         .from('adl_files')
+    //         .select('*')
+    //         .eq('id', adlFileId)
+    //         .single();
 
-          return res.status(201).json({
-            success: true,
-            message: "Complex case with ADL file saved successfully",
-            data: { 
-              clinical: updatedClinical.data || clinicalRecord, 
-              adl: adlFile,
-              prescriptions: createdPrescriptions.length > 0 ? {
-                count: createdPrescriptions.length,
-                prescriptions: createdPrescriptions
-              } : null
-            },
-          });
-        }
+    //       // Handle prescriptions if provided
+    //       let createdPrescriptions = [];
+    //       if (data.prescriptions && Array.isArray(data.prescriptions) && data.prescriptions.length > 0) {
+    //         try {
+    //           const prescriptionsWithProformaId = data.prescriptions.map(prescription => ({
+    //             ...prescription,
+    //             clinical_proforma_id: clinicalRecord.id
+    //           }));
+    //           createdPrescriptions = await Prescription.createBulk(prescriptionsWithProformaId);
+    //         } catch (prescriptionError) {
+    //           console.error('Failed to create prescriptions:', prescriptionError);
+    //           // Don't fail the entire request, just log the error
+    //         }
+    //       }
+
+    //       return res.status(201).json({
+    //         success: true,
+    //         message: "Complex case with ADL file saved successfully",
+    //         data: { 
+    //           proforma: updatedClinical.data || clinicalRecord,
+    //           clinical: updatedClinical.data || clinicalRecord, // Keep both for compatibility
+    //           adl_file: updatedAdlFile.data ? {
+    //             id: updatedAdlFile.data.id,
+    //             adl_no: updatedAdlFile.data.adl_no,
+    //             clinical_proforma_id: updatedAdlFile.data.clinical_proforma_id,
+    //             created: true,
+    //             message: 'ADL file created and linked successfully'
+    //           } : {
+    //             id: adlFile.id,
+    //             adl_no: adlFile.adl_no,
+    //             created: true,
+    //             message: 'ADL file created and linked successfully'
+    //           },
+    //           adl: updatedAdlFile.data || adlFile, // Keep both for compatibility
+    //           prescriptions: createdPrescriptions.length > 0 ? {
+    //             count: createdPrescriptions.length,
+    //             prescriptions: createdPrescriptions
+    //           } : null
+    //         },
+    //       });
+    //     }
   
-        // 🔹 Simple Case (no ADL) - All clinical data goes to clinical_proforma only
+    //     // 🔹 Simple Case (no ADL) - All clinical data goes to clinical_proforma only
+    //     const clinicalData = {
+    //       patient_id: data.patient_id,
+    //       visit_date: data.visit_date,
+    //       visit_type: data.visit_type,
+    //       room_no: data.room_no,
+    //       assigned_doctor: data.assigned_doctor,
+    //       filled_by: req.user.id,
+    //       informant_present: data.informant_present,
+    //       nature_of_information: data.nature_of_information,
+    //       onset_duration: data.onset_duration,
+    //       course: data.course,
+    //       precipitating_factor: data.precipitating_factor,
+    //       illness_duration: data.illness_duration,
+    //       current_episode_since: data.current_episode_since,
+    //       mood: data.mood,
+    //       behaviour: data.behaviour,
+    //       speech: data.speech,
+    //       thought: data.thought,
+    //       perception: data.perception,
+    //       somatic: data.somatic,
+    //       bio_functions: data.bio_functions,
+    //       adjustment: data.adjustment,
+    //       cognitive_function: data.cognitive_function,
+    //       fits: data.fits,
+    //       sexual_problem: data.sexual_problem,
+    //       substance_use: data.substance_use,
+    //       past_history: data.past_history,
+    //       family_history: data.family_history,
+    //       associated_medical_surgical: data.associated_medical_surgical,
+    //       mse_behaviour: data.mse_behaviour,
+    //       mse_affect: data.mse_affect,
+    //       mse_thought: data.mse_thought,
+    //       mse_delusions: data.mse_delusions,
+    //       mse_perception: data.mse_perception,
+    //       mse_cognitive_function: data.mse_cognitive_function,
+    //       gpe: data.gpe,
+    //       diagnosis: data.diagnosis,
+    //       icd_code: data.icd_code,
+    //       disposal: data.disposal,
+    //       workup_appointment: data.workup_appointment,
+    //       referred_to: data.referred_to,
+    //       treatment_prescribed: data.treatment_prescribed,
+    //       doctor_decision: data.doctor_decision,
+    //       case_severity: data.case_severity,
+    //       requires_adl_file: false,
+    //       adl_file_id: null,
+    //       adl_reasoning: data.adl_reasoning,
+    //     };
+  
+    //     const simpleClinical = await ClinicalController.createRecord("clinical_proforma", clinicalData);
+
+    //     // Handle prescriptions if provided
+    //     let createdPrescriptions = [];
+    //     if (data.prescriptions && Array.isArray(data.prescriptions) && data.prescriptions.length > 0) {
+    //       try {
+    //         const prescriptionsWithProformaId = data.prescriptions.map(prescription => ({
+    //           ...prescription,
+    //           clinical_proforma_id: simpleClinical.id
+    //         }));
+    //         createdPrescriptions = await Prescription.createBulk(prescriptionsWithProformaId);
+    //       } catch (prescriptionError) {
+    //         console.error('Failed to create prescriptions:', prescriptionError);
+    //         // Don't fail the entire request, just log the error
+    //       }
+    //     }
+  
+    //     return res.status(201).json({
+    //       success: true,
+    //       message: "Simple Clinical Proforma saved successfully",
+    //       data: {
+    //         proforma: simpleClinical,
+    //         clinical: simpleClinical, // Keep both for compatibility
+    //         prescriptions: createdPrescriptions.length > 0 ? {
+    //           count: createdPrescriptions.length,
+    //           prescriptions: createdPrescriptions
+    //         } : null
+    //       },
+    //     });
+    //   } catch (err) {
+    //     console.error("Unhandled Error:", err);
+    //     return res.status(500).json({
+    //       success: false,
+    //       message: err.message || "Server Error",
+    //     });
+    //   }
+    // }
+  
+
+    // At the top of your controller file, make sure ADLFile is imported
+
+
+// ... rest of imports ...
+
+static async createClinicalProforma(req, res) {
+  try {
+    const data = req.body;
+
+    // 🔹 Basic validation
+    if (!data.patient_id || !data.visit_date) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    // 🔹 Complex Case (with ADL) - Transaction-like atomicity
+    // When doctor_decision === 'complex_case', create ADL file and link bidirectionally
+    if (data.doctor_decision === "complex_case") {
+      // Ensure requires_adl_file is true for complex cases
+      if (data.requires_adl_file !== true && data.requires_adl_file !== "true") {
+        data.requires_adl_file = true;
+      }
+
+      // Extract complex case fields (ADL-specific fields only)
+      const complexCaseFields = [
+        'history_narrative', 'history_specific_enquiry', 'history_drug_intake',
+        'history_treatment_place', 'history_treatment_dates', 'history_treatment_drugs', 'history_treatment_response',
+        'informants', 'complaints_patient', 'complaints_informant',
+        'past_history_medical', 'past_history_psychiatric_dates', 'past_history_psychiatric_diagnosis',
+        'past_history_psychiatric_treatment', 'past_history_psychiatric_interim', 'past_history_psychiatric_recovery',
+        'family_history_father_age', 'family_history_father_education', 'family_history_father_occupation',
+        'family_history_father_personality', 'family_history_father_deceased', 'family_history_father_death_age',
+        'family_history_father_death_date', 'family_history_father_death_cause',
+        'family_history_mother_age', 'family_history_mother_education', 'family_history_mother_occupation',
+        'family_history_mother_personality', 'family_history_mother_deceased', 'family_history_mother_death_age',
+        'family_history_mother_death_date', 'family_history_mother_death_cause', 'family_history_siblings',
+        'diagnostic_formulation_summary', 'diagnostic_formulation_features', 'diagnostic_formulation_psychodynamic',
+        'premorbid_personality_passive_active', 'premorbid_personality_assertive', 'premorbid_personality_introvert_extrovert',
+        'premorbid_personality_traits', 'premorbid_personality_hobbies', 'premorbid_personality_habits', 'premorbid_personality_alcohol_drugs',
+        'physical_appearance', 'physical_body_build', 'physical_pallor', 'physical_icterus', 'physical_oedema', 'physical_lymphadenopathy',
+        'physical_pulse', 'physical_bp', 'physical_height', 'physical_weight', 'physical_waist', 'physical_fundus',
+        'physical_cvs_apex', 'physical_cvs_regularity', 'physical_cvs_heart_sounds', 'physical_cvs_murmurs',
+        'physical_chest_expansion', 'physical_chest_percussion', 'physical_chest_adventitious',
+        'physical_abdomen_tenderness', 'physical_abdomen_mass', 'physical_abdomen_bowel_sounds',
+        'physical_cns_cranial', 'physical_cns_motor_sensory', 'physical_cns_rigidity', 'physical_cns_involuntary',
+        'physical_cns_superficial_reflexes', 'physical_cns_dtrs', 'physical_cns_plantar', 'physical_cns_cerebellar',
+        'mse_general_demeanour', 'mse_general_tidy', 'mse_general_awareness', 'mse_general_cooperation',
+        'mse_psychomotor_verbalization', 'mse_psychomotor_pressure', 'mse_psychomotor_tension', 'mse_psychomotor_posture',
+        'mse_psychomotor_mannerism', 'mse_psychomotor_catatonic', 'mse_affect_subjective', 'mse_affect_tone',
+        'mse_affect_resting', 'mse_affect_fluctuation', 'mse_thought_flow', 'mse_thought_form', 'mse_thought_content',
+        'mse_cognitive_consciousness', 'mse_cognitive_orientation_time', 'mse_cognitive_orientation_place',
+        'mse_cognitive_orientation_person', 'mse_cognitive_memory_immediate', 'mse_cognitive_memory_recent',
+        'mse_cognitive_memory_remote', 'mse_cognitive_subtraction', 'mse_cognitive_digit_span', 'mse_cognitive_counting',
+        'mse_cognitive_general_knowledge', 'mse_cognitive_calculation', 'mse_cognitive_similarities', 'mse_cognitive_proverbs',
+        'mse_insight_understanding', 'mse_insight_judgement',
+        'education_start_age', 'education_highest_class', 'education_performance', 'education_disciplinary',
+        'education_peer_relationship', 'education_hobbies', 'education_special_abilities', 'education_discontinue_reason',
+        'occupation_jobs', 'sexual_menarche_age', 'sexual_menarche_reaction', 'sexual_education', 'sexual_masturbation',
+        'sexual_contact', 'sexual_premarital_extramarital', 'sexual_marriage_arranged', 'sexual_marriage_date',
+        'sexual_spouse_age', 'sexual_spouse_occupation', 'sexual_adjustment_general', 'sexual_adjustment_sexual',
+        'sexual_children', 'sexual_problems', 'religion_type', 'religion_participation', 'religion_changes',
+        'living_residents', 'living_income_sharing', 'living_expenses', 'living_kitchen', 'living_domestic_conflicts',
+        'living_social_class', 'living_inlaws', 'home_situation_childhood', 'home_situation_parents_relationship',
+        'home_situation_socioeconomic', 'home_situation_interpersonal', 'personal_birth_date', 'personal_birth_place',
+        'personal_delivery_type', 'personal_complications_prenatal', 'personal_complications_natal', 'personal_complications_postnatal',
+        'development_weaning_age', 'development_first_words', 'development_three_words', 'development_walking',
+        'development_neurotic_traits', 'development_nail_biting', 'development_bedwetting', 'development_phobias',
+        'development_childhood_illness', 'provisional_diagnosis', 'treatment_plan', 'consultant_comments'
+      ];
+
+      // Extract complex case fields for ADL file
+      const complexCaseData = {};
+      complexCaseFields.forEach(field => {
+        if (data.hasOwnProperty(field) && data[field] !== undefined && data[field] !== null) {
+          complexCaseData[field] = data[field];
+        }
+      });
+
+      // ✅ TRANSACTION-LIKE FLOW: Create clinical_proforma, then ADL file, then update clinical_proforma
+      // This ensures atomicity with rollback on failure
+      let clinicalRecord = null;
+      let adlFile = null;
+      
+      try {
+        // STEP 1: Create clinical_proforma (adl_file_id will be null initially)
         const clinicalData = {
           patient_id: data.patient_id,
+          filled_by: req.user.id,
           visit_date: data.visit_date,
-          visit_type: data.visit_type,
+          visit_type: data.visit_type || 'first_visit',
           room_no: data.room_no,
           assigned_doctor: data.assigned_doctor,
-          filled_by: req.user.id,
           informant_present: data.informant_present,
           nature_of_information: data.nature_of_information,
           onset_duration: data.onset_duration,
@@ -577,12 +915,109 @@ class ClinicalController {
           treatment_prescribed: data.treatment_prescribed,
           doctor_decision: data.doctor_decision,
           case_severity: data.case_severity,
-          requires_adl_file: false,
-          adl_file_id: null,
+          requires_adl_file: true,
           adl_reasoning: data.adl_reasoning,
+          adl_file_id: null // Will be set after ADL file creation
         };
-  
-        const simpleClinical = await ClinicalController.createRecord("clinical_proforma", clinicalData);
+
+        clinicalRecord = await ClinicalController.createRecord("clinical_proforma", clinicalData);
+        console.log(`[createClinicalProforma] ✅ Step 1: Created Clinical Proforma ${clinicalRecord.id}`);
+
+        // STEP 2: Create or reuse ADL file
+        // Check if ADL file already exists for this clinical_proforma (shouldn't happen on create, but handle gracefully)
+        let existingAdlFile = null;
+        if (clinicalRecord.adl_file_id) {
+          try {
+            existingAdlFile = await ADLFile.findById(clinicalRecord.adl_file_id);
+            if (existingAdlFile) {
+              console.log(`[createClinicalProforma] ⚠️ ADL file ${existingAdlFile.id} already exists, reusing it`);
+            }
+          } catch (err) {
+            console.warn(`[createClinicalProforma] Could not fetch existing ADL file: ${err.message}`);
+          }
+        }
+
+        if (!existingAdlFile) {
+          // Generate ADL number
+          const adlNoResult = await supabaseAdmin
+            .from('adl_files')
+            .select('adl_no')
+            .like('adl_no', 'ADL-%')
+            .order('adl_no', { ascending: false })
+            .limit(1);
+          
+          let nextAdlNo = 'ADL-000001';
+          if (adlNoResult.data && adlNoResult.data.length > 0) {
+            const lastNo = adlNoResult.data[0].adl_no;
+            const lastNum = parseInt(lastNo.replace('ADL-', '')) || 0;
+            nextAdlNo = `ADL-${String(lastNum + 1).padStart(6, '0')}`;
+          }
+
+          // Prepare ADL data with complex case fields
+          const adlData = {
+            patient_id: data.patient_id,
+            adl_no: nextAdlNo,
+            created_by: req.user.id,
+            clinical_proforma_id: clinicalRecord.id, // ✅ Link to clinical_proforma
+            file_status: 'created',
+            file_created_date: data.visit_date || new Date().toISOString().split('T')[0],
+            total_visits: 1,
+            is_active: true,
+            ...complexCaseData // All ADL-specific fields
+          };
+
+          // Ensure JSONB fields are arrays
+          const jsonbFields = ['informants', 'complaints_patient', 'complaints_informant', 
+            'family_history_siblings', 'premorbid_personality_traits', 'occupation_jobs', 
+            'sexual_children', 'living_residents', 'living_inlaws'];
+          
+          jsonbFields.forEach(field => {
+            if (adlData[field] !== undefined && adlData[field] !== null) {
+              if (!Array.isArray(adlData[field])) {
+                if (typeof adlData[field] === 'string') {
+                  try {
+                    adlData[field] = JSON.parse(adlData[field]);
+                  } catch {
+                    adlData[field] = [];
+                  }
+                } else {
+                  adlData[field] = [];
+                }
+              }
+            } else {
+              adlData[field] = [];
+            }
+          });
+
+          adlFile = await ADLFile.create(adlData);
+          if (!adlFile || !adlFile.id) {
+            throw new Error('ADL file creation returned no ID');
+          }
+          console.log(`[createClinicalProforma] ✅ Step 2: Created ADL file ${adlFile.id} (${adlFile.adl_no})`);
+        } else {
+          adlFile = existingAdlFile;
+          console.log(`[createClinicalProforma] ✅ Step 2: Reusing existing ADL file ${adlFile.id}`);
+        }
+
+        // STEP 3: Update clinical_proforma with adl_file_id (bidirectional link)
+        const { error: updateError } = await supabaseAdmin
+          .from('clinical_proforma')
+          .update({ adl_file_id: adlFile.id })
+          .eq('id', clinicalRecord.id);
+
+        if (updateError) {
+          console.error(`[createClinicalProforma] ❌ Step 3: Failed to update adl_file_id:`, updateError);
+          throw new Error(`Failed to link ADL file: ${updateError.message}`);
+        }
+
+        console.log(`[createClinicalProforma] ✅ Step 3: Updated Clinical Proforma ${clinicalRecord.id} with adl_file_id: ${adlFile.id}`);
+
+        // Refresh clinical record to get updated adl_file_id
+        const { data: updatedClinical } = await supabaseAdmin
+          .from('clinical_proforma')
+          .select('*')
+          .eq('id', clinicalRecord.id)
+          .single();
 
         // Handle prescriptions if provided
         let createdPrescriptions = [];
@@ -590,35 +1025,137 @@ class ClinicalController {
           try {
             const prescriptionsWithProformaId = data.prescriptions.map(prescription => ({
               ...prescription,
-              clinical_proforma_id: simpleClinical.id
+              clinical_proforma_id: clinicalRecord.id
             }));
             createdPrescriptions = await Prescription.createBulk(prescriptionsWithProformaId);
           } catch (prescriptionError) {
-            console.error('Failed to create prescriptions:', prescriptionError);
-            // Don't fail the entire request, just log the error
+            console.error('[createClinicalProforma] Failed to create prescriptions:', prescriptionError);
           }
         }
-  
+
+        // ✅ Return combined response with both clinical_proforma and adl_file
         return res.status(201).json({
           success: true,
-          message: "Simple Clinical Proforma saved successfully",
+          message: "Complex case with ADL file saved successfully",
           data: {
-            proforma: simpleClinical,
-            prescriptions: createdPrescriptions.length > 0 ? {
-              count: createdPrescriptions.length,
-              prescriptions: createdPrescriptions
-            } : null
+            clinical_proforma: updatedClinical || clinicalRecord,
+            adl_file: adlFile.toJSON() // Full ADL file data for frontend to prefill Step 3
           },
+          prescriptions: createdPrescriptions.length > 0 ? {
+            count: createdPrescriptions.length,
+            prescriptions: createdPrescriptions
+          } : null
         });
-      } catch (err) {
-        console.error("Unhandled Error:", err);
+
+      } catch (error) {
+        console.error('[createClinicalProforma] ❌ Transaction failed:', error);
+        
+        // ✅ ROLLBACK: Delete clinical_proforma if it was created but ADL creation/linking failed
+        if (clinicalRecord && clinicalRecord.id && !adlFile) {
+          try {
+            await supabaseAdmin
+              .from('clinical_proforma')
+              .delete()
+              .eq('id', clinicalRecord.id);
+            console.log(`[createClinicalProforma] ✅ Rollback: Deleted Clinical Proforma ${clinicalRecord.id}`);
+          } catch (rollbackError) {
+            console.error('[createClinicalProforma] ❌ Rollback failed:', rollbackError);
+          }
+        }
+        
         return res.status(500).json({
           success: false,
-          message: err.message || "Server Error",
+          message: "Failed to handle ADL file for complex case",
+          error: error.message || "Internal server error"
         });
       }
     }
-  
+
+    // 🔹 Simple Case (no ADL)
+    const clinicalData = {
+      patient_id: data.patient_id,
+      visit_date: data.visit_date,
+      visit_type: data.visit_type,
+      room_no: data.room_no,
+      assigned_doctor: data.assigned_doctor,
+      filled_by: req.user.id,
+      informant_present: data.informant_present,
+      nature_of_information: data.nature_of_information,
+      onset_duration: data.onset_duration,
+      course: data.course,
+      precipitating_factor: data.precipitating_factor,
+      illness_duration: data.illness_duration,
+      current_episode_since: data.current_episode_since,
+      mood: data.mood,
+      behaviour: data.behaviour,
+      speech: data.speech,
+      thought: data.thought,
+      perception: data.perception,
+      somatic: data.somatic,
+      bio_functions: data.bio_functions,
+      adjustment: data.adjustment,
+      cognitive_function: data.cognitive_function,
+      fits: data.fits,
+      sexual_problem: data.sexual_problem,
+      substance_use: data.substance_use,
+      past_history: data.past_history,
+      family_history: data.family_history,
+      associated_medical_surgical: data.associated_medical_surgical,
+      mse_behaviour: data.mse_behaviour,
+      mse_affect: data.mse_affect,
+      mse_thought: data.mse_thought,
+      mse_delusions: data.mse_delusions,
+      mse_perception: data.mse_perception,
+      mse_cognitive_function: data.mse_cognitive_function,
+      gpe: data.gpe,
+      diagnosis: data.diagnosis,
+      icd_code: data.icd_code,
+      disposal: data.disposal,
+      workup_appointment: data.workup_appointment,
+      referred_to: data.referred_to,
+      treatment_prescribed: data.treatment_prescribed,
+      doctor_decision: data.doctor_decision,
+      case_severity: data.case_severity,
+      requires_adl_file: false,
+      adl_file_id: null,
+      adl_reasoning: data.adl_reasoning,
+    };
+
+    const simpleClinical = await ClinicalController.createRecord("clinical_proforma", clinicalData);
+
+    // Handle prescriptions
+    let createdPrescriptions = [];
+    if (data.prescriptions && Array.isArray(data.prescriptions) && data.prescriptions.length > 0) {
+      try {
+        const prescriptionsWithProformaId = data.prescriptions.map(prescription => ({
+          ...prescription,
+          clinical_proforma_id: simpleClinical.id
+        }));
+        createdPrescriptions = await Prescription.createBulk(prescriptionsWithProformaId);
+      } catch (prescriptionError) {
+        console.error('Failed to create prescriptions:', prescriptionError);
+      }
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Simple Clinical Proforma saved successfully",
+      data: {
+        proforma: simpleClinical,
+        prescriptions: createdPrescriptions.length > 0 ? {
+          count: createdPrescriptions.length,
+          prescriptions: createdPrescriptions
+        } : null
+      },
+    });
+  } catch (err) {
+    console.error("❌ Unhandled Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Server Error",
+    });
+  }
+}
   
  
   static async getAllClinicalProformas(req, res) {
@@ -792,10 +1329,10 @@ class ClinicalController {
                                      proforma.doctor_decision !== 'complex_case';
       const isComplexCase = proformaUpdateData.doctor_decision === 'complex_case' || proforma.doctor_decision === 'complex_case';
       
-      // Check requires_adl_file flag
-      const requiresADLFile = proformaUpdateData.requires_adl_file !== undefined 
-                                ? proformaUpdateData.requires_adl_file 
-                                : proforma.requires_adl_file;
+      // Ensure requires_adl_file is true for complex cases
+      if (isComplexCase && proformaUpdateData.requires_adl_file !== true && proformaUpdateData.requires_adl_file !== "true") {
+        proformaUpdateData.requires_adl_file = true;
+      }
       
       // Handle ADL file separately (don't pass to model's update method)
       // Remove complexCaseData from updateData to prevent model from trying to handle it
@@ -804,29 +1341,34 @@ class ClinicalController {
       // Update the clinical proforma (without ADL data)
       await proforma.update(proformaUpdateData);
 
-      // Handle ADL file separately if complex case
-      let adlFileUpdated = false;
-      let adlUpdateMessage = null;
+      // ✅ Handle ADL file creation/update if complex case
       let adlFile = null;
+      let adlFileUpdated = false;
 
-      if (isComplexCase && requiresADLFile === true && Object.keys(complexCaseData).length > 0) {
+      if (isComplexCase) {
         try {
-          // If ADL file exists, update it
+          // Check if ADL file already exists for this clinical_proforma
           if (proforma.adl_file_id) {
-            adlFile = await ADLFile.findById(proforma.adl_file_id);
-            if (adlFile) {
-              console.log(`[clinicalController.updateClinicalProforma] Updating existing ADL file ${adlFile.id}`);
-              await adlFile.update(complexCaseData);
-              adlFileUpdated = true;
-              adlUpdateMessage = 'ADL file updated successfully';
-            } else {
-              console.warn(`[clinicalController.updateClinicalProforma] ADL file ID ${proforma.adl_file_id} not found, creating new one`);
+            try {
+              adlFile = await ADLFile.findById(proforma.adl_file_id);
+              if (adlFile) {
+                console.log(`[updateClinicalProforma] ✅ Found existing ADL file ${adlFile.id}`);
+                
+                // If complex case data provided, update the ADL file
+                if (Object.keys(complexCaseData).length > 0) {
+                  await adlFile.update(complexCaseData);
+                  adlFileUpdated = true;
+                  console.log(`[updateClinicalProforma] ✅ Updated existing ADL file ${adlFile.id}`);
+                }
+              }
+            } catch (err) {
+              console.warn(`[updateClinicalProforma] Could not fetch existing ADL file: ${err.message}`);
             }
           }
           
           // Create new ADL file if it doesn't exist or changing to complex case
-          if (!adlFile && (!proforma.adl_file_id || changingToComplexCase)) {
-            // Generate ADL number using Supabase
+          if (!adlFile && (changingToComplexCase || !proforma.adl_file_id)) {
+            // Generate ADL number
             const adlNoResult = await supabaseAdmin
               .from('adl_files')
               .select('adl_no')
@@ -841,38 +1383,65 @@ class ClinicalController {
               nextAdlNo = `ADL-${String(lastNum + 1).padStart(6, '0')}`;
             }
 
+            // Prepare ADL data
             const adlData = {
               patient_id: proforma.patient_id,
               adl_no: nextAdlNo,
               created_by: proforma.filled_by,
-              clinical_proforma_id: proforma.id,
+              clinical_proforma_id: proforma.id, // ✅ Link to existing clinical_proforma
               file_status: 'created',
               file_created_date: proformaUpdateData.visit_date || proforma.visit_date || new Date().toISOString().split('T')[0],
               total_visits: 1,
               is_active: true,
-              ...complexCaseData
+              ...complexCaseData // All ADL-specific fields
             };
-
-            console.log(`[clinicalController.updateClinicalProforma] Creating new ADL file. ADL No: ${nextAdlNo}, Proforma ID: ${proforma.id}`);
             
-            // Use createRecord helper which uses Supabase
-            const newAdlFile = await ClinicalController.createRecord("adl_files", adlData);
+            // Ensure JSONB fields are arrays
+            const jsonbFields = ['informants', 'complaints_patient', 'complaints_informant', 
+              'family_history_siblings', 'premorbid_personality_traits', 'occupation_jobs', 
+              'sexual_children', 'living_residents', 'living_inlaws'];
+            
+            jsonbFields.forEach(field => {
+              if (adlData[field] !== undefined && adlData[field] !== null) {
+                if (!Array.isArray(adlData[field])) {
+                  if (typeof adlData[field] === 'string') {
+                    try {
+                      adlData[field] = JSON.parse(adlData[field]);
+                    } catch {
+                      adlData[field] = [];
+                    }
+                  } else {
+                    adlData[field] = [];
+                  }
+                }
+              } else {
+                adlData[field] = [];
+              }
+            });
 
-            // Update clinical proforma with ADL file reference
-            await supabaseAdmin
+            adlFile = await ADLFile.create(adlData);
+            if (!adlFile || !adlFile.id) {
+              throw new Error('ADL file creation returned no ID');
+            }
+
+            // ✅ Update clinical_proforma with adl_file_id (bidirectional link)
+            const { error: updateError } = await supabaseAdmin
               .from('clinical_proforma')
-              .update({ adl_file_id: newAdlFile.id })
+              .update({ adl_file_id: adlFile.id })
               .eq('id', proforma.id);
 
-            adlFile = newAdlFile;
+            if (updateError) {
+              console.error(`[updateClinicalProforma] ❌ Failed to update adl_file_id:`, updateError);
+              throw new Error(`Failed to link ADL file: ${updateError.message}`);
+            }
+
             adlFileUpdated = true;
-            adlUpdateMessage = 'ADL file created successfully';
-            console.log(`[clinicalController.updateClinicalProforma] Successfully created ADL file ${newAdlFile.id}`);
+            console.log(`[updateClinicalProforma] ✅ Created ADL file ${adlFile.id} and linked to clinical_proforma ${proforma.id}`);
           }
         } catch (adlError) {
-          console.error('[clinicalController.updateClinicalProforma] Error handling ADL file:', adlError);
+          console.error('[updateClinicalProforma] ❌ Error handling ADL file:', adlError);
           // Don't fail the entire update, but log the error
-          adlUpdateMessage = `Warning: Failed to handle ADL file: ${adlError.message}`;
+          // The clinical_proforma update already succeeded, so we continue
         }
       }
 
@@ -899,26 +1468,33 @@ class ClinicalController {
 
       // Refresh proforma to get latest data (including adl_file_id if updated)
       const updatedProforma = await ClinicalProforma.findById(proforma.id);
+      
+      // Refresh ADL file if it exists
+      if (adlFile && adlFile.id) {
+        try {
+          adlFile = await ADLFile.findById(adlFile.id);
+        } catch (err) {
+          console.warn(`[updateClinicalProforma] Could not refresh ADL file: ${err.message}`);
+        }
+      } else if (updatedProforma?.adl_file_id) {
+        try {
+          adlFile = await ADLFile.findById(updatedProforma.adl_file_id);
+        } catch (err) {
+          console.warn(`[updateClinicalProforma] Could not fetch ADL file: ${err.message}`);
+        }
+      }
 
+      // ✅ Return combined response matching createClinicalProforma format
       res.status(200).json({
         success: true,
         message: 'Clinical proforma updated successfully',
         data: {
-          proforma: updatedProforma ? updatedProforma.toJSON() : proforma.toJSON(),
+          clinical_proforma: updatedProforma ? updatedProforma.toJSON() : proforma.toJSON(),
+          adl_file: adlFile ? adlFile.toJSON() : null, // Full ADL file data for frontend
           prescriptions: updatedPrescriptions.length > 0 ? {
             count: updatedPrescriptions.length,
             prescriptions: updatedPrescriptions.map(p => p.toJSON())
-          } : null,
-          adl_file: adlFile ? {
-            id: adlFile.id,
-            adl_no: adlFile.adl_no,
-            updated: adlFileUpdated,
-            message: adlUpdateMessage || 'ADL file linked/updated for complex case'
-          } : (updatedProforma?.adl_file_id ? {
-            id: updatedProforma.adl_file_id,
-            updated: false,
-            message: 'ADL file exists but no complex case data provided to update'
-          } : null)
+          } : null
         }
       });
     } catch (error) {

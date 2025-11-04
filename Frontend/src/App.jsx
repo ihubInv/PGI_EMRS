@@ -23,6 +23,7 @@ import SelectExistingPatient from './pages/patients/SelectExistingPatient';
 // Clinical Proforma Pages
 import ClinicalProformaPage from './pages/clinical/ClinicalProformaPage';
 import CreateClinicalProforma from './pages/clinical/CreateClinicalProforma';
+import EditClinicalProforma from './pages/clinical/EditClinicalProforma';
 import ClinicalProformaDetails from './pages/clinical/ClinicalProformaDetails';
 import PrescribeMedication from './pages/clinical/PrescribeMedication';
 
@@ -108,7 +109,7 @@ function App() {
                 <Route path="/clinical-today-patients" element={<ClinicalTodayPatients />} />
                 <Route path="/clinical/prescribe-medication" element={<PrescribeMedication />} />
                 <Route path="/clinical/:id" element={<ClinicalProformaDetails />} />
-                <Route path="/clinical/:id/edit" element={<div>Edit Clinical Proforma</div>} />
+                <Route path="/clinical/:id/edit" element={<EditClinicalProforma />} />
               </Route>
 
               {/* Additional Detail File - JR, SR, and Admin */}

@@ -18,7 +18,7 @@ const ClinicalProformaDetails = () => {
   const [searchParams] = useSearchParams();
   const returnTab = searchParams.get('returnTab'); // Get returnTab from URL
 
-  const { data, isLoading } = useGetClinicalProformaByIdQuery(id);
+  const { data, isLoading, refetch } = useGetClinicalProformaByIdQuery(id);
   const [deleteProforma, { isLoading: isDeleting }] = useDeleteClinicalProformaMutation();
   
   // Fetch ADL file data if this is a complex case
@@ -31,15 +31,20 @@ const ClinicalProformaDetails = () => {
   const adlFile = adlFileData?.data?.file;
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this clinical proforma?')) {
+    if (window.confirm('Are you sure you want to delete this clinical proforma? This action cannot be undone.')) {
       try {
         await deleteProforma(id).unwrap();
         toast.success('Clinical proforma deleted successfully');
-        // Navigate back to Today Patients with preserved tab if returnTab exists
+        
+        // Force refetch the current query to ensure it's removed from cache
+        refetch();
+        
+        // Navigate back immediately - cache invalidation will handle the UI update
+        // Using replace: true to prevent back button from going to deleted page
         if (returnTab) {
-          navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
+          navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`, { replace: true });
         } else {
-          navigate('/clinical');
+          navigate('/clinical', { replace: true });
         }
       } catch (err) {
         toast.error(err?.data?.message || 'Failed to delete proforma');

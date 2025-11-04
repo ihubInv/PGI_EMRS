@@ -1440,6 +1440,8 @@ class ClinicalProforma {
       // IMPORTANT: Complex case data fields are NOT included in this INSERT
       // They are saved separately in adl_files table when requires_adl_file is true
       // This INSERT only contains basic clinical proforma fields and a reference (adl_file_id) if needed
+      // ✅ adl_file_id is included in the INSERT to match the schema
+      const adl_file_id = proformaData.adl_file_id || null;
       const proformaResult = await db.query(
         `INSERT INTO clinical_proforma (
           patient_id, filled_by, visit_date, visit_type, room_no, assigned_doctor,
@@ -1451,12 +1453,12 @@ class ClinicalProforma {
           mse_affect, mse_thought, mse_delusions, mse_perception, 
           mse_cognitive_function, gpe, diagnosis, icd_code, disposal, 
           workup_appointment, referred_to, treatment_prescribed, doctor_decision, 
-          case_severity, requires_adl_file, adl_reasoning, prescriptions
+          case_severity, requires_adl_file, adl_reasoning, adl_file_id, prescriptions
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
           $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
           $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, 
-          $45, $46::jsonb
+          $45, $46, $47::jsonb
         ) RETURNING *`,
         [
           patient_id, filled_by, visit_date, visit_type, room_no, assigned_doctor,
@@ -1468,7 +1470,7 @@ class ClinicalProforma {
           mse_affect, mse_thought, mse_delusions, mse_perception,
           mse_cognitive_function, gpe, diagnosis, icd_code, disposal,
           workup_appointment, referred_to, treatment_prescribed, doctor_decision,
-          case_severity, requires_adl_file, adl_reasoning, prescriptionsJson
+          case_severity, requires_adl_file, adl_reasoning, adl_file_id, prescriptionsJson
         ]
       );
 

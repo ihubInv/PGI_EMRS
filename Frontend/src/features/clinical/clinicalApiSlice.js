@@ -37,7 +37,10 @@ export const clinicalApiSlice = apiSlice.injectEndpoints({
     }),
     getClinicalProformaByPatientId: builder.query({
       query: (patientId) => `/clinical-proformas/patient/${patientId}`,
-      providesTags: (result, error, patientId) => [{ type: 'Clinical', id: `patient-${patientId}` }],
+      providesTags: (result, error, patientId) => [
+        { type: 'Clinical', id: `patient-${patientId}` },
+        'Clinical',
+      ],
     }),
     createClinicalProforma: builder.mutation({
       query: (proformaData) => ({
@@ -60,7 +63,16 @@ export const clinicalApiSlice = apiSlice.injectEndpoints({
         url: `/clinical-proformas/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['Clinical', 'Stats'],
+      invalidatesTags: (result, error, id) => {
+        // Invalidate all related queries
+        return [
+          { type: 'Clinical', id },
+          'Clinical',
+          'Stats',
+          'Patient',
+          'ADL',
+        ];
+      },
     }),
     getClinicalStats: builder.query({
       query: () => '/clinical-proformas/stats',

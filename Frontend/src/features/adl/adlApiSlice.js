@@ -51,7 +51,7 @@ export const adlApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: (result, error, id) => [{ type: 'ADL', id }, 'ADL', 'Stats'],
     }),
     getFileMovementHistory: builder.query({
-      query: (id) => `/adl-files/${id}/movements`,
+      query: (id) => `/adl-files/${id}/movement-history`,
       providesTags: (result, error, id) => [{ type: 'ADL', id: `movements-${id}` }],
     }),
     getFilesToRetrieve: builder.query({
