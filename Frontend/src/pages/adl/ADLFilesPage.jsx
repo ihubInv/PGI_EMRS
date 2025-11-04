@@ -1,7 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FiSearch, FiEye, FiDownload, FiUpload, FiArchive, FiRefreshCw, FiActivity } from 'react-icons/fi';
+import { 
+  FiSearch, FiEye, FiDownload, FiUpload, FiArchive, FiRefreshCw, 
+  FiActivity, FiFileText, FiUsers, FiShield, FiClock, FiTrendingUp,
+  FiMoreVertical, FiMail, FiCalendar, FiCheckCircle 
+} from 'react-icons/fi';
 import {
   useGetAllADLFilesQuery,
   useRetrieveFileMutation,
@@ -14,7 +18,6 @@ import Input from '../../components/Input';
 import Table from '../../components/Table';
 import Pagination from '../../components/Pagination';
 import Badge from '../../components/Badge';
-import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatDate } from '../../utils/formatters';
 
 const ADLFilesPage = () => {
@@ -22,6 +25,11 @@ const ADLFilesPage = () => {
   const [search, setSearch] = useState('');
   const [showOnlyComplexCases, setShowOnlyComplexCases] = useState(true); // Default: only show complex cases
   const limit = 10;
+
+  // Reset page to 1 when search changes
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
 
   // Only fetch complex cases by default (where clinical_proforma_id exists)
   const { data, isLoading, isFetching, refetch, error } = useGetAllADLFilesQuery({ 
@@ -78,88 +86,186 @@ const ADLFilesPage = () => {
     return map[status] || 'default';
   };
 
+  // Filter files based on search
+  const filteredFiles = data?.data?.files?.filter(file => {
+    if (!search.trim()) return true;
+    const searchLower = search.toLowerCase();
+    return (
+      file.adl_no?.toLowerCase().includes(searchLower) ||
+      file.patient_name?.toLowerCase().includes(searchLower) ||
+      file.cr_no?.toLowerCase().includes(searchLower)
+    );
+  }) || [];
+
   const columns = [
     {
-      header: 'ADL Number',
+      header: (
+        <div className="flex items-center gap-2">
+          <FiFileText className="w-4 h-4 text-primary-600" />
+          <span className="font-semibold">ADL Number</span>
+        </div>
+      ),
       accessor: 'adl_no',
       render: (row) => (
         <div className="flex items-center gap-2">
-        <span className="font-mono font-semibold">{row.adl_no}</span>
-          {row.clinical_proforma_id && (
-            <Badge variant="danger" className="text-xs">
-              <FiActivity className="w-3 h-3 mr-1" />
-              Complex Case
-            </Badge>
-          )}
+          <div className="w-8 h-8 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center">
+            <FiFileText className="w-4 h-4 text-blue-600" />
+          </div>
+          <div>
+            <span className="font-mono font-semibold text-gray-900">{row.adl_no}</span>
+            {row.clinical_proforma_id && (
+              <Badge className="ml-2 bg-gradient-to-r from-red-100 to-rose-100 text-red-800 border-red-200 text-xs">
+                <FiActivity className="w-3 h-3 mr-1" />
+                Complex Case
+              </Badge>
+            )}
+          </div>
         </div>
       ),
     },
     {
-      header: 'Patient',
+      header: (
+        <div className="flex items-center gap-2">
+          <FiUsers className="w-4 h-4 text-primary-600" />
+          <span className="font-semibold">Patient</span>
+        </div>
+      ),
       accessor: 'patient_name',
       render: (row) => (
         <div>
-          <p className="font-medium">{row.patient_name || 'N/A'}</p>
+          <p className="font-medium text-gray-900">{row.patient_name || 'N/A'}</p>
           {row.clinical_proforma_id && (
-            <p className="text-xs text-gray-500 mt-0.5">Complex Case - Full Details Available</p>
+            <p className="text-xs text-primary-600 mt-0.5 flex items-center gap-1">
+              <FiActivity className="w-3 h-3" />
+              Complex Case - Full Details Available
+            </p>
           )}
         </div>
       ),
     },
     {
-      header: 'CR No',
+      header: (
+        <div className="flex items-center gap-2">
+          <FiFileText className="w-4 h-4 text-primary-600" />
+          <span className="font-semibold">CR No</span>
+        </div>
+      ),
       accessor: 'cr_no',
       render: (row) => (
-        <span className="font-mono">{row.cr_no || 'N/A'}</span>
+        <span className="font-mono text-gray-700">{row.cr_no || 'N/A'}</span>
       ),
     },
     {
-      header: 'Assigned Doctor',
+      header: (
+        <div className="flex items-center gap-2">
+          <FiShield className="w-4 h-4 text-primary-600" />
+          <span className="font-semibold">Assigned Doctor</span>
+        </div>
+      ),
       render: (row) => (
         <div>
           {row.assigned_doctor_name ? (
-            <>
-              <p className="font-medium text-sm">{row.assigned_doctor_name}</p>
-              {row.assigned_doctor_role && (
-                <p className="text-xs text-gray-500">{row.assigned_doctor_role}</p>
-              )}
-            </>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg flex items-center justify-center">
+                <FiUsers className="w-4 h-4 text-purple-600" />
+              </div>
+              <div>
+                <p className="font-medium text-sm text-gray-900">{row.assigned_doctor_name}</p>
+                {row.assigned_doctor_role && (
+                  <p className="text-xs text-gray-500">{row.assigned_doctor_role}</p>
+                )}
+              </div>
+            </div>
           ) : (
-            <span className="text-gray-400 text-sm">Not assigned</span>
+            <span className="text-gray-400 text-sm flex items-center gap-1">
+              <FiUsers className="w-4 h-4" />
+              Not assigned
+            </span>
           )}
         </div>
       ),
     },
     {
-      header: 'Status',
+      header: (
+        <div className="flex items-center gap-2">
+          <FiCheckCircle className="w-4 h-4 text-primary-600" />
+          <span className="font-semibold">Status</span>
+        </div>
+      ),
+      render: (row) => {
+        const statusColors = {
+          created: 'bg-gradient-to-r from-cyan-100 to-teal-100 text-cyan-800 border-cyan-200',
+          stored: 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200',
+          retrieved: 'bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 border-amber-200',
+          active: 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border-blue-200',
+          archived: 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-800 border-gray-200',
+        };
+        return (
+          <Badge className={statusColors[row.file_status] || 'bg-gray-100 text-gray-800 border-gray-200'}>
+            {row.file_status}
+          </Badge>
+        );
+      },
+    },
+    {
+      header: (
+        <div className="flex items-center gap-2">
+          <FiCalendar className="w-4 h-4 text-primary-600" />
+          <span className="font-semibold">Created</span>
+        </div>
+      ),
       render: (row) => (
-        <Badge variant={getStatusVariant(row.file_status)}>
-          {row.file_status}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <span className="text-gray-700">{formatDate(row.file_created_date)}</span>
+        </div>
       ),
     },
     {
-      header: 'Created',
-      render: (row) => formatDate(row.file_created_date),
+      header: (
+        <div className="flex items-center gap-2">
+          <FiClock className="w-4 h-4 text-primary-600" />
+          <span className="font-semibold">Visit Date</span>
+        </div>
+      ),
+      render: (row) => (
+        <div>
+          {row.proforma_visit_date ? (
+            <span className="text-gray-700">{formatDate(row.proforma_visit_date)}</span>
+          ) : (
+            <span className="text-gray-400 italic">N/A</span>
+          )}
+        </div>
+      ),
     },
     {
-      header: 'Visit Date',
-      render: (row) => row.proforma_visit_date ? formatDate(row.proforma_visit_date) : <span className="text-gray-400">N/A</span>,
-    },
-    {
-      header: 'Total Visits',
+      header: (
+        <div className="flex items-center gap-2">
+          <FiTrendingUp className="w-4 h-4 text-primary-600" />
+          <span className="font-semibold">Total Visits</span>
+        </div>
+      ),
       accessor: 'total_visits',
       render: (row) => (
-        <span className="font-semibold">{row.total_visits || 0}</span>
+        <span className="font-semibold text-gray-900">{row.total_visits || 0}</span>
       ),
     },
     {
-      header: 'Actions',
+      header: (
+        <div className="flex items-center gap-2">
+          <FiMoreVertical className="w-4 h-4 text-primary-600" />
+          <span className="font-semibold">Actions</span>
+        </div>
+      ),
       render: (row) => (
         <div className="flex gap-2">
           <Link to={`/adl-files/${row.id}`}>
-            <Button variant="ghost" size="sm" title="View Details">
-              <FiEye />
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="h-9 w-9 p-0 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
+              title="View Details"
+            >
+              <FiEye className="w-4 h-4 text-blue-600" />
             </Button>
           </Link>
           {row.file_status === 'stored' && (
@@ -168,8 +274,9 @@ const ADLFilesPage = () => {
               size="sm"
               onClick={() => handleRetrieve(row.id)}
               title="Retrieve File"
+              className="h-9 w-9 p-0 bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 border border-blue-200 hover:border-blue-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
             >
-              <FiDownload className="text-blue-500" />
+              <FiDownload className="w-4 h-4 text-blue-600" />
             </Button>
           )}
           {row.file_status === 'retrieved' && (
@@ -178,8 +285,9 @@ const ADLFilesPage = () => {
               size="sm"
               onClick={() => handleReturn(row.id)}
               title="Return File"
+              className="h-9 w-9 p-0 bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 border border-green-200 hover:border-green-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
             >
-              <FiUpload className="text-green-500" />
+              <FiUpload className="w-4 h-4 text-green-600" />
             </Button>
           )}
           {row.is_active && (
@@ -188,8 +296,9 @@ const ADLFilesPage = () => {
               size="sm"
               onClick={() => handleArchive(row.id)}
               title="Archive File"
+              className="h-9 w-9 p-0 bg-gradient-to-r from-gray-50 to-slate-50 hover:from-gray-100 hover:to-slate-100 border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
             >
-              <FiArchive className="text-gray-500" />
+              <FiArchive className="w-4 h-4 text-gray-600" />
             </Button>
           )}
         </div>
@@ -197,156 +306,251 @@ const ADLFilesPage = () => {
     },
   ];
 
+  const totalFiles = data?.data?.pagination?.total || 0;
+  const complexCasesCount = showOnlyComplexCases 
+    ? totalFiles
+    : (data?.data?.files?.filter(f => f.clinical_proforma_id).length || 0);
+  const storedCount = data?.data?.files?.filter(f => f.file_status === 'stored').length || 0;
+  const retrievedCount = data?.data?.files?.filter(f => f.file_status === 'retrieved').length || 0;
+  const archivedCount = data?.data?.files?.filter(f => f.file_status === 'archived').length || 0;
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">ADL File Management</h1>
-          <p className="text-gray-600 mt-1">
-            {showOnlyComplexCases 
-              ? 'Complex case files with comprehensive patient details' 
-              : 'All ADL files (including non-complex cases)'
-            }
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+        {/* Enhanced Header */}
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-primary-600/10 to-primary-800/5 rounded-2xl"></div>
+          <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-6 sm:p-8 shadow-lg border border-white/50">
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6">
+              <div className="flex-1 space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl blur-sm opacity-50"></div>
+                    <div className="relative p-4 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl shadow-lg">
+                      <FiFileText className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 bg-clip-text text-transparent">
+                      ADL File Management
+                    </h1>
+                    <p className="text-gray-600 mt-2 text-base sm:text-lg">
+                      {showOnlyComplexCases 
+                        ? 'Complex case files with comprehensive patient details' 
+                        : 'All ADL files (including non-complex cases)'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-3 lg:flex-col xl:flex-row">
+                <Button 
+                  variant={showOnlyComplexCases ? "primary" : "outline"} 
+                  onClick={() => setShowOnlyComplexCases(!showOnlyComplexCases)}
+                  title={showOnlyComplexCases ? "Show all ADL files" : "Show only complex cases"}
+                  className={`whitespace-nowrap ${
+                    showOnlyComplexCases 
+                      ? 'bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-lg' 
+                      : 'bg-white/80 border-2 border-primary-200 hover:bg-primary-50 hover:border-primary-300 shadow-sm'
+                  } transition-all duration-200`}
+                >
+                  <FiActivity className="mr-2" />
+                  {showOnlyComplexCases ? 'Complex Cases Only' : 'Show All Files'}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => refetch()} 
+                  disabled={isFetching}
+                  className="bg-white/80 border-2 border-primary-200 hover:bg-primary-50 hover:border-primary-300 shadow-sm transition-all duration-200 whitespace-nowrap"
+                >
+                  <FiRefreshCw className={`mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+                  {isFetching ? 'Refreshing...' : 'Refresh'}
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            variant={showOnlyComplexCases ? "primary" : "outline"} 
-            onClick={() => setShowOnlyComplexCases(!showOnlyComplexCases)}
-            title={showOnlyComplexCases ? "Show all ADL files" : "Show only complex cases"}
-          >
-            <FiActivity className="mr-2" />
-            {showOnlyComplexCases ? 'Complex Cases Only' : 'Show All Files'}
-          </Button>
-        <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
-          <FiRefreshCw className={`mr-2 ${isFetching ? 'animate-spin' : ''}`} /> Refresh
-        </Button>
+
+        {/* Enhanced Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-sm">
+                  <FiFileText className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Total Files</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{totalFiles}</p>
+                </div>
+              </div>
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-blue-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          </div>
+          
+          <div className="group relative bg-gradient-to-br from-red-50 to-rose-100/50 rounded-xl p-5 border border-red-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-red-500 to-rose-600 rounded-lg shadow-sm">
+                  <FiActivity className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Complex Cases</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{complexCasesCount}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {showOnlyComplexCases ? 'Full Details' : 'With Details'}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-red-400 to-rose-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          </div>
+          
+          <div className="group relative bg-gradient-to-br from-emerald-50 to-green-100/50 rounded-xl p-5 border border-emerald-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg shadow-sm">
+                  <FiCheckCircle className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Stored</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{storedCount}</p>
+                </div>
+              </div>
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-green-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          </div>
+          
+          <div className="group relative bg-gradient-to-br from-amber-50 to-orange-100/50 rounded-xl p-5 border border-amber-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg shadow-sm">
+                  <FiDownload className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Retrieved</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{retrievedCount}</p>
+                </div>
+              </div>
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-orange-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          </div>
+          
+          <div className="group relative bg-gradient-to-br from-gray-50 to-slate-100/50 rounded-xl p-5 border border-gray-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-gray-500 to-slate-600 rounded-lg shadow-sm">
+                  <FiArchive className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Archived</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{archivedCount}</p>
+                </div>
+              </div>
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-gray-400 to-slate-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          </div>
         </div>
-      </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-        <Card>
-          <div className="text-center">
-            <p className="text-sm text-gray-600">Total Files</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">
-              {data?.data?.pagination?.total || 0}
-            </p>
-          </div>
-        </Card>
-        <Card className="border-2 border-red-200 bg-red-50/30">
-          <div className="text-center">
-            <p className="text-sm text-gray-600 flex items-center justify-center gap-1">
-              <FiActivity className="w-4 h-4 text-red-600" />
-              Complex Cases
-            </p>
-            <p className="text-3xl font-bold text-red-600 mt-1">
-              {showOnlyComplexCases 
-                ? (data?.data?.pagination?.total || 0)
-                : (data?.data?.files?.filter(f => f.clinical_proforma_id).length || 0)
-              }
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              {showOnlyComplexCases 
-                ? 'Files with Full Patient Details' 
-                : 'With Comprehensive Details'
-              }
-            </p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-sm text-gray-600">Stored</p>
-            <p className="text-3xl font-bold text-green-600 mt-1">
-              {data?.data?.files?.filter(f => f.file_status === 'stored').length || 0}
-            </p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-sm text-gray-600">Retrieved</p>
-            <p className="text-3xl font-bold text-yellow-600 mt-1">
-              {data?.data?.files?.filter(f => f.file_status === 'retrieved').length || 0}
-            </p>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <p className="text-sm text-gray-600">Archived</p>
-            <p className="text-3xl font-bold text-gray-600 mt-1">
-              {data?.data?.files?.filter(f => f.file_status === 'archived').length || 0}
-            </p>
-          </div>
-        </Card>
-      </div>
-
-      <Card>
-        {error && (
-          <div className="mb-4">
-            <p className="text-red-600 text-sm">{error?.data?.message || 'Failed to load ADL files.'}</p>
-          </div>
-        )}
-        <div className="mb-4">
-          <div className="relative">
-            <Input
-              placeholder={showOnlyComplexCases 
-                ? "Search complex case files by ADL number or patient name..."
-                : "Search by ADL number or patient name..."
-              }
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
-            <FiSearch className="absolute left-3 top-3 text-gray-400" />
-          </div>
-          {showOnlyComplexCases && (
-            <div className="mt-2 flex items-center gap-2 text-sm text-blue-600">
-              <FiActivity className="w-4 h-4" />
-              <span>Showing only complex cases with comprehensive patient details stored in ADL schema</span>
+        {/* Main Content Card */}
+        <Card className="shadow-lg border border-gray-200/50 bg-white/90 backdrop-blur-sm">
+          {error && (
+            <div className="mb-6 bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-200 rounded-xl p-5 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="p-2.5 bg-red-100 rounded-lg flex-shrink-0">
+                  <FiShield className="w-5 h-5 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-red-800 font-semibold text-base mb-1">Error Loading ADL Files</p>
+                  <p className="text-red-600 text-sm">{error?.data?.message || 'Failed to load ADL files. Please try again.'}</p>
+                </div>
+              </div>
             </div>
           )}
-        </div>
-
-        {(isLoading || isFetching) ? (
-          <LoadingSpinner className="h-64" />
-        ) : (
-          <>
-            {(data?.data?.files || []).length === 0 ? (
-              <div className="text-center py-12">
-                <FiActivity className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  {showOnlyComplexCases 
-                    ? 'No Complex Case ADL Files Found' 
-                    : 'No ADL Files Found'
+          
+          {/* Enhanced Search Section */}
+          <div className="mb-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <FiSearch className="w-5 h-5 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
+                </div>
+                <Input
+                  placeholder={showOnlyComplexCases 
+                    ? "Search complex case files by ADL number or patient name..."
+                    : "Search by ADL number or patient name..."
                   }
-                </h3>
-                <p className="text-gray-500">
-                  {showOnlyComplexCases
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-12 h-12 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-200 shadow-sm hover:shadow-md"
+                />
+              </div>
+            </div>
+            {showOnlyComplexCases && (
+              <div className="mt-3 flex items-center gap-2 text-sm text-primary-600 bg-primary-50 rounded-lg p-3 border border-primary-200">
+                <FiActivity className="w-4 h-4 flex-shrink-0" />
+                <span>Showing only complex cases with comprehensive patient details stored in ADL schema</span>
+              </div>
+            )}
+          </div>
+
+          {(isLoading || isFetching) ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="relative">
+                <div className="w-20 h-20 border-4 border-primary-100 border-t-primary-600 rounded-full animate-spin"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <FiFileText className="w-8 h-8 text-primary-600" />
+                </div>
+              </div>
+              <p className="mt-6 text-gray-600 font-medium text-lg">Loading ADL files...</p>
+              <p className="mt-2 text-gray-500 text-sm">Please wait while we fetch the data</p>
+            </div>
+          ) : filteredFiles.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-6">
+                <FiFileText className="w-12 h-12 text-gray-400" />
+              </div>
+              <p className="text-xl font-semibold text-gray-700 mb-2">
+                {showOnlyComplexCases 
+                  ? 'No Complex Case ADL Files Found' 
+                  : 'No ADL Files Found'
+                }
+              </p>
+              <p className="text-gray-500 text-center max-w-md">
+                {search 
+                  ? `No files match your search "${search}". Try a different search term.`
+                  : showOnlyComplexCases
                     ? 'ADL files will appear here when complex cases are registered in clinical proformas.'
                     : 'No ADL files have been created yet.'
-                  }
-                </p>
+                }
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                <Table
+                  columns={columns}
+                  data={filteredFiles}
+                  loading={isLoading}
+                />
               </div>
-            ) : (
-            <Table
-              columns={columns}
-              data={data?.data?.files || []}
-              loading={isLoading}
-            />
-            )}
 
-            {data?.data?.pagination && (
-              <Pagination
-                currentPage={data.data.pagination.page}
-                totalPages={data.data.pagination.pages}
-                totalItems={data.data.pagination.total}
-                itemsPerPage={limit}
-                onPageChange={setPage}
-              />
-            )}
-          </>
-        )}
-      </Card>
+              {data?.data?.pagination && data.data.pagination.pages > 1 && (
+                <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mt-4">
+                  <Pagination
+                    currentPage={data.data.pagination.page}
+                    totalPages={data.data.pagination.pages}
+                    totalItems={data.data.pagination.total}
+                    itemsPerPage={limit}
+                    onPageChange={setPage}
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </Card>
+      </div>
     </div>
   );
 };

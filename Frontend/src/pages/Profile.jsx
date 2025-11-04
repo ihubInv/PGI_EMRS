@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
-import { FiUser, FiLock, FiShield } from 'react-icons/fi';
+import { 
+  FiUser, FiLock, FiShield, FiCalendar, FiClock, 
+  FiKey, FiCheckCircle, FiAlertCircle, FiEdit3, FiSave 
+} from 'react-icons/fi';
 import { selectCurrentUser } from '../features/auth/authSlice';
 import {
   useGetProfileQuery,
@@ -14,7 +17,6 @@ import Card from '../components/Card';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
-import LoadingSpinner from '../components/LoadingSpinner';
 import { formatDate } from '../utils/formatters';
 
 const Profile = () => {
@@ -30,6 +32,16 @@ const Profile = () => {
     name: user?.name || '',
     email: user?.email || '',
   });
+
+  // Update form when profile data loads
+  useEffect(() => {
+    if (profileData?.data?.user) {
+      setProfileForm({
+        name: profileData.data.user.name || '',
+        email: profileData.data.user.email || '',
+      });
+    }
+  }, [profileData]);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
@@ -101,10 +113,6 @@ const Profile = () => {
     }
   };
 
-  if (isLoading) {
-    return <LoadingSpinner size="lg" className="h-96" />;
-  }
-
   const profile = profileData?.data?.user || user;
 
   const tabs = [
@@ -113,177 +121,418 @@ const Profile = () => {
     { id: '2fa', name: 'Two-Factor Auth', icon: FiShield },
   ];
 
+  const getRoleBadgeColor = (role) => {
+    const roleColors = {
+      Admin: 'bg-gradient-to-r from-red-100 to-rose-100 text-red-800 border-red-200',
+      SR: 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border-blue-200',
+      JR: 'bg-gradient-to-r from-cyan-100 to-teal-100 text-cyan-800 border-cyan-200',
+      MWO: 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200',
+    };
+    return roleColors[role] || 'bg-gray-100 text-gray-800 border-gray-200';
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="relative">
+            <div className="w-20 h-20 border-4 border-primary-100 border-t-primary-600 rounded-full animate-spin mx-auto"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <FiUser className="w-8 h-8 text-primary-600" />
+            </div>
+          </div>
+          <p className="mt-6 text-gray-600 font-medium text-lg">Loading profile...</p>
+          <p className="mt-2 text-gray-500 text-sm">Please wait while we fetch your data</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
-        <p className="text-gray-600 mt-1">Manage your account settings</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+        {/* Enhanced Header */}
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-primary-600/10 to-primary-800/5 rounded-2xl"></div>
+          <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-6 sm:p-8 shadow-lg border border-white/50">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl blur-sm opacity-50"></div>
+                <div className="relative p-4 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl shadow-lg">
+                  <FiUser className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 bg-clip-text text-transparent">
+                  My Profile
+                </h1>
+                <p className="text-gray-600 mt-2 text-base sm:text-lg">
+                  Manage your account settings and security preferences
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                  {profile?.name?.charAt(0)?.toUpperCase() || 'U'}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-      {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`
-                flex items-center py-4 px-1 border-b-2 font-medium text-sm
-                ${
+        {/* Enhanced Tabs */}
+        <Card className="shadow-lg border border-gray-200/50 bg-white/90 backdrop-blur-sm overflow-hidden p-0">
+          <div className="flex border-b border-gray-200 bg-gradient-to-r from-gray-50 to-slate-50">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 px-6 py-4 text-center font-semibold transition-all duration-200 relative ${
                   activeTab === tab.id
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }
-              `}
-            >
-              <tab.icon className="mr-2 h-5 w-5" />
-              {tab.name}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {/* Profile Tab */}
-      {activeTab === 'profile' && (
-        <Card title="Profile Information">
-          <form onSubmit={handleProfileSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="text-sm font-medium text-gray-500">User ID</label>
-                <p className="text-lg font-semibold">{profile.id}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Role</label>
-                <Badge variant="primary" className="mt-1">{profile.role}</Badge>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Account Created</label>
-                <p className="text-lg">{formatDate(profile.created_at)}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Last Login</label>
-                <p className="text-lg">{profile.last_login ? formatDate(profile.last_login) : 'Never'}</p>
-              </div>
-            </div>
-
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-medium mb-4">Update Information</h3>
-              <div className="space-y-6">
-                <Input
-                  label="Full Name"
-                  name="name"
-                  value={profileForm.name}
-                  onChange={handleProfileChange}
-                  required
-                />
-
-                <Input
-                  label="Email Address"
-                  type="email"
-                  name="email"
-                  value={profileForm.email}
-                  onChange={handleProfileChange}
-                  required
-                />
-
-                <div className="flex justify-end">
-                  <Button type="submit" loading={isUpdating}>
-                    Update Profile
-                  </Button>
+                    ? 'text-primary-600 bg-gradient-to-br from-primary-50 to-blue-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-primary-600' : 'text-gray-500'}`} />
+                  <span>{tab.name}</span>
                 </div>
-              </div>
-            </div>
-          </form>
-        </Card>
-      )}
-
-      {/* Security Tab */}
-      {activeTab === 'security' && (
-        <Card title="Change Password">
-          <form onSubmit={handlePasswordSubmit} className="space-y-6">
-            <Input
-              label="Current Password"
-              type="password"
-              name="currentPassword"
-              value={passwordForm.currentPassword}
-              onChange={handlePasswordChange}
-              required
-            />
-
-            <Input
-              label="New Password"
-              type="password"
-              name="newPassword"
-              value={passwordForm.newPassword}
-              onChange={handlePasswordChange}
-              placeholder="Minimum 8 characters"
-              required
-            />
-
-            <Input
-              label="Confirm New Password"
-              type="password"
-              name="confirmPassword"
-              value={passwordForm.confirmPassword}
-              onChange={handlePasswordChange}
-              required
-            />
-
-            <div className="flex justify-end">
-              <Button type="submit" loading={isChangingPassword}>
-                Change Password
-              </Button>
-            </div>
-          </form>
-        </Card>
-      )}
-
-      {/* 2FA Tab */}
-      {activeTab === '2fa' && (
-        <Card title="Two-Factor Authentication">
-          <div className="space-y-6">
-            <div>
-              <p className="text-gray-600 mb-4">
-                Two-factor authentication adds an extra layer of security to your account.
-                When enabled, you'll need to enter a code from your authenticator app in addition to your password.
-              </p>
-
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium">Status</p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    2FA is currently{' '}
-                    <Badge variant={profile.two_factor_enabled ? 'success' : 'default'}>
-                      {profile.two_factor_enabled ? 'Enabled' : 'Disabled'}
-                    </Badge>
-                  </p>
-                </div>
-                {profile.two_factor_enabled ? (
-                  <Button variant="danger" onClick={handleDisable2FA}>
-                    Disable 2FA
-                  </Button>
-                ) : (
-                  <Button onClick={handleEnable2FA}>
-                    Enable 2FA
-                  </Button>
+                {activeTab === tab.id && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary-500 to-primary-700"></div>
                 )}
-              </div>
-            </div>
-
-            {!profile.two_factor_enabled && (
-              <div className="border-t pt-6">
-                <h4 className="font-medium mb-2">How to enable 2FA:</h4>
-                <ol className="list-decimal list-inside space-y-2 text-gray-600">
-                  <li>Install an authenticator app (Google Authenticator, Authy, etc.)</li>
-                  <li>Click "Enable 2FA" button above</li>
-                  <li>Scan the QR code with your authenticator app</li>
-                  <li>Enter the verification code to complete setup</li>
-                </ol>
-              </div>
-            )}
+              </button>
+            ))}
           </div>
         </Card>
-      )}
+
+        {/* Profile Tab */}
+        {activeTab === 'profile' && (
+          <Card className="shadow-lg border border-gray-200/50 bg-white/90 backdrop-blur-sm">
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-primary-100 rounded-lg">
+                  <FiUser className="w-5 h-5 text-primary-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900">Profile Information</h2>
+              </div>
+              <p className="text-gray-600 ml-12">View and update your personal information</p>
+            </div>
+
+            <form onSubmit={handleProfileSubmit} className="space-y-6">
+              {/* Account Information Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-200/50">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <FiUser className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">User ID</label>
+                  </div>
+                  <p className="text-xl font-bold text-gray-900">{profile.id}</p>
+                </div>
+                
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 border border-purple-200/50">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <FiShield className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Role</label>
+                  </div>
+                  <Badge className={`${getRoleBadgeColor(profile.role)} font-semibold`}>
+                    {profile.role}
+                  </Badge>
+                </div>
+                
+                <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-5 border border-emerald-200/50">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-emerald-100 rounded-lg">
+                      <FiCalendar className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Account Created</label>
+                  </div>
+                  <p className="text-lg font-semibold text-gray-900">{formatDate(profile.created_at)}</p>
+                </div>
+                
+                <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-5 border border-amber-200/50">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-amber-100 rounded-lg">
+                      <FiClock className="w-4 h-4 text-amber-600" />
+                    </div>
+                    <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Last Login</label>
+                  </div>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {profile.last_login ? formatDate(profile.last_login) : <span className="text-gray-400 italic">Never</span>}
+                  </p>
+                </div>
+              </div>
+
+              {/* Update Information Section */}
+              <div className="border-t border-gray-200 pt-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-primary-100 rounded-lg">
+                    <FiEdit3 className="w-5 h-5 text-primary-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">Update Information</h3>
+                </div>
+                <div className="space-y-6">
+                  <div className="bg-white rounded-xl border border-gray-200 p-4">
+                    <Input
+                      label="Full Name"
+                      name="name"
+                      value={profileForm.name}
+                      onChange={handleProfileChange}
+                      className="bg-white"
+                      required
+                    />
+                  </div>
+
+                  <div className="bg-white rounded-xl border border-gray-200 p-4">
+                    <Input
+                      label="Email Address"
+                      type="email"
+                      name="email"
+                      value={profileForm.email}
+                      onChange={handleProfileChange}
+                      className="bg-white"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex justify-end pt-4">
+                    <Button 
+                      type="submit" 
+                      loading={isUpdating}
+                      className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-lg"
+                    >
+                      <FiSave className="mr-2" />
+                      {isUpdating ? 'Updating...' : 'Update Profile'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </Card>
+        )}
+
+        {/* Security Tab */}
+        {activeTab === 'security' && (
+          <Card className="shadow-lg border border-gray-200/50 bg-white/90 backdrop-blur-sm">
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-primary-100 rounded-lg">
+                  <FiLock className="w-5 h-5 text-primary-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900">Change Password</h2>
+              </div>
+              <p className="text-gray-600 ml-12">Update your password to keep your account secure</p>
+            </div>
+
+            <form onSubmit={handlePasswordSubmit} className="space-y-6">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200/50 space-y-6">
+                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Current Password <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none mt-0">
+                      <FiKey className="w-5 h-5 text-gray-400" />
+                    </div>
+                    <input
+                      type="password"
+                      name="currentPassword"
+                      value={passwordForm.currentPassword}
+                      onChange={handlePasswordChange}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    New Password <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none mt-0">
+                      <FiKey className="w-5 h-5 text-gray-400" />
+                    </div>
+                    <input
+                      type="password"
+                      name="newPassword"
+                      value={passwordForm.newPassword}
+                      onChange={handlePasswordChange}
+                      placeholder="Minimum 8 characters"
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                      required
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                    <FiAlertCircle className="w-3 h-3" />
+                    Password must be at least 8 characters long
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Confirm New Password <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none mt-0">
+                      <FiKey className="w-5 h-5 text-gray-400" />
+                    </div>
+                    <input
+                      type="password"
+                      name="confirmPassword"
+                      value={passwordForm.confirmPassword}
+                      onChange={handlePasswordChange}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                      required
+                    />
+                  </div>
+                  {passwordForm.newPassword && passwordForm.confirmPassword && 
+                   passwordForm.newPassword !== passwordForm.confirmPassword && (
+                    <p className="text-xs text-red-600 mt-2 flex items-center gap-1">
+                      <FiAlertCircle className="w-3 h-3" />
+                      Passwords do not match
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4">
+                <Button 
+                  type="submit" 
+                  loading={isChangingPassword}
+                  className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-lg"
+                  disabled={passwordForm.newPassword && passwordForm.confirmPassword && 
+                           passwordForm.newPassword !== passwordForm.confirmPassword}
+                >
+                  <FiLock className="mr-2" />
+                  {isChangingPassword ? 'Changing...' : 'Change Password'}
+                </Button>
+              </div>
+            </form>
+          </Card>
+        )}
+
+        {/* 2FA Tab */}
+        {activeTab === '2fa' && (
+          <Card className="shadow-lg border border-gray-200/50 bg-white/90 backdrop-blur-sm">
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-primary-100 rounded-lg">
+                  <FiShield className="w-5 h-5 text-primary-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900">Two-Factor Authentication</h2>
+              </div>
+              <p className="text-gray-600 ml-12">
+                Add an extra layer of security to your account with two-factor authentication
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200/50">
+                <p className="text-gray-700 mb-6 leading-relaxed">
+                  Two-factor authentication adds an extra layer of security to your account.
+                  When enabled, you'll need to enter a code from your authenticator app in addition to your password when logging in.
+                </p>
+
+                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className={`p-3 rounded-lg ${
+                        profile.two_factor_enabled 
+                          ? 'bg-gradient-to-br from-green-100 to-emerald-100' 
+                          : 'bg-gradient-to-br from-gray-100 to-slate-100'
+                      }`}>
+                        {profile.two_factor_enabled ? (
+                          <FiCheckCircle className="w-6 h-6 text-green-600" />
+                        ) : (
+                          <FiShield className="w-6 h-6 text-gray-600" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900 mb-1">2FA Status</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">Currently:</span>
+                          <Badge 
+                            className={profile.two_factor_enabled 
+                              ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200' 
+                              : 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-800 border-gray-200'
+                            }
+                          >
+                            {profile.two_factor_enabled ? 'Enabled' : 'Disabled'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                    {profile.two_factor_enabled ? (
+                      <Button 
+                        variant="outline"
+                        onClick={handleDisable2FA}
+                        className="bg-white border-2 border-red-200 hover:bg-red-50 hover:border-red-300 text-red-600 shadow-sm transition-all duration-200"
+                      >
+                        <FiShield className="mr-2" />
+                        Disable 2FA
+                      </Button>
+                    ) : (
+                      <Button 
+                        onClick={handleEnable2FA}
+                        className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-lg"
+                      >
+                        <FiShield className="mr-2" />
+                        Enable 2FA
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {!profile.two_factor_enabled && (
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200/50">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <FiAlertCircle className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <h4 className="text-lg font-bold text-gray-900">How to enable 2FA:</h4>
+                  </div>
+                  <ol className="space-y-3 text-gray-700 ml-4">
+                    <li className="flex items-start gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">1</span>
+                      <span>Install an authenticator app (Google Authenticator, Authy, Microsoft Authenticator, etc.) on your mobile device</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">2</span>
+                      <span>Click the "Enable 2FA" button above</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">3</span>
+                      <span>Scan the QR code displayed with your authenticator app</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">4</span>
+                      <span>Enter the verification code from your app to complete the setup</span>
+                    </li>
+                  </ol>
+                </div>
+              )}
+
+              {profile.two_factor_enabled && (
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200/50">
+                  <div className="flex items-center gap-3">
+                    <FiCheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-gray-900 mb-1">2FA is Active</p>
+                      <p className="text-sm text-gray-600">
+                        Your account is protected with two-factor authentication. You'll be prompted for a code from your authenticator app when logging in.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };
