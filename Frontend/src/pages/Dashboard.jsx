@@ -1,6 +1,6 @@
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { FiUsers, FiFileText, FiFolder, FiClipboard, FiTrendingUp, FiEye, FiEdit, FiTrash2, FiUserPlus } from 'react-icons/fi';
+import { FiUsers, FiFileText, FiFolder, FiClipboard, FiTrendingUp, FiEye, FiEdit, FiTrash2, FiUserPlus, FiActivity, FiRefreshCw } from 'react-icons/fi';
 import { selectCurrentUser } from '../features/auth/authSlice';
 import { useGetAllPatientsQuery, useGetPatientsStatsQuery, useGetPatientStatsQuery } from '../features/patients/patientsApiSlice';
 import { useGetClinicalStatsQuery, useGetCasesBySeverityQuery, useGetCasesByDecisionQuery, useGetMyProformasQuery } from '../features/clinical/clinicalApiSlice';
@@ -39,19 +39,21 @@ ChartJS.register(
   ArcElement
 );
 
-const StatCard = ({ title, value, icon: Icon, color, to }) => (
-  <Link to={to}>
-    <Card className="hover:shadow-lg transition-shadow">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600 mb-1">{title}</p>
-          <p className="text-3xl font-bold text-gray-900">{value || 0}</p>
+const StatCard = ({ title, value, icon: Icon, colorClasses, gradientFrom, gradientTo, to }) => (
+  <Link to={to} className="block">
+    <div className={`group relative bg-gradient-to-br ${gradientFrom} ${gradientTo} rounded-xl p-6 border border-white/50 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}>
+      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div className="relative flex items-start justify-between">
+        <div className="flex-1">
+          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">{title}</p>
+          <p className="text-4xl font-extrabold text-gray-900 mb-1">{value || 0}</p>
         </div>
-        <div className={`p-3 rounded-full ${color}`}>
-          <Icon className="h-8 w-8 text-white" />
+        <div className={`p-3 bg-gradient-to-br ${colorClasses} rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+          <Icon className="h-7 w-7 text-white" />
         </div>
       </div>
-    </Card>
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+    </div>
   </Link>
 );
 
@@ -218,43 +220,128 @@ const Dashboard = () => {
   };
 
   if (isLoading) {
-    return <LoadingSpinner size="lg" className="h-96" />;
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
   }
 
   // Non-admin role - show JR/SR or MWO focused dashboard
   if (user?.role !== 'Admin') {
     return (
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Welcome back, {user?.name}!</p>
-        </div>
-
-        {/* Role-based quick KPIs */}
-        {isJrSr && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard title="My Proformas" value={myProformas?.data?.pagination?.total} icon={FiFileText} color="bg-green-500" to="/clinical" />
-            <StatCard title="Cases by Severity" value={sumValues(severityStats?.data?.stats)} icon={FiTrendingUp} color="bg-orange-500" to="/clinical" />
-            <StatCard title="Decisions Logged" value={sumValues(decisionStats?.data?.stats)} icon={FiClipboard} color="bg-blue-500" to="/clinical" />
-            <StatCard title="Patients" value="Browse" icon={FiUsers} color="bg-purple-500" to="/patients" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+          {/* Enhanced Header */}
+          <div className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-primary-600/10 to-primary-800/5 rounded-2xl"></div>
+            <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-6 sm:p-8 shadow-lg border border-white/50">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl blur-sm opacity-50"></div>
+                    <div className="relative p-4 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl shadow-lg">
+                      <FiActivity className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 bg-clip-text text-transparent">
+                      Dashboard
+                    </h1>
+                    <p className="text-gray-600 mt-1 text-base sm:text-lg">Welcome back, <span className="font-semibold text-gray-900">{user?.name}</span>!</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
-        {isMwo && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard title="Total Patients Records" value={outpatientStats?.data?.stats?.total_records || 0} icon={FiClipboard} color="bg-blue-500" to="/patients" />
-            {/* <StatCard title="My Records" value={myRecords?.data?.pagination?.total || 0} icon={FiFileText} color="bg-green-500" to="/outpatient" /> */}
-            <StatCard title="All Patients" value={myRecords?.data?.pagination?.total || 0} icon={FiUsers} color="bg-purple-500" to="/patients" />
-            <StatCard title="Register New" value="+" icon={FiTrendingUp} color="bg-orange-500" to="/patients/new" />
-          </div>
-        )}
 
-        {/* Role-specific charts */}
-        {(isJrSr || isMwo) && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Role-based quick KPIs */}
+          {isJrSr && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard 
+                title="My Proformas" 
+                value={myProformas?.data?.pagination?.total} 
+                icon={FiFileText} 
+                colorClasses="from-green-500 to-green-600"
+                gradientFrom="from-green-50" 
+                gradientTo="to-emerald-100/50" 
+                to="/clinical" 
+              />
+              <StatCard 
+                title="Cases by Severity" 
+                value={sumValues(severityStats?.data?.stats)} 
+                icon={FiTrendingUp} 
+                colorClasses="from-orange-500 to-orange-600"
+                gradientFrom="from-orange-50" 
+                gradientTo="to-amber-100/50" 
+                to="/clinical" 
+              />
+              <StatCard 
+                title="Decisions Logged" 
+                value={sumValues(decisionStats?.data?.stats)} 
+                icon={FiClipboard} 
+                colorClasses="from-blue-500 to-blue-600"
+                gradientFrom="from-blue-50" 
+                gradientTo="to-indigo-100/50" 
+                to="/clinical" 
+              />
+              <StatCard 
+                title="Patients" 
+                value="Browse" 
+                icon={FiUsers} 
+                colorClasses="from-purple-500 to-purple-600"
+                gradientFrom="from-purple-50" 
+                gradientTo="to-pink-100/50" 
+                to="/patients" 
+              />
+            </div>
+          )}
+          {isMwo && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard 
+                title="Total Patients Records" 
+                value={outpatientStats?.data?.stats?.total_records || 0} 
+                icon={FiClipboard} 
+                colorClasses="from-blue-500 to-blue-600"
+                gradientFrom="from-blue-50" 
+                gradientTo="to-indigo-100/50" 
+                to="/patients" 
+              />
+              <StatCard 
+                title="All Patients" 
+                value={myRecords?.data?.pagination?.total || 0} 
+                icon={FiUsers} 
+                colorClasses="from-purple-500 to-purple-600"
+                gradientFrom="from-purple-50" 
+                gradientTo="to-pink-100/50" 
+                to="/patients" 
+              />
+              <StatCard 
+                title="Register New" 
+                value="+" 
+                icon={FiTrendingUp} 
+                colorClasses="from-orange-500 to-orange-600"
+                gradientFrom="from-orange-50" 
+                gradientTo="to-amber-100/50" 
+                to="/patients/new" 
+              />
+            </div>
+          )}
+
+          {/* Role-specific charts */}
+          {(isJrSr || isMwo) && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {isJrSr && (
               <>
-                <Card title="My Cases by Severity">
+                <Card 
+                  title={
+                    <div className="flex items-center gap-2">
+                      <FiTrendingUp className="w-5 h-5 text-primary-600" />
+                      <span>My Cases by Severity</span>
+                    </div>
+                  }
+                  className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
+                >
                   <div className="h-80">
                     <Bar
                       data={{
@@ -280,7 +367,15 @@ const Dashboard = () => {
                   </div>
                 </Card>
 
-                <Card title="My Cases by Decision">
+                <Card 
+                  title={
+                    <div className="flex items-center gap-2">
+                      <FiClipboard className="w-5 h-5 text-primary-600" />
+                      <span>My Cases by Decision</span>
+                    </div>
+                  }
+                  className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
+                >
                   <div className="h-80">
                     <Doughnut
                       data={{
@@ -309,7 +404,15 @@ const Dashboard = () => {
 
             {isMwo && (
               <>
-                <Card title="Outpatient Records by Marital Status">
+                <Card 
+                  title={
+                    <div className="flex items-center gap-2">
+                      <FiUsers className="w-5 h-5 text-primary-600" />
+                      <span>Patient Records by Marital Status</span>
+                    </div>
+                  }
+                  className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
+                >
                   <div className="h-80">
                     <Doughnut
                       data={{
@@ -340,7 +443,15 @@ const Dashboard = () => {
                   </div>
                 </Card>
 
-                <Card title="Records by Locality">
+                <Card 
+                  title={
+                    <div className="flex items-center gap-2">
+                      <FiTrendingUp className="w-5 h-5 text-primary-600" />
+                      <span>Records by Locality</span>
+                    </div>
+                  }
+                  className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
+                >
                   <div className="h-80">
                     <Bar
                       data={{
@@ -369,17 +480,27 @@ const Dashboard = () => {
                   </div>
                 </Card>
               </>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
 
-        {/* MWO Recent Records Table with CRUD */}
-        {isMwo && myRecords?.data?.records && myRecords.data.records.length > 0 && (
-          <Card title="My Recent Outpatient Records" actions={
-            <Link to="/outpatient">
-              <Button variant="outline" size="sm">View All</Button>
-            </Link>
-          }>
+          {/* MWO Recent Records Table with CRUD */}
+          {isMwo && myRecords?.data?.records && myRecords.data.records.length > 0 && (
+            <Card 
+              title={
+                <div className="flex items-center gap-2">
+                  <FiFileText className="w-5 h-5 text-primary-600" />
+                  <span>My Recent Patient Records</span>
+                </div>
+              }
+              actions={
+                <Link to="/patients">
+                  <Button variant="outline" size="sm" className="bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border-blue-200">
+                    View All
+                  </Button>
+                </Link>
+              }
+            >
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -406,7 +527,7 @@ const Dashboard = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {myRecords.data.records.slice(0, 5).map((record) => (
-                    <tr key={record.id} className="hover:bg-gray-50">
+                    <tr key={record.id} className="hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/50 transition-colors duration-200">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {record.patient_name}
                       </td>
@@ -426,14 +547,24 @@ const Dashboard = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end gap-2">
-                          <Link to={`/outpatient/${record.id}`}>
-                            <Button variant="ghost" size="sm">
-                              <FiEye />
+                          <Link to={`/patients/${record.patient_id || record.id}`}>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="h-9 w-9 p-0 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
+                              title="View Details"
+                            >
+                              <FiEye className="w-4 h-4 text-blue-600" />
                             </Button>
                           </Link>
-                          <Link to={`/patients/${record.patient_id}?edit=true`}>
-                            <Button variant="ghost" size="sm">
-                              <FiEdit />
+                          <Link to={`/patients/${record.patient_id || record.id}?edit=true`}>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="h-9 w-9 p-0 bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 border border-green-200 hover:border-green-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
+                              title="Edit Patient"
+                            >
+                              <FiEdit className="w-4 h-4 text-green-600" />
                             </Button>
                           </Link>
                         </div>
@@ -446,112 +577,154 @@ const Dashboard = () => {
           </Card>
         )}
 
-        {/* MWO Quick Actions */}
-        {isMwo && (
-          <Card title="Quick Actions">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link
-                to="/outpatient/new"
-                className="p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-primary-500 hover:bg-primary-50 transition-all duration-200 text-center group"
-              >
-                <div className="flex flex-col items-center">
-                  <div className="p-3 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors mb-3">
-                    <FiUserPlus className="h-8 w-8 text-blue-600" />
-                  </div>
-                  <p className="font-semibold text-gray-900">Register New Patient</p>
-                  <p className="text-sm text-gray-500 mt-1">Create outpatient record</p>
+          {/* MWO Quick Actions */}
+          {isMwo && (
+            <Card 
+              title={
+                <div className="flex items-center gap-2">
+                  <FiActivity className="w-5 h-5 text-primary-600" />
+                  <span>Quick Actions</span>
                 </div>
-              </Link>
+              }
+            >
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Link
+                  to="/patients/new"
+                  className="p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-500 hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 text-center group shadow-sm hover:shadow-md"
+                >
+                  <div className="flex flex-col items-center">
+                    <div className="p-3 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 group-hover:scale-110 transition-transform duration-200 mb-3 shadow-lg">
+                      <FiUserPlus className="h-8 w-8 text-white" />
+                    </div>
+                    <p className="font-semibold text-gray-900">Register New Patient</p>
+                    <p className="text-sm text-gray-500 mt-1">Create new patient record</p>
+                  </div>
+                </Link>
 
-              <Link
-                to="/outpatient/select"
-                className="p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all duration-200 text-center group"
-              >
-                <div className="flex flex-col items-center">
-                  <div className="p-3 rounded-full bg-green-100 group-hover:bg-green-200 transition-colors mb-3">
-                    <FiClipboard className="h-8 w-8 text-green-600" />
+                <Link
+                  to="/patients"
+                  className="p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-green-500 hover:bg-gradient-to-br hover:from-green-50 hover:to-emerald-50 transition-all duration-200 text-center group shadow-sm hover:shadow-md"
+                >
+                  <div className="flex flex-col items-center">
+                    <div className="p-3 rounded-full bg-gradient-to-br from-green-500 to-green-600 group-hover:scale-110 transition-transform duration-200 mb-3 shadow-lg">
+                      <FiClipboard className="h-8 w-8 text-white" />
+                    </div>
+                    <p className="font-semibold text-gray-900">Browse Patients</p>
+                    <p className="text-sm text-gray-500 mt-1">View all patient records</p>
                   </div>
-                  <p className="font-semibold text-gray-900">Existing Patient</p>
-                  <p className="text-sm text-gray-500 mt-1">Add record for existing patient</p>
-                </div>
-              </Link>
+                </Link>
 
-              <Link
-                to="/patients"
-                className="p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all duration-200 text-center group"
-              >
-                <div className="flex flex-col items-center">
-                  <div className="p-3 rounded-full bg-purple-100 group-hover:bg-purple-200 transition-colors mb-3">
-                    <FiUsers className="h-8 w-8 text-purple-600" />
+                <Link
+                  to="/patients"
+                  className="p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-purple-500 hover:bg-gradient-to-br hover:from-purple-50 hover:to-pink-50 transition-all duration-200 text-center group shadow-sm hover:shadow-md"
+                >
+                  <div className="flex flex-col items-center">
+                    <div className="p-3 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 group-hover:scale-110 transition-transform duration-200 mb-3 shadow-lg">
+                      <FiUsers className="h-8 w-8 text-white" />
+                    </div>
+                    <p className="font-semibold text-gray-900">Patient Management</p>
+                    <p className="text-sm text-gray-500 mt-1">Manage patient information</p>
                   </div>
-                  <p className="font-semibold text-gray-900">Browse Patients</p>
-                  <p className="text-sm text-gray-500 mt-1">View all patient records</p>
-                </div>
-              </Link>
-            </div>
-          </Card>
-        )}
+                </Link>
+              </div>
+            </Card>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-1">Welcome back, {user?.name}!</p>
-      </div>
-
-      {(patientsError || clinicalError || adlError) && (
-        <Card>
-          <div className="p-4 text-sm text-red-600">
-            {patientsError && <div>Failed to load patient stats.</div>}
-            {clinicalError && <div>Failed to load clinical stats.</div>}
-            {adlError && <div>Failed to load ADL stats.</div>}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+        {/* Enhanced Header */}
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-primary-600/10 to-primary-800/5 rounded-2xl"></div>
+          <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-6 sm:p-8 shadow-lg border border-white/50">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl blur-sm opacity-50"></div>
+                  <div className="relative p-4 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl shadow-lg">
+                    <FiActivity className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+                  </div>
+                </div>
+                <div>
+                  <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 bg-clip-text text-transparent">
+                    Dashboard
+                  </h1>
+                  <p className="text-gray-600 mt-1 text-base sm:text-lg">Welcome back, <span className="font-semibold text-gray-900">{user?.name}</span>!</p>
+                </div>
+              </div>
+            </div>
           </div>
-        </Card>
-      )}
+        </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Patients"
-          value={patientStats?.data?.stats?.total_patients}
-          icon={FiUsers}
-          color="bg-blue-500"
-          to="/patients"
-        />
-        
-        <StatCard
-          title="Clinical Records"
-          value={clinicalStats?.data?.stats?.total_proformas}
-          icon={FiFileText}
-          color="bg-green-500"
-          to="/clinical"
-        />
-        
-        <StatCard
-          title="Additional Detail File"
-          value={adlStats?.data?.stats?.total_files}
-          icon={FiFolder}
-          color="bg-purple-500"
-          to="/adl-files"
-        />
-        
-        <StatCard
-          title="Complex Cases"
-          value={clinicalStats?.data?.stats?.complex_cases}
-          icon={FiTrendingUp}
-          color="bg-orange-500"
-          to="/patients?complexity=complex"
-        />
-      </div>
+        {(patientsError || clinicalError || adlError) && (
+          <Card className="border-red-200 bg-red-50/50">
+            <div className="p-4 text-sm text-red-600">
+              {patientsError && <div className="flex items-center gap-2"><FiActivity className="w-4 h-4" />Failed to load patient stats.</div>}
+              {clinicalError && <div className="flex items-center gap-2"><FiActivity className="w-4 h-4" />Failed to load clinical stats.</div>}
+              {adlError && <div className="flex items-center gap-2"><FiActivity className="w-4 h-4" />Failed to load ADL stats.</div>}
+            </div>
+          </Card>
+        )}
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Patient Gender Distribution */}
-        <Card title="Patient Gender Distribution">
+        {/* Enhanced Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="Total Patients"
+            value={patientStats?.data?.stats?.total_patients}
+            icon={FiUsers}
+            colorClasses="from-blue-500 to-blue-600"
+            gradientFrom="from-blue-50"
+            gradientTo="to-indigo-100/50"
+            to="/patients"
+          />
+          
+          <StatCard
+            title="Clinical Records"
+            value={clinicalStats?.data?.stats?.total_proformas}
+            icon={FiFileText}
+            colorClasses="from-green-500 to-green-600"
+            gradientFrom="from-green-50"
+            gradientTo="to-emerald-100/50"
+            to="/clinical"
+          />
+          
+          <StatCard
+            title="Additional Detail File"
+            value={adlStats?.data?.stats?.total_files}
+            icon={FiFolder}
+            colorClasses="from-purple-500 to-purple-600"
+            gradientFrom="from-purple-50"
+            gradientTo="to-pink-100/50"
+            to="/adl-files"
+          />
+          
+          <StatCard
+            title="Complex Cases"
+            value={clinicalStats?.data?.stats?.complex_cases}
+            icon={FiTrendingUp}
+            colorClasses="from-orange-500 to-orange-600"
+            gradientFrom="from-orange-50"
+            gradientTo="to-amber-100/50"
+            to="/patients?complexity=complex"
+          />
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Patient Gender Distribution */}
+          <Card 
+            title={
+              <div className="flex items-center gap-2">
+                <FiUsers className="w-5 h-5 text-primary-600" />
+                <span>Patient Gender Distribution</span>
+              </div>
+            }
+            className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
+          >
           <div className="h-80">
             <Doughnut 
               data={genderChartData} 
@@ -569,8 +742,16 @@ const Dashboard = () => {
           </div>
         </Card>
 
-        {/* Clinical Cases Distribution */}
-        <Card title="Visit Type Distribution">
+          {/* Clinical Cases Distribution */}
+          <Card 
+            title={
+              <div className="flex items-center gap-2">
+                <FiFileText className="w-5 h-5 text-primary-600" />
+                <span>Visit Type Distribution</span>
+              </div>
+            }
+            className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
+          >
           <div className="h-80">
             <Bar 
               data={clinicalCasesChartData} 
@@ -588,8 +769,16 @@ const Dashboard = () => {
           </div>
         </Card>
 
-        {/* Case Severity Distribution */}
-        <Card title="Case Severity Distribution">
+          {/* Case Severity Distribution */}
+          <Card 
+            title={
+              <div className="flex items-center gap-2">
+                <FiTrendingUp className="w-5 h-5 text-primary-600" />
+                <span>Case Severity Distribution</span>
+              </div>
+            }
+            className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
+          >
           <div className="h-80">
             <Bar 
               data={severityChartData} 
@@ -607,8 +796,16 @@ const Dashboard = () => {
           </div>
         </Card>
 
-        {/* ADL File Status Distribution */}
-        <Card title="ADL File Status">
+          {/* ADL File Status Distribution */}
+          <Card 
+            title={
+              <div className="flex items-center gap-2">
+                <FiFolder className="w-5 h-5 text-primary-600" />
+                <span>ADL File Status Distribution</span>
+              </div>
+            }
+            className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
+          >
           <div className="h-80">
             <Doughnut 
               data={adlStatusChartData} 
@@ -623,12 +820,20 @@ const Dashboard = () => {
                 }
               }} 
             />
-          </div>
-        </Card>
-      </div>
+            </div>
+          </Card>
+        </div>
 
-      {/* Patient Age Distribution */}
-      <Card title="Patient Age Distribution">
+        {/* Patient Age Distribution */}
+        <Card 
+          title={
+            <div className="flex items-center gap-2">
+              <FiTrendingUp className="w-5 h-5 text-primary-600" />
+              <span>Patient Age Distribution</span>
+            </div>
+          }
+          className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
+        >
         <div className="h-96">
           <Line 
             data={ageChartData} 
@@ -652,11 +857,19 @@ const Dashboard = () => {
             }} 
           />
         </div>
-      </Card>
+        </Card>
 
-      {/* Detailed Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card title="Patient Statistics">
+        {/* Detailed Stats */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card 
+            title={
+              <div className="flex items-center gap-2">
+                <FiUsers className="w-5 h-5 text-primary-600" />
+                <span>Patient Statistics</span>
+              </div>
+            }
+            className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
+          >
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Male Patients</span>
@@ -673,11 +886,19 @@ const Dashboard = () => {
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Complex Cases</span>
               <Badge variant="warning">{clinicalStats?.data?.stats?.complex_cases || 0}</Badge>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card title="Clinical Statistics">
+          <Card 
+            title={
+              <div className="flex items-center gap-2">
+                <FiFileText className="w-5 h-5 text-primary-600" />
+                <span>Clinical Statistics</span>
+              </div>
+            }
+            className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/50"
+          >
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-gray-600">First Visits</span>
@@ -694,65 +915,12 @@ const Dashboard = () => {
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Cases Requiring ADL</span>
               <Badge variant="warning">{clinicalStats?.data?.stats?.cases_requiring_adl || 0}</Badge>
+              </div>
             </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Role-based Quick Actions */}
-      {/* <Card title="Quick Actions">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {user?.role === 'MWO' ? (
-            <Link
-              to="/patients/new"
-              className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center"
-            >
-              <FiUsers className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-              <p className="font-medium">Register Patient & Create Record</p>
-            </Link>
-          ) : (
-            <>
-              <Link
-                to="/patients/new"
-                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center"
-              >
-                <FiUsers className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                <p className="font-medium">Register New Patient</p>
-              </Link>
-
-              {user?.role === 'Admin' && (
-                <Link
-                  to="/outpatient/new"
-                  className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center"
-                >
-                  <FiClipboard className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  <p className="font-medium">New Outpatient Record</p>
-                </Link>
-              )}
-            </>
-          )}
-
-          {(user?.role === 'JR' || user?.role === 'SR' || user?.role === 'Admin') && (
-            <>
-              <Link
-                to="/clinical/new"
-               className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center"
-              >
-                <FiFileText className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                <p className="font-medium">Create Clinical Proforma</p>
-              </Link>
-
-              <Link
-                to="/adl-files"
-                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center"
-              >
-                <FiFolder className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                <p className="font-medium">Manage Additional Detail File</p>
-              </Link>
-            </>
-          )}
+          </Card>
         </div>
-      </Card> */}
+
+      </div>
     </div>
   );
 };
