@@ -62,10 +62,23 @@ const authorizeRoles = (...roles) => {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
+    // Flatten roles array (handle both authorizeRoles('JR', 'SR') and authorizeRoles(['JR', 'SR']))
+    const flatRoles = roles.flat();
+    
+    // Normalize role comparison (trim whitespace and handle case)
+    const userRole = req.user.role ? req.user.role.trim() : null;
+    const normalizedRoles = flatRoles.map(r => typeof r === 'string' ? r.trim() : r);
+    
+    // Check if user role matches any of the allowed roles (case-insensitive)
+    const hasAccess = normalizedRoles.some(role => 
+      userRole && userRole.toLowerCase() === role.toLowerCase()
+    );
+
+    if (!hasAccess) {
+      console.error(`[Authorization] User role "${userRole}" not in allowed roles: [${normalizedRoles.join(', ')}]`);
       return res.status(403).json({ 
         success: false, 
-        message: `Access denied. Required roles: ${roles.join(', ')}` 
+        message: `Access denied. Required roles: ${normalizedRoles.join(', ')}. Your role: ${userRole || 'unknown'}` 
       });
     }
 

@@ -1,13 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../features/auth/authSlice';
 import { useGetPatientByIdQuery } from '../../features/patients/patientsApiSlice';
 import { useGetClinicalProformaByPatientIdQuery } from '../../features/clinical/clinicalApiSlice';
+import { useGetPrescriptionsByProformaIdQuery, useCreateBulkPrescriptionsMutation } from '../../features/prescriptions/prescriptionApiSlice';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
-import { FiPackage, FiUser, FiSave, FiX, FiPlus, FiTrash2, FiHome, FiUserCheck, FiCalendar, FiFileText, FiClock, FiPrinter } from 'react-icons/fi';
+import { FiPackage, FiUser, FiSave, FiX, FiPlus, FiTrash2, FiHome, FiUserCheck, FiCalendar, FiFileText, FiClock, FiPrinter, FiList, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import PGI_Logo from '../../assets/PGI_Logo.png';
 
 const PrescribeMedication = () => {
@@ -28,11 +29,28 @@ const PrescribeMedication = () => {
     { skip: !patientId }
   );
 
+  const [createBulkPrescriptions, { isLoading: isSavingPrescriptions }] = useCreateBulkPrescriptionsMutation();
+
   const patient = patientData?.data?.patient;
   const clinicalHistory = clinicalHistoryData?.data?.proformas || [];
 
   // Get the most recent clinical proforma for past history
   const latestProforma = clinicalHistory.length > 0 ? clinicalHistory[0] : null;
+
+  // Get today's proforma or latest proforma for linking prescriptions
+  const getProformaForPrescription = () => {
+    if (!clinicalHistory.length) return null;
+    
+    const today = new Date().toISOString().split('T')[0];
+    // Try to find today's proforma first
+    const todayProforma = clinicalHistory.find(p => {
+      const visitDate = p.visit_date || p.created_at;
+      return visitDate && new Date(visitDate).toISOString().split('T')[0] === today;
+    });
+    
+    // Return today's proforma or the latest one
+    return todayProforma || latestProforma;
+  };
   
   // Format date for display
   const formatDate = (dateString) => {
@@ -69,7 +87,7 @@ const PrescribeMedication = () => {
     setPrescriptions([{ medicine: '', dosage: '', when: '', frequency: '', duration: '', qty: '', details: '', notes: '' }]);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Filter out empty prescriptions
     const validPrescriptions = prescriptions.filter(p => p.medicine || p.dosage || p.frequency || p.details);
     
@@ -78,28 +96,63 @@ const PrescribeMedication = () => {
       return;
     }
 
-    // Convert prescription rows into a readable text blob
-    const prescriptionText = validPrescriptions
-      .map((p, idx) => `${idx + 1}. ${p.medicine || ''} | ${p.dosage || ''} | ${p.when || ''} | ${p.frequency || ''} | ${p.duration || ''} | ${p.qty || ''} | ${p.details || ''} | ${p.notes || ''}`)
-      .join('\n');
-
-    // Store in localStorage for now (can be integrated with API later)
-    const prescriptionData = {
-      patient_id: patientId,
-      prescriptions: validPrescriptions,
-      prescription_text: prescriptionText,
-      created_at: new Date().toISOString(),
-    };
-
-    // Store prescriptions for this patient
-    const storedPrescriptions = JSON.parse(localStorage.getItem('patient_prescriptions') || '{}');
-    storedPrescriptions[patientId] = prescriptionData;
-    localStorage.setItem('patient_prescriptions', JSON.stringify(storedPrescriptions));
-
-    toast.success('Prescription saved successfully!');
+    // Get the clinical proforma to link prescriptions to
+    const proformaForPrescription = getProformaForPrescription();
     
-    // Optionally navigate back or to proforma creation
-    // navigate(`/clinical/new?patient_id=${patientId}`);
+    if (!proformaForPrescription || !proformaForPrescription.id) {
+      toast.error('No clinical proforma found. Please create a clinical proforma first before saving prescriptions.');
+      return;
+    }
+
+    try {
+      // Prepare prescriptions data for API (ensure medicine is not empty)
+      const prescriptionsToSave = validPrescriptions
+        .filter(p => p.medicine && p.medicine.trim()) // Ensure medicine is not empty
+        .map(p => ({
+          medicine: p.medicine.trim(),
+          dosage: p.dosage?.trim() || null,
+          when: p.when?.trim() || null,
+          frequency: p.frequency?.trim() || null,
+          duration: p.duration?.trim() || null,
+          qty: p.qty?.trim() || null,
+          details: p.details?.trim() || null,
+          notes: p.notes?.trim() || null,
+        }));
+      
+      if (prescriptionsToSave.length === 0) {
+        toast.error('Please add at least one medication with a valid medicine name');
+        return;
+      }
+
+      // Save to backend using bulk API
+      const result = await createBulkPrescriptions({
+        clinical_proforma_id: proformaForPrescription.id,
+        prescriptions: prescriptionsToSave,
+      }).unwrap();
+
+      // Also save to localStorage as backup
+      const prescriptionText = validPrescriptions
+        .map((p, idx) => `${idx + 1}. ${p.medicine || ''} | ${p.dosage || ''} | ${p.when || ''} | ${p.frequency || ''} | ${p.duration || ''} | ${p.qty || ''} | ${p.details || ''} | ${p.notes || ''}`)
+        .join('\n');
+
+      const prescriptionData = {
+        patient_id: patientId,
+        prescriptions: validPrescriptions,
+        prescription_text: prescriptionText,
+        created_at: new Date().toISOString(),
+        clinical_proforma_id: proformaForPrescription.id,
+      };
+
+      const storedPrescriptions = JSON.parse(localStorage.getItem('patient_prescriptions') || '{}');
+      storedPrescriptions[patientId] = prescriptionData;
+      localStorage.setItem('patient_prescriptions', JSON.stringify(storedPrescriptions));
+
+      toast.success(`Prescription saved successfully! ${result?.data?.prescriptions?.length || validPrescriptions.length} medication(s) recorded.`);
+      
+    } catch (error) {
+      console.error('Error saving prescriptions:', error);
+      toast.error(error?.data?.message || 'Failed to save prescriptions. Please try again.');
+    }
   };
 
   const handlePrint = () => {
@@ -916,16 +969,252 @@ const PrescribeMedication = () => {
             <Button 
               type="button" 
               onClick={handleSave}
-              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+              disabled={isSavingPrescriptions}
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FiSave className="w-4 h-4 mr-2" />
-              Save Prescription
+              {isSavingPrescriptions ? 'Saving...' : 'Save Prescription'}
             </Button>
           </div>
         </Card>
+
+        {/* Visit & Prescription History - Only for JR/SR/Admin */}
+        {(currentUser?.role === 'JR' || currentUser?.role === 'SR' || currentUser?.role === 'Admin') && clinicalHistory.length > 0 && (
+          <VisitHistorySection 
+            clinicalHistory={clinicalHistory}
+            patientId={patientId}
+            formatDate={formatDate}
+            formatDateFull={formatDateFull}
+          />
+        )}
       </div>
     </div>
     </>
+  );
+};
+
+// Visit History Component
+const VisitHistorySection = ({ clinicalHistory, patientId, formatDate, formatDateFull }) => {
+  const [expandedDates, setExpandedDates] = useState({});
+  const [localPrescriptions, setLocalPrescriptions] = useState({});
+
+  // Load localStorage prescriptions
+  useEffect(() => {
+    if (patientId) {
+      const storedPrescriptions = JSON.parse(localStorage.getItem('patient_prescriptions') || '{}');
+      const patientPrescriptions = storedPrescriptions[patientId];
+      if (patientPrescriptions) {
+        setLocalPrescriptions({ [patientPrescriptions.created_at]: patientPrescriptions.prescriptions });
+      }
+    }
+  }, [patientId]);
+
+  // Group visits by date
+  const visitsByDate = useMemo(() => {
+    const grouped = {};
+    clinicalHistory.forEach((proforma) => {
+      const visitDate = proforma.visit_date || proforma.created_at;
+      const dateKey = new Date(visitDate).toISOString().split('T')[0];
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
+      }
+      grouped[dateKey].push(proforma);
+    });
+    // Sort dates descending
+    return Object.keys(grouped)
+      .sort((a, b) => new Date(b) - new Date(a))
+      .reduce((acc, date) => {
+        acc[date] = grouped[date].sort((a, b) => 
+          new Date(b.visit_date || b.created_at) - new Date(a.visit_date || a.created_at)
+        );
+        return acc;
+      }, {});
+  }, [clinicalHistory]);
+
+  const toggleDate = (date) => {
+    setExpandedDates(prev => ({
+      ...prev,
+      [date]: !prev[date]
+    }));
+  };
+
+  return (
+    <Card 
+      title={
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-indigo-100 rounded-lg">
+            <FiList className="w-6 h-6 text-indigo-600" />
+          </div>
+          <span className="text-xl font-bold text-gray-900">Visit & Prescription History</span>
+        </div>
+      }
+      className="shadow-xl border-0 bg-white/80 backdrop-blur-sm no-print"
+    >
+      <div className="space-y-4">
+        {Object.keys(visitsByDate).length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <FiList className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+            <p>No visit history available</p>
+          </div>
+        ) : (
+          Object.entries(visitsByDate).map(([dateKey, proformas]) => (
+            <VisitDateGroup
+              key={dateKey}
+              date={dateKey}
+              proformas={proformas}
+              isExpanded={expandedDates[dateKey] ?? false}
+              onToggle={() => toggleDate(dateKey)}
+              formatDate={formatDate}
+              formatDateFull={formatDateFull}
+            />
+          ))
+        )}
+      </div>
+    </Card>
+  );
+};
+
+// Visit Date Group Component
+const VisitDateGroup = ({ date, proformas, isExpanded, onToggle, formatDate, formatDateFull }) => {
+  return (
+    <div className="border border-gray-200 rounded-lg overflow-hidden bg-gradient-to-r from-gray-50 to-white">
+      <button
+        onClick={onToggle}
+        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-100 transition-colors"
+      >
+        <div className="flex items-center gap-4">
+          <div className="p-2 bg-indigo-100 rounded-lg">
+            <FiCalendar className="w-5 h-5 text-indigo-600" />
+          </div>
+          <div className="text-left">
+            <h3 className="text-lg font-bold text-gray-900">
+              {formatDateFull(date)}
+            </h3>
+            <p className="text-sm text-gray-600">
+              {proformas.length} visit{proformas.length > 1 ? 's' : ''}
+            </p>
+          </div>
+        </div>
+        {isExpanded ? (
+          <FiChevronUp className="w-5 h-5 text-gray-600" />
+        ) : (
+          <FiChevronDown className="w-5 h-5 text-gray-600" />
+        )}
+      </button>
+
+      {isExpanded && (
+        <div className="px-6 py-4 space-y-4 border-t border-gray-200 bg-white">
+          {proformas.map((proforma) => (
+            <VisitDetails
+              key={proforma.id}
+              proforma={proforma}
+              formatDate={formatDate}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Visit Details Component
+const VisitDetails = ({ proforma, formatDate }) => {
+  const { data: prescriptionsData, isLoading: loadingPrescriptions } = useGetPrescriptionsByProformaIdQuery(
+    proforma.id,
+    { skip: !proforma.id }
+  );
+
+  const prescriptions = prescriptionsData?.data?.prescriptions || [];
+
+  return (
+    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100">
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <FiFileText className="w-4 h-4 text-blue-600" />
+            <span className="font-semibold text-gray-900">Visit Details</span>
+          </div>
+          <p className="text-sm text-gray-600">
+            {proforma.visit_date ? formatDate(proforma.visit_date) : 'Date not available'}
+            {proforma.visit_type && ` • ${proforma.visit_type}`}
+          </p>
+        </div>
+        {proforma.case_severity && (
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+            proforma.case_severity === 'severe' 
+              ? 'bg-red-100 text-red-700' 
+              : proforma.case_severity === 'moderate'
+              ? 'bg-yellow-100 text-yellow-700'
+              : 'bg-green-100 text-green-700'
+          }`}>
+            {proforma.case_severity}
+          </span>
+        )}
+      </div>
+
+      {/* Diagnosis & Treatment */}
+      {(proforma.diagnosis || proforma.treatment_prescribed) && (
+        <div className="mb-3 space-y-2">
+          {proforma.diagnosis && (
+            <div>
+              <span className="text-xs font-semibold text-gray-700">Diagnosis: </span>
+              <span className="text-sm text-gray-900">{proforma.diagnosis}</span>
+              {proforma.icd_code && (
+                <span className="text-xs text-gray-600 ml-2 font-mono">({proforma.icd_code})</span>
+              )}
+            </div>
+          )}
+          {proforma.treatment_prescribed && (
+            <div>
+              <span className="text-xs font-semibold text-gray-700">Treatment: </span>
+              <span className="text-sm text-gray-900 whitespace-pre-wrap">{proforma.treatment_prescribed}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Prescriptions */}
+      {loadingPrescriptions ? (
+        <div className="text-sm text-gray-500 italic">Loading prescriptions...</div>
+      ) : prescriptions.length > 0 ? (
+        <div className="mt-3 pt-3 border-t border-blue-200">
+          <div className="flex items-center gap-2 mb-2">
+            <FiPackage className="w-4 h-4 text-indigo-600" />
+            <span className="text-sm font-semibold text-gray-900">Prescribed Medications</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-xs border border-gray-200 rounded">
+              <thead className="bg-indigo-50">
+                <tr>
+                  <th className="px-2 py-1 text-left border-b">#</th>
+                  <th className="px-2 py-1 text-left border-b">Medicine</th>
+                  <th className="px-2 py-1 text-left border-b">Dosage</th>
+                  <th className="px-2 py-1 text-left border-b">When</th>
+                  <th className="px-2 py-1 text-left border-b">Frequency</th>
+                  <th className="px-2 py-1 text-left border-b">Duration</th>
+                  <th className="px-2 py-1 text-left border-b">Qty</th>
+                </tr>
+              </thead>
+              <tbody>
+                {prescriptions.map((prescription, idx) => (
+                  <tr key={prescription.id} className="hover:bg-gray-50">
+                    <td className="px-2 py-1 border-b">{idx + 1}</td>
+                    <td className="px-2 py-1 border-b font-medium">{prescription.medicine || '-'}</td>
+                    <td className="px-2 py-1 border-b">{prescription.dosage || '-'}</td>
+                    <td className="px-2 py-1 border-b">{prescription.when || '-'}</td>
+                    <td className="px-2 py-1 border-b">{prescription.frequency || '-'}</td>
+                    <td className="px-2 py-1 border-b">{prescription.duration || '-'}</td>
+                    <td className="px-2 py-1 border-b">{prescription.qty || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div className="text-sm text-gray-500 italic mt-2">No prescriptions recorded for this visit</div>
+      )}
+    </div>
   );
 };
 

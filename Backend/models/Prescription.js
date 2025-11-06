@@ -6,10 +6,12 @@ class Prescription {
     this.clinical_proforma_id = data.clinical_proforma_id;
     this.medicine = data.medicine;
     this.dosage = data.dosage;
-    this.when_taken = data.when_taken || data.when; // Handle both field names for compatibility
+    // Database column is 'when_to_take', but we support 'when' and 'when_taken' for API compatibility
+    this.when_taken = data.when_to_take || data.when_taken || data.when;
     this.frequency = data.frequency;
     this.duration = data.duration;
-    this.quantity = data.quantity || data.qty; // Handle both field names
+    // Database column is 'quantity', but we support 'qty' for API compatibility
+    this.quantity = data.quantity || data.qty;
     this.details = data.details;
     this.notes = data.notes;
     this.created_at = data.created_at;
@@ -43,7 +45,7 @@ class Prescription {
 
       const result = await db.query(
         `INSERT INTO prescriptions (
-          clinical_proforma_id, medicine, dosage, when_taken, frequency, 
+          clinical_proforma_id, medicine, dosage, when_to_take, frequency, 
           duration, quantity, details, notes
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *`,
@@ -72,9 +74,8 @@ class Prescription {
         return [];
       }
 
-      const values = [];
-      const placeholders = [];
-      let paramCount = 0;
+      // Prepare data array for Supabase bulk insert
+      const insertData = [];
 
       for (const prescription of prescriptionsArray) {
         const {
@@ -98,37 +99,42 @@ class Prescription {
         const whenValue = when_taken || when || null;
         const quantityValue = quantity || qty || null;
 
-        placeholders.push(
-          `($${++paramCount}, $${++paramCount}, $${++paramCount}, $${++paramCount}, $${++paramCount}, $${++paramCount}, $${++paramCount}, $${++paramCount}, $${++paramCount})`
-        );
-
-        values.push(
+        insertData.push({
           clinical_proforma_id,
           medicine,
-          dosage || null,
-          whenValue,
-          frequency || null,
-          duration || null,
-          quantityValue,
-          details || null,
-          notes || null
-        );
+          dosage: dosage || null,
+          when_to_take: whenValue, // Use correct database column name
+          frequency: frequency || null,
+          duration: duration || null,
+          quantity: quantityValue, // Use correct database column name
+          details: details || null,
+          notes: notes || null
+        });
       }
 
-      if (placeholders.length === 0) {
+      if (insertData.length === 0) {
         return [];
       }
 
-      const result = await db.query(
-        `INSERT INTO prescriptions (
-          clinical_proforma_id, medicine, dosage, when_taken, frequency, 
-          duration, quantity, details, notes
-        ) VALUES ${placeholders.join(', ')}
-        RETURNING *`,
-        values
-      );
+      try {
+        // Use Supabase client directly for bulk insert
+        const { supabaseAdmin } = require('../config/database');
+        const { data: result, error } = await supabaseAdmin
+          .from('prescriptions')
+          .insert(insertData)
+          .select();
 
-      return result.rows.map(row => new Prescription(row));
+        if (error) {
+          console.error('Supabase bulk insert error:', error);
+          throw error;
+        }
+
+        return (result || []).map(row => new Prescription(row));
+      } catch (dbError) {
+        console.error('Database error in createBulk:', dbError);
+        console.error('Insert data count:', insertData.length);
+        throw dbError;
+      }
     } catch (error) {
       throw error;
     }
@@ -169,12 +175,13 @@ class Prescription {
       const allowedFields = [
         'medicine',
         'dosage',
+        'when_to_take',
         'when_taken',
-        'when', // Support both for updates
+        'when', // Support multiple field names for API compatibility
         'frequency',
         'duration',
         'quantity',
-        'qty', // Support both for updates
+        'qty', // Support both for API compatibility
         'details',
         'notes'
       ];
@@ -186,11 +193,15 @@ class Prescription {
       for (const [key, value] of Object.entries(updateData)) {
         if (allowedFields.includes(key) && value !== undefined) {
           paramCount++;
-          if (key === 'when') {
-            updates.push(`when_taken = $${paramCount}`);
+          // Map API field names to database column names
+          if (key === 'when' || key === 'when_taken') {
+            updates.push(`when_to_take = $${paramCount}`);
             values.push(value);
           } else if (key === 'qty') {
             updates.push(`quantity = $${paramCount}`);
+            values.push(value);
+          } else if (key === 'when_to_take') {
+            updates.push(`when_to_take = $${paramCount}`);
             values.push(value);
           } else {
             updates.push(`${key} = $${paramCount}`);

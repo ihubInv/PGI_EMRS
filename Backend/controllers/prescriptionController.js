@@ -96,10 +96,13 @@ const createBulkPrescriptions = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating bulk prescriptions:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Request body:', JSON.stringify(req.body, null, 2));
     res.status(500).json({
       success: false,
       message: 'Failed to create prescriptions',
-      error: error.message
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };
