@@ -872,12 +872,32 @@ class Patient {
 
       const query = `
         SELECT
-          p.*,
+          p.id, p.name, p.cr_no, p.psy_no, p.adl_no, p.sex, p.actual_age, 
+          p.dob, p.age_group, p.marital_status, p.year_of_marriage, 
+          p.no_of_children, p.no_of_children_male, p.no_of_children_female,
+          p.occupation, p.education_level, p.religion, p.family_type, p.locality,
+          p.patient_income, p.family_income, p.contact_number,
+          p.head_name, p.head_age, p.head_relationship, p.head_education, 
+          p.head_occupation, p.head_income,
+          p.present_address_line_1, p.present_country, p.present_state, 
+          p.present_district, p.present_city_town_village, p.present_pin_code,
+          p.permanent_address_line_1, p.permanent_country, p.permanent_state,
+          p.permanent_district, p.permanent_city_town_village, p.permanent_pin_code,
+          p.address_line_1, p.country, p.state, p.district, p.city_town_village, p.pin_code,
+          p.category, p.special_clinic_no, p.assigned_room, p.created_at,
+          CASE WHEN af.id IS NOT NULL THEN true ELSE COALESCE(p.has_adl_file, false) END as has_adl_file,
+          CASE 
+            WHEN af.id IS NOT NULL THEN 'complex'
+            WHEN p.case_complexity IS NOT NULL THEN p.case_complexity
+            ELSE 'simple'
+          END as case_complexity,
+          p.file_status,
           pa.assigned_doctor as assigned_doctor_id,
           u.name as assigned_doctor_name,
           u.role as assigned_doctor_role,
           pa.visit_date as last_assigned_date
         FROM patients p
+        LEFT JOIN adl_files af ON af.patient_id = p.id
         LEFT JOIN LATERAL (
           SELECT * FROM patient_assignments
           WHERE patient_id = p.id
@@ -886,6 +906,21 @@ class Patient {
         ) pa ON true
         LEFT JOIN users u ON pa.assigned_doctor = u.id
         WHERE p.name ILIKE $1 OR p.cr_no ILIKE $1 OR p.psy_no ILIKE $1 OR p.adl_no ILIKE $1
+        GROUP BY p.id, p.name, p.cr_no, p.psy_no, p.adl_no, p.sex, p.actual_age, 
+          p.dob, p.age_group, p.marital_status, p.year_of_marriage, 
+          p.no_of_children, p.no_of_children_male, p.no_of_children_female,
+          p.occupation, p.education_level, p.religion, p.family_type, p.locality,
+          p.patient_income, p.family_income, p.contact_number,
+          p.head_name, p.head_age, p.head_relationship, p.head_education, 
+          p.head_occupation, p.head_income,
+          p.present_address_line_1, p.present_country, p.present_state, 
+          p.present_district, p.present_city_town_village, p.present_pin_code,
+          p.permanent_address_line_1, p.permanent_country, p.permanent_state,
+          p.permanent_district, p.permanent_city_town_village, p.permanent_pin_code,
+          p.address_line_1, p.country, p.state, p.district, p.city_town_village, p.pin_code,
+          p.category, p.special_clinic_no, p.assigned_room, p.created_at,
+          p.has_adl_file, p.case_complexity, p.file_status, af.id,
+          pa.assigned_doctor, u.name, u.role, pa.visit_date
         ORDER BY p.created_at DESC
         LIMIT $2 OFFSET $3
       `;
@@ -938,44 +973,102 @@ class Patient {
       let idx = 1;
 
       if (filters.sex) {
-        where.push(`sex = $${idx++}`);
+        where.push(`p.sex = $${idx++}`);
         params.push(filters.sex);
       }
       if (filters.case_complexity) {
-        where.push(`case_complexity = $${idx++}`);
-        params.push(filters.case_complexity);
+        // For complex filter, check both stored value and actual ADL file existence
+        if (filters.case_complexity === 'complex') {
+          where.push(`(p.case_complexity = 'complex' OR af.id IS NOT NULL)`);
+        } else {
+          where.push(`p.case_complexity = $${idx++}`);
+          params.push(filters.case_complexity);
+        }
       }
       if (filters.has_adl_file !== undefined) {
-        where.push(`has_adl_file = $${idx++}`);
-        params.push(filters.has_adl_file);
+        // For has_adl_file filter, check both stored value and actual ADL file existence
+        if (filters.has_adl_file) {
+          where.push(`(p.has_adl_file = true OR af.id IS NOT NULL)`);
+        } else {
+          where.push(`(p.has_adl_file = false AND af.id IS NULL)`);
+        }
       }
       if (filters.file_status) {
-        where.push(`file_status = $${idx++}`);
+        where.push(`p.file_status = $${idx++}`);
         params.push(filters.file_status);
       }
       if (filters.assigned_room) {
-        where.push(`assigned_room = $${idx++}`);
+        where.push(`p.assigned_room = $${idx++}`);
         params.push(filters.assigned_room);
       }
 
       const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
       const query = `
-        SELECT * FROM patients
+        SELECT 
+          p.id, p.name, p.cr_no, p.psy_no, p.adl_no, p.sex, p.actual_age, 
+          p.dob, p.age_group, p.marital_status, p.year_of_marriage, 
+          p.no_of_children, p.no_of_children_male, p.no_of_children_female,
+          p.occupation, p.education_level, p.religion, p.family_type, p.locality,
+          p.patient_income, p.family_income, p.contact_number,
+          p.head_name, p.head_age, p.head_relationship, p.head_education, 
+          p.head_occupation, p.head_income,
+          p.present_address_line_1, p.present_country, p.present_state, 
+          p.present_district, p.present_city_town_village, p.present_pin_code,
+          p.permanent_address_line_1, p.permanent_country, p.permanent_state,
+          p.permanent_district, p.permanent_city_town_village, p.permanent_pin_code,
+          p.address_line_1, p.country, p.state, p.district, p.city_town_village, p.pin_code,
+          p.category, p.special_clinic_no, p.assigned_room, p.created_at,
+          CASE WHEN af.id IS NOT NULL THEN true ELSE COALESCE(p.has_adl_file, false) END as has_adl_file,
+          CASE 
+            WHEN af.id IS NOT NULL THEN 'complex'
+            WHEN p.case_complexity IS NOT NULL THEN p.case_complexity
+            ELSE 'simple'
+          END as case_complexity,
+          p.file_status
+        FROM patients p
+        LEFT JOIN adl_files af ON af.patient_id = p.id
         ${whereClause}
-        ORDER BY created_at DESC
+        GROUP BY p.id, p.name, p.cr_no, p.psy_no, p.adl_no, p.sex, p.actual_age, 
+          p.dob, p.age_group, p.marital_status, p.year_of_marriage, 
+          p.no_of_children, p.no_of_children_male, p.no_of_children_female,
+          p.occupation, p.education_level, p.religion, p.family_type, p.locality,
+          p.patient_income, p.family_income, p.contact_number,
+          p.head_name, p.head_age, p.head_relationship, p.head_education, 
+          p.head_occupation, p.head_income,
+          p.present_address_line_1, p.present_country, p.present_state, 
+          p.present_district, p.present_city_town_village, p.present_pin_code,
+          p.permanent_address_line_1, p.permanent_country, p.permanent_state,
+          p.permanent_district, p.permanent_city_town_village, p.permanent_pin_code,
+          p.address_line_1, p.country, p.state, p.district, p.city_town_village, p.pin_code,
+          p.category, p.special_clinic_no, p.assigned_room, p.created_at,
+          p.has_adl_file, p.case_complexity, p.file_status, af.id
+        ORDER BY p.created_at DESC
         LIMIT $${idx++} OFFSET $${idx++}
       `;
       params.push(limit, offset);
 
+      // Build count query with same filters but without LIMIT/OFFSET
+      const countParams = params.slice(0, params.length - 2); // Remove limit and offset params
       const countQuery = `
-        SELECT COUNT(*) as cnt FROM patients
+        SELECT COUNT(DISTINCT p.id) as cnt FROM patients p
+        LEFT JOIN adl_files af ON af.patient_id = p.id
         ${whereClause}
       `;
 
       const [patientsResult, countResult] = await Promise.all([
-        db.query(query, params),
-        db.query(countQuery, params.slice(0, params.length - 2)) // same filter params without limit/offset
+        db.query(query, params).catch(err => {
+          console.error('[Patient.findAll] Query error:', err);
+          console.error('[Patient.findAll] Query:', query);
+          console.error('[Patient.findAll] Params:', params);
+          throw err;
+        }),
+        db.query(countQuery, countParams).catch(err => {
+          console.error('[Patient.findAll] Count query error:', err);
+          console.error('[Patient.findAll] Count query:', countQuery);
+          console.error('[Patient.findAll] Count params:', countParams);
+          throw err;
+        })
       ]);
 
       const patients = patientsResult.rows.map(r => new Patient(r).toJSON());

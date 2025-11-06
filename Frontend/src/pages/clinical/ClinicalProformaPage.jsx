@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FiPlus, FiSearch, FiEdit, FiTrash2, FiEye, FiRefreshCw } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiEdit, FiTrash2, FiEye, FiRefreshCw, FiUsers } from 'react-icons/fi';
 import {
   useGetAllClinicalProformasQuery,
   useDeleteClinicalProformaMutation,
@@ -43,6 +43,14 @@ const ClinicalProformaPage = () => {
     {
       header: 'Patient',
       accessor: 'patient_name',
+      render: (row) => (
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center">
+            <FiUsers className="w-4 h-4 text-blue-600" />
+          </div>
+          <span className="font-medium text-gray-900">{row.patient_name || 'N/A'}</span>
+        </div>
+      ),
     },
     {
       header: 'Visit Date',

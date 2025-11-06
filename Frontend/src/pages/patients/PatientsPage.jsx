@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import { 
   FiPlus, FiSearch, FiTrash2, FiEye, FiUserPlus, FiEdit, FiUsers, 
   FiFilter, FiRefreshCw, FiDownload, FiMoreVertical, FiClock, 
-  FiHeart, FiFileText, FiShield, FiTrendingUp, FiMapPin
+  FiHeart, FiFileText, FiShield, FiTrendingUp, FiMapPin, FiClipboard
 } from 'react-icons/fi';
 import { useGetAllPatientsQuery, useDeletePatientMutation, useAssignPatientMutation } from '../../features/patients/patientsApiSlice';
 import { selectCurrentUser } from '../../features/auth/authSlice';
@@ -245,6 +245,19 @@ const PatientsPage = () => {
               <FiEdit className="w-4 h-4 text-green-600" />
             </Button>
           </Link>
+          {/* Show Clinical Proforma button only for JR, SR, and Admin */}
+          {(user?.role === 'JR' || user?.role === 'SR' || user?.role === 'Admin') && (
+            <Link to={`/clinical?patient_id=${row.id}`}>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-9 w-9 p-0 bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border border-purple-200 hover:border-purple-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
+                title="View Clinical Proforma"
+              >
+                <FiClipboard className="w-4 h-4 text-purple-600" />
+              </Button>
+            </Link>
+          )}
           {/* {user?.role === 'MWO' && (
             <Button 
               variant="ghost" 

@@ -1195,7 +1195,10 @@ class ClinicalController {
 
       res.json({
         success: true,
-        data: result
+        data: {
+          proformas: result.proformas.map(p => p.toJSON()),
+          pagination: result.pagination
+        }
       });
     } catch (error) {
       console.error('Get all clinical proformas error:', error);

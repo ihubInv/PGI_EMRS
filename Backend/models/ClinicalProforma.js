@@ -1366,6 +1366,13 @@ class ClinicalProforma {
     // ADL File Reference (only reference, no ADL data stored here)
     this.adl_file_id = data.adl_file_id;
     
+    // Joined fields from related tables (for queries with JOINs)
+    this.patient_name = data.patient_name;
+    this.cr_no = data.cr_no;
+    this.psy_no = data.psy_no;
+    this.doctor_name = data.doctor_name;
+    this.doctor_role = data.doctor_role;
+    
     this.created_at = data.created_at;
   }
 
