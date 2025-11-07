@@ -153,7 +153,7 @@ const Profile = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="space-y-6 p-4 sm:p-6 lg:p-8">
         {/* Enhanced Header */}
-        <div className="relative overflow-hidden">
+        {/* <div className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-primary-600/10 to-primary-800/5 rounded-2xl"></div>
           <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-6 sm:p-8 shadow-lg border border-white/50">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -178,7 +178,7 @@ const Profile = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Enhanced Tabs */}
         <Card className="shadow-lg border border-gray-200/50 bg-white/90 backdrop-blur-sm overflow-hidden p-0">

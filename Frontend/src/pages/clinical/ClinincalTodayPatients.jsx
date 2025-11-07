@@ -475,7 +475,7 @@ const ClinicalTodayPatients = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="w-full px-4 sm:px-6 lg:px-8 space-y-6 py-6">
         {/* Enhanced Header */}
-        <div className="relative overflow-hidden">
+        {/* <div className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-primary-600/10 to-primary-800/5 rounded-2xl"></div>
           <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-6 sm:p-8 shadow-lg border border-white/50">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -509,7 +509,7 @@ const ClinicalTodayPatients = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Enhanced Tabs */}
         <Card className="shadow-lg border border-gray-200/50 bg-white/90 backdrop-blur-sm overflow-hidden">
@@ -564,7 +564,7 @@ const ClinicalTodayPatients = () => {
         </Card>
 
         {/* Enhanced Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
@@ -632,7 +632,7 @@ const ClinicalTodayPatients = () => {
             </div>
             <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-orange-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
           </div>
-        </div>
+        </div> */}
 
         {/* Patients List */}
         <Card className="shadow-lg border border-gray-200/50 bg-white/90 backdrop-blur-sm">

@@ -145,7 +145,7 @@ const Login = () => {
                 Electronic  Medical Record System
                 </h2>
                 <p className="text-lg leading-relaxed text-gray-700">
-                  Digitally transforming patient care through advanced electronic medical records system
+                  Where technology meets care — redefining patient records for the digital age.
                 </p>
               </div>
             </div>

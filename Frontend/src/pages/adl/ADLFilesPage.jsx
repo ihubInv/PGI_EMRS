@@ -318,7 +318,7 @@ const ADLFilesPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="space-y-6 p-4 sm:p-6 lg:p-8">
         {/* Enhanced Header */}
-        <div className="relative overflow-hidden">
+        {/* <div className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-primary-600/10 to-primary-800/5 rounded-2xl"></div>
           <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-6 sm:p-8 shadow-lg border border-white/50">
             <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6">
@@ -344,114 +344,12 @@ const ADLFilesPage = () => {
                 </div>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-3 lg:flex-col xl:flex-row">
-                <Button 
-                  variant={showOnlyComplexCases ? "primary" : "outline"} 
-                  onClick={() => setShowOnlyComplexCases(!showOnlyComplexCases)}
-                  title={showOnlyComplexCases ? "Show all ADL files" : "Show only complex cases"}
-                  className={`whitespace-nowrap ${
-                    showOnlyComplexCases 
-                      ? 'bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-lg' 
-                      : 'bg-white/80 border-2 border-primary-200 hover:bg-primary-50 hover:border-primary-300 shadow-sm'
-                  } transition-all duration-200`}
-                >
-                  <FiActivity className="mr-2" />
-                  {showOnlyComplexCases ? 'Complex Cases Only' : 'Show All Files'}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => refetch()} 
-                  disabled={isFetching}
-                  className="bg-white/80 border-2 border-primary-200 hover:bg-primary-50 hover:border-primary-300 shadow-sm transition-all duration-200 whitespace-nowrap"
-                >
-                  <FiRefreshCw className={`mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-                  {isFetching ? 'Refreshing...' : 'Refresh'}
-                </Button>
-              </div>
+              
             </div>
           </div>
-        </div>
+        </div> */}
 
-        {/* Enhanced Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-sm">
-                  <FiFileText className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Total Files</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{totalFiles}</p>
-                </div>
-              </div>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-blue-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          </div>
-          
-          <div className="group relative bg-gradient-to-br from-red-50 to-rose-100/50 rounded-xl p-5 border border-red-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-red-500 to-rose-600 rounded-lg shadow-sm">
-                  <FiActivity className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Complex Cases</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{complexCasesCount}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {showOnlyComplexCases ? 'Full Details' : 'With Details'}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-red-400 to-rose-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          </div>
-          
-          <div className="group relative bg-gradient-to-br from-emerald-50 to-green-100/50 rounded-xl p-5 border border-emerald-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg shadow-sm">
-                  <FiCheckCircle className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Stored</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{storedCount}</p>
-                </div>
-              </div>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-green-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          </div>
-          
-          <div className="group relative bg-gradient-to-br from-amber-50 to-orange-100/50 rounded-xl p-5 border border-amber-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg shadow-sm">
-                  <FiDownload className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Retrieved</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{retrievedCount}</p>
-                </div>
-              </div>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-orange-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          </div>
-          
-          <div className="group relative bg-gradient-to-br from-gray-50 to-slate-100/50 rounded-xl p-5 border border-gray-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-gray-500 to-slate-600 rounded-lg shadow-sm">
-                  <FiArchive className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Archived</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{archivedCount}</p>
-                </div>
-              </div>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-gray-400 to-slate-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          </div>
-        </div>
+        
 
         {/* Main Content Card */}
         <Card className="shadow-lg border border-gray-200/50 bg-white/90 backdrop-blur-sm">
