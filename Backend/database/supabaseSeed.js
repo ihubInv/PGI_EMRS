@@ -36,37 +36,37 @@ class SupabaseSeeder {
           name: 'Dr. Admin User',
           email: 'admin@pgimer.ac.in',
           password: 'admin123',
-          role: 'Admin'
+          role: 'System Administrator'
         },
         {
           name: 'Dr. John Smith',
           email: 'jr.doctor@pgimer.ac.in',
           password: 'doctor123',
-          role: 'JR'
+          role: 'Faculty Residents (Junior Resident (JR))'
         },
         {
           name: 'Dr. Sarah Johnson',
           email: 'sr.doctor@pgimer.ac.in',
           password: 'doctor123',
-          role: 'SR'
+          role: 'Faculty Residents (Senior Resident (SR))'
         },
         {
           name: 'Ms. Priya Sharma',
           email: 'mwo@pgimer.ac.in',
           password: 'mwo123',
-          role: 'MWO'
+          role: 'Psychiatric Welfare Officer'
         },
         {
           name: 'Dr. Rajesh Kumar',
           email: 'rajesh.kumar@pgimer.ac.in',
           password: 'doctor123',
-          role: 'SR'
+          role: 'Faculty Residents (Senior Resident (SR))'
         },
         {
           name: 'Ms. Anjali Singh',
           email: 'anjali.singh@pgimer.ac.in',
           password: 'mwo123',
-          role: 'MWO'
+          role: 'Psychiatric Welfare Officer'
         }
       ];
 

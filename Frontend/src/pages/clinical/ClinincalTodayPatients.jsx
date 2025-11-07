@@ -13,6 +13,7 @@ import Input from '../../components/Input';
 import Select from '../../components/Select';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../features/auth/authSlice';
+import { isAdmin, isMWO, isJrSr } from '../../utils/constants';
 
 // Component to check for existing proforma and render patient row
 const PatientRow = ({ patient, activeTab, navigate }) => {
@@ -364,7 +365,7 @@ const ClinicalTodayPatients = () => {
       if (!createdToday && !hasVisitToday) return false;
 
       // If patient was created today and API provides who filled the record, ensure it's MWO
-      if (createdToday && patient?.filled_by_role && patient.filled_by_role !== 'MWO') {
+      if (createdToday && patient?.filled_by_role && !isMWO(patient.filled_by_role)) {
         return false;
       }
 
@@ -400,9 +401,9 @@ const ClinicalTodayPatients = () => {
 
   const todayPatients = filterTodayPatients(apiPatients).filter((p) => {
     if (!currentUser) return false;
-    if (currentUser.role === 'Admin') return true;
+    if (isAdmin(currentUser.role)) return true;
     // Only allow JR/SR to see patients assigned to them
-    if ((currentUser.role === 'JR' || currentUser.role === 'SR')) {
+    if (isJrSr(currentUser.role)) {
       // Prefer direct field; fallback to latest assignment fields if present
       if (p.assigned_doctor_id) return Number(p.assigned_doctor_id) === Number(currentUser.id);
       if (p.assigned_doctor) return Number(p.assigned_doctor) === Number(currentUser.id);

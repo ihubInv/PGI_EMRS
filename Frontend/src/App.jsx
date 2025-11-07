@@ -102,8 +102,8 @@ function App() {
                 <Route path="/outpatient/:id/edit" element={<EditOutpatientRecord />} />
               </Route> */}
 
-              {/* Clinical Proforma - JR, SR, and Admin */}
-              <Route element={<ProtectedRoute allowedRoles={['Admin', 'JR', 'SR']} />}>
+              {/* Clinical Proforma - Faculty Residents and System Administrator */}
+              <Route element={<ProtectedRoute allowedRoles={['System Administrator', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))']} />}>
                 <Route path="/clinical" element={<ClinicalProformaPage />} />
                 <Route path="/clinical/new" element={<CreateClinicalProforma />} />
                 <Route path="/clinical-today-patients" element={<ClinicalTodayPatients />} />
@@ -112,14 +112,14 @@ function App() {
                 <Route path="/clinical/:id/edit" element={<EditClinicalProforma />} />
               </Route>
 
-              {/* Additional Detail File - JR, SR, and Admin */}
-              <Route element={<ProtectedRoute allowedRoles={['Admin', 'JR', 'SR']} />}>
+              {/* Additional Detail File - Faculty Residents and System Administrator */}
+              <Route element={<ProtectedRoute allowedRoles={['System Administrator', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))']} />}>
                 <Route path="/adl-files" element={<ADLFilesPage />} />
                 <Route path="/adl-files/:id" element={<ADLFileDetails />} />
               </Route>
 
-              {/* Users - Admin only */}
-              <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
+              {/* Users - System Administrator only */}
+              <Route element={<ProtectedRoute allowedRoles={['System Administrator']} />}>
                 <Route path="/users" element={<UsersPage />} />
                 <Route path="/users/new" element={<CreateUser />} />
                 <Route path="/users/:id/edit" element={<div>Edit User</div>} />

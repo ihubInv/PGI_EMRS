@@ -10,6 +10,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
 import { toast } from 'react-toastify';
+import { isAdmin, isMWO, isJrSr as checkJrSr } from '../utils/constants';
 
 // Chart components
 import {
@@ -61,32 +62,33 @@ const Dashboard = () => {
   const user = useSelector(selectCurrentUser);
   
   // Only fetch stats if user is Admin
+  const isAdminUser = isAdmin(user?.role);
   const { data: patientStats, isLoading: patientsLoading, error: patientsError } = useGetPatientStatsQuery(undefined, {
-    pollingInterval: user?.role === 'Admin' ? 30000 : 0, // Disable polling for non-admin
+    pollingInterval: isAdminUser ? 30000 : 0, // Disable polling for non-admin
     refetchOnMountOrArgChange: true,
-    skip: user?.role !== 'Admin', // Skip query entirely for non-admin
+    skip: !isAdminUser, // Skip query entirely for non-admin
   });
   const { data: clinicalStats, isLoading: clinicalLoading, error: clinicalError } = useGetClinicalStatsQuery(undefined, {
-    pollingInterval: user?.role === 'Admin' ? 30000 : 0,
+    pollingInterval: isAdminUser ? 30000 : 0,
     refetchOnMountOrArgChange: true,
-    skip: user?.role !== 'Admin',
+    skip: !isAdminUser,
   });
   const { data: adlStats, isLoading: adlLoading, error: adlError } = useGetADLStatsQuery(undefined, {
-    pollingInterval: user?.role === 'Admin' ? 30000 : 0,
+    pollingInterval: isAdminUser ? 30000 : 0,
     refetchOnMountOrArgChange: true,
-    skip: user?.role !== 'Admin',
+    skip: !isAdminUser,
   });
 
-  const isLoading = user?.role === 'Admin' ? (patientsLoading || clinicalLoading || adlLoading) : false;
+  const isLoading = isAdminUser ? (patientsLoading || clinicalLoading || adlLoading) : false;
 
   // Role-specific stats for JR/SR
-  const isJrSr = user?.role === 'JR' || user?.role === 'SR';
+  const isJrSr = checkJrSr(user?.role);
   const { data: severityStats } = useGetCasesBySeverityQuery(undefined, { skip: !isJrSr });
   const { data: decisionStats } = useGetCasesByDecisionQuery(undefined, { skip: !isJrSr });
   const { data: myProformas } = useGetMyProformasQuery({ page: 1, limit: 5 }, { skip: !isJrSr });
 
   // Role-specific stats for MWO
-  const isMwo = user?.role === 'MWO';
+  const isMwo = isMWO(user?.role);
   
   const { data: outpatientStats } = useGetPatientsStatsQuery(undefined, { skip: !isMwo, refetchOnMountOrArgChange: true });
  
@@ -228,7 +230,7 @@ const Dashboard = () => {
   }
 
   // Non-admin role - show JR/SR or MWO focused dashboard
-  if (user?.role !== 'Admin') {
+  if (!isAdminUser) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <div className="space-y-6 p-4 sm:p-6 lg:p-8">

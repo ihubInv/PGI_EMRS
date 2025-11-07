@@ -243,8 +243,8 @@ Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
                     },
                     role: {
                       type: 'string',
-                      enum: ['MWO', 'JR', 'SR', 'Admin'],
-                      example: 'Admin',
+                      enum: ['Psychiatric Welfare Officer', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))', 'System Administrator'],
+                      example: 'System Administrator',
                     },
                     email: {
                       type: 'string',
@@ -283,8 +283,8 @@ Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
             },
             role: {
               type: 'string',
-              enum: ['MWO', 'JR', 'SR', 'Admin'],
-              example: 'Admin',
+              enum: ['Psychiatric Welfare Officer', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))', 'System Administrator'],
+              example: 'System Administrator',
               description: 'User role in the system',
             },
             two_factor_enabled: {
@@ -342,8 +342,8 @@ Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
             },
             role: {
               type: 'string',
-              enum: ['MWO', 'JR', 'SR', 'Admin'],
-              example: 'JR',
+              enum: ['Psychiatric Welfare Officer', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))', 'System Administrator'],
+              example: 'Faculty Residents (Junior Resident (JR))',
               description: 'User role in the system',
             },
           },

@@ -19,7 +19,8 @@ import Button from '../../components/Button';
 import { 
   MARITAL_STATUS, FAMILY_TYPE, LOCALITY, RELIGION, SEX_OPTIONS,
   AGE_GROUP_OPTIONS, OCCUPATION_OPTIONS, EDUCATION_OPTIONS, 
-  MOBILITY_OPTIONS, REFERRED_BY_OPTIONS, INDIAN_STATES, UNIT_DAYS_OPTIONS
+  MOBILITY_OPTIONS, REFERRED_BY_OPTIONS, INDIAN_STATES, UNIT_DAYS_OPTIONS,
+  isJR, isSR
 } from '../../utils/constants';
 
 // Enhanced Radio button component with better styling
@@ -1256,7 +1257,7 @@ const CreatePatient = () => {
           value={formData.assigned_doctor_id}
           onChange={handlePatientChange}
           options={(usersData?.data?.users || [])
-            .filter(u => u.role === 'JR' || u.role === 'SR')
+            .filter(u => isJR(u.role) || isSR(u.role))
             .map(u => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
           placeholder="Select doctor (optional)"
                       className="bg-gradient-to-r from-violet-50 to-purple-50"

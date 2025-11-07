@@ -1,10 +1,24 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { normalizeRole } from '../../utils/constants';
+
+// Helper function to normalize user role
+const normalizeUser = (user) => {
+  if (!user) return null;
+  if (user.role) {
+    const normalizedRole = normalizeRole(user.role);
+    if (normalizedRole !== user.role) {
+      return { ...user, role: normalizedRole };
+    }
+  }
+  return user;
+};
 
 // Helper function to get user from localStorage safely
 const getUserFromStorage = () => {
   try {
     const userData = localStorage.getItem('user');
-    return userData ? JSON.parse(userData) : null;
+    const user = userData ? JSON.parse(userData) : null;
+    return normalizeUser(user);
   } catch (error) {
     console.error('Error parsing user data from localStorage:', error);
     localStorage.removeItem('user');
@@ -12,10 +26,27 @@ const getUserFromStorage = () => {
   }
 };
 
+// Get initial user and normalize it
+const initialUser = getUserFromStorage();
+// Save normalized user back to localStorage if it was changed
+if (initialUser) {
+  const userData = localStorage.getItem('user');
+  if (userData) {
+    try {
+      const parsedUser = JSON.parse(userData);
+      if (parsedUser.role && normalizeRole(parsedUser.role) !== parsedUser.role) {
+        localStorage.setItem('user', JSON.stringify(initialUser));
+      }
+    } catch (e) {
+      // Ignore parse errors
+    }
+  }
+}
+
 const initialState = {
-  user: getUserFromStorage(),
+  user: initialUser,
   token: localStorage.getItem('token') || null,
-  isAuthenticated: !!(localStorage.getItem('token') && getUserFromStorage()),
+  isAuthenticated: !!(localStorage.getItem('token') && initialUser),
   otpRequired: false,
   loginData: null, // Store user_id and email for OTP verification
 };
@@ -26,13 +57,14 @@ const authSlice = createSlice({
   reducers: {
     setCredentials: (state, action) => {
       const { user, token } = action.payload;
-      state.user = user;
+      const normalizedUser = normalizeUser(user);
+      state.user = normalizedUser;
       state.token = token;
       state.isAuthenticated = true;
       state.otpRequired = false;
       state.loginData = null;
       localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('user', JSON.stringify(normalizedUser));
     },
     setOTPRequired: (state, action) => {
       state.otpRequired = true;
@@ -56,8 +88,10 @@ const authSlice = createSlice({
       }
     },
     updateUser: (state, action) => {
-      state.user = { ...state.user, ...action.payload };
-      localStorage.setItem('user', JSON.stringify(state.user));
+      const updatedUser = { ...state.user, ...action.payload };
+      const normalizedUser = normalizeUser(updatedUser);
+      state.user = normalizedUser;
+      localStorage.setItem('user', JSON.stringify(normalizedUser));
     },
   },
 });

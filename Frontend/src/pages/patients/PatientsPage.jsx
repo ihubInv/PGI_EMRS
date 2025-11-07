@@ -18,6 +18,7 @@ import Pagination from '../../components/Pagination';
 import Badge from '../../components/Badge';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Alert from '../../components/Alert';
+import { isAdmin, isMWO, isJrSr } from '../../utils/constants';
 
 const PatientsPage = () => {
   const user = useSelector(selectCurrentUser);
@@ -246,7 +247,7 @@ const PatientsPage = () => {
             </Button>
           </Link>
           {/* Show Clinical Proforma button only for JR, SR, and Admin */}
-          {(user?.role === 'JR' || user?.role === 'SR' || user?.role === 'Admin') && (
+          {(isJrSr(user?.role) || isAdmin(user?.role)) && (
             <Link to={`/clinical?patient_id=${row.id}`}>
               <Button 
                 variant="ghost" 
@@ -296,7 +297,7 @@ const PatientsPage = () => {
                       Patient Management
                     </h1>
                     <p className="text-gray-600 mt-2 text-base sm:text-lg">
-                      {user?.role === 'MWO' 
+                      {isMWO(user?.role) 
                         ? 'View and manage patient records' 
                         : 'Comprehensive patient records and medical information management'}
                     </p>
@@ -373,7 +374,7 @@ const PatientsPage = () => {
                 </div>
               </div>
               
-              {user?.role !== 'MWO' && (
+              {!isMWO(user?.role) && (
                 <div className="flex flex-col sm:flex-row gap-3 lg:flex-col xl:flex-row">
                   <Button
                     variant="outline"

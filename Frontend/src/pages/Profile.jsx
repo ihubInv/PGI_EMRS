@@ -18,6 +18,7 @@ import Input from '../components/Input';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
 import { formatDate } from '../utils/formatters';
+import { getRoleDisplayName } from '../utils/constants';
 
 const Profile = () => {
   const user = useSelector(selectCurrentUser);
@@ -123,10 +124,10 @@ const Profile = () => {
 
   const getRoleBadgeColor = (role) => {
     const roleColors = {
-      Admin: 'bg-gradient-to-r from-red-100 to-rose-100 text-red-800 border-red-200',
-      SR: 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border-blue-200',
-      JR: 'bg-gradient-to-r from-cyan-100 to-teal-100 text-cyan-800 border-cyan-200',
-      MWO: 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200',
+      'System Administrator': 'bg-gradient-to-r from-red-100 to-rose-100 text-red-800 border-red-200',
+      'Faculty Residents (Senior Resident (SR))': 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border-blue-200',
+      'Faculty Residents (Junior Resident (JR))': 'bg-gradient-to-r from-cyan-100 to-teal-100 text-cyan-800 border-cyan-200',
+      'Psychiatric Welfare Officer': 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200',
     };
     return roleColors[role] || 'bg-gray-100 text-gray-800 border-gray-200';
   };

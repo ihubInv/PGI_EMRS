@@ -18,6 +18,7 @@ import {
   FiCalendar,
 } from 'react-icons/fi';
 import { selectCurrentUser, logout } from '../features/auth/authSlice';
+import { isMWO } from '../utils/constants';
 import { apiSlice } from '../app/api/apiSlice';
 import Button from '../components/Button';
 import PGI_Logo from '../assets/PGI_Logo.png';
@@ -150,17 +151,49 @@ const Sidebar = ({ isOpen, onClose }) => {
   }, [isOpen]);
 
   const navigation = [
-    { name: 'Dashboard', to: '/', icon: FiHome, roles: ['Admin', 'JR', 'SR', 'MWO'] },
-    { name: 'Patients', to: '/patients', icon: FiUsers, roles: ['Admin', 'JR', 'SR', 'MWO'] },
-    { name: "Today's Patients", to: '/clinical-today-patients', icon: FiCalendar, roles: ['Admin', 'JR', 'SR'] },
-    // { name: 'Outpatient Records', to: '/outpatient', icon: FiClipboard, roles: ['Admin', 'MWO'] },
-    // { name: 'Clinical Proforma', to: '/clinical', icon: FiFileText, roles: ['Admin',] },
-    { name: 'Additional Detail File', to: '/adl-files', icon: FiFolder, roles: ['Admin', 'JR', 'SR'] },
-    { name: 'Users', to: '/users', icon: FiSettings, roles: ['Admin'] },
+    { 
+      name: 'Dashboard', 
+      to: '/', 
+      icon: FiHome, 
+      roles: ['System Administrator', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))', 'Psychiatric Welfare Officer'] 
+    },
+    { 
+      name: 'Patients', 
+      to: '/patients', 
+      icon: FiUsers, 
+      roles: ['System Administrator', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))', 'Psychiatric Welfare Officer'] 
+    },
+    { 
+      name: "Today's Patients", 
+      to: '/clinical-today-patients', 
+      icon: FiCalendar, 
+      roles: ['System Administrator', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'] 
+    },
+    // { name: 'Outpatient Records', to: '/outpatient', icon: FiClipboard, roles: ['System Administrator', 'Psychiatric Welfare Officer'] },
+    // { name: 'Clinical Proforma', to: '/clinical', icon: FiFileText, roles: ['System Administrator'] },
+    { 
+      name: 'Additional Detail File', 
+      to: '/adl-files', 
+      icon: FiFolder, 
+      roles: ['System Administrator', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'] 
+    },
+    { 
+      name: 'Users', 
+      to: '/users', 
+      icon: FiSettings, 
+      roles: ['System Administrator'] 
+    },
   ];
 
+  // Helper function to check if user role matches navigation item
+  const hasAccess = (itemRoles, userRole) => {
+    if (!userRole) return false;
+    // Direct match check
+    return itemRoles.includes(userRole);
+  };
+
   const filteredNavigation = navigation.filter((item) =>
-    item.roles.includes(user?.role)
+    hasAccess(item.roles, user?.role)
   );
 
   return (
@@ -204,7 +237,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
           {/* Navigation - scrollable middle section */}
           <nav className="flex-1 px-4 py-6 pb-48 space-y-2 overflow-y-auto min-h-0">
-            {user?.role === 'MWO' ? (
+            {isMWO(user?.role) ? (
               // MWO-specific beautiful navigation
               <MWONavigation onClose={onClose} />
             ) : (

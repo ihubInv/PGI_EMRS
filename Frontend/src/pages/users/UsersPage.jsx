@@ -19,6 +19,7 @@ import Table from '../../components/Table';
 import Pagination from '../../components/Pagination';
 import Badge from '../../components/Badge';
 import { formatDate } from '../../utils/formatters';
+import { getRoleDisplayName } from '../../utils/constants';
 
 const UsersPage = () => {
   const [page, setPage] = useState(1);
@@ -134,10 +135,10 @@ const UsersPage = () => {
       ),
       render: (row) => {
         const roleColors = {
-          Admin: 'bg-gradient-to-r from-red-100 to-rose-100 text-red-800 border-red-200',
-          SR: 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border-blue-200',
-          JR: 'bg-gradient-to-r from-cyan-100 to-teal-100 text-cyan-800 border-cyan-200',
-          MWO: 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200',
+          'System Administrator': 'bg-gradient-to-r from-red-100 to-rose-100 text-red-800 border-red-200',
+          'Faculty Residents (Senior Resident (SR))': 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border-blue-200',
+          'Faculty Residents (Junior Resident (JR))': 'bg-gradient-to-r from-cyan-100 to-teal-100 text-cyan-800 border-cyan-200',
+          'Psychiatric Welfare Officer': 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200',
         };
         return (
           <Badge className={roleColors[row.role] || 'bg-gray-100 text-gray-800 border-gray-200'}>
@@ -259,10 +260,30 @@ const UsersPage = () => {
   ];
 
   const roleStats = {
-    Admin: { count: data?.data?.users?.filter(u => u.role === 'Admin').length || 0, color: 'from-red-500 to-rose-600', bg: 'from-red-50 to-rose-100/50', border: 'border-red-200/50' },
-    SR: { count: data?.data?.users?.filter(u => u.role === 'SR').length || 0, color: 'from-blue-500 to-indigo-600', bg: 'from-blue-50 to-indigo-100/50', border: 'border-blue-200/50' },
-    JR: { count: data?.data?.users?.filter(u => u.role === 'JR').length || 0, color: 'from-cyan-500 to-teal-600', bg: 'from-cyan-50 to-teal-100/50', border: 'border-cyan-200/50' },
-    MWO: { count: data?.data?.users?.filter(u => u.role === 'MWO').length || 0, color: 'from-green-500 to-emerald-600', bg: 'from-green-50 to-emerald-100/50', border: 'border-green-200/50' },
+    'System Administrator': { 
+      count: data?.data?.users?.filter(u => u.role === 'System Administrator').length || 0, 
+      color: 'from-red-500 to-rose-600', 
+      bg: 'from-red-50 to-rose-100/50', 
+      border: 'border-red-200/50' 
+    },
+    'Faculty Residents (Senior Resident (SR))': { 
+      count: data?.data?.users?.filter(u => u.role === 'Faculty Residents (Senior Resident (SR))').length || 0, 
+      color: 'from-blue-500 to-indigo-600', 
+      bg: 'from-blue-50 to-indigo-100/50', 
+      border: 'border-blue-200/50' 
+    },
+    'Faculty Residents (Junior Resident (JR))': { 
+      count: data?.data?.users?.filter(u => u.role === 'Faculty Residents (Junior Resident (JR))').length || 0, 
+      color: 'from-cyan-500 to-teal-600', 
+      bg: 'from-cyan-50 to-teal-100/50', 
+      border: 'border-cyan-200/50' 
+    },
+    'Psychiatric Welfare Officer': { 
+      count: data?.data?.users?.filter(u => u.role === 'Psychiatric Welfare Officer').length || 0, 
+      color: 'from-green-500 to-emerald-600', 
+      bg: 'from-green-50 to-emerald-100/50', 
+      border: 'border-green-200/50' 
+    },
   };
 
   const totalUsers = data?.data?.pagination?.total || 0;
@@ -349,8 +370,8 @@ const UsersPage = () => {
                           <FiShield className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Admins</p>
-                          <p className="text-2xl font-bold text-gray-900 mt-1">{roleStats.Admin.count}</p>
+                          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">System Administrators</p>
+                          <p className="text-2xl font-bold text-gray-900 mt-1">{roleStats['System Administrator'].count}</p>
                         </div>
                       </div>
                     </div>

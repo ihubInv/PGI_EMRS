@@ -13,6 +13,7 @@ import {
   AGE_GROUP_OPTIONS, OCCUPATION_OPTIONS, EDUCATION_OPTIONS, 
   MOBILITY_OPTIONS, REFERRED_BY_OPTIONS, INDIAN_STATES, UNIT_DAYS_OPTIONS 
 } from '../../utils/constants';
+import { isJR, isSR } from '../../utils/constants';
 
 // Enhanced Radio button component with better styling
 const RadioGroup = ({ label, name, value, onChange, options, className = "", inline = true, error, icon }) => {
@@ -190,7 +191,7 @@ const PatientDetailsEdit = ({ formData, handleChange, usersData }) => {
                     value={formData.assigned_doctor_id}
                     onChange={handleChange}
                     options={(usersData?.data?.users || [])
-                      .filter(u => u.role === 'JR' || u.role === 'SR')
+                      .filter(u => isJR(u.role) || isSR(u.role))
                       .map(u => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
                     placeholder="Select doctor (optional)"
                     className="bg-gradient-to-r from-violet-50 to-purple-50"

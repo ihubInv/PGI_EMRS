@@ -15,6 +15,7 @@ import Input from '../../components/Input';
 import Select from '../../components/Select';
 import Button from '../../components/Button';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { isJR, isSR } from '../../utils/constants';
 
 const SelectExistingPatient = () => {
   const navigate = useNavigate();
@@ -350,7 +351,7 @@ const SelectExistingPatient = () => {
                             value={newDoctorId}
                             onChange={(e) => setNewDoctorId(e.target.value)}
                             options={(usersData?.data?.users || [])
-                              .filter((u) => u.role === 'JR' || u.role === 'SR')
+                              .filter((u) => isJR(u.role) || isSR(u.role))
                               .map((u) => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
                             placeholder="Select doctor"
                             className="flex-1"

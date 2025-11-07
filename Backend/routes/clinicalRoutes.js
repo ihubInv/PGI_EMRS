@@ -902,7 +902,7 @@ const {
  *                   type: string
  *                   description: Detailed error message
  */
-router.post('/', authenticateToken, authorizeRoles('Admin', 'JR', 'SR'), validateClinicalProforma, ClinicalController.createClinicalProforma);
+router.post('/', authenticateToken, authorizeRoles('System Administrator', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'), validateClinicalProforma, ClinicalController.createClinicalProforma);
 
 /**
  * @swagger

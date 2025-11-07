@@ -408,7 +408,7 @@ router.post('/', authenticateToken, requireMWOOrDoctor, validatePatient, Patient
  *               $ref: '#/components/schemas/Error'
  */
 // Comprehensive patient registration with personal information (for MWO)
-router.post('/register-complete', authenticateToken, authorizeRoles('MWO'), validatePatientRegistration, PatientController.registerPatientWithDetails);
+router.post('/register-complete', authenticateToken, authorizeRoles('Psychiatric Welfare Officer'), validatePatientRegistration, PatientController.registerPatientWithDetails);
 
 /**
  * @swagger
@@ -475,7 +475,7 @@ router.post('/register-complete', authenticateToken, authorizeRoles('MWO'), vali
  *         description: Server error
  */
 // Allow Admin to access patient list as well
-router.get('/', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), validatePagination, PatientController.getAllPatients);
+router.get('/', authenticateToken, authorizeRoles('System Administrator', 'Psychiatric Welfare Officer', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'), validatePagination, PatientController.getAllPatients);
 
 /**
  * @swagger
@@ -516,7 +516,7 @@ router.get('/', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), v
  *       500:
  *         description: Server error
  */
-router.get('/search', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), PatientController.searchPatients);
+router.get('/search', authenticateToken, authorizeRoles('System Administrator', 'Psychiatric Welfare Officer', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'), PatientController.searchPatients);
 
 /**
  * @swagger
@@ -534,7 +534,7 @@ router.get('/search', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'S
  *       500:
  *         description: Server error
  */
-router.get('/stats', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), PatientController.getPatientStats);
+router.get('/stats', authenticateToken, authorizeRoles('System Administrator', 'Psychiatric Welfare Officer', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'), PatientController.getPatientStats);
 
 /**
  * @swagger
@@ -704,9 +704,9 @@ router.get('/stats', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR
  *         description: Server error
  */
 // Get today's patients (must be before /:id route)
-router.get('/today', authenticateToken, authorizeRoles('Admin', 'JR', 'SR'), PatientController.getTodayPatients);
+router.get('/today', authenticateToken, authorizeRoles('System Administrator', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'), PatientController.getTodayPatients);
 
-router.get('/:id', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), validateId, PatientController.getPatientById);
+router.get('/:id', authenticateToken, authorizeRoles('System Administrator', 'Psychiatric Welfare Officer', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'), validateId, PatientController.getPatientById);
 
 /**
  * @swagger
@@ -741,7 +741,7 @@ router.get('/:id', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR')
  *       500:
  *         description: Server error
  */
-router.put('/:id', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), validateId, PatientController.updatePatient);
+router.put('/:id', authenticateToken, authorizeRoles('System Administrator', 'Psychiatric Welfare Officer', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'), validateId, PatientController.updatePatient);
 
 /**
  * @swagger
@@ -799,7 +799,7 @@ router.delete('/:id', authenticateToken, requireAdmin, validateId, PatientContro
  *       500:
  *         description: Server error
  */
-router.get('/:id/profile', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), validateId, PatientController.getPatientProfile);
+router.get('/:id/profile', authenticateToken, authorizeRoles('System Administrator', 'Psychiatric Welfare Officer', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'), validateId, PatientController.getPatientProfile);
 
 /**
  * @swagger
@@ -826,7 +826,7 @@ router.get('/:id/profile', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR
  *       500:
  *         description: Server error
  */
-router.get('/:id/visits', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), validateId, PatientController.getPatientVisitHistory);
+router.get('/:id/visits', authenticateToken, authorizeRoles('System Administrator', 'Psychiatric Welfare Officer', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'), validateId, PatientController.getPatientVisitHistory);
 
 /**
  * @swagger
@@ -853,7 +853,7 @@ router.get('/:id/visits', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR'
  *       500:
  *         description: Server error
  */
-router.get('/:id/clinical-records', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), validateId, PatientController.getPatientClinicalRecords);
+router.get('/:id/clinical-records', authenticateToken, authorizeRoles('System Administrator', 'Psychiatric Welfare Officer', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'), validateId, PatientController.getPatientClinicalRecords);
 
 /**
  * @swagger
@@ -880,7 +880,7 @@ router.get('/:id/clinical-records', authenticateToken, authorizeRoles('Admin', '
  *       500:
  *         description: Server error
  */
-router.get('/:id/adl-files', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), validateId, PatientController.getPatientADLFiles);
+router.get('/:id/adl-files', authenticateToken, authorizeRoles('System Administrator', 'Psychiatric Welfare Officer', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'), validateId, PatientController.getPatientADLFiles);
 
 /**
  * @swagger
@@ -959,7 +959,7 @@ router.get('/:id/adl-files', authenticateToken, authorizeRoles('Admin', 'MWO', '
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/assign', authenticateToken, authorizeRoles('MWO', 'Admin'), PatientController.assignPatient);
+router.post('/assign', authenticateToken, authorizeRoles('Psychiatric Welfare Officer', 'System Administrator'), PatientController.assignPatient);
 
 // Routes for finding patients by specific numbers
 /**
@@ -987,7 +987,7 @@ router.post('/assign', authenticateToken, authorizeRoles('MWO', 'Admin'), Patien
  *       500:
  *         description: Server error
  */
-router.get('/cr/:cr_no', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), PatientController.getPatientByCRNo);
+router.get('/cr/:cr_no', authenticateToken, authorizeRoles('System Administrator', 'Psychiatric Welfare Officer', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'), PatientController.getPatientByCRNo);
 
 /**
  * @swagger
@@ -1014,7 +1014,7 @@ router.get('/cr/:cr_no', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR',
  *       500:
  *         description: Server error
  */
-router.get('/psy/:psy_no', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), PatientController.getPatientByPSYNo);
+router.get('/psy/:psy_no', authenticateToken, authorizeRoles('System Administrator', 'Psychiatric Welfare Officer', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'), PatientController.getPatientByPSYNo);
 
 /**
  * @swagger
@@ -1059,7 +1059,7 @@ router.get('/adl/:adl_no', authenticateToken,  PatientController.getPatientByADL
  *       500:
  *         description: Server error
  */
-router.get('/stats', authenticateToken, authorizeRoles('Admin', 'MWO', 'JR', 'SR'), PatientController.getPatientStats);
+router.get('/stats', authenticateToken, authorizeRoles('System Administrator', 'Psychiatric Welfare Officer', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'), PatientController.getPatientStats);
 
 
 module.exports = router;

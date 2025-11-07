@@ -1,8 +1,51 @@
 export const USER_ROLES = {
-  ADMIN: 'Admin',
-  MWO: 'MWO',
-  JR: 'JR',
-  SR: 'SR',
+  ADMIN: 'System Administrator',
+  MWO: 'Psychiatric Welfare Officer',
+  JR: 'Faculty Residents (Junior Resident (JR))',
+  SR: 'Faculty Residents (Senior Resident (SR))',
+};
+
+// Helper function to get display name for a role
+export const getRoleDisplayName = (role) => {
+  if (!role) return 'N/A';
+  return role;
+};
+
+// Helper function to normalize role (maps old role names to new ones)
+export const normalizeRole = (role) => {
+  if (!role) return null;
+  const roleMap = {
+    'Admin': 'System Administrator',
+    'MWO': 'Psychiatric Welfare Officer',
+    'JR': 'Faculty Residents (Junior Resident (JR))',
+    'SR': 'Faculty Residents (Senior Resident (SR))',
+  };
+  return roleMap[role] || role;
+};
+
+// Helper functions to check roles (handles both old and new names)
+export const isAdmin = (role) => {
+  const normalized = normalizeRole(role);
+  return normalized === 'System Administrator';
+};
+
+export const isMWO = (role) => {
+  const normalized = normalizeRole(role);
+  return normalized === 'Psychiatric Welfare Officer';
+};
+
+export const isJR = (role) => {
+  const normalized = normalizeRole(role);
+  return normalized === 'Faculty Residents (Junior Resident (JR))';
+};
+
+export const isSR = (role) => {
+  const normalized = normalizeRole(role);
+  return normalized === 'Faculty Residents (Senior Resident (SR))';
+};
+
+export const isJrSr = (role) => {
+  return isJR(role) || isSR(role);
 };
 
 export const VISIT_TYPES = [

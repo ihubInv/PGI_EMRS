@@ -10,6 +10,8 @@ import Card from '../../components/Card';
 import Button from '../../components/Button';
 import { FiPackage, FiUser, FiSave, FiX, FiPlus, FiTrash2, FiHome, FiUserCheck, FiCalendar, FiFileText, FiClock, FiPrinter, FiList, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import PGI_Logo from '../../assets/PGI_Logo.png';
+import medicinesData from '../../assets/psychiatric_meds_india.json';
+import { isAdmin, isJrSr } from '../../utils/constants';
 
 const PrescribeMedication = () => {
   const navigate = useNavigate();
@@ -71,12 +73,133 @@ const PrescribeMedication = () => {
     { medicine: '', dosage: '', when: '', frequency: '', duration: '', qty: '', details: '', notes: '' }
   ]);
 
+  // Flatten medicines data for autocomplete
+  const allMedicines = useMemo(() => {
+    const medicines = [];
+    const data = medicinesData.psychiatric_medications;
+    
+    // Helper function to extract medicines from nested structure
+    const extractMedicines = (obj, path = '') => {
+      if (Array.isArray(obj)) {
+        obj.forEach(med => {
+          // Add generic name
+          medicines.push({
+            name: med.name,
+            displayName: med.name,
+            type: 'generic',
+            brands: med.brands || [],
+            strengths: med.strengths || []
+          });
+          // Add brand names
+          if (med.brands && Array.isArray(med.brands)) {
+            med.brands.forEach(brand => {
+              medicines.push({
+                name: brand,
+                displayName: `${brand} (${med.name})`,
+                type: 'brand',
+                genericName: med.name,
+                strengths: med.strengths || []
+              });
+            });
+          }
+        });
+      } else if (typeof obj === 'object' && obj !== null) {
+        Object.values(obj).forEach(value => {
+          extractMedicines(value, path);
+        });
+      }
+    };
+    
+    extractMedicines(data);
+    // Remove duplicates and sort
+    const uniqueMedicines = Array.from(
+      new Map(medicines.map(m => [m.name.toLowerCase(), m])).values()
+    );
+    return uniqueMedicines.sort((a, b) => a.name.localeCompare(b.name));
+  }, []);
+
+  // Medicine autocomplete state for each row
+  const [medicineSuggestions, setMedicineSuggestions] = useState({});
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState({});
+  const [showSuggestions, setShowSuggestions] = useState({});
+  const [suggestionPositions, setSuggestionPositions] = useState({});
+  const inputRefs = useRef({});
+
   const addPrescriptionRow = () => {
     setPrescriptions((prev) => ([...prev, { medicine: '', dosage: '', when: '', frequency: '', duration: '', qty: '', details: '', notes: '' }]));
   };
 
   const updatePrescriptionCell = (rowIdx, field, value) => {
     setPrescriptions((prev) => prev.map((r, i) => i === rowIdx ? { ...r, [field]: value } : r));
+    
+    // Handle medicine autocomplete
+    if (field === 'medicine') {
+      const searchTerm = value.toLowerCase().trim();
+      if (searchTerm.length > 0) {
+        const filtered = allMedicines.filter(med => 
+          med.name.toLowerCase().includes(searchTerm) ||
+          med.displayName.toLowerCase().includes(searchTerm) ||
+          (med.genericName && med.genericName.toLowerCase().includes(searchTerm))
+        ).slice(0, 10); // Limit to 10 suggestions
+        setMedicineSuggestions(prev => ({ ...prev, [rowIdx]: filtered }));
+        setShowSuggestions(prev => ({ ...prev, [rowIdx]: true }));
+        setActiveSuggestionIndex(prev => ({ ...prev, [rowIdx]: -1 }));
+        
+        // Calculate position for dropdown
+        setTimeout(() => {
+          const input = inputRefs.current[`medicine-${rowIdx}`];
+          if (input) {
+            const rect = input.getBoundingClientRect();
+            const dropdownHeight = 240; // max-h-60 = 240px
+            const spaceAbove = rect.top;
+            const spaceBelow = window.innerHeight - rect.bottom;
+            
+            // Position above if there's enough space, otherwise position below
+            const positionAbove = spaceAbove > dropdownHeight || spaceAbove > spaceBelow;
+            
+            setSuggestionPositions(prev => ({
+              ...prev,
+              [rowIdx]: {
+                top: positionAbove ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
+                left: rect.left,
+                width: rect.width
+              }
+            }));
+          }
+        }, 0);
+      } else {
+        setShowSuggestions(prev => ({ ...prev, [rowIdx]: false }));
+        setMedicineSuggestions(prev => ({ ...prev, [rowIdx]: [] }));
+      }
+    }
+  };
+
+  const selectMedicine = (rowIdx, medicine) => {
+    setPrescriptions((prev) => prev.map((r, i) => 
+      i === rowIdx ? { ...r, medicine: medicine.name } : r
+    ));
+    setShowSuggestions(prev => ({ ...prev, [rowIdx]: false }));
+    setMedicineSuggestions(prev => ({ ...prev, [rowIdx]: [] }));
+  };
+
+  const handleMedicineKeyDown = (e, rowIdx) => {
+    const suggestions = medicineSuggestions[rowIdx] || [];
+    const currentIndex = activeSuggestionIndex[rowIdx] || -1;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const nextIndex = currentIndex < suggestions.length - 1 ? currentIndex + 1 : currentIndex;
+      setActiveSuggestionIndex(prev => ({ ...prev, [rowIdx]: nextIndex }));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prevIndex = currentIndex > 0 ? currentIndex - 1 : -1;
+      setActiveSuggestionIndex(prev => ({ ...prev, [rowIdx]: prevIndex }));
+    } else if (e.key === 'Enter' && currentIndex >= 0 && suggestions[currentIndex]) {
+      e.preventDefault();
+      selectMedicine(rowIdx, suggestions[currentIndex]);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(prev => ({ ...prev, [rowIdx]: false }));
+    }
   };
 
   const removePrescriptionRow = (rowIdx) => {
@@ -721,8 +844,9 @@ const PrescribeMedication = () => {
           className="shadow-xl border-0 bg-white/80 backdrop-blur-sm no-print"
         >
           <div className="space-y-3">
-            <div className="overflow-auto bg-white border border-green-200 rounded-lg">
-              <table className="min-w-full text-sm">
+            <div className="bg-white border border-green-200 rounded-lg" style={{ position: 'relative', overflow: 'visible' }}>
+              <div className="overflow-x-auto" style={{ overflowY: 'visible' }}>
+              <table className="min-w-full text-sm" style={{ position: 'relative' }}>
                 <thead className="bg-gray-50 text-gray-700">
                   <tr>
                     <th className="px-3 py-2 text-left w-10">#</th>
@@ -741,13 +865,95 @@ const PrescribeMedication = () => {
                   {prescriptions.map((row, idx) => (
                     <tr key={idx} className="border-t hover:bg-gray-50">
                       <td className="px-3 py-2 text-gray-600">{idx + 1}</td>
-                      <td className="px-3 py-2">
-                        <input
-                          value={row.medicine}
-                          onChange={(e) => updatePrescriptionCell(idx, 'medicine', e.target.value)}
-                          className="w-full border rounded px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                          placeholder="Add Medicine"
-                        />
+                      <td className="px-3 py-2" style={{ position: 'relative', overflow: 'visible', zIndex: showSuggestions[idx] ? 1000 : 'auto' }}>
+                        <div style={{ position: 'relative', overflow: 'visible' }}>
+                          <input
+                            ref={(el) => { inputRefs.current[`medicine-${idx}`] = el; }}
+                            value={row.medicine}
+                            onChange={(e) => updatePrescriptionCell(idx, 'medicine', e.target.value)}
+                            onKeyDown={(e) => handleMedicineKeyDown(e, idx)}
+                            onFocus={() => {
+                              if (row.medicine && row.medicine.trim().length > 0) {
+                                const searchTerm = row.medicine.toLowerCase().trim();
+                                const filtered = allMedicines.filter(med => 
+                                  med.name.toLowerCase().includes(searchTerm) ||
+                                  med.displayName.toLowerCase().includes(searchTerm) ||
+                                  (med.genericName && med.genericName.toLowerCase().includes(searchTerm))
+                                ).slice(0, 10);
+                                setMedicineSuggestions(prev => ({ ...prev, [idx]: filtered }));
+                                setShowSuggestions(prev => ({ ...prev, [idx]: true }));
+                                
+                                // Calculate position
+                                setTimeout(() => {
+                                  const input = inputRefs.current[`medicine-${idx}`];
+                                  if (input) {
+                                    const rect = input.getBoundingClientRect();
+                                    const dropdownHeight = 240; // max-h-60 = 240px
+                                    const spaceAbove = rect.top;
+                                    const spaceBelow = window.innerHeight - rect.bottom;
+                                    
+                                    // Position above if there's enough space, otherwise position below
+                                    const positionAbove = spaceAbove > dropdownHeight || spaceAbove > spaceBelow;
+                                    
+                                    setSuggestionPositions(prev => ({
+                                      ...prev,
+                                      [idx]: {
+                                        top: positionAbove ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
+                                        left: rect.left,
+                                        width: rect.width
+                                      }
+                                    }));
+                                  }
+                                }, 0);
+                              }
+                            }}
+                            onBlur={() => {
+                              // Delay hiding suggestions to allow click on suggestion
+                              setTimeout(() => {
+                                setShowSuggestions(prev => ({ ...prev, [idx]: false }));
+                              }, 200);
+                            }}
+                            className="w-full border rounded px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            placeholder="Type to search medicine..."
+                            autoComplete="off"
+                          />
+                          {showSuggestions[idx] && medicineSuggestions[idx] && medicineSuggestions[idx].length > 0 && (
+                            <div 
+                              className="fixed bg-white border border-gray-300 rounded-lg shadow-2xl max-h-60 overflow-y-auto"
+                              style={{ 
+                                zIndex: 10000,
+                                top: suggestionPositions[idx]?.top ? `${suggestionPositions[idx].top}px` : 'auto',
+                                left: suggestionPositions[idx]?.left ? `${suggestionPositions[idx].left}px` : 'auto',
+                                width: suggestionPositions[idx]?.width ? `${suggestionPositions[idx].width}px` : '300px',
+                                minWidth: '300px',
+                                maxWidth: '400px'
+                              }}
+                            >
+                              {medicineSuggestions[idx].map((med, medIdx) => (
+                                <div
+                                  key={`${med.name}-${medIdx}`}
+                                  onClick={() => selectMedicine(idx, med)}
+                                  onMouseDown={(e) => e.preventDefault()} // Prevent input blur before click
+                                  className={`px-3 py-2 cursor-pointer hover:bg-green-50 transition-colors ${
+                                    activeSuggestionIndex[idx] === medIdx ? 'bg-green-100' : ''
+                                  } ${medIdx === 0 ? 'rounded-t-lg' : ''} ${
+                                    medIdx === medicineSuggestions[idx].length - 1 ? 'rounded-b-lg' : ''
+                                  }`}
+                                >
+                                  <div className="font-medium text-gray-900">{med.name}</div>
+                                  {med.displayName !== med.name && (
+                                    <div className="text-xs text-gray-500">{med.displayName}</div>
+                                  )}
+                                  {med.strengths && med.strengths.length > 0 && (
+                                    <div className="text-xs text-gray-400 mt-1">
+                                      Available: {med.strengths.join(', ')}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-3 py-2">
                         <input
@@ -824,6 +1030,7 @@ const PrescribeMedication = () => {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
 
             {/* Datalist suggestions for prescription fields */}
@@ -979,7 +1186,7 @@ const PrescribeMedication = () => {
         </Card>
 
         {/* Visit & Prescription History - Only for JR/SR/Admin */}
-        {(currentUser?.role === 'JR' || currentUser?.role === 'SR' || currentUser?.role === 'Admin') && clinicalHistory.length > 0 && (
+        {(isJrSr(currentUser?.role) || isAdmin(currentUser?.role)) && clinicalHistory.length > 0 && (
           <VisitHistorySection 
             clinicalHistory={clinicalHistory}
             patientId={patientId}
