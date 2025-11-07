@@ -882,7 +882,7 @@ const {
  *       401:
  *         description: Unauthorized
  *       403:
- *         description: Admin or Doctor access required
+ *         description: System Administrator or Faculty Residents access required
  *       404:
  *         description: Patient not found
  *       500:

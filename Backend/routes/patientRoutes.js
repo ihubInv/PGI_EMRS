@@ -157,8 +157,8 @@ router.post('/', authenticateToken, requireMWOOrDoctor, validatePatient, Patient
  * @swagger
  * /api/patients/register-complete:
  *   post:
- *     summary: Register a new patient with complete personal information (MWO only)
- *     description: This endpoint allows MWO users to register a patient with both basic patient information and detailed personal information in a single request, eliminating duplicate "Personal Information" sections.
+ *     summary: Register a new patient with complete personal information (Psychiatric Welfare Officer only)
+ *     description: This endpoint allows Psychiatric Welfare Officer users to register a patient with both basic patient information and detailed personal information in a single request, eliminating duplicate "Personal Information" sections.
  *     tags: [Patient Management]
  *     security:
  *       - bearerAuth: []
@@ -395,7 +395,7 @@ router.post('/', authenticateToken, requireMWOOrDoctor, validatePatient, Patient
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: MWO access required
+ *         description: Psychiatric Welfare Officer access required
  *         content:
  *           application/json:
  *             schema:
@@ -407,7 +407,7 @@ router.post('/', authenticateToken, requireMWOOrDoctor, validatePatient, Patient
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-// Comprehensive patient registration with personal information (for MWO)
+// Comprehensive patient registration with personal information (for Psychiatric Welfare Officer)
 router.post('/register-complete', authenticateToken, authorizeRoles('Psychiatric Welfare Officer'), validatePatientRegistration, PatientController.registerPatientWithDetails);
 
 /**
@@ -465,7 +465,7 @@ router.post('/register-complete', authenticateToken, authorizeRoles('Psychiatric
  *         schema:
  *           type: string
  *           format: date
- *         description: When provided (YYYY-MM-DD), returns patients registered on that date by MWO. For JR/SR roles, only patients assigned to the logged-in doctor are returned. Admin sees all.
+ *         description: When provided (YYYY-MM-DD), returns patients registered on that date by Psychiatric Welfare Officer. For Faculty Residents, only patients assigned to the logged-in doctor are returned. System Administrator sees all.
  *     responses:
  *       200:
  *         description: Patients retrieved successfully
@@ -565,8 +565,8 @@ router.get('/stats', authenticateToken, authorizeRoles('System Administrator', '
  * @swagger
  * /api/patients/today:
  *   get:
- *     summary: Get today's patients registered by MWO
- *     description: Retrieves all patients registered today by Medical Welfare Officers (MWO), with pagination support
+ *     summary: Get today's patients registered by Psychiatric Welfare Officer
+ *     description: Retrieves all patients registered today by Psychiatric Welfare Officers, with pagination support
  *     tags: [Patient Management]
  *     security:
  *       - bearerAuth: []
@@ -603,7 +603,7 @@ router.get('/stats', authenticateToken, authorizeRoles('System Administrator', '
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: "Patients registered today by MWO (Mon Dec 23 2024)"
+ *                   example: "Patients registered today by Psychiatric Welfare Officer (Mon Dec 23 2024)"
  *                 data:
  *                   type: object
  *                   properties:
@@ -657,7 +657,7 @@ router.get('/stats', authenticateToken, authorizeRoles('System Administrator', '
  *                             description: Contact number
  *                           filled_by_name:
  *                             type: string
- *                             description: MWO who registered the patient
+ *                             description: Psychiatric Welfare Officer who registered the patient
  *                           filled_by_role:
  *                             type: string
  *                             description: Role of the person who registered
@@ -699,7 +699,7 @@ router.get('/stats', authenticateToken, authorizeRoles('System Administrator', '
  *       401:
  *         description: Unauthorized
  *       403:
- *         description: Access denied - JR/SR/Admin role required
+ *         description: Access denied - Faculty Residents or System Administrator role required
  *       500:
  *         description: Server error
  */
@@ -747,7 +747,7 @@ router.put('/:id', authenticateToken, authorizeRoles('System Administrator', 'Ps
  * @swagger
  * /api/patients/{id}:
  *   delete:
- *     summary: Delete patient (Admin only)
+ *     summary: Delete patient (System Administrator only)
  *     tags: [Patient Management]
  *     security:
  *       - bearerAuth: []
@@ -766,7 +766,7 @@ router.put('/:id', authenticateToken, authorizeRoles('System Administrator', 'Ps
  *       401:
  *         description: Unauthorized
  *       403:
- *         description: Admin access required
+ *         description: System Administrator access required
  *       404:
  *         description: Patient not found
  *       500:
@@ -886,8 +886,8 @@ router.get('/:id/adl-files', authenticateToken, authorizeRoles('System Administr
  * @swagger
  * /api/patients/assign:
  *   post:
- *     summary: Assign patient to MWO (MWO/Admin only)
- *     description: Assign a patient to a specific MWO for tracking purposes
+ *     summary: Assign patient to Psychiatric Welfare Officer (Psychiatric Welfare Officer/System Administrator only)
+ *     description: Assign a patient to a specific Psychiatric Welfare Officer for tracking purposes
  *     tags: [Patient Management]
  *     security:
  *       - bearerAuth: []
@@ -907,7 +907,7 @@ router.get('/:id/adl-files', authenticateToken, authorizeRoles('System Administr
  *                 example: 1
  *               assigned_to:
  *                 type: integer
- *                 description: MWO user ID to assign patient to
+ *                 description: Psychiatric Welfare Officer user ID to assign patient to
  *                 example: 5
  *     responses:
  *       200:
@@ -941,13 +941,13 @@ router.get('/:id/adl-files', authenticateToken, authorizeRoles('System Administr
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: MWO or Admin access required
+ *         description: Psychiatric Welfare Officer or System Administrator access required
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: Patient or MWO not found
+ *         description: Patient or Psychiatric Welfare Officer not found
  *         content:
  *           application/json:
  *             schema:
@@ -989,76 +989,13 @@ router.post('/assign', authenticateToken, authorizeRoles('Psychiatric Welfare Of
  */
 router.get('/cr/:cr_no', authenticateToken, authorizeRoles('System Administrator', 'Psychiatric Welfare Officer', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'), PatientController.getPatientByCRNo);
 
-/**
- * @swagger
- * /api/patients/psy/{psy_no}:
- *   get:
- *     summary: Get patient by PSY number
- *     tags: [Patient Management]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: psy_no
- *         required: true
- *         schema:
- *           type: string
- *         description: Psychiatry General Number
- *     responses:
- *       200:
- *         description: Patient retrieved successfully
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Patient not found
- *       500:
- *         description: Server error
- */
+// Endpoint not used in frontend - Swagger docs removed
 router.get('/psy/:psy_no', authenticateToken, authorizeRoles('System Administrator', 'Psychiatric Welfare Officer', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'), PatientController.getPatientByPSYNo);
 
-/**
- * @swagger
- * /api/patients/adl/{adl_no}:
- *   get:
- *     summary: Get patient by ADL number
- *     tags: [Patient Management]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: adl_no
- *         required: true
- *         schema:
- *           type: string
- *         description: ADL File Number
- *     responses:
- *       200:
- *         description: Patient retrieved successfully
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Patient not found
- *       500:
- *         description: Server error
- */
+// Endpoint not used in frontend - Swagger docs removed
 router.get('/adl/:adl_no', authenticateToken,  PatientController.getPatientByADLNo);
 
-/**
- * @swagger
- * /api/patients/stats:
- *   get:
- *     summary: Get patient record statistics
- *     tags: [Patient Records]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Statistics retrieved successfully
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Server error
- */
+// Duplicate /stats endpoint - using the one at line 537 with proper Swagger docs
 router.get('/stats', authenticateToken, authorizeRoles('System Administrator', 'Psychiatric Welfare Officer', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'), PatientController.getPatientStats);
 
 

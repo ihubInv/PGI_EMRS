@@ -758,56 +758,10 @@ router.get('/to-retrieve', authenticateToken, ADLController.getFilesToRetrieve);
  */
 router.get('/active', authenticateToken, ADLController.getActiveFiles);
 
-/**
- * @swagger
- * /api/adl-files/bulk-retrieve:
- *   post:
- *     summary: Bulk retrieve multiple ADL files
- *     tags: [Additional Detail File]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/BulkFileOperation'
- *     responses:
- *       200:
- *         description: Files retrieved successfully
- *       400:
- *         description: Validation error
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Server error
- */
+// Endpoint not used in frontend - Swagger docs removed
 router.post('/bulk-retrieve', authenticateToken, ADLController.bulkRetrieveFiles);
 
-/**
- * @swagger
- * /api/adl-files/bulk-return:
- *   post:
- *     summary: Bulk return multiple ADL files to storage
- *     tags: [Additional Detail File]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/BulkFileOperation'
- *     responses:
- *       200:
- *         description: Files returned successfully
- *       400:
- *         description: Validation error
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Server error
- */
+// Endpoint not used in frontend - Swagger docs removed
 router.post('/bulk-return', authenticateToken, ADLController.bulkReturnFiles);
 
 /**

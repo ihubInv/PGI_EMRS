@@ -377,31 +377,30 @@ Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         description: 'User profile management',
       },
       {
-        name: 'Admin',
-        description: 'Administrative functions',
-      },
-      {
         name: 'Patient Management',
         description: 'Patient registration and management',
       },
       {
-        name: 'Outpatient Records',
-        description: 'Outpatient record management (MWO)',
-      },
-      {
         name: 'Clinical Proforma',
-        description: 'Clinical assessment and documentation (Doctor)',
+        description: 'Clinical assessment and documentation (Faculty Residents)',
       },
       {
         name: 'Additional Detail File',
         description: 'ADL file management for complex cases',
       },
+      {
+        name: 'Prescriptions',
+        description: 'Prescription management',
+      },
     ],
   },
   apis: [
-    './routes/*.js',
-    './controllers/*.js',
-    './models/*.js',
+    './routes/userRoutes.js',
+    './routes/patientRoutes.js',
+    './routes/clinicalRoutes.js',
+    './routes/adlRoutes.js',
+    './routes/prescriptionRoutes.js',
+    // Excluded: './routes/outpatientRoutes.js' - Not used in frontend
   ],
 };
 
