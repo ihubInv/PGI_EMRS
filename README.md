@@ -459,33 +459,6 @@ The Swagger documentation includes:
 
 ---
 
-## 🎯 Recent Updates
-
-1. **Role Name Updates**
-   - Updated all role names to full descriptive names
-   - MWO → Psychiatric Welfare Officer
-   - JR → Faculty Residents (Junior Resident (JR))
-   - SR → Faculty Residents (Senior Resident (SR))
-   - Admin → System Administrator
-
-2. **Prescription Management**
-   - Medicine autocomplete from psychiatric medicines database
-   - Prescription history by date
-   - Bulk prescription creation
-   - Linked to clinical proformas
-
-3. **Swagger Documentation**
-   - Removed unused endpoints from documentation
-   - Updated role names in all API docs
-   - Cleaned up endpoint documentation
-
-4. **UI Enhancements**
-   - Modern dashboard with gradients
-   - Improved visual hierarchy
-   - Enhanced user experience
-
----
-
 ## 📦 Dependencies Summary
 
 ### Backend Key Dependencies
