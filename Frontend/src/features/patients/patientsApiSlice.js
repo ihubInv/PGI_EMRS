@@ -49,7 +49,14 @@ export const patientsApiSlice = apiSlice.injectEndpoints({
         url: `/patients/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['Patient', 'Stats'],
+      invalidatesTags: (result, error, id) => [
+        { type: 'Patient', id },
+        { type: 'Patient', id: 'LIST' },
+        'Patient',
+        'Stats',
+        'ClinicalProforma',
+        'ADLFile',
+      ],
     }),
     getPatientStats: builder.query({
       query: () => '/patients/stats',

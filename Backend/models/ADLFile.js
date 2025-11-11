@@ -1885,21 +1885,55 @@ class ADLFile {
   // Find ADL file by patient ID
   static async findByPatientId(patient_id) {
     try {
+      // Ensure patient_id is a number for proper comparison
+      const patientIdNum = parseInt(patient_id, 10);
+      if (isNaN(patientIdNum)) {
+        console.error('[ADLFile.findByPatientId] Invalid patient_id:', patient_id);
+        return [];
+      }
+
+      console.log(`[ADLFile.findByPatientId] Querying ADL files for patient_id: ${patientIdNum}`);
+
       const result = await db.query(
-        `SELECT af.*, p.name as patient_name, p.cr_no, p.psy_no, 
+        `SELECT af.*, 
+                p.name as patient_name, p.cr_no, p.psy_no, 
                 u1.name as created_by_name, u1.role as created_by_role,
-                u2.name as last_accessed_by_name
+                u2.name as last_accessed_by_name,
+                cp.assigned_doctor, cp.visit_date as proforma_visit_date,
+                u3.name as assigned_doctor_name, u3.role as assigned_doctor_role,
+                cp.id as clinical_proforma_id
          FROM adl_files af
          LEFT JOIN patients p ON af.patient_id = p.id
          LEFT JOIN users u1 ON af.created_by = u1.id
          LEFT JOIN users u2 ON af.last_accessed_by = u2.id
+         LEFT JOIN clinical_proforma cp ON af.clinical_proforma_id = cp.id
+         LEFT JOIN users u3 ON cp.assigned_doctor = u3.id
          WHERE af.patient_id = $1
          ORDER BY af.file_created_date DESC`,
-        [patient_id]
+        [patientIdNum]
       );
 
-      return result.rows.map(row => new ADLFile(row));
+      console.log(`[ADLFile.findByPatientId] Found ${result.rows.length} rows from database for patient_id: ${patientIdNum}`);
+      
+      // Verify all returned files belong to this patient (double-check)
+      const filteredRows = result.rows.filter(row => {
+        const rowPatientId = row.patient_id ? parseInt(row.patient_id, 10) : null;
+        const matches = rowPatientId === patientIdNum;
+        if (!matches) {
+          console.warn(`[ADLFile.findByPatientId] Row with id ${row.id} has patient_id ${rowPatientId}, expected ${patientIdNum}`);
+        }
+        return matches;
+      });
+
+      if (filteredRows.length !== result.rows.length) {
+        console.warn(`[ADLFile.findByPatientId] Filtered out ${result.rows.length - filteredRows.length} rows that didn't match patient_id ${patientIdNum}`);
+      }
+
+      console.log(`[ADLFile.findByPatientId] Returning ${filteredRows.length} ADL files for patient_id: ${patientIdNum}`);
+
+      return filteredRows.map(row => new ADLFile(row));
     } catch (error) {
+      console.error('[ADLFile.findByPatientId] Error:', error);
       throw error;
     }
   }

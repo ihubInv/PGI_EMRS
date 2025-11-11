@@ -13,7 +13,6 @@ const { swaggerSpecs, swaggerUiOptions } = require('./config/swagger');
 // Import routes
 const userRoutes = require('./routes/userRoutes');
 const patientRoutes = require('./routes/patientRoutes');
-const outpatientRoutes = require('./routes/outpatientRoutes');
 const clinicalRoutes = require('./routes/clinicalRoutes');
 const adlRoutes = require('./routes/adlRoutes');
 const prescriptionRoutes = require('./routes/prescriptionRoutes');
@@ -143,7 +142,6 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, swaggerUiOpt
 // API Routes
 app.use('/api/users', userRoutes);
 app.use('/api/patients', patientRoutes);
-app.use('/api/outpatient-records', outpatientRoutes);
 app.use('/api/clinical-proformas', clinicalRoutes);
 app.use('/api/adl-files', adlRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
@@ -159,7 +157,6 @@ app.get('/', (req, res) => {
     endpoints: {
       users: '/api/users',
       patients: '/api/patients',
-      outpatientRecords: '/api/outpatient-records',
       clinicalProformas: '/api/clinical-proformas',
       adlFiles: '/api/adl-files',
       prescriptions: '/api/prescriptions'

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { 
   FiPlus, FiSearch, FiTrash2, FiEye, FiUserPlus, FiEdit, FiUsers, 
   FiFilter, FiRefreshCw, FiDownload, FiMoreVertical, FiClock, 
-  FiHeart, FiFileText, FiShield, FiTrendingUp, FiMapPin, FiClipboard
+  FiHeart, FiFileText, FiShield, FiTrendingUp, FiMapPin, FiClipboard,
+  FiDelete
 } from 'react-icons/fi';
 import { useGetAllPatientsQuery, useDeletePatientMutation, useAssignPatientMutation } from '../../features/patients/patientsApiSlice';
 import { selectCurrentUser } from '../../features/auth/authSlice';
@@ -22,6 +23,7 @@ import { isAdmin, isMWO, isJrSr } from '../../utils/constants';
 
 const PatientsPage = () => {
   const user = useSelector(selectCurrentUser);
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const limit = 10;
@@ -56,13 +58,114 @@ const PatientsPage = () => {
   //   }
   // };
 
+  // Helper function to extract a single patient ID from row data
+  const getPatientId = (row) => {
+    if (!row) {
+      console.warn('[getPatientId] Row is null or undefined');
+      return null;
+    }
+    
+    let extractedId = null;
+    
+    // Check if id is an array (handle edge case)
+    if (Array.isArray(row.id)) {
+      console.warn('[getPatientId] row.id is an array, taking first element:', row.id);
+      extractedId = row.id.length > 0 ? row.id[0] : null;
+    }
+    // Direct access to id field (should be a single value)
+    else if (row.id !== null && row.id !== undefined && row.id !== '') {
+      extractedId = row.id;
+    }
+    // Fallback: try to get id from other possible fields
+    else {
+      extractedId = row.patient_id || row.patientId || null;
+    }
+    
+    // Ensure the ID is a valid number or can be converted to one
+    if (extractedId !== null && extractedId !== undefined && extractedId !== '') {
+      // Convert to number to ensure it's valid
+      const numericId = Number(extractedId);
+      if (!isNaN(numericId) && numericId > 0) {
+        return numericId; // Return as number for consistency
+      } else {
+        console.warn('[getPatientId] Invalid numeric ID:', extractedId);
+        return null;
+      }
+    }
+    
+    console.warn('[getPatientId] No valid ID found in row:', row);
+    return null;
+  };
+
+  // Handle view patient details
+  const handleView = (row) => {
+    console.log('[handleView] Row data:', row);
+    const patientId = getPatientId(row);
+    
+    if (!patientId) {
+      toast.error('Invalid patient ID. Unable to view patient details.');
+      console.error('[handleView] Failed to extract patient ID from row:', row);
+      return;
+    }
+    
+    console.log(`[handleView] Navigating to patient ID: ${patientId}`);
+    navigate(`/patients/${patientId}`);
+  };
+
+  // Handle edit patient
+  const handleEdit = (row) => {
+    console.log('[handleEdit] Row data:', row);
+    const patientId = getPatientId(row);
+    
+    if (!patientId) {
+      toast.error('Invalid patient ID. Unable to edit patient.');
+      console.error('[handleEdit] Failed to extract patient ID from row:', row);
+      return;
+    }
+    
+    console.log(`[handleEdit] Navigating to edit patient ID: ${patientId}`);
+    navigate(`/patients/${patientId}?edit=true`);
+  };
+
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this patient?')) {
+    if (!id) {
+      toast.error('Invalid patient ID. Cannot delete patient.');
+      return;
+    }
+
+    const confirmMessage = 'Are you sure you want to delete this patient?\n\n' +
+      'This will permanently delete:\n' +
+      '• Patient record\n' +
+      '• All clinical proformas\n' +
+      '• All ADL files\n' +
+      '• All prescriptions\n' +
+      '• All patient visits\n' +
+      '• All related records\n\n' +
+      'This action cannot be undone!';
+    
+    if (window.confirm(confirmMessage)) {
       try {
-        await deletePatient(id).unwrap();
-        toast.success('Patient deleted successfully');
+        console.log(`[handleDelete] Deleting patient ID: ${id}`);
+        const result = await deletePatient(id).unwrap();
+        console.log('[handleDelete] Delete successful:', result);
+        
+        toast.success('Patient and all related records deleted successfully');
+        
+        // Refetch the data to update the UI immediately
+        // Use setTimeout to ensure the mutation completes before refetching
+        setTimeout(async () => {
+          try {
+            await refetch();
+            console.log('[handleDelete] Data refetched successfully');
+          } catch (refetchError) {
+            console.error('[handleDelete] Error refetching data:', refetchError);
+            // Even if refetch fails, the cache should be invalidated by RTK Query
+          }
+        }, 100);
       } catch (err) {
-        toast.error(err?.data?.message || 'Failed to delete patient');
+        console.error('[handleDelete] Delete patient error:', err);
+        const errorMessage = err?.data?.message || err?.message || 'Failed to delete patient';
+        toast.error(errorMessage);
       }
     }
   };
@@ -194,85 +297,93 @@ const PatientsPage = () => {
         const statusText = isComplex ? 'complex' : 'simple';
         
         return (
-          <div className="space-y-2">
-            <Badge 
+        <div className="space-y-2">
+          <Badge 
               variant={isComplex ? 'warning' : 'success'}
-              className={`${
+            className={`${
                 isComplex
-                  ? 'bg-gradient-to-r from-orange-100 to-yellow-100 text-orange-800 border-orange-200' 
-                  : 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200'
-              }`}
-            >
+                ? 'bg-gradient-to-r from-orange-100 to-yellow-100 text-orange-800 border-orange-200' 
+                : 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200'
+            }`}
+          >
               {statusText}
-            </Badge>
-            <div className="flex items-center gap-1">
-              <div className={`w-2 h-2 rounded-full ${
-                row.has_adl_file ? 'bg-green-500' : 'bg-gray-300'
-              }`}></div>
-              <span className="text-xs text-gray-600">
-                ADL: {row.has_adl_file ? 'Yes' : 'No'}
-              </span>
-            </div>
+          </Badge>
+          <div className="flex items-center gap-1">
+            <div className={`w-2 h-2 rounded-full ${
+              row.has_adl_file ? 'bg-green-500' : 'bg-gray-300'
+            }`}></div>
+            <span className="text-xs text-gray-600">
+              ADL: {row.has_adl_file ? 'Yes' : 'No'}
+            </span>
           </div>
+        </div>
         );
       },
     },
     {
       header: (
         <div className="flex items-center gap-2">
-          <FiMoreVertical className="w-4 h-4 text-primary-600" />
+          {/* <FiMoreVertical className="w-4 h-4 text-primary-600" /> */}
           <span className="font-semibold">Actions</span>
         </div>
       ),
-      render: (row) => (
+      render: (row) => {
+        const patientId = getPatientId(row);
+        
+        // Debug: Log the patient ID being used for this row
+        if (patientId) {
+          console.log(`[Actions Column] Row patient ID: ${patientId}, Row name: ${row.name}, Row CR No: ${row.cr_no}`);
+        } else {
+          console.warn(`[Actions Column] No patient ID found for row:`, row);
+        }
+        
+        return (
         <div className="flex gap-2">
-          <Link to={`/patients/${row.id}`}>
             <Button 
               variant="ghost" 
               size="sm"
+              onClick={() => handleView(row)}
               className="h-9 w-9 p-0 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
-              title="View Details"
+              title={`View Details for Patient ID: ${patientId || 'N/A'}`}
             >
               <FiEye className="w-4 h-4 text-blue-600" />
             </Button>
-          </Link>
-          <Link to={`/patients/${row.id}?edit=true`}>
             <Button 
               variant="ghost" 
               size="sm"
+              onClick={() => handleEdit(row)}
               className="h-9 w-9 p-0 bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 border border-green-200 hover:border-green-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
               title="Edit Patient"
             >
               <FiEdit className="w-4 h-4 text-green-600" />
             </Button>
-          </Link>
-          {/* Show Clinical Proforma button only for JR, SR, and Admin */}
-          {(isJrSr(user?.role) || isAdmin(user?.role)) && (
-            <Link to={`/clinical?patient_id=${row.id}`}>
+            {/* Show Delete button only for Admin, not for MWO */}
+            {(isAdmin(user?.role) && !isMWO(user?.role)) && patientId && (
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="h-9 w-9 p-0 bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border border-purple-200 hover:border-purple-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
-                title="View Clinical Proforma"
+                className="h-9 w-9 p-0 bg-gradient-to-r from-red-50 to-rose-50 hover:from-red-100 hover:to-rose-100 border border-red-200 hover:border-red-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
+                title="Delete Patient"
+                onClick={() => handleDelete(patientId)}
               >
-                <FiClipboard className="w-4 h-4 text-purple-600" />
+                <FiTrash2 className="w-4 h-4 text-red-600" />
               </Button>
-            </Link>
-          )}
+            )}
           {/* {user?.role === 'MWO' && (
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => handleAssign(row)} 
               disabled={isAssigning}
-              className="h-9 w-9 p-0 bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border border-purple-200 hover:border-purple-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
-              title="Assign Doctor"
+                className="h-9 w-9 p-0 bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border border-purple-200 hover:border-purple-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
+                title="Assign Doctor"
             >
               <FiUserPlus className="w-4 h-4 text-purple-600" />
             </Button>
           )} */}
         </div>
-      ),
+        );
+      },
     },
   ];
 
@@ -286,7 +397,7 @@ const PatientsPage = () => {
             <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6">
               <div className="flex-1 space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                  <div className="relative">
+        <div className="relative">
                     <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl blur-sm opacity-50"></div>
                     <div className="relative p-4 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl shadow-lg">
                       <FiUsers className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
@@ -308,11 +419,11 @@ const PatientsPage = () => {
                 {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
                     <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3">
                         <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-sm">
                           <FiUsers className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
+                      </div>
+                      <div>
                           <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Total Patients</p>
                           <p className="text-2xl font-bold text-gray-900 mt-1">{data?.data?.pagination?.total || 0}</p>
                         </div>
@@ -323,15 +434,15 @@ const PatientsPage = () => {
                   
                   <div className="group relative bg-gradient-to-br from-amber-50 to-orange-100/50 rounded-xl p-5 border border-amber-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
                     <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3">
                         <div className="p-2.5 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg shadow-sm">
                           <FiHeart className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
+                      </div>
+                      <div>
                           <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Complex Cases</p>
                           <p className="text-2xl font-bold text-gray-900 mt-1">
                             {data?.data?.patients?.filter(p => p.has_adl_file || p.case_complexity === 'complex').length || 0}
-                          </p>
+                        </p>
                         </div>
                       </div>
                     </div>
@@ -340,15 +451,15 @@ const PatientsPage = () => {
                   
                   <div className="group relative bg-gradient-to-br from-purple-50 to-pink-100/50 rounded-xl p-5 border border-purple-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
                     <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3">
                         <div className="p-2.5 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg shadow-sm">
                           <FiFileText className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
+                      </div>
+                      <div>
                           <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">ADL Files</p>
                           <p className="text-2xl font-bold text-gray-900 mt-1">
-                            {data?.data?.patients?.filter(p => p.has_adl_file).length || 0}
-                          </p>
+                          {data?.data?.patients?.filter(p => p.has_adl_file).length || 0}
+                        </p>
                         </div>
                       </div>
                     </div>
@@ -357,15 +468,15 @@ const PatientsPage = () => {
                   
                   <div className="group relative bg-gradient-to-br from-emerald-50 to-green-100/50 rounded-xl p-5 border border-emerald-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
                     <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3">
                         <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg shadow-sm">
                           <FiShield className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
+                      </div>
+                      <div>
                           <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Assigned</p>
                           <p className="text-2xl font-bold text-gray-900 mt-1">
-                            {data?.data?.patients?.filter(p => p.assigned_doctor_name).length || 0}
-                          </p>
+                          {data?.data?.patients?.filter(p => p.assigned_doctor_name).length || 0}
+                        </p>
                         </div>
                       </div>
                     </div>

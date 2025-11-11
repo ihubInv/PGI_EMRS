@@ -1,21 +1,42 @@
+import { useState, useMemo, useEffect } from 'react';
 import { 
-  FiUser, FiUsers, FiBriefcase, FiDollarSign, FiMapPin, FiPhone, FiHome, 
-  FiCalendar, FiActivity, FiHeart, FiClock, FiShield, FiTrendingUp, 
-  FiNavigation, FiTruck, FiEdit3, FiBookOpen, FiGlobe, FiFileText, 
-  FiHash, FiLayers, FiMail, FiUserCheck, FiStar, FiInfo
+  FiUser, FiUsers, FiBriefcase, FiDollarSign, FiMapPin, FiPhone, FiFileText, 
+  FiFolder, FiClipboard, FiCalendar, FiHome, FiActivity, FiHeart, FiClock, 
+  FiShield, FiTrendingUp, FiLayers, FiHash, FiGlobe, FiEdit3, FiBookOpen,
+  FiNavigation, FiTruck, FiMail, FiUserCheck, FiStar, FiInfo, FiChevronDown, FiChevronUp, FiTag,
+  FiPackage
 } from 'react-icons/fi';
 import Card from '../../components/Card';
+import Badge from '../../components/Badge';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
 import Textarea from '../../components/Textarea';
+import { formatDate, formatDateTime } from '../../utils/formatters';
+import { 
+  getSexLabel, getMaritalStatusLabel, getFamilyTypeLabel, getLocalityLabel, 
+  getReligionLabel, getAgeGroupLabel, getOccupationLabel, getEducationLabel, 
+  getMobilityLabel, getReferredByLabel, getFileStatusLabel, getCaseSeverityLabel,
+  formatAddress, formatCurrency
+} from '../../utils/enumMappings';
 import { 
   SEX_OPTIONS, MARITAL_STATUS, FAMILY_TYPE, LOCALITY, RELIGION, 
   AGE_GROUP_OPTIONS, OCCUPATION_OPTIONS, EDUCATION_OPTIONS, 
   MOBILITY_OPTIONS, REFERRED_BY_OPTIONS, INDIAN_STATES, UNIT_DAYS_OPTIONS 
 } from '../../utils/constants';
-import { isJR, isSR } from '../../utils/constants';
+import { isJR, isSR, isMWO, isAdmin, isJrSr } from '../../utils/constants';
+import { useGetPrescriptionsByProformaIdQuery } from '../../features/prescriptions/prescriptionApiSlice';
+import {
+  useUpdatePatientMutation,
+} from '../../features/patients/patientsApiSlice';
+import {
+  useUpdateClinicalProformaMutation,
+} from '../../features/clinical/clinicalApiSlice';
+import {
+  useUpdateADLFileMutation,
+} from '../../features/adl/adlApiSlice';
+import { toast } from 'react-toastify';
 
-// Enhanced Radio button component with better styling
+// Enhanced Radio button component
 const RadioGroup = ({ label, name, value, onChange, options, className = "", inline = true, error, icon }) => {
   return (
     <div className={`space-y-3 ${className}`}>
@@ -62,7 +83,7 @@ const IconInput = ({ icon, label, ...props }) => {
         )}
         <input
           {...props}
-          className={`w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 hover:border-gray-300 ${
+          className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 hover:border-gray-300 ${
             icon ? 'pl-10' : ''
           } ${props.className || ''}`}
         />
@@ -86,1001 +107,1414 @@ const DateInput = ({ icon, label, ...props }) => {
         <input
           {...props}
           type="date"
-          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 hover:border-gray-300 appearance-none"
+          className="w-full px-4 py-2 pl-10 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 hover:border-gray-300 appearance-none"
         />
       </div>
     </div>
   );
 };
 
-const PatientDetailsEdit = ({ formData, handleChange, usersData }) => {
-  console.log(formData,'formData',usersData,'usersData');
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="w-full px-6 py-8 space-y-8">
-        {/* Header Section */}
-        <div className="text-center space-y-4 mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary-600 to-primary-700 rounded-full mb-4">
-            <FiEdit3 className="w-8 h-8 text-white" />
-          </div>
-          <p className="text-sm text-gray-600 font-medium">Department of Psychiatry</p>
-          <p className="text-xs text-gray-500">Postgraduate Institute of Medical Education & Research, Chandigarh</p>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent tracking-wide">
-            EDIT PATIENT RECORD
-          </h1>
-        </div>
+const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersData, userRole, onSave, onCancel }) => {
+  const [expandedCards, setExpandedCards] = useState({
+    patient: false,
+    clinical: false,
+    adl: false,
+    prescriptions: false
+  });
 
-        {/* Patient Information */}
-        <Card
-          title={
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary-100 rounded-lg">
-                <FiUser className="w-6 h-6 text-primary-600" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">Patient Information</span>
-            </div>
-          }
-          className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
+  const toggleCard = (cardName) => {
+    setExpandedCards(prev => ({
+      ...prev,
+      [cardName]: !prev[cardName]
+    }));
+  };
+
+  // Mutation hooks
+  const [updatePatient, { isLoading: isUpdatingPatient }] = useUpdatePatientMutation();
+  const [updateClinicalProforma, { isLoading: isUpdatingClinical }] = useUpdateClinicalProformaMutation();
+  const [updateADLFile, { isLoading: isUpdatingADL }] = useUpdateADLFileMutation();
+
+  // Local state for form data
+  const [localFormData, setLocalFormData] = useState(formData || {});
+  const [clinicalFormData, setClinicalFormData] = useState({});
+  const [adlFormData, setAdlFormData] = useState({});
+
+  // Filter ADL files for this patient
+  const patientAdlFiles=adlData?.data?.adlFiles || [];
+  
+  // Get clinical proformas for this patient
+  const patientProformas = clinicalData?.data?.proformas || [];
+
+  // Fetch prescriptions for all proformas
+  const proformaIds = patientProformas.map(p => p.id).filter(Boolean);
+  
+  // Fetch prescriptions for each proforma - using hooks in a stable array
+  // Note: This is safe as long as proformaIds array length is stable
+  const prescriptionResults = proformaIds.map(proformaId => 
+    useGetPrescriptionsByProformaIdQuery(proformaId, { skip: !proformaId })
+  );
+
+  // Combine all prescriptions and group by proforma/visit date
+  const allPrescriptions = useMemo(() => {
+    const prescriptions = [];
+    prescriptionResults.forEach((result, index) => {
+      if (result.data?.data?.prescriptions) {
+        const proformaId = proformaIds[index];
+        const proforma = patientProformas.find(p => p.id === proformaId);
+        result.data.data.prescriptions.forEach(prescription => {
+          prescriptions.push({
+            ...prescription,
+            proforma_id: proformaId,
+            visit_date: proforma?.visit_date || proforma?.created_at,
+            visit_type: proforma?.visit_type
+          });
+        });
+      }
+    });
+    // Sort by visit date (most recent first)
+    return prescriptions.sort((a, b) => {
+      const dateA = new Date(a.visit_date || 0);
+      const dateB = new Date(b.visit_date || 0);
+      return dateB - dateA;
+    });
+  }, [prescriptionResults, patientProformas, proformaIds]);
+
+  // Group prescriptions by visit date
+  const prescriptionsByVisit = useMemo(() => {
+    const grouped = {};
+    allPrescriptions.forEach(prescription => {
+      const visitDate = prescription.visit_date 
+        ? formatDate(prescription.visit_date) 
+        : 'Unknown Date';
+      if (!grouped[visitDate]) {
+        grouped[visitDate] = {
+          date: prescription.visit_date,
+          visitType: prescription.visit_type,
+          prescriptions: []
+        };
+      }
+      grouped[visitDate].prescriptions.push(prescription);
+    });
+    return grouped;
+  }, [allPrescriptions]);
+
+  // Check if user can view prescriptions (Admin or JR/SR, not MWO)
+  const canViewPrescriptions = !isMWO(userRole) && (isAdmin(userRole) || isJrSr(userRole));
+
+  // Initialize clinical and ADL form data
+  useEffect(() => {
+    if (patientProformas.length > 0) {
+      // Use the first/latest proforma for editing
+      const latestProforma = patientProformas[0];
+      setClinicalFormData({
+        id: latestProforma.id,
+        visit_date: latestProforma.visit_date || '',
+        visit_type: latestProforma.visit_type || '',
+        room_no: latestProforma.room_no || '',
+        case_severity: latestProforma.case_severity || '',
+        decision: latestProforma.decision || '',
+        diagnosis: latestProforma.diagnosis || '',
+      });
+    }
+  }, [patientProformas]);
+
+  useEffect(() => {
+    if (patientAdlFiles.length > 0) {
+      // Use the first/latest ADL file for editing
+      const latestADL = patientAdlFiles[0];
+      
+      // Parse JSON fields if they're strings
+      const parseJSONField = (field) => {
+        if (!field) return [];
+        if (Array.isArray(field)) return field;
+        try {
+          return typeof field === 'string' ? JSON.parse(field) : field;
+        } catch {
+          return [];
+        }
+      };
+
+      setAdlFormData({
+        id: latestADL.id,
+        // Basic fields
+        adl_no: latestADL.adl_no || '',
+        file_status: latestADL.file_status || '',
+        physical_file_location: latestADL.physical_file_location || '',
+        notes: latestADL.notes || '',
+        // Complaints
+        complaints_patient: parseJSONField(latestADL.complaints_patient),
+        complaints_informant: parseJSONField(latestADL.complaints_informant),
+        informants: parseJSONField(latestADL.informants),
+        // History
+        history_narrative: latestADL.history_narrative || '',
+        history_specific_enquiry: latestADL.history_specific_enquiry || '',
+        history_drug_intake: latestADL.history_drug_intake || '',
+        history_treatment_place: latestADL.history_treatment_place || '',
+        history_treatment_drugs: latestADL.history_treatment_drugs || '',
+        history_treatment_response: latestADL.history_treatment_response || '',
+        // Past History
+        past_history_medical: latestADL.past_history_medical || '',
+        past_history_psychiatric_diagnosis: latestADL.past_history_psychiatric_diagnosis || '',
+        past_history_psychiatric_treatment: latestADL.past_history_psychiatric_treatment || '',
+        past_history_psychiatric_interim: latestADL.past_history_psychiatric_interim || '',
+        // Family History
+        family_history_father_age: latestADL.family_history_father_age || '',
+        family_history_father_education: latestADL.family_history_father_education || '',
+        family_history_father_occupation: latestADL.family_history_father_occupation || '',
+        family_history_father_personality: latestADL.family_history_father_personality || '',
+        family_history_father_deceased: latestADL.family_history_father_deceased || false,
+        family_history_mother_age: latestADL.family_history_mother_age || '',
+        family_history_mother_education: latestADL.family_history_mother_education || '',
+        family_history_mother_occupation: latestADL.family_history_mother_occupation || '',
+        family_history_mother_personality: latestADL.family_history_mother_personality || '',
+        family_history_mother_deceased: latestADL.family_history_mother_deceased || false,
+        family_history_siblings: parseJSONField(latestADL.family_history_siblings),
+        // MSE
+        mse_general_demeanour: latestADL.mse_general_demeanour || '',
+        mse_affect_subjective: latestADL.mse_affect_subjective || '',
+        mse_thought_flow: latestADL.mse_thought_flow || '',
+        mse_cognitive_consciousness: latestADL.mse_cognitive_consciousness || '',
+        mse_cognitive_orientation_time: latestADL.mse_cognitive_orientation_time || '',
+        mse_cognitive_orientation_place: latestADL.mse_cognitive_orientation_place || '',
+        mse_insight_understanding: latestADL.mse_insight_understanding || '',
+        mse_insight_judgement: latestADL.mse_insight_judgement || '',
+        // Diagnostic
+        diagnostic_formulation_summary: latestADL.diagnostic_formulation_summary || '',
+        diagnostic_formulation_features: latestADL.diagnostic_formulation_features || '',
+        diagnostic_formulation_psychodynamic: latestADL.diagnostic_formulation_psychodynamic || '',
+        provisional_diagnosis: latestADL.provisional_diagnosis || '',
+        treatment_plan: latestADL.treatment_plan || '',
+        consultant_comments: latestADL.consultant_comments || '',
+      });
+    }
+  }, [patientAdlFiles]);
+
+  // Update local form data when prop changes
+  useEffect(() => {
+    if (formData) {
+      setLocalFormData(formData);
+    }
+  }, [formData]);
+
+  const handlePatientChange = (e) => {
+    const { name, value } = e.target;
+    setLocalFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleClinicalChange = (e) => {
+    const { name, value } = e.target;
+    setClinicalFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleADLChange = (e) => {
+    const { name, value, type } = e.target;
+    if (type === 'checkbox') {
+      setAdlFormData(prev => ({ ...prev, [name]: e.target.checked }));
+    } else {
+      setAdlFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleADLArrayChange = (fieldName, index, subField, value) => {
+    setAdlFormData(prev => {
+      const array = [...(prev[fieldName] || [])];
+      if (!array[index]) array[index] = {};
+      array[index][subField] = value;
+      return { ...prev, [fieldName]: array };
+    });
+  };
+
+  const handleSaveAll = async () => {
+    try {
+      // Save patient data
+      if (patient?.id) {
+        const patientPayload = {
+          id: patient.id,
+          name: localFormData.name,
+          sex: localFormData.sex,
+          actual_age: localFormData.actual_age ? parseInt(localFormData.actual_age) : null,
+          assigned_room: localFormData.assigned_room,
+          contact_number: localFormData.contact_number,
+          age_group: localFormData.age_group,
+          marital_status: localFormData.marital_status,
+          year_of_marriage: localFormData.year_of_marriage ? parseInt(localFormData.year_of_marriage) : null,
+          no_of_children: localFormData.no_of_children ? parseInt(localFormData.no_of_children) : null,
+          no_of_children_male: localFormData.no_of_children_male ? parseInt(localFormData.no_of_children_male) : null,
+          no_of_children_female: localFormData.no_of_children_female ? parseInt(localFormData.no_of_children_female) : null,
+          dob: localFormData.dob || null,
+          occupation: localFormData.occupation,
+          actual_occupation: localFormData.actual_occupation,
+          education_level: localFormData.education_level,
+          completed_years_of_education: localFormData.completed_years_of_education ? parseInt(localFormData.completed_years_of_education) : null,
+          patient_income: localFormData.patient_income ? parseFloat(localFormData.patient_income) : null,
+          family_income: localFormData.family_income ? parseFloat(localFormData.family_income) : null,
+          religion: localFormData.religion,
+          family_type: localFormData.family_type,
+          locality: localFormData.locality,
+          head_name: localFormData.head_name,
+          head_age: localFormData.head_age ? parseInt(localFormData.head_age) : null,
+          head_relationship: localFormData.head_relationship,
+          head_education: localFormData.head_education,
+          head_occupation: localFormData.head_occupation,
+          head_income: localFormData.head_income ? parseFloat(localFormData.head_income) : null,
+          distance_from_hospital: localFormData.distance_from_hospital,
+          mobility: localFormData.mobility,
+          referred_by: localFormData.referred_by,
+          exact_source: localFormData.exact_source,
+          seen_in_walk_in_on: localFormData.seen_in_walk_in_on,
+          worked_up_on: localFormData.worked_up_on,
+          present_address: localFormData.present_address,
+          permanent_address: localFormData.permanent_address,
+          local_address: localFormData.local_address,
+          school_college_office: localFormData.school_college_office,
+          present_address_line_1: localFormData.present_address_line_1,
+          present_address_line_2: localFormData.present_address_line_2,
+          present_city_town_village: localFormData.present_city_town_village,
+          present_district: localFormData.present_district,
+          present_state: localFormData.present_state,
+          present_pin_code: localFormData.present_pin_code,
+          present_country: localFormData.present_country,
+          permanent_address_line_1: localFormData.permanent_address_line_1,
+          permanent_address_line_2: localFormData.permanent_address_line_2,
+          permanent_city_town_village: localFormData.permanent_city_town_village,
+          permanent_district: localFormData.permanent_district,
+          permanent_state: localFormData.permanent_state,
+          permanent_pin_code: localFormData.permanent_pin_code,
+          permanent_country: localFormData.permanent_country,
+          address_line_1: localFormData.address_line_1,
+          address_line_2: localFormData.address_line_2,
+          city_town_village: localFormData.city_town_village,
+          district: localFormData.district,
+          state: localFormData.state,
+          pin_code: localFormData.pin_code,
+          country: localFormData.country,
+          department: localFormData.department,
+          unit_consit: localFormData.unit_consit,
+          room_no: localFormData.room_no,
+          serial_no: localFormData.serial_no,
+          file_no: localFormData.file_no,
+          unit_days: localFormData.unit_days,
+          category: localFormData.category,
+          special_clinic_no: localFormData.special_clinic_no,
+          distance_from_hospital: localFormData.distance_from_hospital,
+          mobility: localFormData.mobility,
+          referred_by: localFormData.referred_by,
+          exact_source: localFormData.exact_source,
+          seen_in_walk_in_on: localFormData.seen_in_walk_in_on,
+          worked_up_on: localFormData.worked_up_on,
+          school_college_office: localFormData.school_college_office,
+          local_address: localFormData.local_address,
+        };
+
+        await updatePatient(patientPayload).unwrap();
+        toast.success('Patient details updated successfully');
+      }
+
+      // Save clinical proforma data
+      if (clinicalFormData.id) {
+        await updateClinicalProforma(clinicalFormData).unwrap();
+        toast.success('Clinical proforma updated successfully');
+      }
+
+      // Save ADL file data
+      if (adlFormData.id) {
+        const adlPayload = {
+          id: adlFormData.id,
+          file_status: adlFormData.file_status,
+          physical_file_location: adlFormData.physical_file_location,
+          notes: adlFormData.notes,
+          complaints_patient: JSON.stringify(adlFormData.complaints_patient),
+          complaints_informant: JSON.stringify(adlFormData.complaints_informant),
+          informants: JSON.stringify(adlFormData.informants),
+          history_narrative: adlFormData.history_narrative,
+          history_specific_enquiry: adlFormData.history_specific_enquiry,
+          history_drug_intake: adlFormData.history_drug_intake,
+          history_treatment_place: adlFormData.history_treatment_place,
+          history_treatment_drugs: adlFormData.history_treatment_drugs,
+          history_treatment_response: adlFormData.history_treatment_response,
+          past_history_medical: adlFormData.past_history_medical,
+          past_history_psychiatric_diagnosis: adlFormData.past_history_psychiatric_diagnosis,
+          past_history_psychiatric_treatment: adlFormData.past_history_psychiatric_treatment,
+          past_history_psychiatric_interim: adlFormData.past_history_psychiatric_interim,
+          family_history_father_age: adlFormData.family_history_father_age,
+          family_history_father_education: adlFormData.family_history_father_education,
+          family_history_father_occupation: adlFormData.family_history_father_occupation,
+          family_history_father_personality: adlFormData.family_history_father_personality,
+          family_history_father_deceased: adlFormData.family_history_father_deceased,
+          family_history_mother_age: adlFormData.family_history_mother_age,
+          family_history_mother_education: adlFormData.family_history_mother_education,
+          family_history_mother_occupation: adlFormData.family_history_mother_occupation,
+          family_history_mother_personality: adlFormData.family_history_mother_personality,
+          family_history_mother_deceased: adlFormData.family_history_mother_deceased,
+          family_history_siblings: JSON.stringify(adlFormData.family_history_siblings),
+          mse_general_demeanour: adlFormData.mse_general_demeanour,
+          mse_affect_subjective: adlFormData.mse_affect_subjective,
+          mse_thought_flow: adlFormData.mse_thought_flow,
+          mse_cognitive_consciousness: adlFormData.mse_cognitive_consciousness,
+          mse_cognitive_orientation_time: adlFormData.mse_cognitive_orientation_time,
+          mse_cognitive_orientation_place: adlFormData.mse_cognitive_orientation_place,
+          mse_insight_understanding: adlFormData.mse_insight_understanding,
+          mse_insight_judgement: adlFormData.mse_insight_judgement,
+          diagnostic_formulation_summary: adlFormData.diagnostic_formulation_summary,
+          diagnostic_formulation_features: adlFormData.diagnostic_formulation_features,
+          diagnostic_formulation_psychodynamic: adlFormData.diagnostic_formulation_psychodynamic,
+          provisional_diagnosis: adlFormData.provisional_diagnosis,
+          treatment_plan: adlFormData.treatment_plan,
+          consultant_comments: adlFormData.consultant_comments,
+        };
+
+        await updateADLFile(adlPayload).unwrap();
+        toast.success('ADL file updated successfully');
+      }
+
+      if (onSave) {
+        onSave();
+      }
+    } catch (error) {
+      console.error('Error saving data:', error);
+      toast.error(error?.data?.message || 'Failed to save changes');
+    }
+  };
+
+  const isLoading = isUpdatingPatient || isUpdatingClinical || isUpdatingADL;
+
+  return (
+    <div className="space-y-6">
+      {/* Card 1: Patient Details */}
+      <Card className="shadow-lg border-0 bg-white">
+        <div 
+          className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
+          onClick={() => toggleCard('patient')}
         >
-          <div className="space-y-8">
-            {/* Patient Details */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full"></div>
-                <h4 className="text-xl font-bold text-gray-900">Patient Details</h4>
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-100 rounded-lg">
+              <FiUser className="h-6 w-6 text-blue-600" />
+          </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">Patient Details</h3>
+              <p className="text-sm text-gray-500 mt-1">{patient?.name || 'N/A'} - {patient?.cr_no || 'N/A'}</p>
+        </div>
               </div>
+          {expandedCards.patient ? (
+            <FiChevronUp className="h-6 w-6 text-gray-500" />
+          ) : (
+            <FiChevronDown className="h-6 w-6 text-gray-500" />
+          )}
+            </div>
+
+        {expandedCards.patient && (
+          <div className="p-6">
+          <div className="space-y-8">
+              {/* Basic Information Section */}
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Basic Information</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <IconInput
                   icon={<FiUser className="w-4 h-4" />}
-                  label="Patient Name"
+                    label="Name"
                   name="name"
-                  value={formData.name}
-                  onChange={handleChange}
+                    value={localFormData.name || ''}
+                    onChange={handlePatientChange}
                   required
-                  className="bg-gradient-to-r from-green-50 to-emerald-50"
-                />
+                  />
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 mb-2 block">CR Number</label>
+                    <p className="text-base font-semibold text-gray-900">{patient?.cr_no || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 mb-2 block">PSY Number</label>
+                    <p className="text-base font-semibold text-gray-900">{patient?.psy_no || 'N/A'}</p>
+                  </div>
                 <RadioGroup
                   label="Sex"
                   name="sex"
-                  value={formData.sex}
-                  onChange={handleChange}
+                    value={localFormData.sex || ''}
+                    onChange={handlePatientChange}
                   options={SEX_OPTIONS}
                   icon={<FiHeart className="w-4 h-4" />}
-                  className="bg-gradient-to-r from-pink-50 to-rose-50 p-4 rounded-lg"
                 />
                 <IconInput
                   icon={<FiClock className="w-4 h-4" />}
                   label="Age"
                   type="number"
                   name="actual_age"
-                  value={formData.actual_age}
-                  onChange={handleChange}
-                  required
+                    value={localFormData.actual_age || ''}
+                    onChange={handlePatientChange}
                   min="0"
                   max="150"
-                  className="bg-gradient-to-r from-orange-50 to-yellow-50"
                 />
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="border-t border-gray-200"></div>
-
-            {/* Assignment Details */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full"></div>
-                <h4 className="text-xl font-bold text-gray-900">Assignment Details</h4>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <RadioGroup
+                    label="Age Group"
+                    name="age_group"
+                    value={localFormData.age_group || ''}
+                    onChange={handlePatientChange}
+                    options={AGE_GROUP_OPTIONS}
+                    icon={<FiUsers className="w-4 h-4" />}
+                  />
                 <IconInput
                   icon={<FiHome className="w-4 h-4" />}
-                  label="Assigned Room"
+                    label="Room"
                   name="assigned_room"
-                  value={formData.assigned_room}
-                  onChange={handleChange}
-                  className="bg-gradient-to-r from-blue-50 to-indigo-50"
-                />
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <FiUser className="w-4 h-4 text-primary-600" />
-                    Assign Doctor (JR/SR)
-                  </label>
-                  <Select
-                    name="assigned_doctor_id"
-                    value={formData.assigned_doctor_id}
-                    onChange={handleChange}
-                    options={(usersData?.data?.users || [])
-                      .filter(u => isJR(u.role) || isSR(u.role))
-                      .map(u => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
-                    placeholder="Select doctor (optional)"
-                    className="bg-gradient-to-r from-violet-50 to-purple-50"
+                    value={localFormData.assigned_room || ''}
+                    onChange={handlePatientChange}
                   />
+                  <IconInput
+                    icon={<FiPhone className="w-4 h-4" />}
+                    label="Contact Number"
+                    name="contact_number"
+                    value={localFormData.contact_number || ''}
+                    onChange={handlePatientChange}
+                />
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 mb-2 block">Status</label>
+                    <Badge 
+                      className={`${
+                        patient?.is_active 
+                          ? 'bg-green-100 text-green-800 border-green-200' 
+                          : 'bg-gray-100 text-gray-800 border-gray-200'
+                      } text-sm font-medium`}
+                    >
+                      {patient?.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </div>
                 </div>
               </div>
+
+              {/* Status Information Section */}
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Status Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 mb-2 block">Assigned Doctor</label>
+                  <Select
+                    name="assigned_doctor_id"
+                      value={localFormData.assigned_doctor_id || ''}
+                      onChange={handlePatientChange}
+                    options={(usersData?.data?.users || [])
+                        .filter(u => isJR(u.role) || isSR(u.role))
+                      .map(u => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
+                    placeholder="Select doctor (optional)"
+                  />
+                </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 mb-2 block">Case Complexity</label>
+                    <Badge 
+                      className={`${
+                        patient?.case_complexity === 'complex' 
+                          ? 'bg-orange-100 text-orange-800 border-orange-200' 
+                          : 'bg-green-100 text-green-800 border-green-200'
+                      } text-sm font-medium`}
+                    >
+                      {patient?.case_complexity === 'complex' ? 'Complex' : 'Simple'}
+                    </Badge>
+              </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 mb-2 block">ADL File</label>
+                    <Badge 
+                      className={`${
+                        patient?.has_adl_file 
+                          ? 'bg-green-100 text-green-800 border-green-200' 
+                          : 'bg-gray-100 text-gray-800 border-gray-200'
+                      } text-sm font-medium`}
+                    >
+                      {patient?.has_adl_file ? 'Available' : 'Not Available'}
+                    </Badge>
             </div>
           </div>
-        </Card>
-
-        {/* Personal Information */}
-        <Card
-          title={
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary-100 rounded-lg">
-                <FiUsers className="w-6 h-6 text-primary-600" />
               </div>
-              <span className="text-xl font-bold text-gray-900">Personal Information</span>
-            </div>
-          }
-          className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-        >
-          <div className="space-y-8">
+
+              {/* Personal Information Section */}
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Personal Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <RadioGroup
               label="Marital Status"
               name="marital_status"
-              value={formData.marital_status}
-              onChange={handleChange}
+                    value={localFormData.marital_status || ''}
+                    onChange={handlePatientChange}
               options={MARITAL_STATUS}
               icon={<FiHeart className="w-4 h-4" />}
-              className="bg-gradient-to-r from-pink-50 to-rose-50 p-6 rounded-lg"
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <RadioGroup
-                label="Age Group"
-                name="age_group"
-                value={formData.age_group}
-                onChange={handleChange}
-                options={AGE_GROUP_OPTIONS}
-                icon={<FiClock className="w-4 h-4" />}
-                className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg"
               />
               <IconInput
                 icon={<FiCalendar className="w-4 h-4" />}
                 label="Year of Marriage"
                 type="number"
                 name="year_of_marriage"
-                value={formData.year_of_marriage}
-                onChange={handleChange}
+                    value={localFormData.year_of_marriage || ''}
+                    onChange={handlePatientChange}
                 min="1900"
                 max={new Date().getFullYear()}
-                className="bg-gradient-to-r from-purple-50 to-pink-50"
               />
               <IconInput
                 icon={<FiUsers className="w-4 h-4" />}
                 label="Number of Children"
                 type="number"
                 name="no_of_children"
-                value={formData.no_of_children}
-                onChange={handleChange}
+                    value={localFormData.no_of_children || ''}
+                    onChange={handlePatientChange}
                 min="0"
-                className="bg-gradient-to-r from-green-50 to-emerald-50"
               />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <IconInput
                 icon={<FiUsers className="w-4 h-4" />}
-                label="Male Children"
+                    label="Number of Children (Male)"
                 type="number"
                 name="no_of_children_male"
-                value={formData.no_of_children_male}
-                onChange={handleChange}
+                    value={localFormData.no_of_children_male || ''}
+                    onChange={handlePatientChange}
                 min="0"
-                className="bg-gradient-to-r from-blue-50 to-indigo-50"
               />
               <IconInput
                 icon={<FiUsers className="w-4 h-4" />}
-                label="Female Children"
+                    label="Number of Children (Female)"
                 type="number"
                 name="no_of_children_female"
-                value={formData.no_of_children_female}
-                onChange={handleChange}
+                    value={localFormData.no_of_children_female || ''}
+                    onChange={handlePatientChange}
                 min="0"
-                className="bg-gradient-to-r from-pink-50 to-rose-50"
               />
-            </div>
-          </div>
-        </Card>
-        {/* Occupation & Education */}
-        <Card
-          title={
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary-100 rounded-lg">
-                <FiBriefcase className="w-6 h-6 text-primary-600" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">Occupation & Education</span>
-            </div>
-          }
-          className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-        >
-          <div className="space-y-8">
+                  <DateInput
+                    icon={<FiCalendar className="w-4 h-4" />}
+                    label="Date of Birth"
+                    name="dob"
+                    value={patient?.dob ? patient.dob.split('T')[0] : ''}
+                    onChange={handlePatientChange}
+                  />
             <RadioGroup
               label="Occupation"
               name="occupation"
-              value={formData.occupation}
-              onChange={handleChange}
+                    value={localFormData.occupation || ''}
+                    onChange={handlePatientChange}
               options={OCCUPATION_OPTIONS}
               icon={<FiBriefcase className="w-4 h-4" />}
-              className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg"
             />
-
             <IconInput
               icon={<FiEdit3 className="w-4 h-4" />}
               label="Actual Occupation"
               name="actual_occupation"
-              value={formData.actual_occupation}
-              onChange={handleChange}
-              placeholder="Enter detailed occupation"
-              className="bg-gradient-to-r from-green-50 to-emerald-50"
-            />
-
-            <div className="space-y-6">
-              <label className="flex items-center gap-2 text-lg font-bold text-gray-700 mb-4">
-                <FiBookOpen className="w-5 h-5 text-primary-600" />
-                Education
-              </label>
-              <div className="space-y-4">
-                {/* Education options except "Not Known" */}
-                <div className="flex flex-wrap gap-4">
-                  {EDUCATION_OPTIONS.slice(0, -1).map((option) => (
-                    <label key={option.value} className="flex items-center space-x-3 cursor-pointer group">
-                      <input
-                        type="radio"
+                    value={localFormData.actual_occupation || ''}
+                    onChange={handlePatientChange}
+                  />
+                  <RadioGroup
+                    label="Education Level"
                         name="education_level"
-                        value={option.value}
-                        checked={formData.education_level === option.value}
-                        onChange={handleChange}
-                        className="w-4 h-4 text-primary-600 border-2 border-gray-300 focus:ring-primary-500 focus:ring-2 rounded-full transition-all duration-200 group-hover:border-primary-400"
-                      />
-                      <span className="text-sm text-gray-700 group-hover:text-primary-700 transition-colors duration-200">{option.label}</span>
-                    </label>
-                  ))}
+                    value={localFormData.education_level || ''}
+                    onChange={handlePatientChange}
+                    options={EDUCATION_OPTIONS}
+                    icon={<FiBookOpen className="w-4 h-4" />}
+                  />
                 </div>
-                
-                {/* "Not Known" option with "Completed years of education" field */}
-                <div className="flex items-center gap-4 flex-wrap bg-gradient-to-r from-gray-50 to-slate-50 p-4 rounded-lg">
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="education_level"
-                      value="not_known"
-                      checked={formData.education_level === 'not_known'}
-                      onChange={handleChange}
-                      className="w-4 h-4 text-primary-600 border-2 border-gray-300 focus:ring-primary-500 focus:ring-2 rounded-full transition-all duration-200"
-                    />
-                    <span className="text-sm text-gray-700 font-medium">Not Known</span>
-                  </label>
-                  
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-600 font-medium">Completed years of education:</span>
-                    <input
-                      type="number"
-                      name="completed_years_of_education"
-                      value={formData.completed_years_of_education}
-                      onChange={handleChange}
-                      placeholder="Years"
-                      min="0"
-                      max="30"
-                      className="w-24 px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
-                    />
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
 
         {/* Financial Information */}
-        <Card
-          title={
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary-100 rounded-lg">
-                <FiDollarSign className="w-6 h-6 text-primary-600" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">Financial Information</span>
-            </div>
-          }
-          className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-        >
-          <div className="space-y-6">
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Financial Information</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <IconInput
-                icon={<FiTrendingUp className="w-4 h-4" />}
+                    icon={<FiDollarSign className="w-4 h-4" />}
                 label="Patient Income (₹)"
                 type="number"
                 name="patient_income"
-                value={formData.patient_income}
-                onChange={handleChange}
+                    value={localFormData.patient_income || ''}
+                    onChange={handlePatientChange}
                 min="0"
-                placeholder="Monthly income"
-                className="bg-gradient-to-r from-green-50 to-emerald-50"
               />
               <IconInput
-                icon={<FiTrendingUp className="w-4 h-4" />}
+                    icon={<FiDollarSign className="w-4 h-4" />}
                 label="Family Income (₹)"
                 type="number"
                 name="family_income"
-                value={formData.family_income}
-                onChange={handleChange}
+                    value={localFormData.family_income || ''}
+                    onChange={handlePatientChange}
                 min="0"
-                placeholder="Total monthly family income"
-                className="bg-gradient-to-r from-blue-50 to-indigo-50"
               />
             </div>
           </div>
-        </Card>
 
         {/* Family Information */}
-        <Card
-          title={
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary-100 rounded-lg">
-                <FiUsers className="w-6 h-6 text-primary-600" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">Family Information</span>
-            </div>
-          }
-          className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-        >
-          <div className="space-y-8">
-            {/* Religion Section */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full"></div>
-                <h4 className="text-xl font-bold text-gray-900">Religion</h4>
-              </div>
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Family Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <RadioGroup
-                label=""
+                    label="Religion"
                 name="religion"
-                value={formData.religion}
-                onChange={handleChange}
+                    value={localFormData.religion || ''}
+                    onChange={handlePatientChange}
                 options={RELIGION}
                 icon={<FiShield className="w-4 h-4" />}
-                className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg"
-              />
-            </div>
-
-            {/* Divider */}
-            <div className="border-t border-gray-200"></div>
-
-            {/* Family Type Section */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full"></div>
-                <h4 className="text-xl font-bold text-gray-900">Family Type</h4>
-              </div>
+                  />
               <RadioGroup
-                label=""
+                    label="Family Type"
                 name="family_type"
-                value={formData.family_type}
-                onChange={handleChange}
+                    value={localFormData.family_type || ''}
+                    onChange={handlePatientChange}
                 options={FAMILY_TYPE}
                 icon={<FiUsers className="w-4 h-4" />}
-                className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg"
-              />
-            </div>
-
-            {/* Divider */}
-            <div className="border-t border-gray-200"></div>
-
-            {/* Locality Section */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full"></div>
-                <h4 className="text-xl font-bold text-gray-900">Locality</h4>
-              </div>
+                  />
               <RadioGroup
-                label=""
+                    label="Locality"
                 name="locality"
-                value={formData.locality}
-                onChange={handleChange}
+                    value={localFormData.locality || ''}
+                    onChange={handlePatientChange}
                 options={LOCALITY}
                 icon={<FiMapPin className="w-4 h-4" />}
-                className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg"
-              />
-            </div>
-
-            <div className="border-t pt-8">
-              <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                <FiUsers className="w-6 h-6 text-primary-600" />
-                Head of the Family
-              </h4>
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  />
                   <IconInput
                     icon={<FiUser className="w-4 h-4" />}
-                    label="Name"
+                    label="Head of Family Name"
                     name="head_name"
-                    value={formData.head_name}
-                    onChange={handleChange}
-                    placeholder="Enter head of family name"
-                    className="bg-gradient-to-r from-blue-50 to-indigo-50"
+                    value={localFormData.head_name || ''}
+                    onChange={handlePatientChange}
                   />
                   <IconInput
                     icon={<FiClock className="w-4 h-4" />}
-                    label="Age"
+                    label="Head Age"
                     type="number"
                     name="head_age"
-                    value={formData.head_age}
-                    onChange={handleChange}
+                    value={localFormData.head_age || ''}
+                    onChange={handlePatientChange}
                     min="0"
                     max="150"
-                    className="bg-gradient-to-r from-orange-50 to-yellow-50"
                   />
                   <IconInput
                     icon={<FiUsers className="w-4 h-4" />}
-                    label="Relationship"
+                    label="Head Relationship"
                     name="head_relationship"
-                    value={formData.head_relationship}
-                    onChange={handleChange}
-                    placeholder="Enter relationship"
-                    className="bg-gradient-to-r from-green-50 to-emerald-50"
+                    value={localFormData.head_relationship || ''}
+                    onChange={handlePatientChange}
                   />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <IconInput
                     icon={<FiBookOpen className="w-4 h-4" />}
-                    label="Education"
+                    label="Head Education"
                     name="head_education"
-                    value={formData.head_education}
-                    onChange={handleChange}
-                    placeholder="Enter education level"
-                    className="bg-gradient-to-r from-purple-50 to-pink-50"
+                    value={localFormData.head_education || ''}
+                    onChange={handlePatientChange}
                   />
                   <IconInput
                     icon={<FiBriefcase className="w-4 h-4" />}
-                    label="Occupation"
+                    label="Head Occupation"
                     name="head_occupation"
-                    value={formData.head_occupation}
-                    onChange={handleChange}
-                    placeholder="Enter occupation"
-                    className="bg-gradient-to-r from-teal-50 to-cyan-50"
+                    value={localFormData.head_occupation || ''}
+                    onChange={handlePatientChange}
                   />
                   <IconInput
-                    icon={<FiTrendingUp className="w-4 h-4" />}
-                    label="Income (₹)"
+                    icon={<FiDollarSign className="w-4 h-4" />}
+                    label="Head Income (₹)"
                     type="number"
                     name="head_income"
-                    value={formData.head_income}
-                    onChange={handleChange}
+                    value={localFormData.head_income || ''}
+                    onChange={handlePatientChange}
                     min="0"
-                    placeholder="Monthly income"
-                    className="bg-gradient-to-r from-amber-50 to-orange-50"
+                  />
+                  <IconInput
+                    icon={<FiUser className="w-4 h-4" />}
+                    label="Head Relationship"
+                    name="head_relationship"
+                    value={localFormData.head_relationship || ''}
+                    onChange={handlePatientChange}
+                  />
+                  <IconInput
+                    icon={<FiBookOpen className="w-4 h-4" />}
+                    label="Head Education"
+                    name="head_education"
+                    value={localFormData.head_education || ''}
+                    onChange={handlePatientChange}
                   />
                 </div>
               </div>
-            </div>
-          </div>
-        </Card>
 
-        {/* Referral & Mobility */}
-        <Card
-          title={
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary-100 rounded-lg">
-                <FiMapPin className="w-6 h-6 text-primary-600" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">Referral & Mobility</span>
-            </div>
-          }
-          className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-        >
-          <div className="space-y-6">
+              {/* Referral & Mobility Information */}
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Referral & Mobility Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <IconInput
-              icon={<FiNavigation className="w-4 h-4" />}
+                    icon={<FiMapPin className="w-4 h-4" />}
               label="Distance from Hospital"
               name="distance_from_hospital"
-              value={formData.distance_from_hospital}
-              onChange={handleChange}
-              placeholder="Enter distance from hospital"
-              className="bg-gradient-to-r from-blue-50 to-indigo-50"
+                    value={localFormData.distance_from_hospital || ''}
+                    onChange={handlePatientChange}
             />
-
             <RadioGroup
               label="Mobility"
               name="mobility"
-              value={formData.mobility}
-              onChange={handleChange}
+                    value={localFormData.mobility || ''}
+                    onChange={handlePatientChange}
               options={MOBILITY_OPTIONS}
-              icon={<FiTruck className="w-4 h-4" />}
-              className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg"
+                    icon={<FiNavigation className="w-4 h-4" />}
             />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <RadioGroup
                 label="Referred By"
                 name="referred_by"
-                value={formData.referred_by}
-                onChange={handleChange}
+                    value={localFormData.referred_by || ''}
+                    onChange={handlePatientChange}
                 options={REFERRED_BY_OPTIONS}
-                icon={<FiUsers className="w-4 h-4" />}
-                className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg"
+                    icon={<FiUserCheck className="w-4 h-4" />}
               />
               <IconInput
-                icon={<FiEdit3 className="w-4 h-4" />}
+                    icon={<FiInfo className="w-4 h-4" />}
                 label="Exact Source"
                 name="exact_source"
-                value={formData.exact_source}
-                onChange={handleChange}
-                placeholder="Enter exact source"
-                className="bg-gradient-to-r from-orange-50 to-yellow-50"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    value={localFormData.exact_source || ''}
+                    onChange={handlePatientChange}
+                  />
               <DateInput
                 icon={<FiCalendar className="w-4 h-4" />}
                 label="Seen in Walk-in On"
                 name="seen_in_walk_in_on"
-                value={formData.seen_in_walk_in_on}
-                onChange={handleChange}
+                    value={localFormData.seen_in_walk_in_on ? localFormData.seen_in_walk_in_on.split('T')[0] : ''}
+                    onChange={handlePatientChange}
               />
               <DateInput
                 icon={<FiCalendar className="w-4 h-4" />}
                 label="Worked Up On"
                 name="worked_up_on"
-                value={formData.worked_up_on}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-        </Card>
-
-        {/* Contact Information */}
-        <Card
-          title={
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary-100 rounded-lg">
-                <FiPhone className="w-6 h-6 text-primary-600" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">Contact Information</span>
-            </div>
-          }
-          className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-        >
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                  <FiHome className="w-4 h-4 text-primary-600" />
-                  Present Address
-                </label>
-                <Textarea
-                  name="present_address"
-                  value={formData.present_address}
-                  onChange={handleChange}
-                  rows={3}
-                  className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                  <FiMapPin className="w-4 h-4 text-primary-600" />
-                  Permanent Address
-                </label>
-                <Textarea
-                  name="permanent_address"
-                  value={formData.permanent_address}
-                  onChange={handleChange}
-                  rows={3}
-                  className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                  <FiEdit3 className="w-4 h-4 text-primary-600" />
-                  Local Address
-                </label>
-                <Textarea
-                  name="local_address"
-                  value={formData.local_address}
-                  onChange={handleChange}
-                  rows={3}
-                  className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
-                />
-              </div>
-              <IconInput
-                icon={<FiPhone className="w-4 h-4" />}
-                label="Contact Number"
-                name="contact_number"
-                value={formData.contact_number}
-                onChange={handleChange}
-                placeholder="Enter contact number"
-                className="bg-gradient-to-r from-teal-50 to-cyan-50"
-              />
-            </div>
-
-            <IconInput
-              icon={<FiBookOpen className="w-4 h-4" />}
-              label="School/College/Office"
-              name="school_college_office"
-              value={formData.school_college_office}
-              onChange={handleChange}
-              placeholder="Enter school/college/office name"
-              className="bg-gradient-to-r from-orange-50 to-yellow-50"
-            />
-          </div>
-        </Card>
-
-        {/* Address Information */}
-        <Card
-          title={
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary-100 rounded-lg">
-                <FiHome className="w-6 h-6 text-primary-600" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">Address Information</span>
-            </div>
-          }
-          className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-        >
-          <div className="space-y-8">
-            {/* Present Address */}
-            <div className="space-y-6">
-              <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                <div className="p-2 bg-primary-100 rounded-lg">
-                  <FiMapPin className="w-6 h-6 text-primary-600" />
-                </div>
-                Present Address
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <FiHome className="w-4 h-4 text-primary-600" />
-                    Address Line 1
-                  </label>
-                  <Textarea
-                    name="present_address_line_1"
-                    value={formData.present_address_line_1}
-                    onChange={handleChange}
-                    rows={2}
-                    className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
+                    value={localFormData.worked_up_on ? localFormData.worked_up_on.split('T')[0] : ''}
+                    onChange={handlePatientChange}
                   />
+                  <IconInput
+                    icon={<FiHome className="w-4 h-4" />}
+                    label="School/College/Office"
+                    name="school_college_office"
+                    value={localFormData.school_college_office || ''}
+                    onChange={handlePatientChange}
+              />
+            </div>
+          </div>
+
+              {/* Registration Details */}
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Registration Details</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <IconInput
+                    icon={<FiBriefcase className="w-4 h-4" />}
+                    label="Department"
+                    name="department"
+                    value={localFormData.department || ''}
+                    onChange={handlePatientChange}
+                  />
+                  <IconInput
+                    icon={<FiLayers className="w-4 h-4" />}
+                    label="Unit/Constituent"
+                    name="unit_consit"
+                    value={localFormData.unit_consit || ''}
+                    onChange={handlePatientChange}
+                  />
+                  <IconInput
+                    icon={<FiHome className="w-4 h-4" />}
+                    label="Room Number"
+                    name="room_no"
+                    value={localFormData.room_no || ''}
+                    onChange={handlePatientChange}
+                  />
+                  <IconInput
+                    icon={<FiHash className="w-4 h-4" />}
+                    label="Serial Number"
+                    name="serial_no"
+                    value={localFormData.serial_no || ''}
+                    onChange={handlePatientChange}
+                  />
+                  <IconInput
+                    icon={<FiFileText className="w-4 h-4" />}
+                    label="File Number"
+                    name="file_no"
+                    value={localFormData.file_no || ''}
+                    onChange={handlePatientChange}
+                  />
+                  <IconInput
+                    icon={<FiClock className="w-4 h-4" />}
+                    label="Unit Days"
+                    name="unit_days"
+                    value={localFormData.unit_days || ''}
+                    onChange={handlePatientChange}
+                  />
+                  <IconInput
+                    icon={<FiTag className="w-4 h-4" />}
+                    label="Category"
+                    name="category"
+                    value={localFormData.category || ''}
+                    onChange={handlePatientChange}
+                  />
+              </div>
+            </div>
+
+              {/* Additional Address Information */}
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Additional Address Information</h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 mb-2 block">Local Address</label>
+                <Textarea
+                      name="local_address"
+                      value={localFormData.local_address || ''}
+                      onChange={handlePatientChange}
+                  rows={3}
+                      className="w-full"
+                />
+              </div>
+              </div>
+            </div>
+
+              {/* Address Information */}
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Address Information</h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 mb-2 block">Present Address</label>
+                <Textarea
+                      name="present_address"
+                      value={localFormData.present_address || ''}
+                      onChange={handlePatientChange}
+                  rows={3}
+                      className="w-full"
+                />
+              </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 mb-2 block">Permanent Address</label>
+                    <Textarea
+                      name="permanent_address"
+                      value={localFormData.permanent_address || ''}
+                      onChange={handlePatientChange}
+                      rows={3}
+                      className="w-full"
+              />
+            </div>
+          </div>
+              </div>
+            </div>
+          </div>
+        )}
+        </Card>
+
+      {/* Card 2: Clinical Proforma - Hide for MWO */}
+      {!isMWO(userRole) && patientProformas.length > 0 && (
+        <Card className="shadow-lg border-0 bg-white">
+          <div 
+            className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
+            onClick={() => toggleCard('clinical')}
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-green-100 rounded-lg">
+                <FiFileText className="h-6 w-6 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Clinical Proforma</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {patientProformas.length} record{patientProformas.length > 1 ? 's' : ''} found
+                </p>
+            </div>
+            </div>
+            {expandedCards.clinical ? (
+              <FiChevronUp className="h-6 w-6 text-gray-500" />
+            ) : (
+              <FiChevronDown className="h-6 w-6 text-gray-500" />
+            )}
+          </div>
+
+          {expandedCards.clinical && (
+            <div className="p-6">
+            <div className="space-y-6">
+                {patientProformas.map((proforma, index) => (
+                  <div key={proforma.id || index} className="border border-gray-200 rounded-lg p-6 bg-gray-50">
+                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+                      <h4 className="text-lg font-semibold text-gray-900">Visit #{index + 1}</h4>
+                      <span className="text-sm text-gray-500">{proforma.visit_date ? formatDate(proforma.visit_date) : 'N/A'}</span>
                 </div>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <FiEdit3 className="w-4 h-4 text-primary-600" />
-                    Address Line 2
-                  </label>
-                  <Textarea
-                    name="present_address_line_2"
-                    value={formData.present_address_line_2}
-                    onChange={handleChange}
-                    rows={2}
-                    className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <DateInput
+                        icon={<FiCalendar className="w-4 h-4" />}
+                        label="Visit Date"
+                        name="visit_date"
+                        value={clinicalFormData.visit_date || ''}
+                        onChange={handleClinicalChange}
+                  />
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 mb-2 block">Visit Type</label>
+                        <Select
+                          name="visit_type"
+                          value={clinicalFormData.visit_type || ''}
+                          onChange={handleClinicalChange}
+                          options={[
+                            { value: 'first_visit', label: 'First Visit' },
+                            { value: 'follow_up', label: 'Follow-up' }
+                          ]}
                   />
                 </div>
                 <IconInput
                   icon={<FiHome className="w-4 h-4" />}
-                  label="City/Town/Village"
-                  name="present_city_town_village"
-                  value={formData.present_city_town_village}
-                  onChange={handleChange}
-                  className="bg-gradient-to-r from-teal-50 to-cyan-50"
+                        label="Room Number"
+                        name="room_no"
+                        value={clinicalFormData.room_no || ''}
+                        onChange={handleClinicalChange}
                 />
-                <IconInput
-                  icon={<FiLayers className="w-4 h-4" />}
-                  label="District"
-                  name="present_district"
-                  value={formData.present_district}
-                  onChange={handleChange}
-                  className="bg-gradient-to-r from-orange-50 to-yellow-50"
-                />
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <FiMapPin className="w-4 h-4 text-primary-600" />
-                    State
-                  </label>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 mb-2 block">Case Severity</label>
                   <Select
-                    name="present_state"
-                    value={formData.present_state}
-                    onChange={handleChange}
-                    options={INDIAN_STATES}
-                    className="bg-gradient-to-r from-indigo-50 to-purple-50"
+                          name="case_severity"
+                          value={clinicalFormData.case_severity || ''}
+                          onChange={handleClinicalChange}
+                          options={[
+                            { value: 'mild', label: 'Mild' },
+                            { value: 'moderate', label: 'Moderate' },
+                            { value: 'severe', label: 'Severe' }
+                          ]}
                   />
                 </div>
                 <IconInput
-                  icon={<FiHash className="w-4 h-4" />}
-                  label="PIN Code"
-                  name="present_pin_code"
-                  value={formData.present_pin_code}
-                  onChange={handleChange}
-                  className="bg-gradient-to-r from-pink-50 to-rose-50"
-                />
-                <IconInput
-                  icon={<FiGlobe className="w-4 h-4" />}
-                  label="Country"
-                  name="present_country"
-                  value={formData.present_country}
-                  onChange={handleChange}
-                  className="bg-gradient-to-r from-slate-50 to-gray-50"
+                        icon={<FiFileText className="w-4 h-4" />}
+                        label="Decision"
+                        name="decision"
+                        value={clinicalFormData.decision || ''}
+                        onChange={handleClinicalChange}
+                      />
+                    </div>
+
+                    <div className="mt-6">
+                      <label className="text-sm font-medium text-gray-600 mb-2 block">Diagnosis</label>
+                      <Textarea
+                        name="diagnosis"
+                        value={clinicalFormData.diagnosis || ''}
+                        onChange={handleClinicalChange}
+                        rows={4}
+                        className="w-full"
                 />
               </div>
             </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
 
-            {/* Divider */}
-            <div className="border-t border-gray-200"></div>
+      {/* Card 3: Additional Details (ADL File) - Only show if ADL file exists, Hide for MWO */}
+      {!isMWO(userRole) && patientAdlFiles.length > 0 && (
+        <Card className="shadow-lg border-0 bg-white">
+          <div 
+            className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
+            onClick={() => toggleCard('adl')}
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <FiFolder className="h-6 w-6 text-purple-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Additional Details (ADL File)</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {patientAdlFiles.length} file{patientAdlFiles.length > 1 ? 's' : ''} found
+                </p>
+              </div>
+            </div>
+            {expandedCards.adl ? (
+              <FiChevronUp className="h-6 w-6 text-gray-500" />
+            ) : (
+              <FiChevronDown className="h-6 w-6 text-gray-500" />
+            )}
+          </div>
 
-            {/* Permanent Address */}
-            <div className="space-y-6">
-              <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                <div className="p-2 bg-primary-100 rounded-lg">
-                  <FiMapPin className="w-6 h-6 text-primary-600" />
+          {expandedCards.adl && (
+            <div className="p-6">
+              <div className="space-y-8">
+                {patientAdlFiles.map((file, index) => (
+                  <div key={file.id || index} className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+                    <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-gray-300">
+                      <div>
+                        <h4 className="text-xl font-bold text-gray-900">ADL File #{index + 1}</h4>
+                        {file.adl_no && (
+                          <p className="text-sm text-gray-600 mt-1">ADL Number: {file.adl_no}</p>
+                        )}
                 </div>
-                Permanent Address
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <FiHome className="w-4 h-4 text-primary-600" />
-                    Address Line 1
-                  </label>
-                  <Textarea
-                    name="permanent_address_line_1"
-                    value={formData.permanent_address_line_1}
-                    onChange={handleChange}
-                    rows={2}
-                    className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
+                      <div className="text-right">
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 mb-2 block">File Status</label>
+                          <Select
+                            name="file_status"
+                            value={adlFormData.file_status || ''}
+                            onChange={handleADLChange}
+                            options={[
+                              { value: 'created', label: 'Created' },
+                              { value: 'stored', label: 'Stored' },
+                              { value: 'retrieved', label: 'Retrieved' },
+                              { value: 'active', label: 'Active' },
+                              { value: 'archived', label: 'Archived' }
+                            ]}
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <FiEdit3 className="w-4 h-4 text-primary-600" />
-                    Address Line 2
-                  </label>
-                  <Textarea
-                    name="permanent_address_line_2"
-                    value={formData.permanent_address_line_2}
-                    onChange={handleChange}
-                    rows={2}
-                    className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
+                </div>
+                    </div>
+
+                    <div className="space-y-8">
+                      {/* Basic Information */}
+                      <div>
+                        <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Basic Information</h5>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <IconInput
+                            icon={<FiMapPin className="w-4 h-4" />}
+                            label="Physical Location"
+                            name="physical_file_location"
+                            value={adlFormData.physical_file_location || ''}
+                            onChange={handleADLChange}
                   />
                 </div>
+                      </div>
+
+                      {/* Complaints */}
+                      <div>
+                        <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Complaints</h5>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-600 mb-2 block">Patient Complaints</label>
+                            {(adlFormData.complaints_patient || []).map((complaint, idx) => (
+                              <div key={idx} className="bg-blue-50 p-3 rounded border border-blue-200 mb-2">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <IconInput
-                  icon={<FiHome className="w-4 h-4" />}
-                  label="City/Town/Village"
-                  name="permanent_city_town_village"
-                  value={formData.permanent_city_town_village}
-                  onChange={handleChange}
-                  className="bg-gradient-to-r from-teal-50 to-cyan-50"
+                                    label="Complaint"
+                                    name={`complaint_${idx}`}
+                                    value={complaint.complaint || ''}
+                                    onChange={(e) => handleADLArrayChange('complaints_patient', idx, 'complaint', e.target.value)}
                 />
                 <IconInput
-                  icon={<FiLayers className="w-4 h-4" />}
-                  label="District"
-                  name="permanent_district"
-                  value={formData.permanent_district}
-                  onChange={handleChange}
-                  className="bg-gradient-to-r from-orange-50 to-yellow-50"
-                />
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <FiMapPin className="w-4 h-4 text-primary-600" />
-                    State
-                  </label>
-                  <Select
-                    name="permanent_state"
-                    value={formData.permanent_state}
-                    onChange={handleChange}
-                    options={INDIAN_STATES}
-                    className="bg-gradient-to-r from-indigo-50 to-purple-50"
-                  />
-                </div>
-                <IconInput
-                  icon={<FiHash className="w-4 h-4" />}
-                  label="PIN Code"
-                  name="permanent_pin_code"
-                  value={formData.permanent_pin_code}
-                  onChange={handleChange}
-                  className="bg-gradient-to-r from-pink-50 to-rose-50"
-                />
-                <IconInput
-                  icon={<FiGlobe className="w-4 h-4" />}
-                  label="Country"
-                  name="permanent_country"
-                  value={formData.permanent_country}
-                  onChange={handleChange}
-                  className="bg-gradient-to-r from-slate-50 to-gray-50"
+                                    label="Duration"
+                                    name={`duration_${idx}`}
+                                    value={complaint.duration || ''}
+                                    onChange={(e) => handleADLArrayChange('complaints_patient', idx, 'duration', e.target.value)}
                 />
               </div>
             </div>
+                            ))}
+                </div>
+                        </div>
+                      </div>
 
-            {/* Divider */}
-            <div className="border-t border-gray-200"></div>
+                      {/* History of Present Illness */}
+                      <div>
+                        <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">History of Present Illness</h5>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-600 mb-2 block">Narrative History</label>
+                  <Textarea
+                              name="history_narrative"
+                              value={adlFormData.history_narrative || ''}
+                              onChange={handleADLChange}
+                              rows={4}
+                              className="w-full"
+                  />
+                </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600 mb-2 block">Specific Enquiry</label>
+                  <Textarea
+                              name="history_specific_enquiry"
+                              value={adlFormData.history_specific_enquiry || ''}
+                              onChange={handleADLChange}
+                              rows={4}
+                              className="w-full"
+                  />
+                </div>
+                <IconInput
+                            icon={<FiFileText className="w-4 h-4" />}
+                            label="Drug Intake"
+                            name="history_drug_intake"
+                            value={adlFormData.history_drug_intake || ''}
+                            onChange={handleADLChange}
+                          />
+                        </div>
+                      </div>
 
-            {/* Quick Entry Address */}
-            <div className="space-y-6">
-              <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                <div className="p-2 bg-primary-100 rounded-lg">
-                  <FiEdit3 className="w-6 h-6 text-primary-600" />
-                </div>
-                Quick Entry Address
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <FiHome className="w-4 h-4 text-primary-600" />
-                    Address Line 1
-                  </label>
-                  <Textarea
-                    name="address_line_1"
-                    value={formData.address_line_1}
-                    onChange={handleChange}
-                    rows={2}
-                    className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <FiEdit3 className="w-4 h-4 text-primary-600" />
-                    Address Line 2
-                  </label>
-                  <Textarea
-                    name="address_line_2"
-                    value={formData.address_line_2}
-                    onChange={handleChange}
-                    rows={2}
-                    className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
-                  />
-                </div>
+                      {/* Mental Status Examination */}
+                      <div>
+                        <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Mental Status Examination (MSE)</h5>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <IconInput
-                  icon={<FiHome className="w-4 h-4" />}
-                  label="City/Town/Village"
-                  name="city_town_village"
-                  value={formData.city_town_village}
-                  onChange={handleChange}
-                  className="bg-gradient-to-r from-teal-50 to-cyan-50"
+                            icon={<FiUser className="w-4 h-4" />}
+                            label="General Demeanour"
+                            name="mse_general_demeanour"
+                            value={adlFormData.mse_general_demeanour || ''}
+                            onChange={handleADLChange}
+                  />
+                <IconInput
+                            icon={<FiHeart className="w-4 h-4" />}
+                            label="Affect (Subjective)"
+                            name="mse_affect_subjective"
+                            value={adlFormData.mse_affect_subjective || ''}
+                            onChange={handleADLChange}
                 />
                 <IconInput
-                  icon={<FiLayers className="w-4 h-4" />}
-                  label="District"
-                  name="district"
-                  value={formData.district}
-                  onChange={handleChange}
-                  className="bg-gradient-to-r from-orange-50 to-yellow-50"
-                />
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <FiMapPin className="w-4 h-4 text-primary-600" />
-                    State
-                  </label>
-                  <Select
-                    name="state"
-                    value={formData.state}
-                    onChange={handleChange}
-                    options={INDIAN_STATES}
-                    className="bg-gradient-to-r from-indigo-50 to-purple-50"
-                  />
-                </div>
-                <IconInput
-                  icon={<FiHash className="w-4 h-4" />}
-                  label="PIN Code"
-                  name="pin_code"
-                  value={formData.pin_code}
-                  onChange={handleChange}
-                  className="bg-gradient-to-r from-pink-50 to-rose-50"
-                />
-                <IconInput
-                  icon={<FiGlobe className="w-4 h-4" />}
-                  label="Country"
-                  name="country"
-                  value={formData.country}
-                  onChange={handleChange}
-                  className="bg-gradient-to-r from-slate-50 to-gray-50"
+                            icon={<FiFileText className="w-4 h-4" />}
+                            label="Thought Flow"
+                            name="mse_thought_flow"
+                            value={adlFormData.mse_thought_flow || ''}
+                            onChange={handleADLChange}
+                          />
+              <IconInput
+                            icon={<FiActivity className="w-4 h-4" />}
+                            label="Consciousness"
+                            name="mse_cognitive_consciousness"
+                            value={adlFormData.mse_cognitive_consciousness || ''}
+                            onChange={handleADLChange}
+              />
+              <IconInput
+                            icon={<FiClock className="w-4 h-4" />}
+                            label="Orientation (Time)"
+                            name="mse_cognitive_orientation_time"
+                            value={adlFormData.mse_cognitive_orientation_time || ''}
+                            onChange={handleADLChange}
+              />
+              <IconInput
+                            icon={<FiMapPin className="w-4 h-4" />}
+                            label="Orientation (Place)"
+                            name="mse_cognitive_orientation_place"
+                            value={adlFormData.mse_cognitive_orientation_place || ''}
+                            onChange={handleADLChange}
+              />
+              <IconInput
+                            icon={<FiInfo className="w-4 h-4" />}
+                            label="Insight (Understanding)"
+                            name="mse_insight_understanding"
+                            value={adlFormData.mse_insight_understanding || ''}
+                            onChange={handleADLChange}
+              />
+              <IconInput
+                            icon={<FiShield className="w-4 h-4" />}
+                            label="Insight (Judgement)"
+                            name="mse_insight_judgement"
+                            value={adlFormData.mse_insight_judgement || ''}
+                            onChange={handleADLChange}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Diagnostic Formulation */}
+                      <div>
+                        <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Diagnostic Formulation</h5>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-600 mb-2 block">Summary</label>
+                            <Textarea
+                              name="diagnostic_formulation_summary"
+                              value={adlFormData.diagnostic_formulation_summary || ''}
+                              onChange={handleADLChange}
+                              rows={4}
+                              className="w-full"
                 />
               </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600 mb-2 block">Features</label>
+                            <Textarea
+                              name="diagnostic_formulation_features"
+                              value={adlFormData.diagnostic_formulation_features || ''}
+                              onChange={handleADLChange}
+                              rows={4}
+                              className="w-full"
+                            />
+            </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600 mb-2 block">Psychodynamic</label>
+                            <Textarea
+                              name="diagnostic_formulation_psychodynamic"
+                              value={adlFormData.diagnostic_formulation_psychodynamic || ''}
+                              onChange={handleADLChange}
+                              rows={4}
+                              className="w-full"
+                            />
+          </div>
+                        </div>
+                      </div>
+
+                      {/* Provisional Diagnosis */}
+                      <div>
+                        <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Provisional Diagnosis</h5>
+                        <Textarea
+                          name="provisional_diagnosis"
+                          value={adlFormData.provisional_diagnosis || ''}
+                          onChange={handleADLChange}
+                          rows={3}
+                          className="w-full"
+                        />
+              </div>
+
+                      {/* Treatment Plan */}
+                      <div>
+                        <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Treatment Plan</h5>
+                        <Textarea
+                          name="treatment_plan"
+                          value={adlFormData.treatment_plan || ''}
+                          onChange={handleADLChange}
+                          rows={4}
+                          className="w-full"
+                        />
+            </div>
+
+                      {/* Consultant Comments */}
+                      <div>
+                        <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Consultant Comments</h5>
+                        <Textarea
+                          name="consultant_comments"
+                          value={adlFormData.consultant_comments || ''}
+                          onChange={handleADLChange}
+                          rows={4}
+                          className="w-full"
+              />
+                      </div>
+
+                      {/* Notes */}
+                      <div>
+                        <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Additional Notes</h5>
+                        <Textarea
+                          name="notes"
+                          value={adlFormData.notes || ''}
+                          onChange={handleADLChange}
+                          rows={3}
+                          className="w-full"
+              />
             </div>
           </div>
-        </Card>
-
-        {/* Registration Details */}
-        <Card
-          title={
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary-100 rounded-lg">
-                <FiCalendar className="w-6 h-6 text-primary-600" />
+                  </div>
+                ))}
               </div>
-              <span className="text-xl font-bold text-gray-900">Registration Details</span>
             </div>
-          }
-          className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
+          )}
+        </Card>
+      )}
+
+      {/* Card 4: Prescription History - Only show for Admin and JR/SR, not MWO */}
+      {canViewPrescriptions && (
+        <Card className="shadow-lg border-0 bg-white">
+          <div 
+            className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
+            onClick={() => toggleCard('prescriptions')}
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-amber-100 rounded-lg">
+                <FiPackage className="h-6 w-6 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Prescription History</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {allPrescriptions.length > 0 
+                    ? `${allPrescriptions.length} prescription${allPrescriptions.length > 1 ? 's' : ''} across ${Object.keys(prescriptionsByVisit).length} visit${Object.keys(prescriptionsByVisit).length > 1 ? 's' : ''}`
+                    : 'No prescriptions found'}
+                </p>
+              </div>
+            </div>
+            {expandedCards.prescriptions ? (
+              <FiChevronUp className="h-6 w-6 text-gray-500" />
+            ) : (
+              <FiChevronDown className="h-6 w-6 text-gray-500" />
+            )}
+          </div>
+
+          {expandedCards.prescriptions && (
+            <div className="p-6">
+              {allPrescriptions.length > 0 ? (
+                <div className="space-y-6">
+                  {Object.entries(prescriptionsByVisit).map(([visitDate, visitData]) => (
+                    <div key={visitDate} className="border border-gray-200 rounded-lg p-6 bg-gray-50">
+                      <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-900">Visit on {visitDate}</h4>
+                          {visitData.visitType && (
+                            <p className="text-sm text-gray-600 mt-1">
+                              {visitData.visitType === 'first_visit' ? 'First Visit' : 'Follow-up Visit'}
+                            </p>
+                          )}
+                        </div>
+                        <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-sm font-medium">
+                          {visitData.prescriptions.length} {visitData.prescriptions.length === 1 ? 'Medication' : 'Medications'}
+                        </Badge>
+                      </div>
+
+                      <div className="space-y-4">
+                        {visitData.prescriptions.map((prescription, idx) => (
+                          <div key={prescription.id || idx} className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              <div>
+                                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Medicine</label>
+                                <p className="text-base font-bold text-gray-900 mt-1">{prescription.medicine || 'N/A'}</p>
+                              </div>
+                              {prescription.dosage && (
+                                <div>
+                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Dosage</label>
+                                  <p className="text-base font-semibold text-gray-900 mt-1">{prescription.dosage}</p>
+                                </div>
+                              )}
+                              {prescription.when_to_take && (
+                                <div>
+                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">When to Take</label>
+                                  <p className="text-base font-semibold text-gray-900 mt-1">{prescription.when_to_take}</p>
+                                </div>
+                              )}
+                              {prescription.frequency && (
+                                <div>
+                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Frequency</label>
+                                  <p className="text-base font-semibold text-gray-900 mt-1">{prescription.frequency}</p>
+                                </div>
+                              )}
+                              {prescription.duration && (
+                                <div>
+                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Duration</label>
+                                  <p className="text-base font-semibold text-gray-900 mt-1">{prescription.duration}</p>
+                                </div>
+                              )}
+                              {prescription.quantity && (
+                                <div>
+                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Quantity</label>
+                                  <p className="text-base font-semibold text-gray-900 mt-1">{prescription.quantity}</p>
+                                </div>
+                              )}
+                            </div>
+                            {(prescription.details || prescription.notes) && (
+                              <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                                {prescription.details && (
+                                  <div>
+                                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Details</label>
+                                    <p className="text-sm text-gray-900 mt-1">{prescription.details}</p>
+                                  </div>
+                                )}
+                                {prescription.notes && (
+                                  <div>
+                                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Notes</label>
+                                    <p className="text-sm text-gray-900 mt-1">{prescription.notes}</p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {prescription.created_at && (
+                              <div className="mt-3 pt-3 border-t border-gray-100">
+                                <p className="text-xs text-gray-500">Prescribed on: {formatDateTime(prescription.created_at)}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <FiPackage className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p className="text-base">No prescription history found</p>
+                  <p className="text-sm text-gray-400 mt-1">Prescriptions will appear here once medications are prescribed</p>
+                </div>
+              )}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Save Button */}
+      <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+        <button
+          onClick={onCancel}
+          className="px-6 py-2 border-2 border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
         >
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <IconInput
-                icon={<FiLayers className="w-4 h-4" />}
-                label="Department"
-                name="department"
-                value={formData.department}
-                onChange={handleChange}
-                className="bg-gradient-to-r from-blue-50 to-indigo-50"
-              />
-              <IconInput
-                icon={<FiUsers className="w-4 h-4" />}
-                label="Unit Constitution"
-                name="unit_consit"
-                value={formData.unit_consit}
-                onChange={handleChange}
-                className="bg-gradient-to-r from-green-50 to-emerald-50"
-              />
-              <IconInput
-                icon={<FiHome className="w-4 h-4" />}
-                label="Room Number"
-                name="room_no"
-                value={formData.room_no}
-                onChange={handleChange}
-                className="bg-gradient-to-r from-purple-50 to-pink-50"
-              />
-              <IconInput
-                icon={<FiHash className="w-4 h-4" />}
-                label="Serial Number"
-                name="serial_no"
-                value={formData.serial_no}
-                onChange={handleChange}
-                className="bg-gradient-to-r from-orange-50 to-yellow-50"
-              />
-              <IconInput
-                icon={<FiFileText className="w-4 h-4" />}
-                label="File Number"
-                name="file_no"
-                value={formData.file_no}
-                onChange={handleChange}
-                className="bg-gradient-to-r from-teal-50 to-cyan-50"
-              />
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                  <FiClock className="w-4 h-4 text-primary-600" />
-                  Unit Days
-                </label>
-                <Select
-                  name="unit_days"
-                  value={formData.unit_days}
-                  onChange={handleChange}
-                  options={UNIT_DAYS_OPTIONS}
-                  className="bg-gradient-to-r from-amber-50 to-orange-50"
-                />
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Additional Information */}
-        <Card
-          title={
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary-100 rounded-lg">
-                <FiActivity className="w-6 h-6 text-primary-600" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">Additional Information</span>
-            </div>
-          }
-          className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
+          Cancel
+        </button>
+        <button
+          onClick={handleSaveAll}
+          disabled={isLoading}
+          className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <IconInput
-                icon={<FiShield className="w-4 h-4" />}
-                label="Category"
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className="bg-gradient-to-r from-blue-50 to-indigo-50"
-              />
-              <IconInput
-                icon={<FiStar className="w-4 h-4" />}
-                label="Special Clinic Number"
-                name="special_clinic_no"
-                value={formData.special_clinic_no}
-                onChange={handleChange}
-                className="bg-gradient-to-r from-green-50 to-emerald-50"
-              />
-            </div>
-          </div>
-        </Card>
+          {isLoading ? 'Saving...' : 'Save All Changes'}
+        </button>
       </div>
     </div>
   );

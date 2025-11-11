@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { FiSave, FiX, FiEdit } from 'react-icons/fi';
 import {
@@ -10,6 +11,7 @@ import {
 import { useGetClinicalProformaByPatientIdQuery } from '../../features/clinical/clinicalApiSlice';
 import { useGetADLFileByPatientIdQuery } from '../../features/adl/adlApiSlice';
 import { useGetDoctorsQuery } from '../../features/users/usersApiSlice';
+import { selectCurrentUser } from '../../features/auth/authSlice';
 import Button from '../../components/Button';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PatientDetailsView from './PatientDetailsView';
@@ -19,6 +21,26 @@ import PatientDetailsEdit from './PatientDetailsEdit';
 
 const PatientDetails = () => {
   const { id } = useParams();
+  const user = useSelector(selectCurrentUser);
+  
+  // Parse and validate patient ID from URL
+  const patientId = id ? parseInt(id, 10) : null;
+  
+  // Validate ID is a valid number
+  if (!patientId || isNaN(patientId) || patientId <= 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-500">Invalid patient ID in URL</p>
+        <Button 
+          className="mt-4" 
+          onClick={() => navigate('/patients')}
+        >
+          Back to Patients
+        </Button>
+      </div>
+    );
+  }
+  
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const returnTab = searchParams.get('returnTab'); // Get returnTab from URL
@@ -34,9 +56,16 @@ const PatientDetails = () => {
     }
   }, []);
 
-  const { data: patientData, isLoading: patientLoading } = useGetPatientByIdQuery(id);
-  const { data: clinicalData } = useGetClinicalProformaByPatientIdQuery(id);
-  const { data: adlData } = useGetADLFileByPatientIdQuery(id);
+  // Ensure queries refetch when ID changes by using skip option if id is invalid
+  const { data: patientData, isLoading: patientLoading, error: patientError } = useGetPatientByIdQuery(patientId, {
+    skip: !patientId || isNaN(patientId) || patientId <= 0, // Skip query if id is not available or invalid
+  });
+  const { data: clinicalData } = useGetClinicalProformaByPatientIdQuery(patientId, {
+    skip: !patientId || isNaN(patientId) || patientId <= 0,
+  });
+  const { data: adlData } = useGetADLFileByPatientIdQuery(patientId, {
+    skip: !patientId || isNaN(patientId) || patientId <= 0,
+  });
   
   const { data: usersData } = useGetDoctorsQuery({ page: 1, limit: 100 });
 
@@ -134,11 +163,120 @@ const PatientDetails = () => {
     special_clinic_no: '',
   });
 
+  // Reset form data when patient ID changes
+  useEffect(() => {
+    if (!patientId) return;
+    
+    console.log(`[PatientDetails] Resetting form data for patient ID: ${patientId}`);
+    
+    // Reset form data to initial state when ID changes
+    setFormData({
+      // Basic patient info
+      name: '',
+      sex: '',
+      actual_age: '',
+      assigned_room: '',
+      assigned_doctor_id: '',
+      contact_number: '',
+      
+      // Personal information
+      age_group: '',
+      marital_status: '',
+      year_of_marriage: '',
+      no_of_children: '',
+      no_of_children_male: '',
+      no_of_children_female: '',
+      
+      // Occupation & Education
+      occupation: '',
+      actual_occupation: '',
+      education_level: '',
+      completed_years_of_education: '',
+      
+      // Financial Information
+      patient_income: '',
+      family_income: '',
+      
+      // Family Information
+      religion: '',
+      family_type: '',
+      locality: '',
+      head_name: '',
+      head_age: '',
+      head_relationship: '',
+      head_education: '',
+      head_occupation: '',
+      head_income: '',
+      
+      // Referral & Mobility
+      distance_from_hospital: '',
+      mobility: '',
+      referred_by: '',
+      exact_source: '',
+      seen_in_walk_in_on: '',
+      worked_up_on: '',
+      
+      // Contact Information (legacy fields)
+      present_address: '',
+      permanent_address: '',
+      local_address: '',
+      school_college_office: '',
+      
+      // Address Information (detailed)
+      present_address_line_1: '',
+      present_address_line_2: '',
+      present_city_town_village: '',
+      present_district: '',
+      present_state: '',
+      present_pin_code: '',
+      present_country: '',
+      
+      permanent_address_line_1: '',
+      permanent_address_line_2: '',
+      permanent_city_town_village: '',
+      permanent_district: '',
+      permanent_state: '',
+      permanent_pin_code: '',
+      permanent_country: '',
+      
+      address_line_1: '',
+      address_line_2: '',
+      city_town_village: '',
+      district: '',
+      state: '',
+      pin_code: '',
+      country: '',
+      
+      // Registration Details
+      department: '',
+      unit_consit: '',
+      room_no: '',
+      serial_no: '',
+      file_no: '',
+      unit_days: '',
+      
+      // Additional Fields
+      category: '',
+      special_clinic_no: '',
+    });
+  }, [patientId]); // Reset when patientId changes
+
   // Update form data when patient data changes
   // This ensures ALL patient fields from the database are populated into formData
   useEffect(() => {
     if (patientData?.data?.patient) {
       const patient = patientData.data.patient;
+      
+      // Verify the patient ID matches the URL ID to prevent showing wrong patient data
+      const patientDataId = patient.id ? parseInt(patient.id, 10) : null;
+      if (patientDataId && patientDataId !== patientId) {
+        console.error(`[PatientDetails] CRITICAL: Patient ID mismatch! URL ID: ${patientId}, Patient data ID: ${patientDataId}`);
+        toast.error(`Data mismatch: Expected patient ID ${patientId}, but received ${patientDataId}`);
+        return; // Don't update form data if IDs don't match
+      }
+      
+      console.log(`[PatientDetails] Updating form data for patient ID: ${patientDataId || patientId}`);
+      
       // Patient data updated - use patient data directly with fallbacks to empty string
       // This ensures all fields are available in formData for display
       setFormData(prev => ({
@@ -234,13 +372,21 @@ const PatientDetails = () => {
         special_clinic_no: patient.special_clinic_no ?? prev.special_clinic_no ?? '',
       }));
     }
-  }, [patientData]);
+  }, [patientData, patientId]); // Add patientId as dependency
 
   // Update form data when outpatient record data changes
   useEffect(() => {
     if (patientData?.data?.record) {
       const record = patientData.data.record;
-      console.log('Outpatient record data:', record);
+      
+      // Verify the record belongs to the current patient
+      const recordPatientId = record.patient_id ? parseInt(record.patient_id, 10) : null;
+      if (recordPatientId && recordPatientId !== patientId) {
+        console.warn(`[PatientDetails] Record patient ID mismatch: URL ID is ${patientId}, but record patient_id is ${recordPatientId}`);
+        return; // Don't update form data if IDs don't match
+      }
+      
+      console.log('[PatientDetails] Updating form data from outpatient record');
       setFormData(prev => ({
         ...prev,
         age_group: record.age_group || prev.age_group || '',
@@ -273,7 +419,7 @@ const PatientDetails = () => {
         contact_number: record.contact_number || prev.contact_number || '',
       }));
     }
-  }, [patientData]);
+  }, [patientData, patientId]); // Add patientId as dependency
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -426,7 +572,7 @@ const PatientDetails = () => {
 const handleSave = async () => {
   try {
     const patientPayload = {
-      id,
+      id: patientId,
       name: formData.name,
       sex: formData.sex,
       actual_age: parseInt(formData.actual_age),
@@ -505,7 +651,7 @@ const handleSave = async () => {
     if (formData.assigned_doctor_id) {
       try {
         await assignPatient({
-          patient_id: Number(id),
+          patient_id: patientId,
           assigned_doctor: Number(formData.assigned_doctor_id),
           room_no: formData.assigned_room || "",
         }).unwrap();
@@ -556,13 +702,36 @@ const handleSave = async () => {
     );
   }
 
+  // Verify patient ID matches URL ID before rendering
+  const returnedPatientId = patient.id ? parseInt(patient.id, 10) : null;
+  if (returnedPatientId && returnedPatientId !== patientId) {
+    console.error(`[PatientDetails] CRITICAL: Patient ID mismatch! URL ID: ${patientId}, Patient ID: ${returnedPatientId}`);
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-500">Error: Patient ID mismatch. Expected ID {patientId}, but received {returnedPatientId}. Please refresh the page.</p>
+        <Button 
+          className="mt-4" 
+          onClick={() => {
+            if (returnTab) {
+              navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
+            } else {
+              navigate('/patients');
+            }
+          }}
+        >
+          Back to Patients
+        </Button>
+      </div>
+    );
+  }
+
   // Merge patient data with formData to ensure all fields are available
   // This ensures that any fields in formData (from patient table or outpatient record) are included
   const mergedPatient = {
     ...patient,
     ...formData,
-    // Ensure basic fields from patient object take precedence
-    id: patient.id,
+    // Ensure basic fields from patient object take precedence and match URL ID
+    id: patient.id || patientId,
     cr_no: patient.cr_no,
     psy_no: patient.psy_no,
     adl_no: patient.adl_no,
@@ -600,12 +769,14 @@ const handleSave = async () => {
       {/* Conditionally render View or Edit component */}
       {!isEditing ? (
         <>
+        
           <PatientDetailsView
             patient={mergedPatient}
             formData={formData}
             clinicalData={clinicalData}
             adlData={adlData}
             patientData={patientData}
+            userRole={user?.role}
           />
 
           {/* Action buttons below the view content */}
@@ -628,32 +799,29 @@ const handleSave = async () => {
           </div>
         </>
       ) : (
-        <>
-          <PatientDetailsEdit
-            formData={formData}
-            handleChange={handleChange}
-            usersData={usersData}
-          />
-
-          {/* Action buttons below the form in edit mode */}
-          <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                if (returnTab) {
-                  navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
-                } else {
-                  navigate("/patients");
-                }
-              }}
-            >
-              <FiX className="mr-2" /> Cancel
-            </Button>
-            <Button onClick={handleSave} loading={isUpdating  || isAssigning}>
-              <FiSave className="mr-2" /> Save Changes
-            </Button>
-          </div>
-        </>
+        <PatientDetailsEdit
+          patient={mergedPatient}
+          formData={formData}
+          clinicalData={clinicalData}
+          adlData={adlData}
+          usersData={usersData}
+          userRole={user?.role}
+          onSave={() => {
+            setIsEditing(false);
+            // Optionally refresh data or navigate
+            if (returnTab) {
+              navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
+            }
+          }}
+          onCancel={() => {
+            setIsEditing(false);
+            if (returnTab) {
+              navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
+            } else {
+              navigate("/patients");
+            }
+          }}
+        />
       )}
     </div>
   );

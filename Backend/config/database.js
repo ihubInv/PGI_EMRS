@@ -46,7 +46,12 @@ const query = async (text, params = []) => {
       return await executeAggregationQuery(text, params, start);
     }
     
-    // Handle JOIN queries
+    // Handle JOIN queries (including LEFT JOIN LATERAL)
+    // If query contains LATERAL, use PostgreSQL RPC for raw SQL execution
+    if (text.includes('LATERAL')) {
+      return await executeRawSQLQuery(text, params, start);
+    }
+    
     if (text.includes('LEFT JOIN') || text.includes('RIGHT JOIN') || text.includes('INNER JOIN')) {
       return await executeJoinQuery(text, params, start);
     }
@@ -92,7 +97,7 @@ async function executeAggregationQuery(text, params, startTime) {
     let query = supabaseAdmin.from(tableName).select('*', { count: 'exact', head: true });
 
     // Handle WHERE conditions for ILIKE search (for patients table)
-    if (text.includes('ILIKE') && params.length > 0) {
+    if (text.includes('ILIKE') && params.length > 0 && typeof params[0] === 'string') {
       const searchPattern = params[0].replace(/%/g, '');
       query = query.or(`name.ilike.%${searchPattern}%,cr_no.ilike.%${searchPattern}%,psy_no.ilike.%${searchPattern}%,adl_no.ilike.%${searchPattern}%`);
     }
@@ -748,17 +753,33 @@ async function executeJoinQuery(text, params, startTime) {
 
   // For patients joins with doctor assignments
   if (mainTable === 'patients') {
-    // Extract WHERE conditions for ILIKE search
-    const whereMatch = text.match(/WHERE\s+(.+?)\s+(?:ORDER BY|LIMIT|$)/is);
+    // Extract WHERE conditions
+    const whereMatch = text.match(/WHERE\s+(.+?)\s+(?:GROUP BY|ORDER BY|LIMIT|$)/is);
     let query = supabaseAdmin.from('patients').select('*');
 
-    // Handle ILIKE search conditions
+    // Handle WHERE p.id = $1 condition (for findById queries)
     if (whereMatch && params.length > 0) {
-      const searchPattern = params[0].replace(/%/g, '');
-      query = query.or(`name.ilike.%${searchPattern}%,cr_no.ilike.%${searchPattern}%,psy_no.ilike.%${searchPattern}%,adl_no.ilike.%${searchPattern}%`);
+      const patientIdMatch = text.match(/WHERE\s+p\.id\s*=\s*\$(\d+)/i);
+      if (patientIdMatch) {
+        const paramIndex = parseInt(patientIdMatch[1]) - 1;
+        const patientId = params[paramIndex];
+        query = query.eq('id', patientId);
+      }
+      // Handle ILIKE search conditions (only if query contains ILIKE and param is a string)
+      else if (text.includes('ILIKE') && typeof params[0] === 'string') {
+        const searchPattern = params[0].replace(/%/g, '');
+        query = query.or(`name.ilike.%${searchPattern}%,cr_no.ilike.%${searchPattern}%,psy_no.ilike.%${searchPattern}%,adl_no.ilike.%${searchPattern}%`);
+      }
     }
 
-    query = query.range(offset, offset + limit - 1).order('created_at', { ascending: false });
+    // Only apply pagination if it's not a single ID query (findById)
+    const isFindByIdQuery = text.match(/WHERE\s+p\.id\s*=\s*\$(\d+)/i);
+    if (!isFindByIdQuery) {
+      query = query.range(offset, offset + limit - 1).order('created_at', { ascending: false });
+    } else {
+      // For findById, just order by created_at
+      query = query.order('created_at', { ascending: false });
+    }
 
     const { data: patients, error } = await query;
     if (error) throw error;
@@ -1214,6 +1235,103 @@ async function executeUpdateQuery(text, params, startTime) {
     console.error('Update query error:', error);
     console.error('Query text:', text);
     console.error('Params:', params);
+    throw error;
+  }
+}
+
+// Execute raw SQL queries (for complex queries that Supabase doesn't support, like LATERAL joins)
+async function executeRawSQLQuery(text, params, startTime) {
+  try {
+    console.log('Executing raw SQL query (LATERAL join detected):', { text: text.substring(0, 200) + '...', params });
+    
+    // Extract main table name
+    const tableMatch = text.match(/FROM\s+(\w+)\s+\w+/i);
+    const mainTable = tableMatch ? tableMatch[1] : null;
+    
+    // For the findById query with LATERAL, we can:
+    // 1. Get the patient by ID
+    // 2. Get the latest visit for that patient
+    // 3. Get the assigned doctor info
+    // 4. Combine the results
+    
+    // Check if this is a findById query
+    const findByIdMatch = text.match(/WHERE\s+p\.id\s*=\s*\$(\d+)/i);
+    if (findByIdMatch && mainTable === 'patients') {
+      const paramIndex = parseInt(findByIdMatch[1]) - 1;
+      const patientId = params[paramIndex];
+      
+      // Get patient
+      const { data: patientData, error: patientError } = await supabaseAdmin
+        .from('patients')
+        .select('*')
+        .eq('id', patientId)
+        .single();
+      
+      if (patientError) throw patientError;
+      if (!patientData) {
+        return { rows: [], rowCount: 0, command: 'SELECT' };
+      }
+      
+      // Get latest visit
+      const { data: visits, error: visitsError } = await supabaseAdmin
+        .from('patient_visits')
+        .select('*')
+        .eq('patient_id', patientId)
+        .order('visit_date', { ascending: false })
+        .limit(1);
+      
+      if (visitsError) console.error('Error fetching visits:', visitsError);
+      const latestVisit = visits && visits.length > 0 ? visits[0] : null;
+      
+      // Get assigned doctor info if visit exists
+      let assignedDoctor = null;
+      if (latestVisit && latestVisit.assigned_doctor) {
+        const { data: doctorData, error: doctorError } = await supabaseAdmin
+          .from('users')
+          .select('id, name, role')
+          .eq('id', latestVisit.assigned_doctor)
+          .single();
+        
+        if (!doctorError && doctorData) {
+          assignedDoctor = doctorData;
+        }
+      }
+      
+      // Get ADL file info
+      const { data: adlFiles, error: adlError } = await supabaseAdmin
+        .from('adl_files')
+        .select('id')
+        .eq('patient_id', patientId)
+        .limit(1);
+      
+      const hasAdlFile = adlFiles && adlFiles.length > 0;
+      
+      // Combine results to match expected format
+      const combinedRow = {
+        ...patientData,
+        has_adl_file: hasAdlFile,
+        case_complexity: hasAdlFile ? 'complex' : (patientData.case_complexity || 'simple'),
+        assigned_doctor_id: latestVisit?.assigned_doctor || null,
+        assigned_doctor_name: assignedDoctor?.name || null,
+        assigned_doctor_role: assignedDoctor?.role || null,
+        last_assigned_date: latestVisit?.visit_date || null
+      };
+      
+      const duration = Date.now() - startTime;
+      console.log('Raw SQL query (findById) executed successfully', { duration });
+      
+      return {
+        rows: [combinedRow],
+        rowCount: 1,
+        command: 'SELECT'
+      };
+    }
+    
+    // For other LATERAL queries, throw an error as they're not supported
+    throw new Error('Complex LATERAL join queries are not fully supported. Please use simpler queries.');
+    
+  } catch (error) {
+    console.error('Raw SQL query error:', error);
     throw error;
   }
 }

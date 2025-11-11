@@ -750,11 +750,11 @@ const {
  * /api/clinical-proformas:
  *   post:
      *     summary: Create a new clinical proforma (Admin, JR/SR Doctor only)
- *     description: |
- *       Creates a new clinical proforma with comprehensive patient data.
- *       
- *       **Complex Case Handling:**
- *       - When `doctor_decision` is set to `complex_case`, the system automatically:
+     *     description: |
+     *       Creates a new clinical proforma with comprehensive patient data.
+     *       
+     *       **Complex Case Handling:**
+     *       - When `doctor_decision` is set to `complex_case`, the system automatically:
  *         1. Creates the clinical_proforma record first (with `adl_file_id` as null)
  *         2. Extracts all complex case fields from the request body
  *         3. Creates an ADL file with all complex case data stored in the `adl_files` table
@@ -763,21 +763,21 @@ const {
  *         6. **Automatically updates patient record**: Sets `patient.has_adl_file = true` and `patient.case_complexity = 'complex'`
  *         7. Sets `requires_adl_file` to `true` automatically
  *         8. **Transaction-based flow**: If ADL creation or linking fails, the clinical_proforma is rolled back (deleted)
- *       
- *       - For `simple_case`: Only basic proforma data is stored in `clinical_proforma` table (no ADL file created, complex case fields are ignored)
- *       
- *       **Data Storage:**
- *       - Basic proforma fields: Stored in `clinical_proforma` table
- *       - Complex case fields (when `doctor_decision` = `complex_case`): Stored in `adl_files` table
- *       - Complex case fields include: history_narrative, informants, past_history_*, family_history_*, physical_*, mse_*, education_*, occupation_jobs, sexual_*, religion_*, living_*, home_situation_*, personal_*, development_*, provisional_diagnosis, treatment_plan, consultant_comments
+     *       
+     *       - For `simple_case`: Only basic proforma data is stored in `clinical_proforma` table (no ADL file created, complex case fields are ignored)
+     *       
+     *       **Data Storage:**
+     *       - Basic proforma fields: Stored in `clinical_proforma` table
+     *       - Complex case fields (when `doctor_decision` = `complex_case`): Stored in `adl_files` table
+     *       - Complex case fields include: history_narrative, informants, past_history_*, family_history_*, physical_*, mse_*, education_*, occupation_jobs, sexual_*, religion_*, living_*, home_situation_*, personal_*, development_*, provisional_diagnosis, treatment_plan, consultant_comments
  *       
  *       **Patient Status Auto-Update:**
  *       - When an ADL file is created for a complex case, the patient's status is automatically updated:
  *         - `patient.has_adl_file` is set to `true`
  *         - `patient.case_complexity` is set to `'complex'`
  *       - This ensures patient status is consistent across the system
- *       
- *       **Note:** All complex case fields can be included in the request body. They will be automatically routed to the appropriate table based on `doctor_decision`.
+     *       
+     *       **Note:** All complex case fields can be included in the request body. They will be automatically routed to the appropriate table based on `doctor_decision`.
  *     tags: [Clinical Proforma]
  *     security:
  *       - bearerAuth: []

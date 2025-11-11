@@ -317,7 +317,7 @@ const UsersPage = () => {
                 </div>
                 
                 {/* Enhanced Stats Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
@@ -377,7 +377,7 @@ const UsersPage = () => {
                     </div>
                     <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-orange-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   </div>
-                </div>
+                </div> */}
 
                 {/* Role Breakdown */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

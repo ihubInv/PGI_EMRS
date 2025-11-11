@@ -83,9 +83,9 @@ const ADLFileDetails = () => {
           <p className="text-gray-600 text-sm mb-4">
             {error?.data?.message || 'ADL file not found or could not be loaded'}
           </p>
-          <Link to="/adl-files">
+        <Link to="/adl-files">
             <Button variant="primary">Back to ADL Files</Button>
-          </Link>
+        </Link>
         </div>
       </div>
     );
@@ -111,41 +111,41 @@ const ADLFileDetails = () => {
       {/* Header Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <Link to="/adl-files">
+        <div className="flex items-center gap-4">
+          <Link to="/adl-files">
               <Button variant="ghost" size="sm" className="hover:bg-gray-100">
                 <FiArrowLeft className="mr-2" /> Back to Files
-              </Button>
-            </Link>
+            </Button>
+          </Link>
             <div className="border-l border-gray-300 pl-4">
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold text-gray-900 font-mono">{file.adl_no}</h1>
+            <h1 className="text-3xl font-bold text-gray-900 font-mono">{file.adl_no}</h1>
                 {isComplexCase && (
                   <Badge variant="danger" className="text-sm">
                     <FiActivity className="w-3 h-3 mr-1" />
                     Complex Case
                   </Badge>
                 )}
-              </div>
+          </div>
               <p className="text-gray-600 mt-1 text-sm">ADL File Details</p>
-            </div>
+        </div>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {file.file_status === 'stored' && (
+          {file.file_status === 'stored' && (
               <Button variant="primary" onClick={handleRetrieve} size="sm">
-                <FiDownload className="mr-2" /> Retrieve File
-              </Button>
-            )}
-            {file.file_status === 'retrieved' && (
+              <FiDownload className="mr-2" /> Retrieve File
+            </Button>
+          )}
+          {file.file_status === 'retrieved' && (
               <Button variant="success" onClick={handleReturn} size="sm">
-                <FiUpload className="mr-2" /> Return File
-              </Button>
-            )}
-            {file.is_active && (
+              <FiUpload className="mr-2" /> Return File
+            </Button>
+          )}
+          {file.is_active && (
               <Button variant="outline" onClick={handleArchive} size="sm">
-                <FiArchive className="mr-2" /> Archive
-              </Button>
-            )}
+              <FiArchive className="mr-2" /> Archive
+            </Button>
+          )}
           </div>
         </div>
       </div>
@@ -169,23 +169,23 @@ const ADLFileDetails = () => {
             <div className="bg-gray-50 p-3 rounded-lg">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">PSY Number</label>
               <p className="text-lg font-semibold text-gray-900 mt-1">{file.psy_no}</p>
-            </div>
+          </div>
           )}
           <div className="bg-gray-50 p-3 rounded-lg">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">File Status</label>
             <div className="mt-1">
               <Badge variant={getStatusVariant(file.file_status)} className="text-sm font-semibold">
                 {file.file_status?.charAt(0).toUpperCase() + file.file_status?.slice(1)}
-              </Badge>
-            </div>
+            </Badge>
+          </div>
           </div>
           <div className="bg-gray-50 p-3 rounded-lg">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Active Status</label>
             <div className="mt-1">
               <Badge variant={file.is_active ? 'success' : 'default'} className="text-sm font-semibold">
-                {file.is_active ? 'Active' : 'Inactive'}
-              </Badge>
-            </div>
+              {file.is_active ? 'Active' : 'Inactive'}
+            </Badge>
+          </div>
           </div>
           <div className="bg-gray-50 p-3 rounded-lg">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Created By</label>
@@ -998,36 +998,36 @@ const ADLFileDetails = () => {
       {/* Quick Links - Enhanced */}
       {file.patient_id && (
         <Card title="Related Records" className="border-2 border-indigo-100">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link to={`/patients/${file.patient_id}`}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Link to={`/patients/${file.patient_id}`}>
               <div className="p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 hover:shadow-md transition-all duration-200 text-center cursor-pointer group">
                 <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary-100 flex items-center justify-center group-hover:bg-primary-500 transition-colors">
                   <FiUser className="w-6 h-6 text-primary-600 group-hover:text-white transition-colors" />
                 </div>
                 <p className="font-semibold text-gray-900 group-hover:text-primary-600">View Patient Record</p>
                 <p className="text-xs text-gray-500 mt-1">View full patient details</p>
-              </div>
-            </Link>
-            <Link to={`/clinical?patient_id=${file.patient_id}`}>
+            </div>
+          </Link>
+          <Link to={`/clinical?patient_id=${file.patient_id}`}>
               <div className="p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 hover:shadow-md transition-all duration-200 text-center cursor-pointer group">
                 <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-500 transition-colors">
                   <FiFileText className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
                 </div>
                 <p className="font-semibold text-gray-900 group-hover:text-blue-600">Clinical Records</p>
                 <p className="text-xs text-gray-500 mt-1">Browse all clinical proformas</p>
-              </div>
-            </Link>
-            <Link to={`/clinical/new?patient_id=${file.patient_id}`}>
+            </div>
+          </Link>
+          <Link to={`/clinical/new?patient_id=${file.patient_id}`}>
               <div className="p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 hover:shadow-md transition-all duration-200 text-center cursor-pointer group">
                 <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-green-100 flex items-center justify-center group-hover:bg-green-500 transition-colors">
                   <FiActivity className="w-6 h-6 text-green-600 group-hover:text-white transition-colors" />
                 </div>
                 <p className="font-semibold text-gray-900 group-hover:text-green-600">New Clinical Record</p>
                 <p className="text-xs text-gray-500 mt-1">Create new proforma</p>
-              </div>
-            </Link>
-          </div>
-        </Card>
+            </div>
+          </Link>
+        </div>
+      </Card>
       )}
     </div>
   );

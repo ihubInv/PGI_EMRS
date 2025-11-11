@@ -233,7 +233,7 @@
 //           pa.visit_date as last_assigned_date
 //         FROM patients p
 //         LEFT JOIN LATERAL (
-//           SELECT * FROM patient_assignments
+//           SELECT * FROM patient_visits
 //           WHERE patient_id = p.id
 //           ORDER BY visit_date DESC
 //           LIMIT 1
@@ -825,10 +825,112 @@ class Patient {
   // Find by id
   static async findById(id) {
     try {
-      const result = await db.query('SELECT * FROM patients WHERE id = $1', [id]);
-      if (result.rows.length === 0) return null;
-      return new Patient(result.rows[0]);
+      // Ensure ID is parsed as integer
+      const patientId = parseInt(id, 10);
+      if (isNaN(patientId) || patientId <= 0) {
+        console.error(`[Patient.findById] Invalid ID provided: ${id}`);
+        return null;
+      }
+      
+      console.log(`[Patient.findById] Querying for patient ID: ${patientId}`);
+      
+      const query = `
+        SELECT 
+          p.id, p.name, p.cr_no, p.psy_no, p.adl_no, p.sex, p.actual_age, 
+          p.dob, p.age_group, p.marital_status, p.year_of_marriage, 
+          p.no_of_children, p.no_of_children_male, p.no_of_children_female,
+          p.occupation, p.education_level, p.religion, p.family_type, p.locality,
+          p.patient_income, p.family_income, p.contact_number,
+          p.head_name, p.head_age, p.head_relationship, p.head_education, 
+          p.head_occupation, p.head_income,
+          p.present_address_line_1, p.present_address_line_2, p.present_country, p.present_state, 
+          p.present_district, p.present_city_town_village, p.present_pin_code,
+          p.permanent_address_line_1, p.permanent_address_line_2, p.permanent_country, p.permanent_state,
+          p.permanent_district, p.permanent_city_town_village, p.permanent_pin_code,
+          p.address_line_1, p.address_line_2, p.country, p.state, p.district, p.city_town_village, p.pin_code,
+          p.category, p.special_clinic_no, p.assigned_room, p.created_at, p.updated_at,
+          p.filled_by, p.seen_in_walk_in_on, p.worked_up_on, p.school_college_office,
+          p.distance_from_hospital, p.mobility, p.referred_by, p.exact_source,
+          p.present_address, p.permanent_address, p.local_address,
+          p.department, p.unit_consit, p.room_no, p.serial_no, p.file_no, p.unit_days,
+          p.actual_occupation, p.completed_years_of_education,
+          CASE WHEN af.id IS NOT NULL THEN true ELSE COALESCE(p.has_adl_file, false) END as has_adl_file,
+          CASE 
+            WHEN af.id IS NOT NULL THEN 'complex'
+            WHEN p.case_complexity IS NOT NULL THEN p.case_complexity
+            ELSE 'simple'
+          END as case_complexity,
+          p.file_status,
+          pa.assigned_doctor as assigned_doctor_id,
+          u.name as assigned_doctor_name,
+          u.role as assigned_doctor_role,
+          pa.visit_date as last_assigned_date
+        FROM patients p
+        LEFT JOIN adl_files af ON af.patient_id = p.id
+        LEFT JOIN LATERAL (
+          SELECT * FROM patient_visits
+          WHERE patient_id = p.id
+          ORDER BY visit_date DESC
+          LIMIT 1
+        ) pa ON true
+        LEFT JOIN users u ON pa.assigned_doctor = u.id
+        WHERE p.id = $1
+        GROUP BY p.id, p.name, p.cr_no, p.psy_no, p.adl_no, p.sex, p.actual_age, 
+          p.dob, p.age_group, p.marital_status, p.year_of_marriage, 
+          p.no_of_children, p.no_of_children_male, p.no_of_children_female,
+          p.occupation, p.education_level, p.religion, p.family_type, p.locality,
+          p.patient_income, p.family_income, p.contact_number,
+          p.head_name, p.head_age, p.head_relationship, p.head_education, 
+          p.head_occupation, p.head_income,
+          p.present_address_line_1, p.present_address_line_2, p.present_country, p.present_state, 
+          p.present_district, p.present_city_town_village, p.present_pin_code,
+          p.permanent_address_line_1, p.permanent_address_line_2, p.permanent_country, p.permanent_state,
+          p.permanent_district, p.permanent_city_town_village, p.permanent_pin_code,
+          p.address_line_1, p.address_line_2, p.country, p.state, p.district, p.city_town_village, p.pin_code,
+          p.category, p.special_clinic_no, p.assigned_room, p.created_at, p.updated_at,
+          p.filled_by, p.seen_in_walk_in_on, p.worked_up_on, p.school_college_office,
+          p.distance_from_hospital, p.mobility, p.referred_by, p.exact_source,
+          p.present_address, p.permanent_address, p.local_address,
+          p.department, p.unit_consit, p.room_no, p.serial_no, p.file_no, p.unit_days,
+          p.actual_occupation, p.completed_years_of_education,
+          p.has_adl_file, p.case_complexity, p.file_status, af.id,
+          pa.assigned_doctor, u.name, u.role, pa.visit_date
+      `;
+      
+      const result = await db.query(query, [patientId]);
+      
+      if (result.rows.length === 0) {
+        console.log(`[Patient.findById] No patient found with ID: ${patientId}`);
+        return null;
+      }
+      
+      // If multiple rows returned (shouldn't happen with GROUP BY, but safety check)
+      if (result.rows.length > 1) {
+        console.warn(`[Patient.findById] WARNING: Multiple rows returned for ID ${patientId}, using first row`);
+      }
+      
+      const row = result.rows[0];
+      
+      // CRITICAL: Verify the returned patient ID matches the requested ID
+      const returnedId = parseInt(row.id, 10);
+      if (returnedId !== patientId) {
+        console.error(`[Patient.findById] CRITICAL ERROR: ID mismatch! Requested: ${patientId}, Returned: ${returnedId}`);
+        throw new Error(`Data integrity error: Patient ID mismatch. Requested ${patientId}, got ${returnedId}`);
+      }
+      
+      console.log(`[Patient.findById] Successfully found patient ID: ${returnedId}, Name: ${row.name}`);
+      
+      const patient = new Patient(row);
+      
+      // Ensure joined fields are set on the Patient instance
+      patient.assigned_doctor_id = row.assigned_doctor_id || patient.assigned_doctor_id;
+      patient.assigned_doctor_name = row.assigned_doctor_name || patient.assigned_doctor_name;
+      patient.assigned_doctor_role = row.assigned_doctor_role || patient.assigned_doctor_role;
+      patient.last_assigned_date = row.last_assigned_date || patient.last_assigned_date;
+      
+      return patient;
     } catch (error) {
+      console.error('[Patient.findById] Error:', error);
       throw error;
     }
   }
@@ -870,6 +972,8 @@ class Patient {
       const offset = (page - 1) * limit;
       const searchPattern = `%${searchTerm}%`;
 
+      // Use Supabase-compatible query without LATERAL joins
+      // First, get matching patients with ADL file info
       const query = `
         SELECT
           p.id, p.name, p.cr_no, p.psy_no, p.adl_no, p.sex, p.actual_age, 
@@ -891,20 +995,9 @@ class Patient {
             WHEN p.case_complexity IS NOT NULL THEN p.case_complexity
             ELSE 'simple'
           END as case_complexity,
-          p.file_status,
-          pa.assigned_doctor as assigned_doctor_id,
-          u.name as assigned_doctor_name,
-          u.role as assigned_doctor_role,
-          pa.visit_date as last_assigned_date
+          p.file_status
         FROM patients p
         LEFT JOIN adl_files af ON af.patient_id = p.id
-        LEFT JOIN LATERAL (
-          SELECT * FROM patient_assignments
-          WHERE patient_id = p.id
-          ORDER BY visit_date DESC
-          LIMIT 1
-        ) pa ON true
-        LEFT JOIN users u ON pa.assigned_doctor = u.id
         WHERE p.name ILIKE $1 OR p.cr_no ILIKE $1 OR p.psy_no ILIKE $1 OR p.adl_no ILIKE $1
         GROUP BY p.id, p.name, p.cr_no, p.psy_no, p.adl_no, p.sex, p.actual_age, 
           p.dob, p.age_group, p.marital_status, p.year_of_marriage, 
@@ -919,14 +1012,14 @@ class Patient {
           p.permanent_district, p.permanent_city_town_village, p.permanent_pin_code,
           p.address_line_1, p.country, p.state, p.district, p.city_town_village, p.pin_code,
           p.category, p.special_clinic_no, p.assigned_room, p.created_at,
-          p.has_adl_file, p.case_complexity, p.file_status, af.id,
-          pa.assigned_doctor, u.name, u.role, pa.visit_date
+          p.has_adl_file, p.case_complexity, p.file_status, af.id
         ORDER BY p.created_at DESC
         LIMIT $2 OFFSET $3
       `;
 
       const countQuery = `
-        SELECT COUNT(*) as cnt FROM patients p
+        SELECT COUNT(DISTINCT p.id) as cnt FROM patients p
+        LEFT JOIN adl_files af ON af.patient_id = p.id
         WHERE p.name ILIKE $1 OR p.cr_no ILIKE $1 OR p.psy_no ILIKE $1 OR p.adl_no ILIKE $1
       `;
 
@@ -936,17 +1029,70 @@ class Patient {
       ]);
 
       const total = parseInt(countResult.rows[0].cnt, 10);
+      const patientIds = result.rows.map(row => row.id);
+
+      // Fetch latest visit and doctor info separately using Supabase (no LATERAL joins)
+      let visitMap = new Map();
+      let doctorMap = new Map();
+      
+      if (patientIds.length > 0) {
+        try {
+          const { supabaseAdmin } = require('../config/database');
+          
+          // Get latest visit per patient
+          const { data: visits, error: visitsError } = await supabaseAdmin
+            .from('patient_visits')
+            .select('patient_id, visit_date, assigned_doctor')
+            .in('patient_id', patientIds)
+            .order('visit_date', { ascending: false });
+
+          if (!visitsError && Array.isArray(visits)) {
+            // Get unique doctor IDs
+            const doctorIds = [...new Set(visits.map(v => v.assigned_doctor).filter(id => id))];
+            
+            // Fetch doctor info
+            if (doctorIds.length > 0) {
+              const { data: doctors, error: doctorsError } = await supabaseAdmin
+                .from('users')
+                .select('id, name, role')
+                .in('id', doctorIds);
+
+              if (!doctorsError && Array.isArray(doctors)) {
+                doctors.forEach(d => {
+                  doctorMap.set(d.id, { name: d.name, role: d.role });
+                });
+              }
+            }
+
+            // Create visit map (latest visit per patient)
+            visits.forEach(v => {
+              if (!visitMap.has(v.patient_id)) {
+                visitMap.set(v.patient_id, {
+                  assigned_doctor_id: v.assigned_doctor,
+                  visit_date: v.visit_date
+                });
+              }
+            });
+          }
+        } catch (supabaseError) {
+          console.warn('[Patient.search] Error fetching visit/doctor info:', supabaseError.message);
+          // Continue without visit/doctor info
+        }
+      }
 
       // Return rich object using row data (not limited to toJSON)
       const patients = result.rows.map(row => {
         const patient = new Patient(row);
+        const visitInfo = visitMap.get(row.id);
+        const doctorInfo = visitInfo?.assigned_doctor_id ? doctorMap.get(visitInfo.assigned_doctor_id) : null;
+        
         return {
           ...patient.toJSON(),
           // include joined fields explicitly
-          assigned_doctor_id: row.assigned_doctor_id || patient.assigned_doctor_id,
-          assigned_doctor_name: row.assigned_doctor_name || patient.assigned_doctor_name,
-          assigned_doctor_role: row.assigned_doctor_role || patient.assigned_doctor_role,
-          last_assigned_date: row.last_assigned_date || patient.last_assigned_date
+          assigned_doctor_id: visitInfo?.assigned_doctor_id || null,
+          assigned_doctor_name: doctorInfo?.name || null,
+          assigned_doctor_role: doctorInfo?.role || null,
+          last_assigned_date: visitInfo?.visit_date || null
         };
       });
 
@@ -960,6 +1106,7 @@ class Patient {
         }
       };
     } catch (error) {
+      console.error('[Patient.search] Error:', error);
       throw error;
     }
   }
@@ -982,7 +1129,7 @@ class Patient {
           where.push(`(p.case_complexity = 'complex' OR af.id IS NOT NULL)`);
         } else {
           where.push(`p.case_complexity = $${idx++}`);
-          params.push(filters.case_complexity);
+        params.push(filters.case_complexity);
         }
       }
       if (filters.has_adl_file !== undefined) {
@@ -1227,27 +1374,150 @@ class Patient {
     }
   }
 
-  // Soft-delete guard
+  // Delete patient and all related records (cascade delete)
   async delete() {
     try {
-      const recordsCheck = await db.query(
-        `SELECT 
-           (SELECT COUNT(*) FROM outpatient_record WHERE patient_id = $1) as outpatient_count,
-           (SELECT COUNT(*) FROM clinical_proforma WHERE patient_id = $1) as clinical_count,
-           (SELECT COUNT(*) FROM adl_files WHERE patient_id = $1) as adl_count`,
-        [this.id]
-      );
-
-      const counts = recordsCheck.rows[0];
-      if (parseInt(counts.outpatient_count, 10) > 0 ||
-          parseInt(counts.clinical_count, 10) > 0 ||
-          parseInt(counts.adl_count, 10) > 0) {
-        throw new Error('Cannot delete patient with existing records');
+      console.log(`[Patient.delete] Starting deletion for patient ID: ${this.id}`);
+      
+      // Use Supabase directly for DELETE operations since the db.query wrapper doesn't handle DELETE
+      const { supabaseAdmin } = require('../config/database');
+      
+      // Step 1: Get all clinical_proforma IDs for this patient (needed for prescriptions)
+      const { data: clinicalProformas, error: clinicalProformasError } = await supabaseAdmin
+        .from('clinical_proforma')
+        .select('id')
+        .eq('patient_id', this.id);
+      
+      if (clinicalProformasError) {
+        console.warn(`[Patient.delete] Error fetching clinical proformas: ${clinicalProformasError.message}`);
+      }
+      
+      const clinicalProformaIds = clinicalProformas ? clinicalProformas.map(cp => cp.id) : [];
+      console.log(`[Patient.delete] Found ${clinicalProformaIds.length} clinical proforma(s) for patient ${this.id}`);
+      
+      // Step 2: Delete prescriptions first (they reference clinical_proforma)
+      if (clinicalProformaIds.length > 0) {
+        const { error: prescriptionsError, count: prescriptionsCount } = await supabaseAdmin
+          .from('prescriptions')
+          .delete()
+          .in('clinical_proforma_id', clinicalProformaIds)
+          .select('*', { count: 'exact', head: true });
+        
+        if (prescriptionsError) {
+          console.warn(`[Patient.delete] Error deleting prescriptions: ${prescriptionsError.message}`);
+        } else {
+          console.log(`[Patient.delete] Deleted prescriptions for ${clinicalProformaIds.length} clinical proforma(s)`);
+        }
+      }
+      
+      // Step 3: Delete file movements (they reference ADL files and patients)
+      try {
+        // First get ADL file IDs
+        const { data: adlFiles } = await supabaseAdmin
+          .from('adl_files')
+          .select('id')
+          .eq('patient_id', this.id);
+        
+        const adlFileIds = adlFiles ? adlFiles.map(af => af.id) : [];
+        
+        if (adlFileIds.length > 0) {
+          const { error: fileMovementsError } = await supabaseAdmin
+            .from('file_movements')
+            .delete()
+            .in('adl_file_id', adlFileIds);
+          
+          if (fileMovementsError) {
+            console.warn(`[Patient.delete] Error deleting file_movements by adl_file_id: ${fileMovementsError.message}`);
+          }
+        }
+        
+        // Also delete file movements by patient_id
+        const { error: fileMovementsError2 } = await supabaseAdmin
+          .from('file_movements')
+          .delete()
+          .eq('patient_id', this.id);
+        
+        if (fileMovementsError2) {
+          console.warn(`[Patient.delete] Error deleting file_movements by patient_id: ${fileMovementsError2.message}`);
+        } else {
+          console.log(`[Patient.delete] Deleted file movements for patient ${this.id}`);
+        }
+      } catch (fileMovementsErr) {
+        console.warn(`[Patient.delete] Could not delete file_movements (table may not exist): ${fileMovementsErr.message}`);
+      }
+      
+      // Step 4: Delete ADL files (they reference clinical_proforma and patients)
+      const { error: adlError, count: adlCount } = await supabaseAdmin
+        .from('adl_files')
+        .delete()
+        .eq('patient_id', this.id)
+        .select('*', { count: 'exact', head: true });
+      
+      if (adlError) {
+        console.error(`[Patient.delete] Error deleting ADL files: ${adlError.message}`);
+        throw new Error(`Failed to delete ADL files: ${adlError.message}`);
+      }
+      console.log(`[Patient.delete] Deleted ADL files for patient ${this.id}`);
+      
+      // Step 5: Delete clinical proformas (they reference patients)
+      const { error: clinicalError, count: clinicalCount } = await supabaseAdmin
+        .from('clinical_proforma')
+        .delete()
+        .eq('patient_id', this.id)
+        .select('*', { count: 'exact', head: true });
+      
+      if (clinicalError) {
+        console.error(`[Patient.delete] Error deleting clinical proformas: ${clinicalError.message}`);
+        throw new Error(`Failed to delete clinical proformas: ${clinicalError.message}`);
+      }
+      console.log(`[Patient.delete] Deleted clinical proformas for patient ${this.id}`);
+      
+      // Step 6: Delete patient visits
+      const { error: visitsError, count: visitsCount } = await supabaseAdmin
+        .from('patient_visits')
+        .delete()
+        .eq('patient_id', this.id)
+        .select('*', { count: 'exact', head: true });
+      
+      if (visitsError) {
+        console.warn(`[Patient.delete] Error deleting patient visits: ${visitsError.message}`);
+      } else {
+        console.log(`[Patient.delete] Deleted patient visits for patient ${this.id}`);
+      }
+      
+      // Step 7: Delete outpatient records
+      const { error: outpatientError, count: outpatientCount } = await supabaseAdmin
+        .from('outpatient_record')
+        .delete()
+        .eq('patient_id', this.id)
+        .select('*', { count: 'exact', head: true });
+      
+      if (outpatientError) {
+        console.warn(`[Patient.delete] Error deleting outpatient records: ${outpatientError.message}`);
+      } else {
+        console.log(`[Patient.delete] Deleted outpatient records for patient ${this.id}`);
       }
 
-      await db.query('DELETE FROM patients WHERE id = $1', [this.id]);
+      // Step 8: Finally, delete the patient record itself
+      const { error: patientDeleteError, count: patientDeleteCount } = await supabaseAdmin
+        .from('patients')
+        .delete()
+        .eq('id', this.id)
+        .select('*', { count: 'exact', head: true });
+      
+      if (patientDeleteError) {
+        console.error(`[Patient.delete] Error deleting patient: ${patientDeleteError.message}`);
+        throw new Error(`Failed to delete patient: ${patientDeleteError.message}`);
+      }
+      
+      if (patientDeleteCount === 0) {
+        throw new Error('Patient was not deleted. No rows affected.');
+      }
+      
+      console.log(`[Patient.delete] Successfully deleted patient ID: ${this.id}`);
       return true;
     } catch (error) {
+      console.error(`[Patient.delete] Error deleting patient ID ${this.id}:`, error);
       throw error;
     }
   }

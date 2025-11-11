@@ -1,6 +1,8 @@
 const Patient = require('../models/Patient');
 const PatientVisit = require('../models/PatientVisit');
-const OutpatientRecord = require('../models/OutpatientRecord');
+// const OutpatientRecord = require('../models/OutpatientRecord');
+const ClinicalProforma = require('../models/ClinicalProforma');
+const ADLFile = require('../models/ADLFile');
 
 class PatientController {
   // Create a new patient (basic info only)
@@ -529,14 +531,38 @@ class PatientController {
   static async getPatientById(req, res) {
     try {
       const { id } = req.params;
-      const patient = await Patient.findById(id);
+      
+      // Validate and parse ID - ensure it's a valid integer
+      const patientId = parseInt(id, 10);
+      if (isNaN(patientId) || patientId <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid patient ID. ID must be a positive integer.'
+        });
+      }
+      
+      console.log(`[getPatientById] Fetching patient with ID: ${patientId} (original: ${id})`);
+      
+      const patient = await Patient.findById(patientId);
 
       if (!patient) {
+        console.log(`[getPatientById] Patient with ID ${patientId} not found`);
         return res.status(404).json({
           success: false,
           message: 'Patient not found'
         });
       }
+
+      // Verify the returned patient ID matches the requested ID
+      if (patient.id && parseInt(patient.id, 10) !== patientId) {
+        console.error(`[getPatientById] CRITICAL: ID mismatch! Requested: ${patientId}, Returned: ${patient.id}`);
+        return res.status(500).json({
+          success: false,
+          message: 'Data integrity error: Patient ID mismatch'
+        });
+      }
+
+      console.log(`[getPatientById] Successfully fetched patient ID: ${patient.id}, Name: ${patient.name}`);
 
       res.json({
         success: true,
@@ -545,7 +571,7 @@ class PatientController {
         }
       });
     } catch (error) {
-      console.error('Get patient by ID error:', error);
+      console.error('[getPatientById] Error:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to get patient',
@@ -939,41 +965,168 @@ class PatientController {
   }
 
   // Delete patient
+  // static async deletePatient(req, res) {
+  //   try {
+  //     const { id } = req.params;
+      
+  //     // Validate ID
+  //     const patientId = parseInt(id);
+  //     if (isNaN(patientId) || patientId <= 0) {
+  //       return res.status(400).json({
+  //         success: false,
+  //         message: 'Invalid patient ID'
+  //       });
+  //     }
+
+  //     console.log(`[deletePatient] Attempting to delete patient ID: ${patientId}`);
+      
+  //     const patient = await Patient.findById(patientId);
+
+  //     if (!patient) {
+  //       return res.status(404).json({
+  //         success: false,
+  //         message: 'Patient not found'
+  //       });
+  //     }
+
+  //     // Delete patient and all related records
+  //     await patient.delete();
+
+  //     console.log(`[deletePatient] Successfully deleted patient ID: ${patientId}`);
+
+  //     res.json({
+  //       success: true,
+  //       message: 'Patient and all related records deleted successfully',
+  //       deletedPatientId: patientId
+  //     });
+  //   } catch (error) {
+  //     console.error('[deletePatient] Error:', error);
+      
+  //     // Handle specific error cases
+  //     if (error.message && error.message.includes('not deleted')) {
+  //       return res.status(500).json({
+  //         success: false,
+  //         message: 'Failed to delete patient. Patient record was not removed from database.',
+  //         error: process.env.NODE_ENV === 'development' ? error.message : undefined
+  //       });
+  //     }
+
+  //     res.status(500).json({
+  //       success: false,
+  //       message: 'Failed to delete patient and related records',
+  //       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+  //     });
+  //   }
+  // }
+
+
+
+
+  
+  // static async deletePatient(req, res) {
+  //   try {
+  //     const { id } = req.params;
+  
+  //     // Validate ID
+  //     if (!id || id.trim() === '') {
+  //       return res.status(400).json({
+  //         success: false,
+  //         message: 'Invalid patient ID'
+  //       });
+  //     }
+  
+  //     console.log(`[deletePatient] Attempting to delete patient ID: ${id}`);
+  
+  //     // Check if patient exists
+  //     const patient = await Patient.findById(id);
+  //     if (!patient) {
+  //       return res.status(404).json({
+  //         success: false,
+  //         message: 'Patient not found'
+  //       });
+  //     }
+  
+  //     // Delete related records
+  //     await Promise.all([
+  //       ClinicalProforma.deleteMany({ patientId: id }),
+  //       ADLFile.deleteMany({ patientId: id })
+  //     ]);
+  
+  //     // Delete patient
+  //     await Patient.findByIdAndDelete(id);
+  
+  //     console.log(`[deletePatient] Successfully deleted patient ID: ${id}`);
+  
+  //     res.json({
+  //       success: true,
+  //       message: 'Patient and all related records deleted successfully',
+  //       deletedPatientId: id
+  //     });
+  //   } catch (error) {
+  //     console.error('[deletePatient] Error:', error);
+  
+  //     res.status(500).json({
+  //       success: false,
+  //       message: 'Failed to delete patient and related records',
+  //       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+  //     });
+  //   }
+  // }
+  
+
+  // Delete patient and all related records (cascade delete)
   static async deletePatient(req, res) {
     try {
       const { id } = req.params;
-      const patient = await Patient.findById(id);
+
+      // Validate ID
+      const patientId = parseInt(id, 10);
+      if (isNaN(patientId) || patientId <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid patient ID'
+        });
+      }
+
+      console.log(`[deletePatient] Attempting to delete patient ID: ${patientId}`);
+
+      // Step 1: Check if patient exists using Patient model (consistent with other methods)
+      const patient = await Patient.findById(patientId);
 
       if (!patient) {
+        console.error(`[deletePatient] Patient with ID ${patientId} not found`);
         return res.status(404).json({
           success: false,
           message: 'Patient not found'
         });
       }
 
+      console.log(`[deletePatient] Patient found: ${patient.name} (ID: ${patientId})`);
+
+      // Step 2: Delete all related records using the Patient model's delete method
+      // This method handles cascade deletion of all related records properly
+      // It deletes: prescriptions, file_movements, adl_files, clinical_proforma, 
+      // patient_visits, outpatient_record, and finally the patient record itself
       await patient.delete();
+
+      console.log(`[deletePatient] Successfully deleted patient ID: ${patientId}`);
 
       res.json({
         success: true,
-        message: 'Patient deleted successfully'
+        message: 'Patient and all related records deleted successfully',
+        deletedPatientId: patientId
       });
-    } catch (error) {
-      console.error('Delete patient error:', error);
-      
-      if (error.message === 'Cannot delete patient with existing records') {
-        return res.status(400).json({
-          success: false,
-          message: error.message
-        });
-      }
 
+    } catch (error) {
+      console.error('[deletePatient] Error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to delete patient',
+        message: 'Failed to delete patient and related records',
         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
       });
     }
   }
+
 
   // Get patient statistics
   static async getPatientStats(req, res) {
