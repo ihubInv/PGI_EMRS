@@ -172,7 +172,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     // { name: 'Outpatient Records', to: '/outpatient', icon: FiClipboard, roles: ['System Administrator', 'Psychiatric Welfare Officer'] },
     // { name: 'Clinical Proforma', to: '/clinical', icon: FiFileText, roles: ['System Administrator'] },
     { 
-      name: 'Additional Detail File', 
+      name: 'Detailed Work-Up File', 
       to: '/adl-files', 
       icon: FiFolder, 
       roles: ['System Administrator', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'] 
