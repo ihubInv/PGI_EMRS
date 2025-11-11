@@ -16,15 +16,16 @@ import {
   FiUserPlus,
   FiUserCheck,
   FiCalendar,
+  FiChevronLeft,
+  FiChevronRight,
 } from 'react-icons/fi';
 import { selectCurrentUser, logout } from '../features/auth/authSlice';
 import { isMWO } from '../utils/constants';
 import { apiSlice } from '../app/api/apiSlice';
-import Button from '../components/Button';
 import PGI_Logo from '../assets/PGI_Logo.png';
 
 // MWO Sidebar Navigation Component
-const MWONavigation = ({ onClose }) => {
+const MWONavigation = ({ onClose, isMinimized }) => {
   const location = useLocation();
 
   return (
@@ -34,21 +35,22 @@ const MWONavigation = ({ onClose }) => {
         to="/"
         onClick={onClose}
         className={({ isActive }) =>
-          `group flex items-center px-4 py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${
+          `group flex items-center ${isMinimized ? 'justify-center px-2' : 'px-4'} py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${
             isActive
               ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
               : 'text-gray-700 hover:bg-white/40 hover:text-primary-700 hover:shadow-md'
           }`
         }
+        title={isMinimized ? 'Dashboard' : ''}
       >
-        <div className={`p-2 rounded-lg mr-3 transition-colors ${
+        <div className={`p-2 rounded-lg ${isMinimized ? '' : 'mr-3'} transition-colors ${
           location.pathname === '/'
             ? 'bg-white/20'
             : 'bg-gray-100 group-hover:bg-primary-100'
         }`}>
           <FiHome className="h-5 w-5" />
         </div>
-        <span>Dashboard</span>
+        {!isMinimized && <span>Dashboard</span>}
       </NavLink>
 
       {/* Register New Patient */}
@@ -56,21 +58,22 @@ const MWONavigation = ({ onClose }) => {
         to="/patients/new"
         onClick={onClose}
         className={({ isActive }) =>
-          `group flex items-center px-4 py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${
+          `group flex items-center ${isMinimized ? 'justify-center px-2' : 'px-4'} py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${
             isActive
               ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
               : 'text-gray-700 hover:bg-white/40 hover:text-primary-700 hover:shadow-md'
           }`
         }
+        title={isMinimized ? 'Register New Patient' : ''}
       >
-        <div className={`p-2 rounded-lg mr-3 transition-colors ${
+        <div className={`p-2 rounded-lg ${isMinimized ? '' : 'mr-3'} transition-colors ${
           location.pathname === '/outpatient/new'
             ? 'bg-white/20'
             : 'bg-gray-100 group-hover:bg-primary-100'
         }`}>
           <FiUserPlus className="h-5 w-5" />
         </div>
-        <span>Register New Patient</span>
+        {!isMinimized && <span>Register New Patient</span>}
       </NavLink>
 
       {/* All Patient Records */}
@@ -79,21 +82,22 @@ const MWONavigation = ({ onClose }) => {
         onClick={onClose}
         end
         className={({ isActive }) =>
-          `group flex items-center px-4 py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${
+          `group flex items-center ${isMinimized ? 'justify-center px-2' : 'px-4'} py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${
             isActive
               ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
               : 'text-gray-700 hover:bg-white/40 hover:text-primary-700 hover:shadow-md'
           }`
         }
+        title={isMinimized ? 'All Patient Records' : ''}
       >
-        <div className={`p-2 rounded-lg mr-3 transition-colors ${
+        <div className={`p-2 rounded-lg ${isMinimized ? '' : 'mr-3'} transition-colors ${
           location.pathname === '/patients'
             ? 'bg-white/20'
             : 'bg-gray-100 group-hover:bg-primary-100'
         }`}>
           <FiClipboard className="h-5 w-5" />
         </div>
-        <span>All Patient Records</span>
+        {!isMinimized && <span>All Patient Records</span>}
       </NavLink>
 
       
@@ -103,27 +107,28 @@ const MWONavigation = ({ onClose }) => {
         to="/patients/select"
         onClick={onClose}
         className={({ isActive }) =>
-          `group flex items-center px-4 py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${
+          `group flex items-center ${isMinimized ? 'justify-center px-2' : 'px-4'} py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${
             isActive
               ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
               : 'text-gray-700 hover:bg-white/40 hover:text-primary-700 hover:shadow-md'
           }`
         }
+        title={isMinimized ? 'Existing Patients' : ''}
       >
-        <div className={`p-2 rounded-lg mr-3 transition-colors ${
+        <div className={`p-2 rounded-lg ${isMinimized ? '' : 'mr-3'} transition-colors ${
           location.pathname === '/outpatient/select'
             ? 'bg-white/20'
             : 'bg-gray-100 group-hover:bg-primary-100'
         }`}>
           <FiUserCheck className="h-5 w-5" />
         </div>
-        <span>Existing Patients</span>
+        {!isMinimized && <span>Existing Patients</span>}
       </NavLink>
     </>
   );
 };
 
-const Sidebar = ({ isOpen, onClose }) => {
+const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
   const dispatch = useDispatch();
   const user = useSelector(selectCurrentUser);
   const navigate = useNavigate();
@@ -209,37 +214,68 @@ const Sidebar = ({ isOpen, onClose }) => {
       {/* Sidebar */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-30 w-64 glass-sidebar shadow-2xl transform transition-transform duration-300 ease-in-out
+          fixed inset-y-0 left-0 z-30 glass-sidebar shadow-2xl transform transition-all duration-300 ease-in-out
           lg:translate-x-0 lg:fixed lg:inset-y-0
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          ${isMinimized ? 'w-20' : 'w-64'}
         `}
       >
-        <div className="h-full flex flex-col">
+        <div className="h-full mt-6 flex flex-col">
           {/* Logo and Title Section */}
-          <div className="flex items-center justify-between h-16 px-4 border-b border-white/20 flex-shrink-0">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <img src={PGI_Logo} alt="PGIMER Logo" className="w-8 h-8 object-contain" />
+          <div className={`flex items-center ${isMinimized ? 'justify-center px-1' : 'justify-between px-4'} h-16 border-b border-white/20 flex-shrink-0`}>
+            {!isMinimized ? (
+              <>
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <img src={PGI_Logo} alt="PGIMER Logo" className="w-8 h-8 object-contain" />
+                  </div>
+                  <div className="ml-3">
+                    <h1 className="text-lg font-bold text-primary-900">PGIMER PSY</h1>
+                    <p className="text-xs text-gray-600"> Psychiatry Department - PGIMER Chandigarh</p>
+                  </div>
+                </div>
+                {/* Desktop minimize button */}
+                <button
+                  onClick={onToggleMinimize}
+                  className="hidden lg:flex group relative p-2.5 rounded-xl text-gray-600 hover:text-primary-700 bg-gradient-to-br from-white/40 to-gray-50/40 hover:from-primary-50 hover:to-primary-100/50 border border-gray-200/50 hover:border-primary-300/50 transition-all duration-300 ease-in-out hover:scale-110 hover:shadow-lg hover:shadow-primary-500/20 active:scale-95"
+                  title="Minimize sidebar"
+                >
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary-400/0 via-primary-500/0 to-primary-400/0 group-hover:from-primary-400/20 group-hover:via-primary-500/30 group-hover:to-primary-400/20 transition-all duration-500 opacity-0 group-hover:opacity-100 animate-pulse"></div>
+                  <FiChevronLeft className="h-5 w-5 relative z-10 transition-transform duration-300 group-hover:translate-x-[-2px] group-hover:scale-110" />
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center w-full h-full gap-2">
+                <div className="relative group/logo">
+                  <div className="absolute inset-0 rounded-full bg-primary-200/30 blur-md opacity-0 group-hover/logo:opacity-100 transition-opacity duration-300"></div>
+                  <img src={PGI_Logo} alt="PGIMER Logo" className="w-6 h-6 object-contain relative z-10 transition-transform duration-300 group-hover/logo:scale-110" />
+                </div>
+                {/* Desktop maximize button */}
+                <button
+                  onClick={onToggleMinimize}
+                  className="hidden lg:flex group relative p-2.5 rounded-xl text-gray-600 hover:text-primary-700 bg-gradient-to-br from-white/40 to-gray-50/40 hover:from-primary-50 hover:to-primary-100/50 border border-gray-200/50 hover:border-primary-300/50 transition-all duration-300 ease-in-out hover:scale-110 hover:shadow-lg hover:shadow-primary-500/20 active:scale-95"
+                  title="Maximize sidebar"
+                >
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary-400/0 via-primary-500/0 to-primary-400/0 group-hover:from-primary-400/20 group-hover:via-primary-500/30 group-hover:to-primary-400/20 transition-all duration-500 opacity-0 group-hover:opacity-100 animate-pulse"></div>
+                  <FiChevronRight className="h-5 w-5 relative z-10 transition-transform duration-300 group-hover:translate-x-[2px] group-hover:scale-110" />
+                </button>
               </div>
-              <div className="ml-3">
-                <h1 className="text-lg font-bold text-primary-900">PGIMER PSY</h1>
-                <p className="text-xs text-gray-600"> Psychiatry Department - PGIMER Chandigarh</p>
-              </div>
-            </div>
+            )}
             {/* Mobile close button */}
             <button
               onClick={onClose}
-              className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-white/20"
+              className="lg:hidden group relative p-2 rounded-xl text-gray-600 hover:text-red-600 bg-gradient-to-br from-white/40 to-gray-50/40 hover:from-red-50 hover:to-red-100/50 border border-gray-200/50 hover:border-red-300/50 transition-all duration-300 ease-in-out hover:scale-110 hover:shadow-lg hover:shadow-red-500/20 active:scale-95"
             >
-              <FiX className="h-6 w-6" />
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-red-400/0 via-red-500/0 to-red-400/0 group-hover:from-red-400/20 group-hover:via-red-500/30 group-hover:to-red-400/20 transition-all duration-500 opacity-0 group-hover:opacity-100"></div>
+              <FiX className="h-6 w-6 relative z-10 transition-transform duration-300 group-hover:rotate-90 group-hover:scale-110" />
             </button>
           </div>
 
           {/* Navigation - scrollable middle section */}
-          <nav className="flex-1 px-4 py-6 pb-48 space-y-2 overflow-y-auto min-h-0">
+          <nav className={`flex-1 py-6 pb-48 space-y-2 overflow-y-auto min-h-0 ${isMinimized ? 'px-2' : 'px-4'}`}>
             {isMWO(user?.role) ? (
               // MWO-specific beautiful navigation
-              <MWONavigation onClose={onClose} />
+              <MWONavigation onClose={onClose} isMinimized={isMinimized} />
             ) : (
               // Other roles navigation (Admin, JR, SR)
               filteredNavigation.map((item) => {
@@ -265,20 +301,21 @@ const Sidebar = ({ isOpen, onClose }) => {
                     key={item.name}
                     to={item.to}
                     onClick={onClose}
-                    className={`group flex items-center px-4 py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${
+                    className={`group flex items-center ${isMinimized ? 'justify-center px-2' : 'px-4'} py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${
                       isActive
                         ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
                         : 'text-gray-700 hover:bg-white/40 hover:text-primary-700 hover:shadow-md'
                     }`}
+                    title={isMinimized ? item.name : ''}
                   >
-                    <div className={`p-2 rounded-lg mr-3 transition-colors ${
+                    <div className={`p-2 rounded-lg ${isMinimized ? '' : 'mr-3'} transition-colors ${
                       isActive
                         ? 'bg-white/20'
                         : 'bg-gray-100 group-hover:bg-primary-100'
                     }`}>
                       <item.icon className="h-5 w-5" />
                     </div>
-                    <span>{item.name}</span>
+                    {!isMinimized && <span>{item.name}</span>}
                   </NavLink>
                 );
               })
@@ -286,46 +323,45 @@ const Sidebar = ({ isOpen, onClose }) => {
           </nav>
 
           {/* User info and actions - ABSOLUTELY FIXED at bottom - NOT scrollable */}
-          <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white/80 backdrop-blur-md p-4 space-y-3 shadow-lg">
-            {/* User Profile Section */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-xl p-3 shadow-md border border-gray-200">
-              <div className="flex items-center space-x-3">
+          <div className={`absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white/80 backdrop-blur-md shadow-lg ${isMinimized ? 'p-2' : 'p-4'} space-y-3`}>
+            {/* User Profile Section - Clickable to open profile settings */}
+            <div 
+              onClick={() => {
+                navigate('/profile');
+                onClose();
+              }}
+              className={`bg-white/90 backdrop-blur-sm rounded-xl shadow-md border border-gray-200 cursor-pointer hover:bg-white transition-all duration-200 ${isMinimized ? 'p-2' : 'p-3'}`}
+              title={isMinimized ? 'Profile Settings' : ''}
+            >
+              <div className={`flex items-center ${isMinimized ? 'justify-center' : 'space-x-3'}`}>
                 <div className="flex-shrink-0">
                   <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center shadow-lg shadow-primary-500/30">
                     <FiUser className="h-6 w-6 text-white" />
                   </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
-                  <p className="text-xs text-gray-600 truncate">{user?.email}</p>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-700 mt-1">
-                    {user?.role}
-                  </span>
-                </div>
+                {!isMinimized && (
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
+                    <p className="text-xs text-gray-600 truncate">{user?.email}</p>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-700 mt-1">
+                      {user?.role}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Action Buttons */}
             <div className="space-y-2">
-              <NavLink
-                to="/profile"
-                onClick={onClose}
-                className="group flex items-center w-full px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all duration-200 shadow-sm border border-gray-200 backdrop-blur-sm"
-              >
-                <div className="p-1.5 rounded-lg bg-gray-200 group-hover:bg-gray-300 mr-3 transition-colors">
-                  <FiUser className="h-4 w-4" />
-                </div>
-                Profile Settings
-              </NavLink>
-
               <button
                 onClick={handleLogout}
-                className="group flex items-center w-full px-4 py-2.5 text-sm font-medium text-white bg-red-500 rounded-xl hover:bg-red-600 transition-all duration-200 shadow-md border border-red-600 backdrop-blur-sm"
+                className={`group flex items-center w-full ${isMinimized ? 'justify-center px-2' : 'px-4'} py-2.5 text-sm font-medium text-white bg-red-500 rounded-xl hover:bg-red-600 transition-all duration-200 shadow-md border border-red-600 backdrop-blur-sm`}
+                title={isMinimized ? 'Sign Out' : ''}
               >
-                <div className="p-1.5 rounded-lg bg-red-600 group-hover:bg-red-700 mr-3 transition-colors">
+                <div className={`p-1.5 rounded-lg bg-red-600 group-hover:bg-red-700 ${isMinimized ? '' : 'mr-3'} transition-colors`}>
                   <FiLogOut className="h-4 w-4" />
                 </div>
-                Sign Out
+                {!isMinimized && <span>Sign Out</span>}
               </button>
             </div>
           </div>

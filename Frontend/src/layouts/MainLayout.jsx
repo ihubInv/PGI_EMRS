@@ -28,7 +28,11 @@ const MainLayout = () => {
   return (
     <div className="min-h-screen">
       <div className="relative">
-        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+        <Header 
+          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+          sidebarMinimized={sidebarMinimized}
+          sidebarOpen={sidebarOpen}
+        />
 
         <Sidebar 
           isOpen={sidebarOpen} 
@@ -37,7 +41,7 @@ const MainLayout = () => {
           onToggleMinimize={() => setSidebarMinimized(!sidebarMinimized)}
         />
 
-        <main className={`p-6 lg:p-8 transition-all duration-300 ease-in-out ${
+        <main className={`p-4 sm:p-6 lg:p-8 transition-all duration-300 ease-in-out ${
           sidebarMinimized ? 'lg:ml-20' : 'lg:ml-64'
         }`}>
           <Outlet />

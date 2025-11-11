@@ -4,7 +4,7 @@ import {
   FiFolder, FiCalendar, FiHome, FiActivity, FiHeart, FiClock,
   FiShield, FiLayers, FiHash, FiEdit3, FiBookOpen,
   FiNavigation, FiUserCheck, FiInfo, FiChevronDown, FiChevronUp, FiTag,
-  FiPackage
+  FiPackage, FiSave
 } from 'react-icons/fi';
 import Card from '../../components/Card';
 import Badge from '../../components/Badge';
@@ -17,7 +17,7 @@ import {
   MOBILITY_OPTIONS, REFERRED_BY_OPTIONS, INDIAN_STATES, UNIT_DAYS_OPTIONS
 } from '../../utils/constants';
 import { isJR, isSR, isMWO, isAdmin, isJrSr } from '../../utils/constants';
-import { useGetPrescriptionsByProformaIdQuery } from '../../features/prescriptions/prescriptionApiSlice';
+import { useGetPrescriptionsByProformaIdQuery, useUpdatePrescriptionMutation } from '../../features/prescriptions/prescriptionApiSlice';
 import {
   useUpdatePatientMutation,
 } from '../../features/patients/patientsApiSlice';
@@ -61,7 +61,10 @@ const RadioGroup = ({ label, name, value, onChange, options, className = "", inl
 };
 
 // Enhanced Input component with icons
-const IconInput = ({ icon, label, ...props }) => {
+const IconInput = ({ icon, label, defaultValue, ...props }) => {
+  // Remove defaultValue if value is provided to avoid controlled/uncontrolled warning
+  const inputProps = props.value !== undefined ? { ...props } : { ...props, defaultValue };
+  
   return (
     <div className="space-y-2">
       <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
@@ -75,9 +78,9 @@ const IconInput = ({ icon, label, ...props }) => {
           </div>
         )}
         <input
-          {...props}
+          {...inputProps}
           className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 hover:border-gray-300 ${icon ? 'pl-10' : ''
-            } ${props.className || ''}`}
+            } ${inputProps.className || ''}`}
         />
       </div>
     </div>
@@ -125,33 +128,71 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
   const [updatePatient, { isLoading: isUpdatingPatient }] = useUpdatePatientMutation();
   const [updateClinicalProforma, { isLoading: isUpdatingClinical }] = useUpdateClinicalProformaMutation();
   const [updateADLFile, { isLoading: isUpdatingADL }] = useUpdateADLFileMutation();
+  const [updatePrescription, { isLoading: isUpdatingPrescription }] = useUpdatePrescriptionMutation();
 
   // Local state for form data
   const [localFormData, setLocalFormData] = useState(formData || {});
   const [clinicalFormData, setClinicalFormData] = useState({});
   const [adlFormData, setAdlFormData] = useState({});
+  
+  // State for editable prescriptions
+  const [editablePrescriptions, setEditablePrescriptions] = useState({});
+  const [editingPrescriptionId, setEditingPrescriptionId] = useState(null);
 
   // Filter ADL files for this patient
   const patientAdlFiles = adlData?.data?.adlFiles || [];
 
   // Get clinical proformas for this patient
-  const patientProformas = clinicalData?.data?.proformas || [];
+  const patientProformas = Array.isArray(clinicalData?.data?.proformas) 
+    ? clinicalData.data.proformas 
+    : [];
 
   // Fetch prescriptions for all proformas
-  const proformaIds = patientProformas.map(p => p.id).filter(Boolean);
+  // Always compute proformaIds as an array with exactly 10 elements (padding with null)
+  // This ensures hooks are always called with the same structure
+  const proformaIds = useMemo(() => {
+    const ids = patientProformas.map(p => p?.id).filter(Boolean).slice(0, 10);
+    // Pad to exactly 10 elements with null to ensure consistent hook calls
+    while (ids.length < 10) {
+      ids.push(null);
+    }
+    return ids;
+  }, [patientProformas]);
 
-  // Fetch prescriptions for each proforma - using hooks in a stable array
-  // Note: This is safe as long as proformaIds array length is stable
-  const prescriptionResults = proformaIds.map(proformaId =>
-    useGetPrescriptionsByProformaIdQuery(proformaId, { skip: !proformaId })
-  );
+  // Always call the same number of hooks (10) in the same order
+  // This ensures React hooks are called in a consistent order every render
+  // proformaIds is guaranteed to have exactly 10 elements (padded with null if needed)
+  const prescriptionResult1 = useGetPrescriptionsByProformaIdQuery(proformaIds[0], { skip: !proformaIds[0] });
+  const prescriptionResult2 = useGetPrescriptionsByProformaIdQuery(proformaIds[1], { skip: !proformaIds[1] });
+  const prescriptionResult3 = useGetPrescriptionsByProformaIdQuery(proformaIds[2], { skip: !proformaIds[2] });
+  const prescriptionResult4 = useGetPrescriptionsByProformaIdQuery(proformaIds[3], { skip: !proformaIds[3] });
+  const prescriptionResult5 = useGetPrescriptionsByProformaIdQuery(proformaIds[4], { skip: !proformaIds[4] });
+  const prescriptionResult6 = useGetPrescriptionsByProformaIdQuery(proformaIds[5], { skip: !proformaIds[5] });
+  const prescriptionResult7 = useGetPrescriptionsByProformaIdQuery(proformaIds[6], { skip: !proformaIds[6] });
+  const prescriptionResult8 = useGetPrescriptionsByProformaIdQuery(proformaIds[7], { skip: !proformaIds[7] });
+  const prescriptionResult9 = useGetPrescriptionsByProformaIdQuery(proformaIds[8], { skip: !proformaIds[8] });
+  const prescriptionResult10 = useGetPrescriptionsByProformaIdQuery(proformaIds[9], { skip: !proformaIds[9] });
+
+  // Combine all prescription results - always use all 10 results
+  const prescriptionResults = [
+    prescriptionResult1,
+    prescriptionResult2,
+    prescriptionResult3,
+    prescriptionResult4,
+    prescriptionResult5,
+    prescriptionResult6,
+    prescriptionResult7,
+    prescriptionResult8,
+    prescriptionResult9,
+    prescriptionResult10,
+  ];
 
   // Combine all prescriptions and group by proforma/visit date
   const allPrescriptions = useMemo(() => {
     const prescriptions = [];
     prescriptionResults.forEach((result, index) => {
-      if (result.data?.data?.prescriptions) {
-        const proformaId = proformaIds[index];
+      const proformaId = proformaIds[index];
+      if (proformaId && result.data?.data?.prescriptions) {
         const proforma = patientProformas.find(p => p.id === proformaId);
         result.data.data.prescriptions.forEach(prescription => {
           prescriptions.push({
@@ -314,6 +355,74 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
       array[index][subField] = value;
       return { ...prev, [fieldName]: array };
     });
+  };
+
+  // Handle prescription edit
+  const handlePrescriptionEdit = (prescription) => {
+    setEditingPrescriptionId(prescription.id);
+    setEditablePrescriptions(prev => ({
+      ...prev,
+      [prescription.id]: {
+        medicine: prescription.medicine || '',
+        dosage: prescription.dosage || '',
+        when_to_take: prescription.when_to_take || prescription.when || '',
+        frequency: prescription.frequency || '',
+        duration: prescription.duration || '',
+        quantity: prescription.quantity || prescription.qty || '',
+        details: prescription.details || '',
+        notes: prescription.notes || '',
+      }
+    }));
+  };
+
+  const handlePrescriptionChange = (prescriptionId, field, value) => {
+    setEditablePrescriptions(prev => ({
+      ...prev,
+      [prescriptionId]: {
+        ...prev[prescriptionId],
+        [field]: value
+      }
+    }));
+  };
+
+  const handlePrescriptionCancel = (prescriptionId) => {
+    setEditingPrescriptionId(null);
+    setEditablePrescriptions(prev => {
+      const updated = { ...prev };
+      delete updated[prescriptionId];
+      return updated;
+    });
+  };
+
+  const handlePrescriptionSave = async (prescription) => {
+    try {
+      const editedData = editablePrescriptions[prescription.id];
+      if (!editedData) return;
+
+      const payload = {
+        id: prescription.id,
+        medicine: editedData.medicine || prescription.medicine,
+        dosage: editedData.dosage || null,
+        when_to_take: editedData.when_to_take || null,
+        frequency: editedData.frequency || null,
+        duration: editedData.duration || null,
+        quantity: editedData.quantity || null,
+        details: editedData.details || null,
+        notes: editedData.notes || null,
+      };
+
+      await updatePrescription(payload).unwrap();
+      toast.success('Prescription updated successfully');
+      setEditingPrescriptionId(null);
+      setEditablePrescriptions(prev => {
+        const updated = { ...prev };
+        delete updated[prescription.id];
+        return updated;
+      });
+    } catch (error) {
+      console.error('Error updating prescription:', error);
+      toast.error(error?.data?.message || 'Failed to update prescription');
+    }
   };
 
   const handleSaveAll = async () => {
@@ -1414,67 +1523,167 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                       </div>
 
                       <div className="space-y-4">
-                        {visitData.prescriptions.map((prescription, idx) => (
-                          <div key={prescription.id || idx} className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                              <div>
-                                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Medicine</label>
-                                <p className="text-base font-bold text-gray-900 mt-1">{prescription.medicine || 'N/A'}</p>
+                        {visitData.prescriptions.map((prescription, idx) => {
+                          const isEditing = editingPrescriptionId === prescription.id;
+                          const editedData = editablePrescriptions[prescription.id] || {};
+                          const displayData = isEditing ? editedData : prescription;
+
+                          return (
+                            <div key={prescription.id || idx} className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                              <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+                                <h5 className="text-sm font-semibold text-gray-700">Prescription #{idx + 1}</h5>
+                                {!isEditing ? (
+                                  <button
+                                    onClick={() => handlePrescriptionEdit(prescription)}
+                                    className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
+                                  >
+                                    <FiEdit3 className="w-4 h-4" />
+                                    Edit
+                                  </button>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => handlePrescriptionCancel(prescription.id)}
+                                      className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      onClick={() => handlePrescriptionSave(prescription)}
+                                      disabled={isUpdatingPrescription}
+                                      className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      <FiSave className="w-4 h-4" />
+                                      {isUpdatingPrescription ? 'Saving...' : 'Save'}
+                                    </button>
+                                  </div>
+                                )}
                               </div>
-                              {prescription.dosage && (
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 <div>
-                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Dosage</label>
-                                  <p className="text-base font-semibold text-gray-900 mt-1">{prescription.dosage}</p>
+                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 block">Medicine</label>
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={displayData.medicine || ''}
+                                      onChange={(e) => handlePrescriptionChange(prescription.id, 'medicine', e.target.value)}
+                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                                      placeholder="Medicine name"
+                                    />
+                                  ) : (
+                                    <p className="text-base font-bold text-gray-900 mt-1">{prescription.medicine || 'N/A'}</p>
+                                  )}
                                 </div>
-                              )}
-                              {prescription.when_to_take && (
                                 <div>
-                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">When to Take</label>
-                                  <p className="text-base font-semibold text-gray-900 mt-1">{prescription.when_to_take}</p>
+                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 block">Dosage</label>
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={displayData.dosage || ''}
+                                      onChange={(e) => handlePrescriptionChange(prescription.id, 'dosage', e.target.value)}
+                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                                      placeholder="e.g., 1-0-1"
+                                    />
+                                  ) : (
+                                    <p className="text-base font-semibold text-gray-900 mt-1">{prescription.dosage || 'N/A'}</p>
+                                  )}
                                 </div>
-                              )}
-                              {prescription.frequency && (
                                 <div>
-                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Frequency</label>
-                                  <p className="text-base font-semibold text-gray-900 mt-1">{prescription.frequency}</p>
+                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 block">When to Take</label>
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={displayData.when_to_take || displayData.when || ''}
+                                      onChange={(e) => handlePrescriptionChange(prescription.id, 'when_to_take', e.target.value)}
+                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                                      placeholder="Before/After food"
+                                    />
+                                  ) : (
+                                    <p className="text-base font-semibold text-gray-900 mt-1">{prescription.when_to_take || prescription.when || 'N/A'}</p>
+                                  )}
                                 </div>
-                              )}
-                              {prescription.duration && (
                                 <div>
-                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Duration</label>
-                                  <p className="text-base font-semibold text-gray-900 mt-1">{prescription.duration}</p>
+                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 block">Frequency</label>
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={displayData.frequency || ''}
+                                      onChange={(e) => handlePrescriptionChange(prescription.id, 'frequency', e.target.value)}
+                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                                      placeholder="Daily"
+                                    />
+                                  ) : (
+                                    <p className="text-base font-semibold text-gray-900 mt-1">{prescription.frequency || 'N/A'}</p>
+                                  )}
                                 </div>
-                              )}
-                              {prescription.quantity && (
                                 <div>
-                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Quantity</label>
-                                  <p className="text-base font-semibold text-gray-900 mt-1">{prescription.quantity}</p>
+                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 block">Duration</label>
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={displayData.duration || ''}
+                                      onChange={(e) => handlePrescriptionChange(prescription.id, 'duration', e.target.value)}
+                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                                      placeholder="5 days"
+                                    />
+                                  ) : (
+                                    <p className="text-base font-semibold text-gray-900 mt-1">{prescription.duration || 'N/A'}</p>
+                                  )}
+                                </div>
+                                <div>
+                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 block">Quantity</label>
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={displayData.quantity || displayData.qty || ''}
+                                      onChange={(e) => handlePrescriptionChange(prescription.id, 'quantity', e.target.value)}
+                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                                      placeholder="Quantity"
+                                    />
+                                  ) : (
+                                    <p className="text-base font-semibold text-gray-900 mt-1">{prescription.quantity || prescription.qty || 'N/A'}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
+                                <div>
+                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 block">Details</label>
+                                  {isEditing ? (
+                                    <textarea
+                                      value={displayData.details || ''}
+                                      onChange={(e) => handlePrescriptionChange(prescription.id, 'details', e.target.value)}
+                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                                      rows={2}
+                                      placeholder="Additional details"
+                                    />
+                                  ) : (
+                                    <p className="text-sm text-gray-900 mt-1">{prescription.details || 'N/A'}</p>
+                                  )}
+                                </div>
+                                <div>
+                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 block">Notes</label>
+                                  {isEditing ? (
+                                    <textarea
+                                      value={displayData.notes || ''}
+                                      onChange={(e) => handlePrescriptionChange(prescription.id, 'notes', e.target.value)}
+                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                                      rows={2}
+                                      placeholder="Notes"
+                                    />
+                                  ) : (
+                                    <p className="text-sm text-gray-900 mt-1">{prescription.notes || 'N/A'}</p>
+                                  )}
+                                </div>
+                              </div>
+                              {prescription.created_at && (
+                                <div className="mt-3 pt-3 border-t border-gray-100">
+                                  <p className="text-xs text-gray-500">Prescribed on: {formatDateTime(prescription.created_at)}</p>
                                 </div>
                               )}
                             </div>
-                            {(prescription.details || prescription.notes) && (
-                              <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
-                                {prescription.details && (
-                                  <div>
-                                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Details</label>
-                                    <p className="text-sm text-gray-900 mt-1">{prescription.details}</p>
-                                  </div>
-                                )}
-                                {prescription.notes && (
-                                  <div>
-                                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Notes</label>
-                                    <p className="text-sm text-gray-900 mt-1">{prescription.notes}</p>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                            {prescription.created_at && (
-                              <div className="mt-3 pt-3 border-t border-gray-100">
-                                <p className="text-xs text-gray-500">Prescribed on: {formatDateTime(prescription.created_at)}</p>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ))}

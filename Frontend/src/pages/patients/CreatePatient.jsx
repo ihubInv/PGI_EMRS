@@ -62,7 +62,10 @@ const RadioGroup = ({ label, name, value, onChange, options, className = "", inl
 };
 
 // Enhanced Input component with glassmorphism styling
-const IconInput = ({ icon, label, loading = false, error, ...props }) => {
+const IconInput = ({ icon, label, loading = false, error, defaultValue, ...props }) => {
+  // Remove defaultValue if value is provided to avoid controlled/uncontrolled warning
+  const inputProps = props.value !== undefined ? { ...props } : { ...props, defaultValue };
+  
   return (
     <div className="space-y-2">
       <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
@@ -79,8 +82,8 @@ const IconInput = ({ icon, label, loading = false, error, ...props }) => {
           </div>
         )}
         <input
-          {...props}
-          className={`w-full px-4 py-3 ${icon ? 'pl-11' : 'pl-4'} bg-white/60 backdrop-blur-md border-2 border-gray-300/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 focus:bg-white/80 transition-all duration-300 hover:bg-white/70 hover:border-primary-400/70 placeholder:text-gray-400 text-gray-900 font-medium ${props.className || ''}`}
+          {...inputProps}
+          className={`w-full px-4 py-3 ${icon ? 'pl-11' : 'pl-4'} bg-white/60 backdrop-blur-md border-2 border-gray-300/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 focus:bg-white/80 transition-all duration-300 hover:bg-white/70 hover:border-primary-400/70 placeholder:text-gray-400 text-gray-900 font-medium ${inputProps.className || ''}`}
         />
       </div>
       {error && (
