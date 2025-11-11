@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { 
-  FiSearch, FiEye, FiDownload, FiUpload, FiArchive, FiRefreshCw, 
+  FiSearch, FiEye, FiDownload, FiUpload, FiArchive, 
   FiActivity, FiFileText, FiUsers, FiShield, FiClock, FiTrendingUp,
-  FiMoreVertical, FiMail, FiCalendar, FiCheckCircle 
+  FiMoreVertical,  FiCalendar, FiCheckCircle 
 } from 'react-icons/fi';
 import {
   useGetAllADLFilesQuery,
@@ -75,16 +75,6 @@ const ADLFilesPage = () => {
     }
   };
 
-  const getStatusVariant = (status) => {
-    const map = {
-      created: 'info',
-      stored: 'success',
-      retrieved: 'warning',
-      active: 'primary',
-      archived: 'default',
-    };
-    return map[status] || 'default';
-  };
 
   // Filter files based on search
   const filteredFiles = data?.data?.files?.filter(file => {
@@ -306,51 +296,11 @@ const ADLFilesPage = () => {
     },
   ];
 
-  const totalFiles = data?.data?.pagination?.total || 0;
-  const complexCasesCount = showOnlyComplexCases 
-    ? totalFiles
-    : (data?.data?.files?.filter(f => f.clinical_proforma_id).length || 0);
-  const storedCount = data?.data?.files?.filter(f => f.file_status === 'stored').length || 0;
-  const retrievedCount = data?.data?.files?.filter(f => f.file_status === 'retrieved').length || 0;
-  const archivedCount = data?.data?.files?.filter(f => f.file_status === 'archived').length || 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="space-y-6 p-4 sm:p-6 lg:p-8">
-        {/* Enhanced Header */}
-        {/* <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-primary-600/10 to-primary-800/5 rounded-2xl"></div>
-          <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-6 sm:p-8 shadow-lg border border-white/50">
-            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6">
-              <div className="flex-1 space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl blur-sm opacity-50"></div>
-                    <div className="relative p-4 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl shadow-lg">
-                      <FiFileText className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 bg-clip-text text-transparent">
-                      ADL File Management
-                    </h1>
-                    <p className="text-gray-600 mt-2 text-base sm:text-lg">
-                      {showOnlyComplexCases 
-                        ? 'Complex case files with comprehensive patient details' 
-                        : 'All ADL files (including non-complex cases)'
-                      }
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              
-            </div>
-          </div>
-        </div> */}
-
-        
-
+       
         {/* Main Content Card */}
         <Card className="shadow-lg border border-gray-200/50 bg-white/90 backdrop-blur-sm">
           {error && (

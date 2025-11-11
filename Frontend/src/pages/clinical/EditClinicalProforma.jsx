@@ -10,12 +10,7 @@ import Card from '../../components/Card';
 import Button from '../../components/Button';
 import { FiArrowLeft, FiAlertCircle } from 'react-icons/fi';
 
-/**
- * EditClinicalProforma Component
- * 
- * This component loads existing clinical proforma data and ADL file data (if complex case),
- * then renders the CreateClinicalProforma component in edit mode with prefilled data.
- */
+
 const EditClinicalProforma = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -111,9 +106,6 @@ const EditClinicalProforma = () => {
     );
   }
 
-  // Render CreateClinicalProforma in edit mode with prefilled data
-  // We'll pass the proforma and adlFile data as props, and CreateClinicalProforma
-  // will handle the edit mode by checking for savedProformaId
   return (
     <CreateClinicalProforma 
       editMode={true}

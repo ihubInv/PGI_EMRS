@@ -1,23 +1,16 @@
 import { useState, useMemo, useEffect } from 'react';
 import { 
   FiUser, FiUsers, FiBriefcase, FiDollarSign, FiMapPin, FiPhone, FiFileText, 
-  FiFolder, FiClipboard, FiCalendar, FiHome, FiActivity, FiHeart, FiClock, 
-  FiShield, FiTrendingUp, FiLayers, FiHash, FiGlobe, FiEdit3, FiBookOpen,
-  FiNavigation, FiTruck, FiMail, FiUserCheck, FiStar, FiInfo, FiChevronDown, FiChevronUp, FiTag,
+  FiFolder,  FiCalendar, FiHome, FiActivity, FiHeart, FiClock, 
+  FiShield,  FiLayers, FiHash,  FiEdit3, FiBookOpen,
+  FiNavigation,  FiUserCheck, FiInfo, FiChevronDown, FiChevronUp, FiTag,
   FiPackage
 } from 'react-icons/fi';
 import Card from '../../components/Card';
 import Badge from '../../components/Badge';
-import Input from '../../components/Input';
 import Select from '../../components/Select';
 import Textarea from '../../components/Textarea';
 import { formatDate, formatDateTime } from '../../utils/formatters';
-import { 
-  getSexLabel, getMaritalStatusLabel, getFamilyTypeLabel, getLocalityLabel, 
-  getReligionLabel, getAgeGroupLabel, getOccupationLabel, getEducationLabel, 
-  getMobilityLabel, getReferredByLabel, getFileStatusLabel, getCaseSeverityLabel,
-  formatAddress, formatCurrency
-} from '../../utils/enumMappings';
 import { 
   SEX_OPTIONS, MARITAL_STATUS, FAMILY_TYPE, LOCALITY, RELIGION, 
   AGE_GROUP_OPTIONS, OCCUPATION_OPTIONS, EDUCATION_OPTIONS, 

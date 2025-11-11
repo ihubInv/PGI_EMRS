@@ -4,9 +4,7 @@ import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import {  FiX, FiEdit } from 'react-icons/fi';
 import {
-  useGetPatientByIdQuery,
-  useUpdatePatientMutation,
-  useAssignPatientMutation,
+  useGetPatientByIdQuery
 } from '../../features/patients/patientsApiSlice';
 import { useGetClinicalProformaByPatientIdQuery } from '../../features/clinical/clinicalApiSlice';
 import { useGetADLFileByPatientIdQuery } from '../../features/adl/adlApiSlice';
@@ -57,7 +55,7 @@ const PatientDetails = () => {
   }, []);
 
   // Ensure queries refetch when ID changes by using skip option if id is invalid
-  const { data: patientData, isLoading: patientLoading, error: patientError } = useGetPatientByIdQuery(patientId, {
+  const { data: patientData, isLoading: patientLoading } = useGetPatientByIdQuery(patientId, {
     skip: !patientId || isNaN(patientId) || patientId <= 0, // Skip query if id is not available or invalid
   });
   const { data: clinicalData } = useGetClinicalProformaByPatientIdQuery(patientId, {
@@ -68,10 +66,6 @@ const PatientDetails = () => {
   });
   
   const { data: usersData } = useGetDoctorsQuery({ page: 1, limit: 100 });
-
-  const [updatePatient] = useUpdatePatientMutation();
-
-  const [assignPatient] = useAssignPatientMutation();
 
   const [formData, setFormData] = useState({
     // Basic patient info
@@ -166,8 +160,6 @@ const PatientDetails = () => {
   // Reset form data when patient ID changes
   useEffect(() => {
     if (!patientId) return;
-    
-    console.log(`[PatientDetails] Resetting form data for patient ID: ${patientId}`);
     
     // Reset form data to initial state when ID changes
     setFormData({
@@ -274,8 +266,6 @@ const PatientDetails = () => {
         toast.error(`Data mismatch: Expected patient ID ${patientId}, but received ${patientDataId}`);
         return; // Don't update form data if IDs don't match
       }
-      
-      console.log(`[PatientDetails] Updating form data for patient ID: ${patientDataId || patientId}`);
       
       // Patient data updated - use patient data directly with fallbacks to empty string
       // This ensures all fields are available in formData for display
@@ -385,8 +375,7 @@ const PatientDetails = () => {
         console.warn(`[PatientDetails] Record patient ID mismatch: URL ID is ${patientId}, but record patient_id is ${recordPatientId}`);
         return; // Don't update form data if IDs don't match
       }
-      
-      console.log('[PatientDetails] Updating form data from outpatient record');
+
       setFormData(prev => ({
         ...prev,
         age_group: record.age_group || prev.age_group || '',
@@ -420,114 +409,6 @@ const PatientDetails = () => {
       }));
     }
   }, [patientData, patientId]); // Add patientId as dependency
-
-
-
-const handleSave = async () => {
-  try {
-    const patientPayload = {
-      id: patientId,
-      name: formData.name,
-      sex: formData.sex,
-      actual_age: parseInt(formData.actual_age),
-      assigned_room: formData.assigned_room,
-      contact_number: formData.contact_number,
-
-      // Patient details
-      age_group: formData.age_group,
-      marital_status: formData.marital_status,
-      year_of_marriage: formData.year_of_marriage ? parseInt(formData.year_of_marriage) : null,
-      no_of_children: formData.no_of_children ? parseInt(formData.no_of_children) : null,
-      no_of_children_male: formData.no_of_children_male ? parseInt(formData.no_of_children_male) : null,
-      no_of_children_female: formData.no_of_children_female ? parseInt(formData.no_of_children_female) : null,
-      occupation: formData.occupation,
-      actual_occupation: formData.actual_occupation,
-      education_level: formData.education_level,
-      completed_years_of_education: formData.completed_years_of_education ? parseInt(formData.completed_years_of_education) : null,
-      patient_income: formData.patient_income ? parseFloat(formData.patient_income) : null,
-      family_income: formData.family_income ? parseFloat(formData.family_income) : null,
-
-      // Addresses
-      present_address_line_1: formData.present_address_line_1,
-      present_city_town_village: formData.present_city_town_village,
-      present_district: formData.present_district,
-      present_state: formData.present_state,
-      present_pin_code: formData.present_pin_code,
-      present_country: formData.present_country,
-
-      permanent_address_line_1: formData.permanent_address_line_1,
-      permanent_city_town_village: formData.permanent_city_town_village,
-      permanent_district: formData.permanent_district,
-      permanent_state: formData.permanent_state,
-      permanent_pin_code: formData.permanent_pin_code,
-      permanent_country: formData.permanent_country,
-
-      address_line_1: formData.address_line_1,
-      city_town_village: formData.city_town_village,
-      district: formData.district,
-      state: formData.state,
-      pin_code: formData.pin_code,
-      country: formData.country,
-
-      // Additional info
-      religion: formData.religion,
-      family_type: formData.family_type,
-      locality: formData.locality,
-      head_name: formData.head_name,
-      head_age: formData.head_age ? parseInt(formData.head_age) : null,
-      head_relationship: formData.head_relationship,
-      head_education: formData.head_education,
-      head_occupation: formData.head_occupation,
-      head_income: formData.head_income ? parseFloat(formData.head_income) : null,
-      distance_from_hospital: formData.distance_from_hospital,
-      mobility: formData.mobility,
-      referred_by: formData.referred_by,
-      exact_source: formData.exact_source,
-      seen_in_walk_in_on: formData.seen_in_walk_in_on,
-      worked_up_on: formData.worked_up_on,
-      school_college_office: formData.school_college_office,
-
-      // Registration details
-      department: formData.department,
-      unit_consit: formData.unit_consit,
-      room_no: formData.room_no,
-      serial_no: formData.serial_no,
-      file_no: formData.file_no,
-      unit_days: formData.unit_days,
-      category: formData.category,
-      special_clinic_no: formData.special_clinic_no,
-    };
-
-    // ✅ Update patient
-    await updatePatient(patientPayload).unwrap();
-
-    // ✅ Assign doctor if present
-    if (formData.assigned_doctor_id) {
-      try {
-        await assignPatient({
-          patient_id: patientId,
-          assigned_doctor: Number(formData.assigned_doctor_id),
-          room_no: formData.assigned_room || "",
-        }).unwrap();
-      } catch (_) {
-        console.warn("Doctor assignment failed");
-      }
-    }
-
-    toast.success("Patient updated successfully!");
-    setIsEditing(false);
-
-    // Navigate back to Today Patients with preserved tab if returnTab exists
-    if (returnTab) {
-      navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
-    } else {
-    navigate(`/patients`);
-    }
-
-  } catch (err) {
-    toast.error(err?.data?.message || "Failed to update patient");
-  }
-};
 
 
   if (patientLoading) {

@@ -26,23 +26,23 @@ const ResetPassword = () => {
 
   const validatePassword = (password) => {
     const errors = [];
-    
+
     if (password.length < 6) {
       errors.push('Password must be at least 6 characters long');
     }
-    
+
     if (!/(?=.*[a-z])/.test(password)) {
       errors.push('Password must contain at least one lowercase letter');
     }
-    
+
     if (!/(?=.*[A-Z])/.test(password)) {
       errors.push('Password must contain at least one uppercase letter');
     }
-    
+
     if (!/(?=.*\d)/.test(password)) {
       errors.push('Password must contain at least one number');
     }
-    
+
     return errors;
   };
 
@@ -140,11 +140,11 @@ const ResetPassword = () => {
                 <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
                   <CheckCircle className="h-8 w-8 text-green-600" />
                 </div>
-                
+
                 <h3 className="text-xl font-bold text-gray-900 mb-4">Password Reset Successful!</h3>
-                
+
                 <p className="text-gray-600 mb-6">
-                  Your password has been successfully reset. You can now log in to your account 
+                  Your password has been successfully reset. You can now log in to your account
                   using your new password.
                 </p>
 
@@ -333,7 +333,7 @@ const ResetPassword = () => {
           {/* Footer */}
           <div className="text-center mt-8">
             <p className="text-xs text-gray-500">
-              © 2025 Post Graduate Institute of Medical Education & Research, Chandigarh
+              © {new Date().getFullYear()} Post Graduate Institute of Medical Education & Research, Chandigarh
             </p>
           </div>
         </div>

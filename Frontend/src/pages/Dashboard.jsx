@@ -1,6 +1,6 @@
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { FiUsers, FiFileText, FiFolder, FiClipboard, FiTrendingUp, FiEye, FiEdit, FiTrash2, FiUserPlus, FiActivity, FiRefreshCw } from 'react-icons/fi';
+import { FiUsers, FiFileText, FiFolder, FiClipboard, FiTrendingUp, FiEye, FiEdit,  FiUserPlus, FiActivity  } from 'react-icons/fi';
 import { selectCurrentUser } from '../features/auth/authSlice';
 import { useGetAllPatientsQuery, useGetPatientsStatsQuery, useGetPatientStatsQuery } from '../features/patients/patientsApiSlice';
 import { useGetClinicalStatsQuery, useGetCasesBySeverityQuery, useGetCasesByDecisionQuery, useGetMyProformasQuery } from '../features/clinical/clinicalApiSlice';
@@ -9,7 +9,6 @@ import Card from '../components/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
-import { toast } from 'react-toastify';
 import { isAdmin, isMWO, isJrSr as checkJrSr } from '../utils/constants';
 
 // Chart components
@@ -97,15 +96,7 @@ const Dashboard = () => {
  
   const { data: myRecords } = useGetAllPatientsQuery({ page: 1, limit: 10 }, { skip: !isMwo, refetchOnMountOrArgChange: true });
 
-  // const { data, isLoading, isFetching, refetch, error } = useGetAllPatientsQuery({
-  //   page:1,
-  //   limit,
-  //   search: search.trim() || undefined // Only include search if it has a value
-  // }, {
-  //   pollingInterval: 30000, // Auto-refresh every 30 seconds
-  //   refetchOnMountOrArgChange: true,
-  // });
-  // Helpers
+ 
   const sumValues = (obj) => Object.values(obj || {}).reduce((acc, v) => acc + (Number(v) || 0), 0);
 
   // Chart data for Patient Gender Distribution
@@ -234,28 +225,6 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <div className="space-y-6 p-4 sm:p-6 lg:p-8">
-          {/* Enhanced Header */}
-          {/* <div className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-primary-600/10 to-primary-800/5 rounded-2xl"></div>
-            <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-6 sm:p-8 shadow-lg border border-white/50">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl blur-sm opacity-50"></div>
-                    <div className="relative p-4 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl shadow-lg">
-                      <FiActivity className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-                    </div>
-                  </div>
-                  <div>
-                    <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 bg-clip-text text-transparent">
-                      Dashboard
-                    </h1>
-                    <p className="text-gray-600 mt-1 text-base sm:text-lg">Welcome back, <span className="font-semibold text-gray-900">{user?.name}</span>!</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div> */}
 
           {/* Role-based quick KPIs */}
           {isJrSr && (
@@ -639,28 +608,6 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="space-y-6 p-4 sm:p-6 lg:p-8">
-        {/* Enhanced Header */}
-        {/* <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-primary-600/10 to-primary-800/5 rounded-2xl"></div>
-          <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-6 sm:p-8 shadow-lg border border-white/50">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl blur-sm opacity-50"></div>
-                  <div className="relative p-4 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl shadow-lg">
-                    <FiActivity className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-                  </div>
-                </div>
-                <div>
-                  <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 bg-clip-text text-transparent">
-                    Dashboard
-                  </h1>
-                  <p className="text-gray-600 mt-1 text-base sm:text-lg">Welcome back, <span className="font-semibold text-gray-900">{user?.name}</span>!</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div> */}
 
         {(patientsError || clinicalError || adlError) && (
           <Card className="border-red-200 bg-red-50/50">

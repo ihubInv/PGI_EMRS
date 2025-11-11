@@ -6,15 +6,13 @@ import {
   FiShield, FiTrendingUp, FiMapPin, FiNavigation, FiTruck, 
   FiUsers, FiBriefcase, FiBookOpen, FiDollarSign, FiHome, 
   FiPhone, FiFileText, FiHash, FiStar, FiActivity, FiCalendar,
-  FiGlobe, FiLayers, FiUserCheck, FiInfo, FiAlertCircle
+  FiGlobe, FiUserCheck, FiInfo, FiAlertCircle
 } from 'react-icons/fi';
 import { useSearchPatientsQuery, useAssignPatientMutation, useUpdatePatientMutation, useGetAllPatientsQuery, useGetPatientByIdQuery, useCreatePatientMutation } from '../../features/patients/patientsApiSlice';
 import { useGetDoctorsQuery } from '../../features/users/usersApiSlice';
 import Card from '../../components/Card';
-import Input from '../../components/Input';
 import Select from '../../components/Select';
 import Button from '../../components/Button';
-import LoadingSpinner from '../../components/LoadingSpinner';
 import { isJR, isSR } from '../../utils/constants';
 
 const SelectExistingPatient = () => {
@@ -123,7 +121,6 @@ const SelectExistingPatient = () => {
   };
 
   const handleSubmit = async (e) => {
-    debugger;
     e.preventDefault();
 
     if (!selectedPatient) {
@@ -142,8 +139,6 @@ const SelectExistingPatient = () => {
   };
 
   const existingDemo = demographicData?.data?.patient;
-  // console.log('existingDemo', demographicData);
-  // Calculate visit statistics - show current count + 1 for the visit being created
   const currentVisitCount = allVisitsData?.data?.records?.length || 0;
   const nextVisitNumber = currentVisitCount + 1; // This will be the visit number after creation
 
@@ -516,7 +511,6 @@ const SelectExistingPatient = () => {
                 </div>
               </div>
             )}
-  {console.log(existingDemo)}
             {existingDemo && (
               <Card 
                 title={

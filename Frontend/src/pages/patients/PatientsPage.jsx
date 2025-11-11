@@ -3,12 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { 
-  FiPlus, FiSearch, FiTrash2, FiEye, FiUserPlus, FiEdit, FiUsers, 
-  FiFilter, FiRefreshCw, FiDownload, FiMoreVertical, FiClock, 
-  FiHeart, FiFileText, FiShield, FiTrendingUp, FiMapPin, FiClipboard,
-  FiDelete
+  FiPlus, FiSearch, FiTrash2, FiEye,  FiEdit, FiUsers, 
+   FiDownload,  FiClock, 
+  FiHeart, FiFileText, FiShield, FiTrendingUp
 } from 'react-icons/fi';
-import { useGetAllPatientsQuery, useDeletePatientMutation, useAssignPatientMutation } from '../../features/patients/patientsApiSlice';
+import { useGetAllPatientsQuery, useDeletePatientMutation } from '../../features/patients/patientsApiSlice';
 import { selectCurrentUser } from '../../features/auth/authSlice';
 import { formatPatientsForExport, exportData } from '../../utils/exportUtils';
 import Card from '../../components/Card';
@@ -17,8 +16,6 @@ import Input from '../../components/Input';
 import Table from '../../components/Table';
 import Pagination from '../../components/Pagination';
 import Badge from '../../components/Badge';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import Alert from '../../components/Alert';
 import { isAdmin, isMWO, isJrSr } from '../../utils/constants';
 
 const PatientsPage = () => {
@@ -41,22 +38,9 @@ const PatientsPage = () => {
     pollingInterval: 30000, // Auto-refresh every 30 seconds
     refetchOnMountOrArgChange: true,
   });
-  // console.log('data', data);
+ 
   const [deletePatient] = useDeletePatientMutation();
-  // const [assignPatient, { isLoading: isAssigning }] = useAssignPatientMutation();
-
-  // const handleAssign = async (patient) => {
-  //   const doctorId = prompt('Enter Doctor User ID to assign:');
-  //   if (!doctorId) return;
-  //   const roomNo = prompt('Enter Room No (optional):') || '';
-  //   try {
-  //     await assignPatient({ patient_id: patient.id, assigned_doctor: Number(doctorId), room_no: roomNo }).unwrap();
-  //     toast.success('Patient assigned');
-  //     refetch();
-  //   } catch (err) {
-  //     toast.error(err?.data?.message || 'Failed to assign');
-  //   }
-  // };
+ 
 
   // Helper function to extract a single patient ID from row data
   const getPatientId = (row) => {
@@ -99,31 +83,26 @@ const PatientsPage = () => {
 
   // Handle view patient details
   const handleView = (row) => {
-    console.log('[handleView] Row data:', row);
+   
     const patientId = getPatientId(row);
     
     if (!patientId) {
       toast.error('Invalid patient ID. Unable to view patient details.');
-      console.error('[handleView] Failed to extract patient ID from row:', row);
       return;
     }
-    
-    console.log(`[handleView] Navigating to patient ID: ${patientId}`);
+
     navigate(`/patients/${patientId}`);
   };
 
   // Handle edit patient
   const handleEdit = (row) => {
-    console.log('[handleEdit] Row data:', row);
     const patientId = getPatientId(row);
     
     if (!patientId) {
       toast.error('Invalid patient ID. Unable to edit patient.');
-      console.error('[handleEdit] Failed to extract patient ID from row:', row);
       return;
     }
     
-    console.log(`[handleEdit] Navigating to edit patient ID: ${patientId}`);
     navigate(`/patients/${patientId}?edit=true`);
   };
 
@@ -132,43 +111,23 @@ const PatientsPage = () => {
       toast.error('Invalid patient ID. Cannot delete patient.');
       return;
     }
-
-    const confirmMessage = 'Are you sure you want to delete this patient?\n\n' +
-      'This will permanently delete:\n' +
-      '• Patient record\n' +
-      '• All clinical proformas\n' +
-      '• All ADL files\n' +
-      '• All prescriptions\n' +
-      '• All patient visits\n' +
-      '• All related records\n\n' +
-      'This action cannot be undone!';
-    
-    if (window.confirm(confirmMessage)) {
-      try {
-        console.log(`[handleDelete] Deleting patient ID: ${id}`);
-        const result = await deletePatient(id).unwrap();
-        console.log('[handleDelete] Delete successful:', result);
-        
-        toast.success('Patient and all related records deleted successfully');
-        
-        // Refetch the data to update the UI immediately
-        // Use setTimeout to ensure the mutation completes before refetching
-        setTimeout(async () => {
-          try {
-            await refetch();
-            console.log('[handleDelete] Data refetched successfully');
-          } catch (refetchError) {
-            console.error('[handleDelete] Error refetching data:', refetchError);
-            // Even if refetch fails, the cache should be invalidated by RTK Query
-          }
-        }, 100);
-      } catch (err) {
-        console.error('[handleDelete] Delete patient error:', err);
-        const errorMessage = err?.data?.message || err?.message || 'Failed to delete patient';
-        toast.error(errorMessage);
-      }
+  
+    // No browser confirm — directly attempt delete
+    try {
+      await deletePatient(id).unwrap();
+      toast.success('Patient and all related records deleted successfully');
+  
+      setTimeout(async () => {
+        try {
+          await refetch();
+        } catch (refetchError) {}
+      }, 100);
+  
+    } catch (err) {
+      toast.error(err?.data?.message || err?.message || 'Failed to delete patient');
     }
   };
+  
 
   const handleExport = () => {
     if (!data?.data?.patients || data.data.patients.length === 0) {
@@ -329,14 +288,6 @@ const PatientsPage = () => {
       ),
       render: (row) => {
         const patientId = getPatientId(row);
-        
-        // Debug: Log the patient ID being used for this row
-        if (patientId) {
-          console.log(`[Actions Column] Row patient ID: ${patientId}, Row name: ${row.name}, Row CR No: ${row.cr_no}`);
-        } else {
-          console.warn(`[Actions Column] No patient ID found for row:`, row);
-        }
-        
         return (
         <div className="flex gap-2">
             <Button 
@@ -369,18 +320,6 @@ const PatientsPage = () => {
                 <FiTrash2 className="w-4 h-4 text-red-600" />
               </Button>
             )}
-          {/* {user?.role === 'MWO' && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => handleAssign(row)} 
-              disabled={isAssigning}
-                className="h-9 w-9 p-0 bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border border-purple-200 hover:border-purple-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
-                title="Assign Doctor"
-            >
-              <FiUserPlus className="w-4 h-4 text-purple-600" />
-            </Button>
-          )} */}
         </div>
         );
       },

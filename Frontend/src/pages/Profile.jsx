@@ -18,7 +18,6 @@ import Input from '../components/Input';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
 import { formatDate } from '../utils/formatters';
-import { getRoleDisplayName } from '../utils/constants';
 
 const Profile = () => {
   const user = useSelector(selectCurrentUser);
@@ -152,33 +151,6 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="space-y-6 p-4 sm:p-6 lg:p-8">
-        {/* Enhanced Header */}
-        {/* <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-primary-600/10 to-primary-800/5 rounded-2xl"></div>
-          <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-6 sm:p-8 shadow-lg border border-white/50">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl blur-sm opacity-50"></div>
-                <div className="relative p-4 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl shadow-lg">
-                  <FiUser className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 bg-clip-text text-transparent">
-                  My Profile
-                </h1>
-                <p className="text-gray-600 mt-2 text-base sm:text-lg">
-                  Manage your account settings and security preferences
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                  {profile?.name?.charAt(0)?.toUpperCase() || 'U'}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div> */}
 
         {/* Enhanced Tabs */}
         <Card className="shadow-lg border border-gray-200/50 bg-white/90 backdrop-blur-sm overflow-hidden p-0">

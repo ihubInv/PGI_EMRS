@@ -1,23 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { 
-  FiCalendar, FiUser, FiPhone, FiMapPin, FiClock, FiEye, FiFilter, 
-  FiRefreshCw, FiPlusCircle, FiFileText, FiUsers, FiHeart, FiShield, 
-  FiTrendingUp 
+  FiUser, FiPhone,  FiClock, FiEye,
+  FiRefreshCw, FiPlusCircle, FiFileText, FiUsers,  FiShield
 } from 'react-icons/fi';
-import { useGetAllPatientsQuery, useGetTodayPatientsQuery } from '../../features/patients/patientsApiSlice';
+import { useGetAllPatientsQuery, } from '../../features/patients/patientsApiSlice';
 import { useGetClinicalProformaByPatientIdQuery } from '../../features/clinical/clinicalApiSlice';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
-import Input from '../../components/Input';
-import Select from '../../components/Select';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../features/auth/authSlice';
 import { isAdmin, isMWO, isJrSr } from '../../utils/constants';
 
 // Component to check for existing proforma and render patient row
 const PatientRow = ({ patient, activeTab, navigate }) => {
-  const { data: proformaData, refetch: refetchProformas, isLoading: proformasLoading } = useGetClinicalProformaByPatientIdQuery(
+  const { data: proformaData, refetch: refetchProformas } = useGetClinicalProformaByPatientIdQuery(
     patient.id, 
     { 
       skip: !patient.id,
@@ -212,7 +209,6 @@ const ClinicalTodayPatients = () => {
   const tabFromUrl = searchParams.get('tab');
   const activeTab = tabFromUrl === 'existing' ? 'existing' : 'new';
   
-  const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     sex: '',
     age_group: '',
@@ -282,53 +278,7 @@ const ClinicalTodayPatients = () => {
   };
 
 
-
-
-  const handleDateChange = (e) => {
-    setSelectedDate(e.target.value);
-    setCurrentPage(1); // Reset to first page when date changes
-  };
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const clearFilters = () => {
-    setFilters({
-      sex: '',
-      age_group: '',
-      marital_status: '',
-      occupation: '',
-      religion: '',
-      family_type: '',
-      locality: '',
-      category: '',
-      case_complexity: '',
-    });
-  };
-
-  // Filter function to show only today's patients
-  // const filterTodayPatients = (patients) => {
-  //   debugger
-  //   if (!patients || !Array.isArray(patients)) return [];
-    
-  //   const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
-    
-  //   return patients.filter(patient => {
-  //     // Check if patient has created_at date
-  //     if (!patient.created_at) return false;
-      
-  //     // Convert patient's created_at to date string
-  //     const patientDate = new Date(patient.created_at).toISOString().split('T')[0];
-      
-  //     // Return true if patient was created today
-  //     return patientDate === today;
-  //   });
-  // };
+ 
 
   // Helper: get YYYY-MM-DD string in IST for any date-like input
   const toISTDateString = (dateInput) => {
@@ -340,10 +290,6 @@ const ClinicalTodayPatients = () => {
     }
   };
 
-  // Filter to only include patients created on selectedDate (IST) OR with visits on selectedDate
-  // Patients can appear in "Today's Patients" if:
-  // 1. They were created today (new patient registration by MWO), OR
-  // 2. They have a visit today (follow-up visit for existing patient)
   const filterTodayPatients = (patients) => {
     if (!Array.isArray(patients)) return [];
 
@@ -417,7 +363,7 @@ const ClinicalTodayPatients = () => {
     // Other roles: default deny
     return false;
   });
-  console.log("Today's patients:", todayPatients);
+
   
   // Separate patients into new and existing
   const newPatients = todayPatients.filter(isNewPatient);
@@ -474,42 +420,7 @@ const ClinicalTodayPatients = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="w-full px-4 sm:px-6 lg:px-8 space-y-6 py-6">
-        {/* Enhanced Header */}
-        {/* <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-primary-600/10 to-primary-800/5 rounded-2xl"></div>
-          <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-6 sm:p-8 shadow-lg border border-white/50">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl blur-sm opacity-50"></div>
-                <div className="relative p-4 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl shadow-lg">
-                  <FiUsers className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 bg-clip-text text-transparent">
-                  Today's Patients
-                </h1>
-                <p className="text-gray-600 mt-2 text-base sm:text-lg">
-                  Department of Psychiatry
-                </p>
-                <p className="text-sm text-gray-500 mt-1">
-                  Postgraduate Institute of Medical Education & Research, Chandigarh
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  className="bg-white/80 border-2 border-primary-200 hover:bg-primary-50 hover:border-primary-300 shadow-sm transition-all duration-200"
-                  onClick={() => refetch()}
-                  disabled={isFetching}
-                >
-                  <FiRefreshCw className={`mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-                  {isFetching ? 'Refreshing...' : 'Refresh'}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div> */}
+      
 
         {/* Enhanced Tabs */}
         <Card className="shadow-lg border border-gray-200/50 bg-white/90 backdrop-blur-sm overflow-hidden">
@@ -562,77 +473,6 @@ const ClinicalTodayPatients = () => {
             </button>
           </div>
         </Card>
-
-        {/* Enhanced Stats Cards */}
-        {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-sm">
-                  <FiUsers className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">
-                    {activeTab === 'new' ? 'New Patients' : 'Existing Patients'}
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{filteredPatients.length}</p>
-                </div>
-              </div>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-blue-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          </div>
-          
-          <div className="group relative bg-gradient-to-br from-emerald-50 to-green-100/50 rounded-xl p-5 border border-emerald-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg shadow-sm">
-                  <FiUser className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Male</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {filteredPatients.filter(p => p.sex === 'M').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-green-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          </div>
-          
-          <div className="group relative bg-gradient-to-br from-pink-50 to-rose-100/50 rounded-xl p-5 border border-pink-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-pink-500 to-rose-600 rounded-lg shadow-sm">
-                  <FiHeart className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Female</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {filteredPatients.filter(p => p.sex === 'F').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-pink-400 to-rose-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          </div>
-          
-          <div className="group relative bg-gradient-to-br from-amber-50 to-orange-100/50 rounded-xl p-5 border border-amber-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg shadow-sm">
-                  <FiTrendingUp className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Complex Cases</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {filteredPatients.filter(p => p.case_complexity === 'complex' || p.has_adl_file).length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-orange-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          </div>
-        </div> */}
 
         {/* Patients List */}
         <Card className="shadow-lg border border-gray-200/50 bg-white/90 backdrop-blur-sm">

@@ -19,7 +19,6 @@ import Table from '../../components/Table';
 import Pagination from '../../components/Pagination';
 import Badge from '../../components/Badge';
 import { formatDate } from '../../utils/formatters';
-import { getRoleDisplayName } from '../../utils/constants';
 
 const UsersPage = () => {
   const [page, setPage] = useState(1);
@@ -286,9 +285,6 @@ const UsersPage = () => {
     },
   };
 
-  const totalUsers = data?.data?.pagination?.total || 0;
-  const activeUsers = data?.data?.users?.filter(u => u.is_active).length || 0;
-  const usersWith2FA = data?.data?.users?.filter(u => u.two_factor_enabled).length || 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -316,68 +312,6 @@ const UsersPage = () => {
                   </div>
                 </div>
                 
-                {/* Enhanced Stats Cards */}
-                {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-sm">
-                          <FiUsers className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Total Users</p>
-                          <p className="text-2xl font-bold text-gray-900 mt-1">{totalUsers}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-blue-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  </div>
-                  
-                  <div className="group relative bg-gradient-to-br from-emerald-50 to-green-100/50 rounded-xl p-5 border border-emerald-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg shadow-sm">
-                          <FiUserCheck className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Active Users</p>
-                          <p className="text-2xl font-bold text-gray-900 mt-1">{activeUsers}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-green-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  </div>
-                  
-                  <div className="group relative bg-gradient-to-br from-purple-50 to-pink-100/50 rounded-xl p-5 border border-purple-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg shadow-sm">
-                          <FiKey className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">2FA Enabled</p>
-                          <p className="text-2xl font-bold text-gray-900 mt-1">{usersWith2FA}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-400 to-pink-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  </div>
-                  
-                  <div className="group relative bg-gradient-to-br from-amber-50 to-orange-100/50 rounded-xl p-5 border border-amber-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg shadow-sm">
-                          <FiShield className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">System Administrators</p>
-                          <p className="text-2xl font-bold text-gray-900 mt-1">{roleStats['System Administrator'].count}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-orange-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  </div>
-                </div> */}
 
                 {/* Role Breakdown */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

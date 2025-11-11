@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useGetAllPatientsQuery } from '../features/patients/patientsApiSlice';
 import Card from '../components/Card';
 import Button from '../components/Button';
-import Badge from '../components/Badge';
+
 
 const ApiTest = () => {
   const [testPatients, setTestPatients] = useState(false);
@@ -62,7 +62,7 @@ const ApiTest = () => {
       </Card>
 
       {/* Direct API Call Test */}
-      <Card title="Manual API Call Test">
+      {/* <Card title="Manual API Call Test">
         <div className="space-y-4">
           <p className="text-sm text-gray-600">
             Open browser console (F12) and run this command:
@@ -78,7 +78,7 @@ const ApiTest = () => {
 .catch(err => console.error('Error:', err));`}
           </pre>
         </div>
-      </Card>
+      </Card> */}
     </div>
   );
 };

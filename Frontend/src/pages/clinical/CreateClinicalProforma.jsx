@@ -747,22 +747,7 @@ const CreateClinicalProforma = ({
     { medicine: '', dosage: '', when: '', frequency: '', duration: '', qty: '', details: '', notes: '' }
   ]);
 
-  // Prescription helper functions
-  const addPrescriptionRow = () => {
-    setPrescriptions((prev) => ([...prev, { medicine: '', dosage: '', when: '', frequency: '', duration: '', qty: '', details: '', notes: '' }]));
-  };
-
-  const updatePrescriptionCell = (rowIdx, field, value) => {
-    setPrescriptions((prev) => prev.map((r, i) => i === rowIdx ? { ...r, [field]: value } : r));
-  };
-
-  const removePrescriptionRow = (rowIdx) => {
-    setPrescriptions((prev) => prev.filter((_, i) => i !== rowIdx));
-  };
-
-  const clearAllPrescriptions = () => {
-    setPrescriptions([{ medicine: '', dosage: '', when: '', frequency: '', duration: '', qty: '', details: '', notes: '' }]);
-  };
+  
   
   // Always 3 steps: Basic Info, Clinical Proforma, Additional Detail (conditional)
   const totalSteps = 3;
@@ -1357,28 +1342,6 @@ const CreateClinicalProforma = ({
     try {
       const stepData = prepareFormData(step);
       
-      // Log Step 3 data for debugging
-      if (step === 3) {
-        console.log('[CreateClinicalProforma] Step 3 (ADL) data being saved:', {
-          doctor_decision: stepData.doctor_decision,
-          requires_adl_file: stepData.requires_adl_file,
-          adl_reasoning: stepData.adl_reasoning,
-          adlFileId: adlFileId,
-          complexCaseFieldsCount: Object.keys(stepData).filter(key => 
-            key.includes('history_') || key.includes('informants') || key.includes('complaints_') ||
-            key.includes('past_history_') || key.includes('family_history_') || key.includes('physical_') ||
-            key.includes('mse_') || key.includes('education_') || key.includes('occupation_') ||
-            key.includes('sexual_') || key.includes('religion_') || key.includes('living_') ||
-            key.includes('home_situation_') || key.includes('personal_') || key.includes('development_') ||
-            key.includes('diagnostic_') || key.includes('premorbid_') || key.includes('provisional_diagnosis') ||
-            key.includes('treatment_plan') || key.includes('consultant_comments')
-          ).length,
-          sampleComplexCaseFields: Object.keys(stepData).filter(key => 
-            key.includes('history_') || key.includes('informants') || key.includes('physical_')
-          ).slice(0, 5)
-        });
-      }
-      
       // ✅ Step 3: Update ADL file directly if it exists
       if (step === 3 && adlFileId) {
         try {
@@ -1438,7 +1401,6 @@ const CreateClinicalProforma = ({
           
           if (Object.keys(adlUpdateData).length > 0) {
             await updateADLFile({ id: adlFileId, ...adlUpdateData }).unwrap();
-            console.log('[CreateClinicalProforma] ✅ Step 3: ADL file updated directly');
           }
         } catch (adlError) {
           console.error('[CreateClinicalProforma] Failed to update ADL file directly:', adlError);
@@ -1614,7 +1576,6 @@ const CreateClinicalProforma = ({
     }
 
     try {
-      const join = (arr) => Array.isArray(arr) ? arr.join(', ') : arr;
       
       // Format prescriptions: filter out empty rows and create formatted text
       const validPrescriptions = prescriptions.filter(p => 
@@ -1640,7 +1601,7 @@ const CreateClinicalProforma = ({
 
       // If proforma already exists (from previous steps), update it
       if (savedProformaId) {
-        const result = await updateProforma({ id: savedProformaId, ...submitData }).unwrap();
+      await updateProforma({ id: savedProformaId, ...submitData }).unwrap();
         
         // Clear saved prescription from localStorage after successful submission
         try {

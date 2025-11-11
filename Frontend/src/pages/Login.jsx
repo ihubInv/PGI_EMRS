@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
@@ -7,10 +7,8 @@ import { setCredentials, setOTPRequired, selectOTPRequired, selectLoginData } fr
 import {
   Eye,
   EyeOff,
-  Stethoscope,
   Lock,
   Mail,
-  CheckCircle,
   Users,
   FileText,
   Shield,
@@ -233,7 +231,7 @@ const Login = () => {
                 <img src={PGI_Logo} alt="PGIMER Logo" className="object-contain w-10 h-10" />
               </div>
               <h2 className="text-2xl font-bold text-gray-800">Department of Psychiatry</h2>
-              <p className="text-sm text-gray-600">DPGIMER Chandigarh </p>
+              <p className="text-sm text-gray-600">PGIMER Chandigarh </p>
             </div>
 
             {/* Desktop Logo */}
