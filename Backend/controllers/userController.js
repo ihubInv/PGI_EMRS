@@ -446,10 +446,20 @@ class UserController {
       const limit = parseInt(req.query.limit) || 100;
 
       // Get users with role JR or SR
+      // Note: Database stores full role names like 'Faculty Residents (Junior Resident (JR))'
+      // and 'Faculty Residents (Senior Resident (SR))', not just 'JR' or 'SR'
       const result = await User.findAll(page, limit, null);
 
-      // Filter for JR and SR roles
-      const doctors = result.users.filter(user => user.role === 'JR' || user.role === 'SR');
+      // Filter for JR and SR roles - check for full role names or if role contains JR/SR
+      const doctors = result.users.filter(user => {
+        const role = user.role || '';
+        return role === 'Faculty Residents (Junior Resident (JR))' || 
+               role === 'Faculty Residents (Senior Resident (SR))' ||
+               role === 'JR' || 
+               role === 'SR' ||
+               (role.includes('(JR)') && role.includes('Faculty Residents')) ||
+               (role.includes('(SR)') && role.includes('Faculty Residents'));
+      });
 
       res.json({
         success: true,
@@ -459,7 +469,7 @@ class UserController {
             page,
             limit,
             total: doctors.length,
-            pages: 1
+            pages: Math.ceil(doctors.length / limit)
           }
         }
       });

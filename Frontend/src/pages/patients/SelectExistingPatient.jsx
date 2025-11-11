@@ -346,8 +346,10 @@ const SelectExistingPatient = () => {
                             value={newDoctorId}
                             onChange={(e) => setNewDoctorId(e.target.value)}
                             options={(usersData?.data?.users || [])
-                              .filter((u) => isJR(u.role) || isSR(u.role))
-                              .map((u) => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
+                              .map((u) => ({ 
+                                value: String(u.id), 
+                                label: `${u.name} (${isJR(u.role) ? 'JR' : isSR(u.role) ? 'SR' : u.role})` 
+                              }))}
                             placeholder="Select doctor"
                             className="flex-1"
                           />

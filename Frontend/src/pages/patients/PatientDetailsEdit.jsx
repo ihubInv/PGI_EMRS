@@ -584,8 +584,10 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                       value={localFormData.assigned_doctor_id || ''}
                       onChange={handlePatientChange}
                     options={(usersData?.data?.users || [])
-                        .filter(u => isJR(u.role) || isSR(u.role))
-                      .map(u => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
+                      .map(u => ({ 
+                        value: String(u.id), 
+                        label: `${u.name} (${isJR(u.role) ? 'JR' : isSR(u.role) ? 'SR' : u.role})` 
+                      }))}
                     placeholder="Select doctor (optional)"
                   />
                 </div>

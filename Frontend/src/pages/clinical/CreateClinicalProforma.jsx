@@ -11,7 +11,7 @@ import Select from '../../components/Select';
 import Textarea from '../../components/Textarea';
 import Button from '../../components/Button';
 import { FiEdit3, FiClipboard, FiCheckSquare, FiList, FiActivity, FiHeart, FiUser, FiFileText, FiPlus, FiX, FiSave, FiClock, FiChevronDown, FiChevronUp, FiArrowRight, FiArrowLeft, FiCheck, FiTrash2 } from 'react-icons/fi';
-import { VISIT_TYPES, CASE_SEVERITY, DOCTOR_DECISION } from '../../utils/constants';
+import { VISIT_TYPES, CASE_SEVERITY, DOCTOR_DECISION, isJR, isSR } from '../../utils/constants';
 import { useGetClinicalOptionsQuery, useAddClinicalOptionMutation, useDeleteClinicalOptionMutation } from '../../features/clinical/clinicalApiSlice';
 import icd11Codes from '../../assets/ICD11_Codes.json';
 
@@ -505,7 +505,6 @@ const CreateClinicalProforma = ({
   
   // Fetch doctors list for assignment by MWO
   const { data: doctorsData } = useGetDoctorsQuery({ page: 1, limit: 100 });
-
   const [formData, setFormData] = useState({
     patient_id: patientIdFromQuery || '',
     visit_date: new Date().toISOString().split('T')[0],
@@ -1933,7 +1932,7 @@ const CreateClinicalProforma = ({
                 onChange={handleChange}
                 options={(doctorsData?.data?.users || []).map(doctor => ({
                   value: String(doctor.id),
-                  label: `${doctor.name} (${doctor.role})`
+                  label: `${doctor.name} (${isJR(doctor.role) ? 'JR' : isSR(doctor.role) ? 'SR' : doctor.role})`
                 }))}
                 placeholder="Select doctor (optional)"
                 error={errors.assigned_doctor}

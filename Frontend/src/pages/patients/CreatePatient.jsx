@@ -1032,8 +1032,10 @@ const CreatePatient = () => {
                       value={formData.assigned_doctor_id}
                       onChange={handlePatientChange}
                       options={(usersData?.data?.users || [])
-                        .filter(u => u.role === 'JR' || u.role === 'SR')
-                        .map(u => ({ value: String(u.id), label: `${u.name} (${u.role})` }))}
+                        .map(u => ({ 
+                          value: String(u.id), 
+                          label: `${u.name} (${isJR(u.role) ? 'JR' : isSR(u.role) ? 'SR' : u.role})` 
+                        }))}
                       placeholder="Select doctor (optional)"
                       className="bg-gradient-to-r from-violet-50 to-purple-50"
                       containerClassName="relative z-[9999]"
