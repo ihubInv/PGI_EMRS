@@ -1,9 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
-import { 
-  FiUser, FiUsers, FiBriefcase, FiDollarSign, FiMapPin, FiPhone, FiFileText, 
-  FiFolder,  FiCalendar, FiHome, FiActivity, FiHeart, FiClock, 
-  FiShield,  FiLayers, FiHash,  FiEdit3, FiBookOpen,
-  FiNavigation,  FiUserCheck, FiInfo, FiChevronDown, FiChevronUp, FiTag,
+import {
+  FiUser, FiUsers, FiBriefcase, FiDollarSign, FiMapPin, FiPhone, FiFileText,
+  FiFolder, FiCalendar, FiHome, FiActivity, FiHeart, FiClock,
+  FiShield, FiLayers, FiHash, FiEdit3, FiBookOpen,
+  FiNavigation, FiUserCheck, FiInfo, FiChevronDown, FiChevronUp, FiTag,
   FiPackage
 } from 'react-icons/fi';
 import Card from '../../components/Card';
@@ -11,10 +11,10 @@ import Badge from '../../components/Badge';
 import Select from '../../components/Select';
 import Textarea from '../../components/Textarea';
 import { formatDate, formatDateTime } from '../../utils/formatters';
-import { 
-  SEX_OPTIONS, MARITAL_STATUS, FAMILY_TYPE, LOCALITY, RELIGION, 
-  AGE_GROUP_OPTIONS, OCCUPATION_OPTIONS, EDUCATION_OPTIONS, 
-  MOBILITY_OPTIONS, REFERRED_BY_OPTIONS, INDIAN_STATES, UNIT_DAYS_OPTIONS 
+import {
+  SEX_OPTIONS, MARITAL_STATUS, FAMILY_TYPE, LOCALITY, RELIGION,
+  AGE_GROUP_OPTIONS, OCCUPATION_OPTIONS, EDUCATION_OPTIONS,
+  MOBILITY_OPTIONS, REFERRED_BY_OPTIONS, INDIAN_STATES, UNIT_DAYS_OPTIONS
 } from '../../utils/constants';
 import { isJR, isSR, isMWO, isAdmin, isJrSr } from '../../utils/constants';
 import { useGetPrescriptionsByProformaIdQuery } from '../../features/prescriptions/prescriptionApiSlice';
@@ -76,9 +76,8 @@ const IconInput = ({ icon, label, ...props }) => {
         )}
         <input
           {...props}
-          className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 hover:border-gray-300 ${
-            icon ? 'pl-10' : ''
-          } ${props.className || ''}`}
+          className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 hover:border-gray-300 ${icon ? 'pl-10' : ''
+            } ${props.className || ''}`}
         />
       </div>
     </div>
@@ -133,17 +132,17 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
   const [adlFormData, setAdlFormData] = useState({});
 
   // Filter ADL files for this patient
-  const patientAdlFiles=adlData?.data?.adlFiles || [];
-  
+  const patientAdlFiles = adlData?.data?.adlFiles || [];
+
   // Get clinical proformas for this patient
   const patientProformas = clinicalData?.data?.proformas || [];
 
   // Fetch prescriptions for all proformas
   const proformaIds = patientProformas.map(p => p.id).filter(Boolean);
-  
+
   // Fetch prescriptions for each proforma - using hooks in a stable array
   // Note: This is safe as long as proformaIds array length is stable
-  const prescriptionResults = proformaIds.map(proformaId => 
+  const prescriptionResults = proformaIds.map(proformaId =>
     useGetPrescriptionsByProformaIdQuery(proformaId, { skip: !proformaId })
   );
 
@@ -176,8 +175,8 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
   const prescriptionsByVisit = useMemo(() => {
     const grouped = {};
     allPrescriptions.forEach(prescription => {
-      const visitDate = prescription.visit_date 
-        ? formatDate(prescription.visit_date) 
+      const visitDate = prescription.visit_date
+        ? formatDate(prescription.visit_date)
         : 'Unknown Date';
       if (!grouped[visitDate]) {
         grouped[visitDate] = {
@@ -215,7 +214,7 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
     if (patientAdlFiles.length > 0) {
       // Use the first/latest ADL file for editing
       const latestADL = patientAdlFiles[0];
-      
+
       // Parse JSON fields if they're strings
       const parseJSONField = (field) => {
         if (!field) return [];
@@ -475,40 +474,40 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
     <div className="space-y-6">
       {/* Card 1: Patient Details */}
       <Card className="shadow-lg border-0 bg-white">
-        <div 
+        <div
           className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
           onClick={() => toggleCard('patient')}
         >
           <div className="flex items-center gap-4">
             <div className="p-3 bg-blue-100 rounded-lg">
               <FiUser className="h-6 w-6 text-blue-600" />
-          </div>
+            </div>
             <div>
               <h3 className="text-xl font-bold text-gray-900">Patient Details</h3>
               <p className="text-sm text-gray-500 mt-1">{patient?.name || 'N/A'} - {patient?.cr_no || 'N/A'}</p>
-        </div>
-              </div>
+            </div>
+          </div>
           {expandedCards.patient ? (
             <FiChevronUp className="h-6 w-6 text-gray-500" />
           ) : (
             <FiChevronDown className="h-6 w-6 text-gray-500" />
           )}
-            </div>
+        </div>
 
         {expandedCards.patient && (
           <div className="p-6">
-          <div className="space-y-8">
+            <div className="space-y-8">
               {/* Basic Information Section */}
               <div>
                 <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Basic Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <IconInput
-                  icon={<FiUser className="w-4 h-4" />}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <IconInput
+                    icon={<FiUser className="w-4 h-4" />}
                     label="Name"
-                  name="name"
+                    name="name"
                     value={localFormData.name || ''}
                     onChange={handlePatientChange}
-                  required
+                    required
                   />
                   <div>
                     <label className="text-sm font-medium text-gray-600 mb-2 block">CR Number</label>
@@ -518,24 +517,24 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                     <label className="text-sm font-medium text-gray-600 mb-2 block">PSY Number</label>
                     <p className="text-base font-semibold text-gray-900">{patient?.psy_no || 'N/A'}</p>
                   </div>
-                <RadioGroup
-                  label="Sex"
-                  name="sex"
+                  <RadioGroup
+                    label="Sex"
+                    name="sex"
                     value={localFormData.sex || ''}
                     onChange={handlePatientChange}
-                  options={SEX_OPTIONS}
-                  icon={<FiHeart className="w-4 h-4" />}
-                />
-                <IconInput
-                  icon={<FiClock className="w-4 h-4" />}
-                  label="Age"
-                  type="number"
-                  name="actual_age"
+                    options={SEX_OPTIONS}
+                    icon={<FiHeart className="w-4 h-4" />}
+                  />
+                  <IconInput
+                    icon={<FiClock className="w-4 h-4" />}
+                    label="Age"
+                    type="number"
+                    name="actual_age"
                     value={localFormData.actual_age || ''}
                     onChange={handlePatientChange}
-                  min="0"
-                  max="150"
-                />
+                    min="0"
+                    max="150"
+                  />
                   <RadioGroup
                     label="Age Group"
                     name="age_group"
@@ -544,10 +543,10 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                     options={AGE_GROUP_OPTIONS}
                     icon={<FiUsers className="w-4 h-4" />}
                   />
-                <IconInput
-                  icon={<FiHome className="w-4 h-4" />}
+                  <IconInput
+                    icon={<FiHome className="w-4 h-4" />}
                     label="Room"
-                  name="assigned_room"
+                    name="assigned_room"
                     value={localFormData.assigned_room || ''}
                     onChange={handlePatientChange}
                   />
@@ -557,15 +556,14 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                     name="contact_number"
                     value={localFormData.contact_number || ''}
                     onChange={handlePatientChange}
-                />
+                  />
                   <div>
                     <label className="text-sm font-medium text-gray-600 mb-2 block">Status</label>
-                    <Badge 
-                      className={`${
-                        patient?.is_active 
-                          ? 'bg-green-100 text-green-800 border-green-200' 
+                    <Badge
+                      className={`${patient?.is_active
+                          ? 'bg-green-100 text-green-800 border-green-200'
                           : 'bg-gray-100 text-gray-800 border-gray-200'
-                      } text-sm font-medium`}
+                        } text-sm font-medium`}
                     >
                       {patient?.is_active ? 'Active' : 'Inactive'}
                     </Badge>
@@ -579,94 +577,92 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div>
                     <label className="text-sm font-medium text-gray-600 mb-2 block">Assigned Doctor</label>
-                  <Select
-                    name="assigned_doctor_id"
+                    <Select
+                      name="assigned_doctor_id"
                       value={localFormData.assigned_doctor_id || ''}
                       onChange={handlePatientChange}
-                    options={(usersData?.data?.users || [])
-                      .map(u => ({ 
-                        value: String(u.id), 
-                        label: `${u.name} (${isJR(u.role) ? 'JR' : isSR(u.role) ? 'SR' : u.role})` 
-                      }))}
-                    placeholder="Select doctor (optional)"
-                  />
-                </div>
+                      options={(usersData?.data?.users || [])
+                        .map(u => ({
+                          value: String(u.id),
+                          label: `${u.name} (${isJR(u.role) ? 'JR' : isSR(u.role) ? 'SR' : u.role})`
+                        }))}
+                      placeholder="Select doctor (optional)"
+                    />
+                  </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600 mb-2 block">Case Complexity</label>
-                    <Badge 
-                      className={`${
-                        patient?.case_complexity === 'complex' 
-                          ? 'bg-orange-100 text-orange-800 border-orange-200' 
+                    <Badge
+                      className={`${patient?.case_complexity === 'complex'
+                          ? 'bg-orange-100 text-orange-800 border-orange-200'
                           : 'bg-green-100 text-green-800 border-green-200'
-                      } text-sm font-medium`}
+                        } text-sm font-medium`}
                     >
                       {patient?.case_complexity === 'complex' ? 'Complex' : 'Simple'}
                     </Badge>
-              </div>
+                  </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600 mb-2 block">ADL File</label>
-                    <Badge 
-                      className={`${
-                        patient?.has_adl_file 
-                          ? 'bg-green-100 text-green-800 border-green-200' 
+                    <Badge
+                      className={`${patient?.has_adl_file
+                          ? 'bg-green-100 text-green-800 border-green-200'
                           : 'bg-gray-100 text-gray-800 border-gray-200'
-                      } text-sm font-medium`}
+                        } text-sm font-medium`}
                     >
                       {patient?.has_adl_file ? 'Available' : 'Not Available'}
                     </Badge>
-            </div>
-          </div>
+                  </div>
+                </div>
               </div>
 
               {/* Personal Information Section */}
               <div>
                 <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Personal Information</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <RadioGroup
-              label="Marital Status"
-              name="marital_status"
+                  <RadioGroup
+                    label="Marital Status"
+                    name="marital_status"
                     value={localFormData.marital_status || ''}
                     onChange={handlePatientChange}
-              options={MARITAL_STATUS}
-              icon={<FiHeart className="w-4 h-4" />}
-              />
-              <IconInput
-                icon={<FiCalendar className="w-4 h-4" />}
-                label="Year of Marriage"
-                type="number"
-                name="year_of_marriage"
+                    options={MARITAL_STATUS}
+                    icon={<FiHeart className="w-4 h-4" />}
+                  />
+                  <IconInput
+                    icon={<FiCalendar className="w-4 h-4" />}
+                    label="Year of Marriage"
+                    type="number"
+                    name="year_of_marriage"
                     value={localFormData.year_of_marriage || ''}
                     onChange={handlePatientChange}
-                min="1900"
-                max={new Date().getFullYear()}
-              />
-              <IconInput
-                icon={<FiUsers className="w-4 h-4" />}
-                label="Number of Children"
-                type="number"
-                name="no_of_children"
+                    min="1900"
+                    max={new Date().getFullYear()}
+                  />
+                  <IconInput
+                    icon={<FiUsers className="w-4 h-4" />}
+                    label="Number of Children"
+                    type="number"
+                    name="no_of_children"
                     value={localFormData.no_of_children || ''}
                     onChange={handlePatientChange}
-                min="0"
-              />
-              <IconInput
-                icon={<FiUsers className="w-4 h-4" />}
+                    min="0"
+                  />
+                  <IconInput
+                    icon={<FiUsers className="w-4 h-4" />}
                     label="Number of Children (Male)"
-                type="number"
-                name="no_of_children_male"
+                    type="number"
+                    name="no_of_children_male"
                     value={localFormData.no_of_children_male || ''}
                     onChange={handlePatientChange}
-                min="0"
-              />
-              <IconInput
-                icon={<FiUsers className="w-4 h-4" />}
+                    min="0"
+                  />
+                  <IconInput
+                    icon={<FiUsers className="w-4 h-4" />}
                     label="Number of Children (Female)"
-                type="number"
-                name="no_of_children_female"
+                    type="number"
+                    name="no_of_children_female"
                     value={localFormData.no_of_children_female || ''}
                     onChange={handlePatientChange}
-                min="0"
-              />
+                    min="0"
+                  />
                   <DateInput
                     icon={<FiCalendar className="w-4 h-4" />}
                     label="Date of Birth"
@@ -674,84 +670,84 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                     value={patient?.dob ? patient.dob.split('T')[0] : ''}
                     onChange={handlePatientChange}
                   />
-            <RadioGroup
-              label="Occupation"
-              name="occupation"
+                  <RadioGroup
+                    label="Occupation"
+                    name="occupation"
                     value={localFormData.occupation || ''}
                     onChange={handlePatientChange}
-              options={OCCUPATION_OPTIONS}
-              icon={<FiBriefcase className="w-4 h-4" />}
-            />
-            <IconInput
-              icon={<FiEdit3 className="w-4 h-4" />}
-              label="Actual Occupation"
-              name="actual_occupation"
+                    options={OCCUPATION_OPTIONS}
+                    icon={<FiBriefcase className="w-4 h-4" />}
+                  />
+                  <IconInput
+                    icon={<FiEdit3 className="w-4 h-4" />}
+                    label="Actual Occupation"
+                    name="actual_occupation"
                     value={localFormData.actual_occupation || ''}
                     onChange={handlePatientChange}
                   />
                   <RadioGroup
                     label="Education Level"
-                        name="education_level"
+                    name="education_level"
                     value={localFormData.education_level || ''}
                     onChange={handlePatientChange}
                     options={EDUCATION_OPTIONS}
                     icon={<FiBookOpen className="w-4 h-4" />}
                   />
                 </div>
-                  </div>
+              </div>
 
-        {/* Financial Information */}
+              {/* Financial Information */}
               <div>
                 <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Financial Information</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <IconInput
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <IconInput
                     icon={<FiDollarSign className="w-4 h-4" />}
-                label="Patient Income (₹)"
-                type="number"
-                name="patient_income"
+                    label="Patient Income (₹)"
+                    type="number"
+                    name="patient_income"
                     value={localFormData.patient_income || ''}
                     onChange={handlePatientChange}
-                min="0"
-              />
-              <IconInput
+                    min="0"
+                  />
+                  <IconInput
                     icon={<FiDollarSign className="w-4 h-4" />}
-                label="Family Income (₹)"
-                type="number"
-                name="family_income"
+                    label="Family Income (₹)"
+                    type="number"
+                    name="family_income"
                     value={localFormData.family_income || ''}
                     onChange={handlePatientChange}
-                min="0"
-              />
-            </div>
-          </div>
+                    min="0"
+                  />
+                </div>
+              </div>
 
-        {/* Family Information */}
+              {/* Family Information */}
               <div>
                 <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Family Information</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <RadioGroup
+                  <RadioGroup
                     label="Religion"
-                name="religion"
+                    name="religion"
                     value={localFormData.religion || ''}
                     onChange={handlePatientChange}
-                options={RELIGION}
-                icon={<FiShield className="w-4 h-4" />}
+                    options={RELIGION}
+                    icon={<FiShield className="w-4 h-4" />}
                   />
-              <RadioGroup
+                  <RadioGroup
                     label="Family Type"
-                name="family_type"
+                    name="family_type"
                     value={localFormData.family_type || ''}
                     onChange={handlePatientChange}
-                options={FAMILY_TYPE}
-                icon={<FiUsers className="w-4 h-4" />}
+                    options={FAMILY_TYPE}
+                    icon={<FiUsers className="w-4 h-4" />}
                   />
-              <RadioGroup
+                  <RadioGroup
                     label="Locality"
-                name="locality"
+                    name="locality"
                     value={localFormData.locality || ''}
                     onChange={handlePatientChange}
-                options={LOCALITY}
-                icon={<FiMapPin className="w-4 h-4" />}
+                    options={LOCALITY}
+                    icon={<FiMapPin className="w-4 h-4" />}
                   />
                   <IconInput
                     icon={<FiUser className="w-4 h-4" />}
@@ -821,47 +817,47 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
               <div>
                 <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Referral & Mobility Information</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <IconInput
+                  <IconInput
                     icon={<FiMapPin className="w-4 h-4" />}
-              label="Distance from Hospital"
-              name="distance_from_hospital"
+                    label="Distance from Hospital"
+                    name="distance_from_hospital"
                     value={localFormData.distance_from_hospital || ''}
                     onChange={handlePatientChange}
-            />
-            <RadioGroup
-              label="Mobility"
-              name="mobility"
+                  />
+                  <RadioGroup
+                    label="Mobility"
+                    name="mobility"
                     value={localFormData.mobility || ''}
                     onChange={handlePatientChange}
-              options={MOBILITY_OPTIONS}
+                    options={MOBILITY_OPTIONS}
                     icon={<FiNavigation className="w-4 h-4" />}
-            />
-              <RadioGroup
-                label="Referred By"
-                name="referred_by"
+                  />
+                  <RadioGroup
+                    label="Referred By"
+                    name="referred_by"
                     value={localFormData.referred_by || ''}
                     onChange={handlePatientChange}
-                options={REFERRED_BY_OPTIONS}
+                    options={REFERRED_BY_OPTIONS}
                     icon={<FiUserCheck className="w-4 h-4" />}
-              />
-              <IconInput
+                  />
+                  <IconInput
                     icon={<FiInfo className="w-4 h-4" />}
-                label="Exact Source"
-                name="exact_source"
+                    label="Exact Source"
+                    name="exact_source"
                     value={localFormData.exact_source || ''}
                     onChange={handlePatientChange}
                   />
-              <DateInput
-                icon={<FiCalendar className="w-4 h-4" />}
-                label="Seen in Walk-in On"
-                name="seen_in_walk_in_on"
+                  <DateInput
+                    icon={<FiCalendar className="w-4 h-4" />}
+                    label="Seen in Walk-in On"
+                    name="seen_in_walk_in_on"
                     value={localFormData.seen_in_walk_in_on ? localFormData.seen_in_walk_in_on.split('T')[0] : ''}
                     onChange={handlePatientChange}
-              />
-              <DateInput
-                icon={<FiCalendar className="w-4 h-4" />}
-                label="Worked Up On"
-                name="worked_up_on"
+                  />
+                  <DateInput
+                    icon={<FiCalendar className="w-4 h-4" />}
+                    label="Worked Up On"
+                    name="worked_up_on"
                     value={localFormData.worked_up_on ? localFormData.worked_up_on.split('T')[0] : ''}
                     onChange={handlePatientChange}
                   />
@@ -871,9 +867,9 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                     name="school_college_office"
                     value={localFormData.school_college_office || ''}
                     onChange={handlePatientChange}
-              />
-            </div>
-          </div>
+                  />
+                </div>
+              </div>
 
               {/* Registration Details */}
               <div>
@@ -928,8 +924,8 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                     value={localFormData.category || ''}
                     onChange={handlePatientChange}
                   />
+                </div>
               </div>
-            </div>
 
               {/* Additional Address Information */}
               <div>
@@ -937,16 +933,16 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium text-gray-600 mb-2 block">Local Address</label>
-                <Textarea
+                    <Textarea
                       name="local_address"
                       value={localFormData.local_address || ''}
                       onChange={handlePatientChange}
-                  rows={3}
+                      rows={3}
                       className="w-full"
-                />
+                    />
+                  </div>
+                </div>
               </div>
-              </div>
-            </div>
 
               {/* Address Information */}
               <div>
@@ -954,14 +950,14 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium text-gray-600 mb-2 block">Present Address</label>
-                <Textarea
+                    <Textarea
                       name="present_address"
                       value={localFormData.present_address || ''}
                       onChange={handlePatientChange}
-                  rows={3}
+                      rows={3}
                       className="w-full"
-                />
-              </div>
+                    />
+                  </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600 mb-2 block">Permanent Address</label>
                     <Textarea
@@ -970,19 +966,19 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                       onChange={handlePatientChange}
                       rows={3}
                       className="w-full"
-              />
-            </div>
-          </div>
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         )}
-        </Card>
+      </Card>
 
       {/* Card 2: Clinical Proforma - Hide for MWO */}
       {!isMWO(userRole) && patientProformas.length > 0 && (
         <Card className="shadow-lg border-0 bg-white">
-          <div 
+          <div
             className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
             onClick={() => toggleCard('clinical')}
           >
@@ -995,7 +991,7 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                 <p className="text-sm text-gray-500 mt-1">
                   {patientProformas.length} record{patientProformas.length > 1 ? 's' : ''} found
                 </p>
-            </div>
+              </div>
             </div>
             {expandedCards.clinical ? (
               <FiChevronUp className="h-6 w-6 text-gray-500" />
@@ -1006,14 +1002,14 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
 
           {expandedCards.clinical && (
             <div className="p-6">
-            <div className="space-y-6">
+              <div className="space-y-6">
                 {patientProformas.map((proforma, index) => (
                   <div key={proforma.id || index} className="border border-gray-200 rounded-lg p-6 bg-gray-50">
                     <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
                       <h4 className="text-lg font-semibold text-gray-900">Visit #{index + 1}</h4>
                       <span className="text-sm text-gray-500">{proforma.visit_date ? formatDate(proforma.visit_date) : 'N/A'}</span>
-                </div>
-                    
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       <DateInput
                         icon={<FiCalendar className="w-4 h-4" />}
@@ -1021,7 +1017,7 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                         name="visit_date"
                         value={clinicalFormData.visit_date || ''}
                         onChange={handleClinicalChange}
-                  />
+                      />
                       <div>
                         <label className="text-sm font-medium text-gray-600 mb-2 block">Visit Type</label>
                         <Select
@@ -1032,18 +1028,18 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                             { value: 'first_visit', label: 'First Visit' },
                             { value: 'follow_up', label: 'Follow-up' }
                           ]}
-                  />
-                </div>
-                <IconInput
-                  icon={<FiHome className="w-4 h-4" />}
+                        />
+                      </div>
+                      <IconInput
+                        icon={<FiHome className="w-4 h-4" />}
                         label="Room Number"
                         name="room_no"
                         value={clinicalFormData.room_no || ''}
                         onChange={handleClinicalChange}
-                />
+                      />
                       <div>
                         <label className="text-sm font-medium text-gray-600 mb-2 block">Case Severity</label>
-                  <Select
+                        <Select
                           name="case_severity"
                           value={clinicalFormData.case_severity || ''}
                           onChange={handleClinicalChange}
@@ -1052,9 +1048,9 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                             { value: 'moderate', label: 'Moderate' },
                             { value: 'severe', label: 'Severe' }
                           ]}
-                  />
-                </div>
-                <IconInput
+                        />
+                      </div>
+                      <IconInput
                         icon={<FiFileText className="w-4 h-4" />}
                         label="Decision"
                         name="decision"
@@ -1071,9 +1067,9 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                         onChange={handleClinicalChange}
                         rows={4}
                         className="w-full"
-                />
-              </div>
-            </div>
+                      />
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -1084,7 +1080,7 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
       {/* Card 3: Additional Details (ADL File) - Only show if ADL file exists, Hide for MWO */}
       {!isMWO(userRole) && patientAdlFiles.length > 0 && (
         <Card className="shadow-lg border-0 bg-white">
-          <div 
+          <div
             className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
             onClick={() => toggleCard('adl')}
           >
@@ -1117,7 +1113,7 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                         {file.adl_no && (
                           <p className="text-sm text-gray-600 mt-1">ADL Number: {file.adl_no}</p>
                         )}
-                </div>
+                      </div>
                       <div className="text-right">
                         <div>
                           <label className="text-sm font-medium text-gray-600 mb-2 block">File Status</label>
@@ -1132,9 +1128,9 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                               { value: 'active', label: 'Active' },
                               { value: 'archived', label: 'Archived' }
                             ]}
-                  />
-                </div>
-                </div>
+                          />
+                        </div>
+                      </div>
                     </div>
 
                     <div className="space-y-8">
@@ -1142,14 +1138,14 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                       <div>
                         <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Basic Information</h5>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <IconInput
+                          <IconInput
                             icon={<FiMapPin className="w-4 h-4" />}
                             label="Physical Location"
                             name="physical_file_location"
                             value={adlFormData.physical_file_location || ''}
                             onChange={handleADLChange}
-                  />
-                </div>
+                          />
+                        </div>
                       </div>
 
                       {/* Complaints */}
@@ -1161,22 +1157,22 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                             {(adlFormData.complaints_patient || []).map((complaint, idx) => (
                               <div key={idx} className="bg-blue-50 p-3 rounded border border-blue-200 mb-2">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <IconInput
+                                  <IconInput
                                     label="Complaint"
                                     name={`complaint_${idx}`}
                                     value={complaint.complaint || ''}
                                     onChange={(e) => handleADLArrayChange('complaints_patient', idx, 'complaint', e.target.value)}
-                />
-                <IconInput
+                                  />
+                                  <IconInput
                                     label="Duration"
                                     name={`duration_${idx}`}
                                     value={complaint.duration || ''}
                                     onChange={(e) => handleADLArrayChange('complaints_patient', idx, 'duration', e.target.value)}
-                />
-              </div>
-            </div>
+                                  />
+                                </div>
+                              </div>
                             ))}
-                </div>
+                          </div>
                         </div>
                       </div>
 
@@ -1186,25 +1182,25 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                         <div className="space-y-4">
                           <div>
                             <label className="text-sm font-medium text-gray-600 mb-2 block">Narrative History</label>
-                  <Textarea
+                            <Textarea
                               name="history_narrative"
                               value={adlFormData.history_narrative || ''}
                               onChange={handleADLChange}
                               rows={4}
                               className="w-full"
-                  />
-                </div>
+                            />
+                          </div>
                           <div>
                             <label className="text-sm font-medium text-gray-600 mb-2 block">Specific Enquiry</label>
-                  <Textarea
+                            <Textarea
                               name="history_specific_enquiry"
                               value={adlFormData.history_specific_enquiry || ''}
                               onChange={handleADLChange}
                               rows={4}
                               className="w-full"
-                  />
-                </div>
-                <IconInput
+                            />
+                          </div>
+                          <IconInput
                             icon={<FiFileText className="w-4 h-4" />}
                             label="Drug Intake"
                             name="history_drug_intake"
@@ -1218,56 +1214,56 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                       <div>
                         <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Mental Status Examination (MSE)</h5>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <IconInput
+                          <IconInput
                             icon={<FiUser className="w-4 h-4" />}
                             label="General Demeanour"
                             name="mse_general_demeanour"
                             value={adlFormData.mse_general_demeanour || ''}
                             onChange={handleADLChange}
-                  />
-                <IconInput
+                          />
+                          <IconInput
                             icon={<FiHeart className="w-4 h-4" />}
                             label="Affect (Subjective)"
                             name="mse_affect_subjective"
                             value={adlFormData.mse_affect_subjective || ''}
                             onChange={handleADLChange}
-                />
-                <IconInput
+                          />
+                          <IconInput
                             icon={<FiFileText className="w-4 h-4" />}
                             label="Thought Flow"
                             name="mse_thought_flow"
                             value={adlFormData.mse_thought_flow || ''}
                             onChange={handleADLChange}
                           />
-              <IconInput
+                          <IconInput
                             icon={<FiActivity className="w-4 h-4" />}
                             label="Consciousness"
                             name="mse_cognitive_consciousness"
                             value={adlFormData.mse_cognitive_consciousness || ''}
                             onChange={handleADLChange}
-              />
-              <IconInput
+                          />
+                          <IconInput
                             icon={<FiClock className="w-4 h-4" />}
                             label="Orientation (Time)"
                             name="mse_cognitive_orientation_time"
                             value={adlFormData.mse_cognitive_orientation_time || ''}
                             onChange={handleADLChange}
-              />
-              <IconInput
+                          />
+                          <IconInput
                             icon={<FiMapPin className="w-4 h-4" />}
                             label="Orientation (Place)"
                             name="mse_cognitive_orientation_place"
                             value={adlFormData.mse_cognitive_orientation_place || ''}
                             onChange={handleADLChange}
-              />
-              <IconInput
+                          />
+                          <IconInput
                             icon={<FiInfo className="w-4 h-4" />}
                             label="Insight (Understanding)"
                             name="mse_insight_understanding"
                             value={adlFormData.mse_insight_understanding || ''}
                             onChange={handleADLChange}
-              />
-              <IconInput
+                          />
+                          <IconInput
                             icon={<FiShield className="w-4 h-4" />}
                             label="Insight (Judgement)"
                             name="mse_insight_judgement"
@@ -1289,8 +1285,8 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                               onChange={handleADLChange}
                               rows={4}
                               className="w-full"
-                />
-              </div>
+                            />
+                          </div>
                           <div>
                             <label className="text-sm font-medium text-gray-600 mb-2 block">Features</label>
                             <Textarea
@@ -1300,7 +1296,7 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                               rows={4}
                               className="w-full"
                             />
-            </div>
+                          </div>
                           <div>
                             <label className="text-sm font-medium text-gray-600 mb-2 block">Psychodynamic</label>
                             <Textarea
@@ -1310,7 +1306,7 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                               rows={4}
                               className="w-full"
                             />
-          </div>
+                          </div>
                         </div>
                       </div>
 
@@ -1324,7 +1320,7 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                           rows={3}
                           className="w-full"
                         />
-              </div>
+                      </div>
 
                       {/* Treatment Plan */}
                       <div>
@@ -1336,7 +1332,7 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                           rows={4}
                           className="w-full"
                         />
-            </div>
+                      </div>
 
                       {/* Consultant Comments */}
                       <div>
@@ -1347,7 +1343,7 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                           onChange={handleADLChange}
                           rows={4}
                           className="w-full"
-              />
+                        />
                       </div>
 
                       {/* Notes */}
@@ -1359,9 +1355,9 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                           onChange={handleADLChange}
                           rows={3}
                           className="w-full"
-              />
-            </div>
-          </div>
+                        />
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1373,7 +1369,7 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
       {/* Card 4: Prescription History - Only show for Admin and JR/SR, not MWO */}
       {canViewPrescriptions && (
         <Card className="shadow-lg border-0 bg-white">
-          <div 
+          <div
             className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
             onClick={() => toggleCard('prescriptions')}
           >
@@ -1384,7 +1380,7 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
               <div>
                 <h3 className="text-xl font-bold text-gray-900">Prescription History</h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  {allPrescriptions.length > 0 
+                  {allPrescriptions.length > 0
                     ? `${allPrescriptions.length} prescription${allPrescriptions.length > 1 ? 's' : ''} across ${Object.keys(prescriptionsByVisit).length} visit${Object.keys(prescriptionsByVisit).length > 1 ? 's' : ''}`
                     : 'No prescriptions found'}
                 </p>

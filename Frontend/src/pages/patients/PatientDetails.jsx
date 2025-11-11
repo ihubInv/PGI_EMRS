@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
-import {  FiX, FiEdit } from 'react-icons/fi';
+import { FiX, FiEdit } from 'react-icons/fi';
 import {
   useGetPatientByIdQuery
 } from '../../features/patients/patientsApiSlice';
@@ -20,17 +20,17 @@ import PatientDetailsEdit from './PatientDetailsEdit';
 const PatientDetails = () => {
   const { id } = useParams();
   const user = useSelector(selectCurrentUser);
-  
+
   // Parse and validate patient ID from URL
   const patientId = id ? parseInt(id, 10) : null;
-  
+
   // Validate ID is a valid number
   if (!patientId || isNaN(patientId) || patientId <= 0) {
     return (
       <div className="text-center py-12">
         <p className="text-red-500">Invalid patient ID in URL</p>
-        <Button 
-          className="mt-4" 
+        <Button
+          className="mt-4"
           onClick={() => navigate('/patients')}
         >
           Back to Patients
@@ -38,7 +38,7 @@ const PatientDetails = () => {
       </div>
     );
   }
-  
+
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const returnTab = searchParams.get('returnTab'); // Get returnTab from URL
@@ -64,7 +64,7 @@ const PatientDetails = () => {
   const { data: adlData } = useGetADLFileByPatientIdQuery(patientId, {
     skip: !patientId || isNaN(patientId) || patientId <= 0,
   });
-  
+
   const { data: usersData } = useGetDoctorsQuery({ page: 1, limit: 100 });
 
   const [formData, setFormData] = useState({
@@ -75,7 +75,7 @@ const PatientDetails = () => {
     assigned_room: '',
     assigned_doctor_id: '',
     contact_number: '',
-    
+
     // Personal information
     age_group: '',
     marital_status: '',
@@ -83,17 +83,17 @@ const PatientDetails = () => {
     no_of_children: '',
     no_of_children_male: '',
     no_of_children_female: '',
-    
+
     // Occupation & Education
     occupation: '',
     actual_occupation: '',
     education_level: '',
     completed_years_of_education: '',
-    
+
     // Financial Information
     patient_income: '',
     family_income: '',
-    
+
     // Family Information
     religion: '',
     family_type: '',
@@ -104,7 +104,7 @@ const PatientDetails = () => {
     head_education: '',
     head_occupation: '',
     head_income: '',
-    
+
     // Referral & Mobility
     distance_from_hospital: '',
     mobility: '',
@@ -112,13 +112,13 @@ const PatientDetails = () => {
     exact_source: '',
     seen_in_walk_in_on: '',
     worked_up_on: '',
-    
+
     // Contact Information (legacy fields)
     present_address: '',
     permanent_address: '',
     local_address: '',
     school_college_office: '',
-    
+
     // Address Information (detailed)
     present_address_line_1: '',
     present_address_line_2: '',
@@ -127,7 +127,7 @@ const PatientDetails = () => {
     present_state: '',
     present_pin_code: '',
     present_country: '',
-    
+
     permanent_address_line_1: '',
     permanent_address_line_2: '',
     permanent_city_town_village: '',
@@ -135,7 +135,7 @@ const PatientDetails = () => {
     permanent_state: '',
     permanent_pin_code: '',
     permanent_country: '',
-    
+
     address_line_1: '',
     address_line_2: '',
     city_town_village: '',
@@ -143,7 +143,7 @@ const PatientDetails = () => {
     state: '',
     pin_code: '',
     country: '',
-    
+
     // Registration Details
     department: '',
     unit_consit: '',
@@ -151,7 +151,7 @@ const PatientDetails = () => {
     serial_no: '',
     file_no: '',
     unit_days: '',
-    
+
     // Additional Fields
     category: '',
     special_clinic_no: '',
@@ -160,7 +160,7 @@ const PatientDetails = () => {
   // Reset form data when patient ID changes
   useEffect(() => {
     if (!patientId) return;
-    
+
     // Reset form data to initial state when ID changes
     setFormData({
       // Basic patient info
@@ -170,7 +170,7 @@ const PatientDetails = () => {
       assigned_room: '',
       assigned_doctor_id: '',
       contact_number: '',
-      
+
       // Personal information
       age_group: '',
       marital_status: '',
@@ -178,17 +178,17 @@ const PatientDetails = () => {
       no_of_children: '',
       no_of_children_male: '',
       no_of_children_female: '',
-      
+
       // Occupation & Education
       occupation: '',
       actual_occupation: '',
       education_level: '',
       completed_years_of_education: '',
-      
+
       // Financial Information
       patient_income: '',
       family_income: '',
-      
+
       // Family Information
       religion: '',
       family_type: '',
@@ -199,7 +199,7 @@ const PatientDetails = () => {
       head_education: '',
       head_occupation: '',
       head_income: '',
-      
+
       // Referral & Mobility
       distance_from_hospital: '',
       mobility: '',
@@ -207,13 +207,13 @@ const PatientDetails = () => {
       exact_source: '',
       seen_in_walk_in_on: '',
       worked_up_on: '',
-      
+
       // Contact Information (legacy fields)
       present_address: '',
       permanent_address: '',
       local_address: '',
       school_college_office: '',
-      
+
       // Address Information (detailed)
       present_address_line_1: '',
       present_address_line_2: '',
@@ -222,7 +222,7 @@ const PatientDetails = () => {
       present_state: '',
       present_pin_code: '',
       present_country: '',
-      
+
       permanent_address_line_1: '',
       permanent_address_line_2: '',
       permanent_city_town_village: '',
@@ -230,7 +230,7 @@ const PatientDetails = () => {
       permanent_state: '',
       permanent_pin_code: '',
       permanent_country: '',
-      
+
       address_line_1: '',
       address_line_2: '',
       city_town_village: '',
@@ -238,7 +238,7 @@ const PatientDetails = () => {
       state: '',
       pin_code: '',
       country: '',
-      
+
       // Registration Details
       department: '',
       unit_consit: '',
@@ -246,7 +246,7 @@ const PatientDetails = () => {
       serial_no: '',
       file_no: '',
       unit_days: '',
-      
+
       // Additional Fields
       category: '',
       special_clinic_no: '',
@@ -258,7 +258,7 @@ const PatientDetails = () => {
   useEffect(() => {
     if (patientData?.data?.patient) {
       const patient = patientData.data.patient;
-      
+
       // Verify the patient ID matches the URL ID to prevent showing wrong patient data
       const patientDataId = patient.id ? parseInt(patient.id, 10) : null;
       if (patientDataId && patientDataId !== patientId) {
@@ -266,7 +266,7 @@ const PatientDetails = () => {
         toast.error(`Data mismatch: Expected patient ID ${patientId}, but received ${patientDataId}`);
         return; // Don't update form data if IDs don't match
       }
-      
+
       // Patient data updated - use patient data directly with fallbacks to empty string
       // This ensures all fields are available in formData for display
       setFormData(prev => ({
@@ -278,7 +278,7 @@ const PatientDetails = () => {
         assigned_room: patient.assigned_room ?? '',
         assigned_doctor_id: patient.assigned_doctor_id ? String(patient.assigned_doctor_id) : '',
         contact_number: patient.contact_number ?? '',
-        
+
         // Personal information
         age_group: patient.age_group ?? prev.age_group ?? '',
         marital_status: patient.marital_status ?? prev.marital_status ?? '',
@@ -286,17 +286,17 @@ const PatientDetails = () => {
         no_of_children: patient.no_of_children ?? prev.no_of_children ?? '',
         no_of_children_male: patient.no_of_children_male ?? prev.no_of_children_male ?? '',
         no_of_children_female: patient.no_of_children_female ?? prev.no_of_children_female ?? '',
-        
+
         // Occupation & Education
         occupation: patient.occupation ?? prev.occupation ?? '',
         actual_occupation: patient.actual_occupation ?? prev.actual_occupation ?? '',
         education_level: patient.education_level ?? prev.education_level ?? '',
         completed_years_of_education: patient.completed_years_of_education ?? prev.completed_years_of_education ?? '',
-        
+
         // Financial Information
         patient_income: patient.patient_income ?? prev.patient_income ?? '',
         family_income: patient.family_income ?? prev.family_income ?? '',
-        
+
         // Family Information
         religion: patient.religion ?? prev.religion ?? '',
         family_type: patient.family_type ?? prev.family_type ?? '',
@@ -307,7 +307,7 @@ const PatientDetails = () => {
         head_education: patient.head_education ?? prev.head_education ?? '',
         head_occupation: patient.head_occupation ?? prev.head_occupation ?? '',
         head_income: patient.head_income ?? prev.head_income ?? '',
-        
+
         // Referral & Mobility
         distance_from_hospital: patient.distance_from_hospital ?? prev.distance_from_hospital ?? '',
         mobility: patient.mobility ?? prev.mobility ?? '',
@@ -315,13 +315,13 @@ const PatientDetails = () => {
         exact_source: patient.exact_source ?? prev.exact_source ?? '',
         seen_in_walk_in_on: patient.seen_in_walk_in_on ?? prev.seen_in_walk_in_on ?? '',
         worked_up_on: patient.worked_up_on ?? prev.worked_up_on ?? '',
-        
+
         // Legacy address fields
         present_address: patient.present_address ?? patient.present_address_line_1 ?? prev.present_address ?? '',
         permanent_address: patient.permanent_address ?? patient.permanent_address_line_1 ?? prev.permanent_address ?? '',
         local_address: patient.local_address ?? prev.local_address ?? '',
         school_college_office: patient.school_college_office ?? prev.school_college_office ?? '',
-        
+
         // Detailed address fields - Present Address
         present_address_line_1: patient.present_address_line_1 ?? prev.present_address_line_1 ?? '',
         present_address_line_2: patient.present_address_line_2 ?? prev.present_address_line_2 ?? '',
@@ -330,7 +330,7 @@ const PatientDetails = () => {
         present_state: patient.present_state ?? prev.present_state ?? '',
         present_pin_code: patient.present_pin_code ?? prev.present_pin_code ?? '',
         present_country: patient.present_country ?? prev.present_country ?? '',
-        
+
         // Detailed address fields - Permanent Address
         permanent_address_line_1: patient.permanent_address_line_1 ?? prev.permanent_address_line_1 ?? '',
         permanent_address_line_2: patient.permanent_address_line_2 ?? prev.permanent_address_line_2 ?? '',
@@ -339,7 +339,7 @@ const PatientDetails = () => {
         permanent_state: patient.permanent_state ?? prev.permanent_state ?? '',
         permanent_pin_code: patient.permanent_pin_code ?? prev.permanent_pin_code ?? '',
         permanent_country: patient.permanent_country ?? prev.permanent_country ?? '',
-        
+
         // Detailed address fields - Quick Entry Address
         address_line_1: patient.address_line_1 ?? prev.address_line_1 ?? '',
         address_line_2: patient.address_line_2 ?? prev.address_line_2 ?? '',
@@ -348,7 +348,7 @@ const PatientDetails = () => {
         state: patient.state ?? prev.state ?? '',
         pin_code: patient.pin_code ?? prev.pin_code ?? '',
         country: patient.country ?? prev.country ?? '',
-        
+
         // Registration details
         department: patient.department ?? prev.department ?? '',
         unit_consit: patient.unit_consit ?? prev.unit_consit ?? '',
@@ -356,7 +356,7 @@ const PatientDetails = () => {
         serial_no: patient.serial_no ?? prev.serial_no ?? '',
         file_no: patient.file_no ?? prev.file_no ?? '',
         unit_days: patient.unit_days ?? prev.unit_days ?? '',
-        
+
         // Additional fields
         category: patient.category ?? prev.category ?? '',
         special_clinic_no: patient.special_clinic_no ?? prev.special_clinic_no ?? '',
@@ -368,7 +368,7 @@ const PatientDetails = () => {
   useEffect(() => {
     if (patientData?.data?.record) {
       const record = patientData.data.record;
-      
+
       // Verify the record belongs to the current patient
       const recordPatientId = record.patient_id ? parseInt(record.patient_id, 10) : null;
       if (recordPatientId && recordPatientId !== patientId) {
@@ -421,8 +421,8 @@ const PatientDetails = () => {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500">Patient not found</p>
-        <Button 
-          className="mt-4" 
+        <Button
+          className="mt-4"
           onClick={() => {
             if (returnTab) {
               navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
@@ -444,8 +444,8 @@ const PatientDetails = () => {
     return (
       <div className="text-center py-12">
         <p className="text-red-500">Error: Patient ID mismatch. Expected ID {patientId}, but received {returnedPatientId}. Please refresh the page.</p>
-        <Button 
-          className="mt-4" 
+        <Button
+          className="mt-4"
           onClick={() => {
             if (returnTab) {
               navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
@@ -488,23 +488,36 @@ const PatientDetails = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {isEditing ? 'Edit Patient Details' : 'Patient Details'}
-            </h1>
-            <p className="text-gray-600 mt-1">
-              {isEditing ? 'Update patient information' : 'View and manage patient information'}
-            </p>
-          </div>
+
+
+      {/* <div className="flex items-center justify-between w-full"> */}
+      <div className="flex items-center gap-4 w-full">
+        <div
+
+        >
+          <h1
+            className="
+          text-3xl font-bold text-blue-800
+          drop-shadow-sm
+          tracking-wide
+          transition-colors
+          hover:text-cyan-700
+        "
+          >
+            {isEditing ? 'Edit Patient Details' : 'Patient Details'}
+          </h1>
+          <p className="text-gray-600 mt-2 text-base tracking-normal">
+            {isEditing ? 'Update patient information' : 'View and manage patient information'}
+          </p>
         </div>
       </div>
+      {/* </div> */}
+
 
       {/* Conditionally render View or Edit component */}
       {!isEditing ? (
         <>
-        
+
           <PatientDetailsView
             patient={mergedPatient}
             formData={formData}
@@ -516,8 +529,8 @@ const PatientDetails = () => {
 
           {/* Action buttons below the view content */}
           <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 if (returnTab) {
                   navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);

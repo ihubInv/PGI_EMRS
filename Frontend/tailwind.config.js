@@ -6,6 +6,26 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        // Open Sans - Dashboard overall UI, Data tables, Patient lists
+        'open-sans': ['Open Sans', 'sans-serif'],
+        // Roboto - Numbers, statistics, graphs, Headers, Button labels
+        'roboto': ['Roboto', 'sans-serif'],
+        // Lato - Interface elements (forms, filters, menus), Chart labels, Section descriptions
+        'lato': ['Lato', 'sans-serif'],
+        // Montserrat - Section titles, Headers, Highlighted KPIs
+        'montserrat': ['Montserrat', 'sans-serif'],
+        // Helvetica - Main content areas, Widget labels, Detailed patient information
+        'helvetica': ['Helvetica', 'Arial', 'sans-serif'],
+        // Arial - Reports, Sidebar menus, General UI text
+        'arial': ['Arial', 'Helvetica', 'sans-serif'],
+        // Source Sans Pro - Subheadings, Help text/tooltips, Notifications
+        'source-sans': ['Source Sans Pro', 'sans-serif'],
+        // Raleway - Supporting text, Alerts and banners, Summary boxes
+        'raleway': ['Raleway', 'sans-serif'],
+        // Merriweather - Explanatory paragraphs, Notes/descriptions, Supporting text
+        'merriweather': ['Merriweather', 'serif'],
+      },
       colors: {
         primary: {
           50: '#f0f9ff',

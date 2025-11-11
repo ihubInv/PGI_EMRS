@@ -5,6 +5,7 @@ import Sidebar from './Sidebar';
 
 const MainLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarMinimized, setSidebarMinimized] = useState(false);
   const location = useLocation();
 
   // Close sidebar on route change (mobile)
@@ -29,9 +30,16 @@ const MainLayout = () => {
       <div className="relative">
         <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <Sidebar 
+          isOpen={sidebarOpen} 
+          onClose={() => setSidebarOpen(false)}
+          isMinimized={sidebarMinimized}
+          onToggleMinimize={() => setSidebarMinimized(!sidebarMinimized)}
+        />
 
-        <main className="lg:ml-64 p-6 lg:p-8 transition-all duration-300 ease-in-out">
+        <main className={`p-6 lg:p-8 transition-all duration-300 ease-in-out ${
+          sidebarMinimized ? 'lg:ml-20' : 'lg:ml-64'
+        }`}>
           <Outlet />
         </main>
       </div>

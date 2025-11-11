@@ -15,6 +15,7 @@ import Card from '../../components/Card';
 import Select from '../../components/Select';
 import Textarea from '../../components/Textarea';
 import Button from '../../components/Button';
+import DatePicker from '../../components/CustomDatePicker';
 import {
   MARITAL_STATUS, FAMILY_TYPE, LOCALITY, RELIGION, SEX_OPTIONS,
   AGE_GROUP_OPTIONS, OCCUPATION_OPTIONS, EDUCATION_OPTIONS,
@@ -22,26 +23,33 @@ import {
   isJR, isSR
 } from '../../utils/constants';
 
-// Enhanced Radio button component with better styling
+// Enhanced Radio button component with glassmorphism styling
 const RadioGroup = ({ label, name, value, onChange, options, className = "", inline = true, error, icon }) => {
   return (
     <div className={`space-y-3 ${className}`}>
-      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+      <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 mb-3">
         {icon && <span className="text-primary-600">{icon}</span>}
         {label}
       </label>
-      <div className={`flex ${inline ? 'flex-wrap gap-4' : 'flex-col space-y-3'}`}>
+      <div className={`flex ${inline ? 'flex-wrap gap-3' : 'flex-col space-y-3'}`}>
         {options.map((option) => (
           <label key={option.value} className="flex items-center space-x-3 cursor-pointer group">
-            <input
-              type="radio"
-              name={name}
-              value={option.value}
-              checked={value === option.value}
-              onChange={onChange}
-              className="w-4 h-4 text-primary-600 border-2 border-gray-300 focus:ring-primary-500 focus:ring-2 rounded-full transition-all duration-200 group-hover:border-primary-400"
-            />
-            <span className="text-sm text-gray-700 group-hover:text-primary-700 transition-colors duration-200">{option.label}</span>
+            <div className="relative">
+              <input
+                type="radio"
+                name={name}
+                value={option.value}
+                checked={value === option.value}
+                onChange={onChange}
+                className="w-4 h-4 text-primary-600 border-2 border-gray-300/50 focus:ring-primary-500 focus:ring-2 rounded-full transition-all duration-200 group-hover:border-primary-400/70 appearance-none checked:bg-primary-600 checked:border-primary-600"
+              />
+              {value === option.value && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                </div>
+              )}
+            </div>
+            <span className="text-sm font-medium text-gray-800 group-hover:text-primary-700 transition-colors duration-200">{option.label}</span>
           </label>
         ))}
       </div>
@@ -53,11 +61,11 @@ const RadioGroup = ({ label, name, value, onChange, options, className = "", inl
   );
 };
 
-// Enhanced Input component with icons
+// Enhanced Input component with glassmorphism styling
 const IconInput = ({ icon, label, loading = false, error, ...props }) => {
   return (
     <div className="space-y-2">
-      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+      <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
         {icon && <span className="text-primary-600">{icon}</span>}
         {label}
         {loading && (
@@ -66,18 +74,17 @@ const IconInput = ({ icon, label, loading = false, error, ...props }) => {
       </label>
       <div className="relative">
         {icon && (
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <span className="text-gray-400">{icon}</span>
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+            <span className="text-gray-500">{icon}</span>
           </div>
         )}
         <input
           {...props}
-          className={`w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 hover:border-gray-300 ${icon ? 'pl-10' : ''
-            } ${props.className || ''}`}
+          className={`w-full px-4 py-3 ${icon ? 'pl-11' : 'pl-4'} bg-white/60 backdrop-blur-md border-2 border-gray-300/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 focus:bg-white/80 transition-all duration-300 hover:bg-white/70 hover:border-primary-400/70 placeholder:text-gray-400 text-gray-900 font-medium ${props.className || ''}`}
         />
       </div>
       {error && (
-        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+        <p className="text-red-500 text-xs mt-1 flex items-center gap-1 font-medium">
           <FiX className="w-3 h-3" />
           {error}
         </p>
@@ -86,27 +93,6 @@ const IconInput = ({ icon, label, loading = false, error, ...props }) => {
   );
 };
 
-// Enhanced Date Input component
-const DateInput = ({ icon, label, ...props }) => {
-  return (
-    <div className="space-y-2">
-      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-        {icon && <span className="text-primary-600">{icon}</span>}
-        {label}
-      </label>
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <FiCalendar className="w-5 h-5 text-gray-400" />
-        </div>
-        <input
-          {...props}
-          type="date"
-          className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 hover:border-gray-300 appearance-none"
-        />
-      </div>
-    </div>
-  );
-};
 
 
 const CreatePatient = () => {
@@ -578,46 +564,30 @@ const CreatePatient = () => {
     }
   };
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="w-full px-6 py-8 space-y-8">
-        {/* Header Section */}
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-600/10 to-primary-800/10 rounded-3xl"></div>
-          <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20">
-            <div className="flex justify-between items-center">
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-lg">
-                    <FiUser className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-4xl  font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
-                      Register New Patient
-                    </h1>
-                    <p className="text-gray-600 mt-2 text-lg">
-                      Department of Psychiatry
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Postgraduate Institute of Medical Education & Research, Chandigarh
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/30 to-indigo-100/40 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl"></div>
+      </div>
+      
+      <div className="relative w-full px-4 sm:px-6 lg:px-8 py-6 lg:py-10 space-y-6 lg:space-y-8">
+       
 
-        {/* Quick Entry Section */}
-        <Card
-          title={
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary-100 rounded-lg">
-                <FiEdit3 className="w-6 h-6 text-primary-600" />
+        {/* Quick Entry Section with Glassmorphism */}
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-3xl blur-xl"></div>
+          <Card
+            title={
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
+                  <FiEdit3 className="w-6 h-6 text-indigo-600" />
+                </div>
+                <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Quick Entry</span>
               </div>
-              <span className="text-xl font-bold text-gray-900">Quick Entry</span>
-            </div>
-          }
-          className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+            }
+            className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl overflow-hidden">
           <div className="space-y-8">
             {/* First Row - Basic Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -630,19 +600,20 @@ const CreatePatient = () => {
                 placeholder="Enter CR number"
                 error={errors.patientCRNo}
                 loading={isCheckingCR && formData.top_cr_no && formData.top_cr_no.length >= 3}
-                className={`bg-gradient-to-r from-blue-50 to-indigo-50 ${errors.patientCRNo
-                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                className={`${errors.patientCRNo
+                    ? 'border-red-400/50 focus:border-red-500 focus:ring-red-500/50 bg-red-50/30'
                     : formData.top_cr_no && formData.top_cr_no.length >= 3 && !isCheckingCR && !errors.patientCRNo
-                      ? 'border-green-300 focus:border-green-500 focus:ring-green-500'
+                      ? 'border-green-400/50 focus:border-green-500 focus:ring-green-500/50 bg-green-50/30'
                       : ''
                   }`}
               />
-              <DateInput
+              <DatePicker
                 icon={<FiCalendar className="w-4 h-4" />}
                 label="Date"
                 name="top_date"
                 value={formData.top_date || ''}
                 onChange={handleChange}
+                defaultToday={true}
               />
               <IconInput
                 icon={<FiUser className="w-4 h-4" />}
@@ -650,9 +621,9 @@ const CreatePatient = () => {
                 name="top_name"
                 value={formData.top_name || ''}
                 onChange={handleChange}
-                placeholder="Enter patient name"
-                className="bg-gradient-to-r from-green-50 to-emerald-50"
-              />
+                    placeholder="Enter patient name"
+                    className=""
+                  />
               <IconInput
                 icon={<FiPhone className="w-4 h-4" />}
                 label="Mobile No."
@@ -660,7 +631,7 @@ const CreatePatient = () => {
                 value={formData.top_mobile_no || ''}
                 onChange={handleChange}
                 placeholder="Enter mobile number"
-                className="bg-gradient-to-r from-purple-50 to-pink-50"
+                className=""
               />
             </div>
 
@@ -674,22 +645,24 @@ const CreatePatient = () => {
                 onChange={handleChange}
                 type="number"
                 placeholder="Enter age"
-                className="bg-gradient-to-r from-orange-50 to-yellow-50"
+                className=""
               />
               <div className="space-y-4">
-                <RadioGroup
-                  label="Sex"
-                  name="top_sex"
-                  value={formData.top_sex || ''}
-                  onChange={handleChange}
-                  options={SEX_OPTIONS}
-                  icon={<FiHeart className="w-4 h-4" />}
-                  className="bg-gradient-to-r from-pink-50 to-rose-50 p-4 rounded-lg"
-                  error={errors.patientSex}
-                />
+                <div className="bg-white/40 backdrop-blur-md border-2 border-gray-300/60 p-4 rounded-xl shadow-sm">
+                  <RadioGroup
+                    label="Sex"
+                    name="top_sex"
+                    value={formData.top_sex || ''}
+                    onChange={handleChange}
+                    options={SEX_OPTIONS}
+                    icon={<FiHeart className="w-4 h-4" />}
+                    className=""
+                    error={errors.patientSex}
+                  />
+                </div>
               </div>
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
                   <FiShield className="w-4 h-4 text-primary-600" />
                   Category
                 </label>
@@ -705,7 +678,7 @@ const CreatePatient = () => {
                     { value: 'EWS', label: 'Economically Weaker Section (EWS)' }
                   ]}
                   placeholder="Select category"
-                  className="bg-gradient-to-r from-indigo-50 to-blue-50"
+                  className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
                 />
               </div>
               <IconInput
@@ -715,7 +688,7 @@ const CreatePatient = () => {
                 value={formData.top_father_name || ''}
                 onChange={handleChange}
                 placeholder="Enter father's name"
-                className="bg-gradient-to-r from-teal-50 to-cyan-50"
+                className=""
               />
             </div>
             {/* Fourth Row - Department, Unit/Consit, Room No., Serial No. */}
@@ -727,7 +700,7 @@ const CreatePatient = () => {
                 value={formData.top_department || ''}
                 onChange={handleChange}
                 placeholder="Enter department"
-                className="bg-gradient-to-r from-violet-50 to-purple-50"
+                className=""
               />
               <IconInput
                 icon={<FiUsers className="w-4 h-4" />}
@@ -736,7 +709,7 @@ const CreatePatient = () => {
                 value={formData.top_unit_consit || ''}
                 onChange={handleChange}
                 placeholder="Enter unit/consit"
-                className="bg-gradient-to-r from-amber-50 to-orange-50"
+                className=""
               />
               <IconInput
                 icon={<FiHome className="w-4 h-4" />}
@@ -745,7 +718,7 @@ const CreatePatient = () => {
                 value={formData.top_room_no || ''}
                 onChange={handleChange}
                 placeholder="Enter room number"
-                className="bg-gradient-to-r from-emerald-50 to-green-50"
+                className=""
               />
               <IconInput
                 icon={<FiHash className="w-4 h-4" />}
@@ -754,7 +727,7 @@ const CreatePatient = () => {
                 value={formData.top_serial_no || ''}
                 onChange={handleChange}
                 placeholder="Enter serial number"
-                className="bg-gradient-to-r from-red-50 to-pink-50"
+                className=""
               />
             </div>
 
@@ -767,15 +740,15 @@ const CreatePatient = () => {
                 value={formData.top_file_no || ''}
                 onChange={handleChange}
                 placeholder="Enter file number"
-                className="bg-gradient-to-r from-slate-50 to-gray-50"
+                className=""
               />
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
                     <FiClock className="w-4 h-4 text-primary-600" />
                     Unit Days
                   </label>
-                  <div className="text-sm text-gray-600 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-100 font-medium">
+                  <div className="text-sm text-gray-700 p-4 bg-white/50 backdrop-blur-md border-2 border-gray-300/60 rounded-xl shadow-sm font-semibold">
                     Mon, Tue, Wed, Thu, Fri, Sat
                   </div>
                 </div>
@@ -784,10 +757,10 @@ const CreatePatient = () => {
 
 
             {/* Address Details */}
-            <div className="space-y-6">
+            <div className="space-y-6 pt-6 border-t border-white/30">
               <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                <div className="p-2 bg-primary-100 rounded-lg">
-                  <FiMapPin className="w-6 h-6 text-primary-600" />
+                <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-md">
+                  <FiMapPin className="w-5 h-5 text-blue-600" />
                 </div>
                 Address Details
               </h4>
@@ -802,7 +775,7 @@ const CreatePatient = () => {
                   onChange={handleChange}
                   placeholder="Enter house number, street, locality"
                   required
-                  className="bg-gradient-to-r from-green-50 to-emerald-50"
+                  className=""
                 />
 
                 {/* Country, State, District Row */}
@@ -815,10 +788,10 @@ const CreatePatient = () => {
                     onChange={handleChange}
                     placeholder="Enter country"
                     defaultValue="India"
-                    className="bg-gradient-to-r from-blue-50 to-cyan-50"
+                    className=""
                   />
                   <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
                       <FiMapPin className="w-4 h-4 text-primary-600" />
                       State
                     </label>
@@ -829,7 +802,7 @@ const CreatePatient = () => {
                       options={INDIAN_STATES}
                       placeholder="Select state"
                       required
-                      className="bg-gradient-to-r from-indigo-50 to-purple-50"
+                      className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
                     />
                   </div>
                   <IconInput
@@ -840,7 +813,7 @@ const CreatePatient = () => {
                     onChange={handleChange}
                     placeholder="Enter district"
                     required
-                    className="bg-gradient-to-r from-orange-50 to-yellow-50"
+                    className=""
                   />
                 </div>
 
@@ -854,7 +827,7 @@ const CreatePatient = () => {
                     onChange={handleChange}
                     placeholder="Enter city, town or village"
                     required
-                    className="bg-gradient-to-r from-teal-50 to-cyan-50"
+                    className=""
                   />
                   <IconInput
                     icon={<FiHash className="w-4 h-4" />}
@@ -865,7 +838,7 @@ const CreatePatient = () => {
                     placeholder="Enter pin code"
                     type="number"
                     required
-                    className="bg-gradient-to-r from-pink-50 to-rose-50"
+                    className=""
                   />
                 </div>
               </div>
@@ -873,27 +846,29 @@ const CreatePatient = () => {
 
 
           </div>
-        </Card>
+          </Card>
+        </div>
 
         <form onSubmit={handleSubmit}>
-          {/* Basic Information */}
-          <Card
-            title={
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary-100 rounded-lg">
-                  <FiUser className="w-6 h-6 text-primary-600" />
+          {/* Basic Information with Glassmorphism */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 rounded-3xl blur-xl"></div>
+            <Card
+              title={
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
+                    <FiUser className="w-6 h-6 text-emerald-600" />
+                  </div>
+                  <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Basic Information</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">Basic Information</span>
-              </div>
-            }
-            // className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-            className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm overflow-visible"  // Added overflow-visible
-          >
+              }
+              className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl overflow-visible"
+            >
             <div className="space-y-8">
               {/* Patient Identification */}
               <div className="space-y-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full"></div>
+                  <div className="w-2.5 h-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full shadow-lg"></div>
                   <h4 className="text-xl font-bold text-gray-900">Patient Identification</h4>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -906,10 +881,10 @@ const CreatePatient = () => {
                     placeholder="Enter CR number"
                     error={errors.patientCRNo}
                     loading={isCheckingCR && formData.cr_no && formData.cr_no.length >= 3}
-                    className={`bg-gradient-to-r from-blue-50 to-indigo-50 ${errors.patientCRNo
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                    className={`${errors.patientCRNo
+                        ? 'border-red-400/50 focus:border-red-500 focus:ring-red-500/50 bg-red-50/30'
                         : formData.cr_no && formData.cr_no.length >= 3 && !isCheckingCR && !errors.patientCRNo
-                          ? 'border-green-300 focus:border-green-500 focus:ring-green-500'
+                          ? 'border-green-400/50 focus:border-green-500 focus:ring-green-500/50 bg-green-50/30'
                           : ''
                       }`}
                   />
@@ -921,7 +896,7 @@ const CreatePatient = () => {
                     onChange={handlePatientChange}
                     placeholder="Enter PSY number"
                     error={errors.patientPSYNo}
-                    className="bg-gradient-to-r from-green-50 to-emerald-50"
+                    className=""
                   />
                   <IconInput
                     icon={<FiHeart className="w-4 h-4" />}
@@ -930,7 +905,7 @@ const CreatePatient = () => {
                     value={formData.special_clinic_no}
                     onChange={handleChange}
                     placeholder="Enter special clinic number"
-                    className="bg-gradient-to-r from-purple-50 to-pink-50"
+                    className=""
                   />
                   <IconInput
                     icon={<FiFileText className="w-4 h-4" />}
@@ -939,18 +914,18 @@ const CreatePatient = () => {
                     value={formData.file_no}
                     onChange={handleChange}
                     placeholder="Enter file number"
-                    className="bg-gradient-to-r from-orange-50 to-yellow-50"
+                    className=""
                   />
                 </div>
               </div>
 
               {/* Divider */}
-              <div className="border-t border-gray-200"></div>
+              <div className="border-t border-white/30 my-6"></div>
 
               {/* Patient Details */}
               <div className="space-y-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full"></div>
+                  <div className="w-2.5 h-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full shadow-lg"></div>
                   <h4 className="text-xl font-bold text-gray-900">Patient Details</h4>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -1008,19 +983,21 @@ const CreatePatient = () => {
                   <h4 className="text-xl font-bold text-gray-900">Appointment & Assignment</h4>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <DateInput
+                  <DatePicker
                     icon={<FiCalendar className="w-4 h-4" />}
                     label="Seen in Walk-in-on"
                     name="seen_in_walk_in_on"
                     value={formData.seen_in_walk_in_on}
                     onChange={handleChange}
+                    defaultToday={true}
                   />
-                  <DateInput
+                  <DatePicker
                     icon={<FiCalendar className="w-4 h-4" />}
                     label="Worked up on"
                     name="worked_up_on"
                     value={formData.worked_up_on}
                     onChange={handleChange}
+                    defaultToday={true}
                   />
                   <div className="space-y-2">
                     <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
@@ -1045,21 +1022,23 @@ const CreatePatient = () => {
                 </div>
               </div>
             </div>
-          </Card>
+            </Card>
+          </div>
 
-          {/* Personal Information */}
-          <Card
-            title={
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary-100 rounded-lg">
-                  <FiUsers className="w-6 h-6 text-primary-600" />
+          {/* Personal Information with Glassmorphism */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-rose-500/10 via-pink-500/10 to-fuchsia-500/10 rounded-3xl blur-xl"></div>
+            <Card
+              title={
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-gradient-to-br from-rose-500/20 to-pink-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
+                    <FiUsers className="w-6 h-6 text-rose-600" />
+                  </div>
+                  <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Personal Information</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">Personal Information</span>
-              </div>
-            }
-            // className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-            className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm overflow-visible"  // Added overflow-visible
-          >
+              }
+              className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl overflow-visible"
+            >
             <div className="space-y-8">
               <RadioGroup
                 label="Marital Status"
@@ -1110,19 +1089,22 @@ const CreatePatient = () => {
                 />
               </div>
             </div>
-          </Card>
+            </Card>
+          </div>
 
-          {/* Occupation & Education */}
-          <Card
-            title={
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary-100 rounded-lg">
-                  <FiBriefcase className="w-6 h-6 text-primary-600" />
+          {/* Occupation & Education with Glassmorphism */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-yellow-500/10 rounded-3xl blur-xl"></div>
+            <Card
+              title={
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-gradient-to-br from-amber-500/20 to-orange-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
+                    <FiBriefcase className="w-6 h-6 text-amber-600" />
+                  </div>
+                  <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Occupation & Education</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">Occupation & Education</span>
-              </div>
-            }
-            className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              }
+              className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl">
             <div className="space-y-8">
               <RadioGroup
                 label="Occupation"
@@ -1151,38 +1133,52 @@ const CreatePatient = () => {
                 </label>
                 <div className="space-y-4">
                   {/* Education options except "Not Known" */}
-                  <div className="flex flex-wrap gap-4">
+                  <div className="flex flex-wrap gap-3">
                     {EDUCATION_OPTIONS.slice(0, -1).map((option) => (
                       <label key={option.value} className="flex items-center space-x-3 cursor-pointer group">
-                        <input
-                          type="radio"
-                          name="education_level"
-                          value={option.value}
-                          checked={formData.education_level === option.value}
-                          onChange={handleChange}
-                          className="w-4 h-4 text-primary-600 border-2 border-gray-300 focus:ring-primary-500 focus:ring-2 rounded-full transition-all duration-200 group-hover:border-primary-400"
-                        />
-                        <span className="text-sm text-gray-700 group-hover:text-primary-700 transition-colors duration-200">{option.label}</span>
+                        <div className="relative">
+                          <input
+                            type="radio"
+                            name="education_level"
+                            value={option.value}
+                            checked={formData.education_level === option.value}
+                            onChange={handleChange}
+                            className="w-4 h-4 text-primary-600 border-2 border-gray-300/50 focus:ring-primary-500 focus:ring-2 rounded-full transition-all duration-200 group-hover:border-primary-400/70 appearance-none checked:bg-primary-600 checked:border-primary-600"
+                          />
+                          {formData.education_level === option.value && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-2 h-2 bg-white rounded-full"></div>
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-sm font-medium text-gray-800 group-hover:text-primary-700 transition-colors duration-200">{option.label}</span>
                       </label>
                     ))}
                   </div>
 
                   {/* "Not Known" option with "Completed years of education" field */}
-                  <div className="flex items-center gap-4 flex-wrap bg-gradient-to-r from-gray-50 to-slate-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-4 flex-wrap bg-white/50 backdrop-blur-md border-2 border-gray-300/60 p-5 rounded-xl shadow-sm">
                     <label className="flex items-center space-x-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="education_level"
-                        value="not_known"
-                        checked={formData.education_level === 'not_known'}
-                        onChange={handleChange}
-                        className="w-4 h-4 text-primary-600 border-2 border-gray-300 focus:ring-primary-500 focus:ring-2 rounded-full transition-all duration-200"
-                      />
-                      <span className="text-sm text-gray-700 font-medium">Not Known</span>
+                      <div className="relative">
+                        <input
+                          type="radio"
+                          name="education_level"
+                          value="not_known"
+                          checked={formData.education_level === 'not_known'}
+                          onChange={handleChange}
+                          className="w-4 h-4 text-primary-600 border-2 border-gray-300/50 focus:ring-primary-500 focus:ring-2 rounded-full transition-all duration-200 appearance-none checked:bg-primary-600 checked:border-primary-600"
+                        />
+                        {formData.education_level === 'not_known' && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-2 h-2 bg-white rounded-full"></div>
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-sm text-gray-800 font-semibold">Not Known</span>
                     </label>
 
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-600 font-medium">Completed years of education:</span>
+                      <span className="text-sm text-gray-700 font-medium">Completed years of education:</span>
                       <input
                         type="number"
                         name="completed_years_of_education"
@@ -1191,26 +1187,29 @@ const CreatePatient = () => {
                         placeholder="Years"
                         min="0"
                         max="30"
-                        className="w-24 px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
+                        className="w-28 px-3 py-2 text-sm bg-white/60 backdrop-blur-md border-2 border-gray-300/60 rounded-lg focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 focus:bg-white/80 transition-all duration-200 font-medium text-gray-900"
                       />
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </Card>
+            </Card>
+          </div>
 
-          {/* Financial Information */}
-          <Card
-            title={
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary-100 rounded-lg">
-                  <FiDollarSign className="w-6 h-6 text-primary-600" />
+          {/* Financial Information with Glassmorphism */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-teal-500/10 rounded-3xl blur-xl"></div>
+            <Card
+              title={
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
+                    <FiDollarSign className="w-6 h-6 text-green-600" />
+                  </div>
+                  <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Financial Information</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">Financial Information</span>
-              </div>
-            }
-            className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              }
+              className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl">
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <IconInput
@@ -1237,75 +1236,84 @@ const CreatePatient = () => {
                 />
               </div>
             </div>
-          </Card>
+            </Card>
+          </div>
 
-          {/* Family Information */}
-          <Card
-            title={
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary-100 rounded-lg">
-                  <FiHome className="w-6 h-6 text-primary-600" />
+          {/* Family Information with Glassmorphism */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-violet-500/10 to-fuchsia-500/10 rounded-3xl blur-xl"></div>
+            <Card
+              title={
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-gradient-to-br from-purple-500/20 to-violet-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
+                    <FiHome className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Family Information</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">Family Information</span>
-              </div>
-            }
-            className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              }
+              className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl">
             <div className="space-y-8">
               {/* Religion Section */}
               <div className="space-y-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full"></div>
+                  <div className="w-2.5 h-2.5 bg-gradient-to-r from-purple-500 to-violet-600 rounded-full shadow-lg"></div>
                   <h4 className="text-xl font-bold text-gray-900">Religion</h4>
                 </div>
-                <RadioGroup
-                  label=""
-                  name="religion"
-                  value={formData.religion}
-                  onChange={handleChange}
-                  options={RELIGION}
-                  icon={<FiShield className="w-4 h-4" />}
-                  className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg"
-                />
+                <div className="bg-white/40 backdrop-blur-md border-2 border-gray-300/60 p-6 rounded-2xl shadow-sm">
+                  <RadioGroup
+                    label=""
+                    name="religion"
+                    value={formData.religion}
+                    onChange={handleChange}
+                    options={RELIGION}
+                    icon={<FiShield className="w-4 h-4" />}
+                    className=""
+                  />
+                </div>
               </div>
 
               {/* Divider */}
-              <div className="border-t border-gray-200"></div>
+              <div className="border-t border-white/30 my-6"></div>
 
               {/* Family Type Section */}
               <div className="space-y-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full"></div>
+                  <div className="w-2.5 h-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full shadow-lg"></div>
                   <h4 className="text-xl font-bold text-gray-900">Family Type</h4>
                 </div>
-                <RadioGroup
-                  label=""
-                  name="family_type"
-                  value={formData.family_type}
-                  onChange={handleChange}
-                  options={FAMILY_TYPE}
-                  icon={<FiUsers className="w-4 h-4" />}
-                  className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg"
-                />
+                <div className="bg-white/40 backdrop-blur-md border-2 border-gray-300/60 p-6 rounded-2xl shadow-sm">
+                  <RadioGroup
+                    label=""
+                    name="family_type"
+                    value={formData.family_type}
+                    onChange={handleChange}
+                    options={FAMILY_TYPE}
+                    icon={<FiUsers className="w-4 h-4" />}
+                    className=""
+                  />
+                </div>
               </div>
 
               {/* Divider */}
-              <div className="border-t border-gray-200"></div>
+              <div className="border-t border-white/30 my-6"></div>
 
               {/* Locality Section */}
               <div className="space-y-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full"></div>
+                  <div className="w-2.5 h-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full shadow-lg"></div>
                   <h4 className="text-xl font-bold text-gray-900">Locality</h4>
                 </div>
-                <RadioGroup
-                  label=""
-                  name="locality"
-                  value={formData.locality}
-                  onChange={handleChange}
-                  options={LOCALITY}
-                  icon={<FiMapPin className="w-4 h-4" />}
-                  className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg"
-                />
+                <div className="bg-white/40 backdrop-blur-md border-2 border-gray-300/60 p-6 rounded-2xl shadow-sm">
+                  <RadioGroup
+                    label=""
+                    name="locality"
+                    value={formData.locality}
+                    onChange={handleChange}
+                    options={LOCALITY}
+                    icon={<FiMapPin className="w-4 h-4" />}
+                    className=""
+                  />
+                </div>
               </div>
 
               <div className="border-t pt-8">
@@ -1381,19 +1389,22 @@ const CreatePatient = () => {
                 </div>
               </div>
             </div>
-          </Card>
+            </Card>
+          </div>
 
-          {/* Referral & Mobility */}
-          <Card
-            title={
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary-100 rounded-lg">
-                  <FiMapPin className="w-6 h-6 text-primary-600" />
+          {/* Referral & Mobility with Glassmorphism */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-sky-500/10 to-blue-500/10 rounded-3xl blur-xl"></div>
+            <Card
+              title={
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-gradient-to-br from-cyan-500/20 to-sky-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
+                    <FiMapPin className="w-6 h-6 text-cyan-600" />
+                  </div>
+                  <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Referral & Mobility</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">Referral & Mobility</span>
-              </div>
-            }
-            className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              }
+              className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl">
             <div className="space-y-6">
               <IconInput
                 icon={<FiNavigation className="w-4 h-4" />}
@@ -1402,29 +1413,33 @@ const CreatePatient = () => {
                 value={formData.distance_from_hospital}
                 onChange={handleChange}
                 placeholder="Enter distance from hospital"
-                className="bg-gradient-to-r from-blue-50 to-indigo-50"
+                className=""
               />
 
-              <RadioGroup
-                label="Mobility of the patient"
-                name="mobility"
-                value={formData.mobility}
-                onChange={handleChange}
-                options={MOBILITY_OPTIONS}
-                icon={<FiTruck className="w-4 h-4" />}
-                className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg"
-              />
+              <div className="bg-white/40 backdrop-blur-md border-2 border-gray-300/60 p-6 rounded-2xl shadow-sm">
+                <RadioGroup
+                  label="Mobility of the patient"
+                  name="mobility"
+                  value={formData.mobility}
+                  onChange={handleChange}
+                  options={MOBILITY_OPTIONS}
+                  icon={<FiTruck className="w-4 h-4" />}
+                  className=""
+                />
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <RadioGroup
-                  label="Referred by"
-                  name="referred_by"
-                  value={formData.referred_by}
-                  onChange={handleChange}
-                  options={REFERRED_BY_OPTIONS}
-                  icon={<FiUsers className="w-4 h-4" />}
-                  className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg"
-                />
+                <div className="bg-white/40 backdrop-blur-md border-2 border-gray-300/60 p-6 rounded-2xl shadow-sm">
+                  <RadioGroup
+                    label="Referred by"
+                    name="referred_by"
+                    value={formData.referred_by}
+                    onChange={handleChange}
+                    options={REFERRED_BY_OPTIONS}
+                    icon={<FiUsers className="w-4 h-4" />}
+                    className=""
+                  />
+                </div>
                 <IconInput
                   icon={<FiEdit3 className="w-4 h-4" />}
                   label="Exact source"
@@ -1436,27 +1451,30 @@ const CreatePatient = () => {
                 />
               </div>
             </div>
-          </Card>
+            </Card>
+          </div>
 
-          {/* Contact Information */}
-          <Card
-            title={
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary-100 rounded-lg">
-                  <FiPhone className="w-6 h-6 text-primary-600" />
+          {/* Contact Information with Glassmorphism */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 via-cyan-500/10 to-blue-500/10 rounded-3xl blur-xl"></div>
+            <Card
+              title={
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-gradient-to-br from-teal-500/20 to-cyan-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
+                    <FiPhone className="w-6 h-6 text-teal-600" />
+                  </div>
+                  <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Contact Information</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">Contact Information</span>
-              </div>
-            }
-            className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              }
+              className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl">
             <div className="space-y-8">
 
               {/* Present Address */}
               <div className="space-y-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <h4 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-                    <div className="p-2 bg-primary-100 rounded-lg">
-                      <FiMapPin className="w-6 h-6 text-primary-600" />
+                    <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-md">
+                      <FiMapPin className="w-5 h-5 text-blue-600" />
                     </div>
                     Present Address
                   </h4>
@@ -1465,7 +1483,7 @@ const CreatePatient = () => {
                     variant="outline"
                     size="sm"
                     onClick={copyPermanentToPresent}
-                    className="text-xs bg-gradient-to-r from-blue-50 to-indigo-50 border-primary-200 hover:bg-primary-50"
+                    className="text-xs bg-white/60 backdrop-blur-md border border-white/30 hover:bg-white/80 hover:border-primary-400/50 shadow-sm transition-all duration-200"
                   >
                     Same as Permanent Address
                   </Button>
@@ -1481,7 +1499,7 @@ const CreatePatient = () => {
                     onChange={handleChange}
                     placeholder="Enter house number, street, locality"
                     required
-                    className="bg-gradient-to-r from-green-50 to-emerald-50"
+                    className=""
                   />
 
                   {/* Country, State, District Row */}
@@ -1494,10 +1512,10 @@ const CreatePatient = () => {
                       onChange={handleChange}
                       placeholder="Enter country"
                       defaultValue="India"
-                      className="bg-gradient-to-r from-blue-50 to-cyan-50"
+                      className=""
                     />
                     <div className="space-y-2">
-                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
                         <FiMapPin className="w-4 h-4 text-primary-600" />
                         State
                       </label>
@@ -1508,7 +1526,7 @@ const CreatePatient = () => {
                         options={INDIAN_STATES}
                         placeholder="Select state"
                         required
-                        className="bg-gradient-to-r from-indigo-50 to-purple-50"
+                        className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
                       />
                     </div>
                     <IconInput
@@ -1519,7 +1537,7 @@ const CreatePatient = () => {
                       onChange={handleChange}
                       placeholder="Enter district"
                       required
-                      className="bg-gradient-to-r from-orange-50 to-yellow-50"
+                      className=""
                     />
                   </div>
 
@@ -1533,7 +1551,7 @@ const CreatePatient = () => {
                       onChange={handleChange}
                       placeholder="Enter city, town or village"
                       required
-                      className="bg-gradient-to-r from-teal-50 to-cyan-50"
+                      className=""
                     />
                     <IconInput
                       icon={<FiHash className="w-4 h-4" />}
@@ -1544,17 +1562,17 @@ const CreatePatient = () => {
                       placeholder="Enter pin code"
                       type="number"
                       required
-                      className="bg-gradient-to-r from-pink-50 to-rose-50"
+                      className=""
                     />
                   </div>
                 </div>
               </div>
 
               {/* Permanent Address */}
-              <div className="space-y-6">
+              <div className="space-y-6 pt-6 border-t border-white/30">
                 <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                  <div className="p-2 bg-primary-100 rounded-lg">
-                    <FiMapPin className="w-6 h-6 text-primary-600" />
+                  <div className="p-2.5 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-md">
+                    <FiMapPin className="w-5 h-5 text-indigo-600" />
                   </div>
                   Permanent Address
                 </h4>
@@ -1569,7 +1587,7 @@ const CreatePatient = () => {
                     onChange={handleChange}
                     placeholder="Enter house number, street, locality"
                     required
-                    className="bg-gradient-to-r from-green-50 to-emerald-50"
+                    className=""
                   />
 
                   {/* Country, State, District Row */}
@@ -1582,10 +1600,10 @@ const CreatePatient = () => {
                       onChange={handleChange}
                       placeholder="Enter country"
                       defaultValue="India"
-                      className="bg-gradient-to-r from-blue-50 to-cyan-50"
+                      className=""
                     />
                     <div className="space-y-2">
-                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
                         <FiMapPin className="w-4 h-4 text-primary-600" />
                         State
                       </label>
@@ -1596,7 +1614,7 @@ const CreatePatient = () => {
                         options={INDIAN_STATES}
                         placeholder="Select state"
                         required
-                        className="bg-gradient-to-r from-indigo-50 to-purple-50"
+                        className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
                       />
                     </div>
                     <IconInput
@@ -1607,7 +1625,7 @@ const CreatePatient = () => {
                       onChange={handleChange}
                       placeholder="Enter district"
                       required
-                      className="bg-gradient-to-r from-orange-50 to-yellow-50"
+                      className=""
                     />
                   </div>
 
@@ -1621,7 +1639,7 @@ const CreatePatient = () => {
                       onChange={handleChange}
                       placeholder="Enter city, town or village"
                       required
-                      className="bg-gradient-to-r from-teal-50 to-cyan-50"
+                      className=""
                     />
                     <IconInput
                       icon={<FiHash className="w-4 h-4" />}
@@ -1632,7 +1650,7 @@ const CreatePatient = () => {
                       placeholder="Enter pin code"
                       type="number"
                       required
-                      className="bg-gradient-to-r from-pink-50 to-rose-50"
+                      className=""
                     />
                   </div>
                 </div>
@@ -1652,7 +1670,7 @@ const CreatePatient = () => {
                       onChange={handleChange}
                       placeholder="Enter local address"
                       rows={3}
-                      className="bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
+                      className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 focus:bg-white/80 transition-all duration-300 hover:bg-white/70 hover:border-primary-400/70 text-gray-900 font-medium placeholder:text-gray-400"
                     />
                   </div>
                   <IconInput
@@ -1662,7 +1680,7 @@ const CreatePatient = () => {
                     value={formData.contact_number}
                     onChange={handleChange}
                     placeholder="Enter contact number"
-                    className="bg-gradient-to-r from-blue-50 to-indigo-50"
+                    className=""
                   />
                 </div>
 
@@ -1673,32 +1691,38 @@ const CreatePatient = () => {
                   value={formData.school_college_office}
                   onChange={handleChange}
                   placeholder="Enter school/college/office name"
-                  className="bg-gradient-to-r from-purple-50 to-pink-50"
+                  className=""
                 />
               </div>
             </div>
-          </Card>
+            </Card>
+          </div>
 
-          {/* Submit Button */}
-          <div className="flex justify-end gap-4 pt-8">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate('/patients')}
-              className="px-8 py-3 bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 hover:bg-gray-100 transition-all duration-200"
-            >
-              <FiX className="mr-2" />
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              loading={isLoading || isLoading || isAssigning}
-              disabled={isLoading || isLoading || isAssigning}
-              className="px-8 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-            >
-              <FiSave className="mr-2" />
-              {isLoading || isLoading || isAssigning ? 'Creating Record...' : 'Register Patient'}
-            </Button>
+          {/* Submit Button with Glassmorphism */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 via-indigo-500/20 to-blue-500/20 rounded-3xl blur-xl"></div>
+            <div className="relative bg-white/70 backdrop-blur-xl rounded-3xl p-6 lg:p-8 shadow-2xl border border-white/30">
+              <div className="flex flex-col sm:flex-row justify-end gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate('/patients')}
+                  className="px-6 lg:px-8 py-3 bg-white/60 backdrop-blur-md border border-white/30 hover:bg-white/80 hover:border-gray-300/50 text-gray-800 font-semibold shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                  <FiX className="mr-2" />
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  loading={isLoading || isAssigning}
+                  disabled={isLoading || isAssigning}
+                  className="px-6 lg:px-8 py-3 bg-gradient-to-r from-primary-600 via-indigo-600 to-blue-600 hover:from-primary-700 hover:via-indigo-700 hover:to-blue-700 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                >
+                  <FiSave className="mr-2" />
+                  {isLoading || isAssigning ? 'Creating Record...' : 'Register Patient'}
+                </Button>
+              </div>
+            </div>
           </div>
         </form>
       </div>

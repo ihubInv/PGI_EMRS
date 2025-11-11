@@ -145,32 +145,6 @@ const SelectExistingPatient = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <div className="w-full px-6 py-8 space-y-8">
-        {/* Header Section */}
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-600/10 to-primary-800/10 rounded-3xl"></div>
-          <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20">
-            <div className="flex justify-between items-center">
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-lg">
-                    <FiUser className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-4xl  font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
-                      Existing Patient Visit
-                    </h1>
-                    <p className="text-gray-600 mt-2 text-lg">
-                      Department of Psychiatry
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Postgraduate Institute of Medical Education & Research, Chandigarh
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
       <form onSubmit={handleSubmit}>
         {/* Search by CR Number */}

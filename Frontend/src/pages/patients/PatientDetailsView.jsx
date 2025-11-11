@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   FiUser, FiFileText, FiFolder, FiChevronDown, FiChevronUp, FiPackage
 } from 'react-icons/fi';
@@ -34,24 +34,57 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
   const patientAdlFiles = adlData?.data?.adlFiles || [];
 
 
-  // Get clinical proformas for this patient
-  const patientProformas = clinicalData?.data?.proformas || [];
+  // Get clinical proformas for this patient - ensure it's always an array
+  const patientProformas = Array.isArray(clinicalData?.data?.proformas) 
+    ? clinicalData.data.proformas 
+    : [];
 
   // Fetch prescriptions for all proformas
-  const proformaIds = patientProformas.map(p => p.id).filter(Boolean);
+  // Always compute proformaIds as an array with exactly 10 elements (padding with null)
+  // This ensures hooks are always called with the same structure
+  const proformaIds = useMemo(() => {
+    const ids = patientProformas.map(p => p?.id).filter(Boolean).slice(0, 10);
+    // Pad to exactly 10 elements with null to ensure consistent hook calls
+    while (ids.length < 10) {
+      ids.push(null);
+    }
+    return ids;
+  }, [patientProformas]);
 
-  // Fetch prescriptions for each proforma - using hooks in a stable array
-  // Note: This is safe as long as proformaIds array length is stable
-  const prescriptionResults = proformaIds.map(proformaId =>
-    useGetPrescriptionsByProformaIdQuery(proformaId, { skip: !proformaId })
-  );
+  // Always call the same number of hooks (10) in the same order
+  // This ensures React hooks are called in a consistent order every render
+  // proformaIds is guaranteed to have exactly 10 elements (padded with null if needed)
+  const prescriptionResult1 = useGetPrescriptionsByProformaIdQuery(proformaIds[0], { skip: !proformaIds[0] });
+  const prescriptionResult2 = useGetPrescriptionsByProformaIdQuery(proformaIds[1], { skip: !proformaIds[1] });
+  const prescriptionResult3 = useGetPrescriptionsByProformaIdQuery(proformaIds[2], { skip: !proformaIds[2] });
+  const prescriptionResult4 = useGetPrescriptionsByProformaIdQuery(proformaIds[3], { skip: !proformaIds[3] });
+  const prescriptionResult5 = useGetPrescriptionsByProformaIdQuery(proformaIds[4], { skip: !proformaIds[4] });
+  const prescriptionResult6 = useGetPrescriptionsByProformaIdQuery(proformaIds[5], { skip: !proformaIds[5] });
+  const prescriptionResult7 = useGetPrescriptionsByProformaIdQuery(proformaIds[6], { skip: !proformaIds[6] });
+  const prescriptionResult8 = useGetPrescriptionsByProformaIdQuery(proformaIds[7], { skip: !proformaIds[7] });
+  const prescriptionResult9 = useGetPrescriptionsByProformaIdQuery(proformaIds[8], { skip: !proformaIds[8] });
+  const prescriptionResult10 = useGetPrescriptionsByProformaIdQuery(proformaIds[9], { skip: !proformaIds[9] });
+
+  // Combine all prescription results - always use all 10 results
+  const prescriptionResults = [
+    prescriptionResult1,
+    prescriptionResult2,
+    prescriptionResult3,
+    prescriptionResult4,
+    prescriptionResult5,
+    prescriptionResult6,
+    prescriptionResult7,
+    prescriptionResult8,
+    prescriptionResult9,
+    prescriptionResult10,
+  ];
 
   // Combine all prescriptions and group by proforma/visit date
   const allPrescriptions = useMemo(() => {
     const prescriptions = [];
     prescriptionResults.forEach((result, index) => {
-      if (result.data?.data?.prescriptions) {
-        const proformaId = proformaIds[index];
+      const proformaId = proformaIds[index];
+      if (proformaId && result.data?.data?.prescriptions) {
         const proforma = patientProformas.find(p => p.id === proformaId);
         result.data.data.prescriptions.forEach(prescription => {
           prescriptions.push({
