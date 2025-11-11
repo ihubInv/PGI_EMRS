@@ -391,137 +391,6 @@ const PatientsPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="space-y-6 p-4 sm:p-6 lg:p-8">
         {/* Header Section */}
-        <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-primary-600/10 to-primary-800/5 rounded-2xl"></div>
-          <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-6 sm:p-8 shadow-lg border border-white/50">
-            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6">
-              <div className="flex-1 space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl blur-sm opacity-50"></div>
-                    <div className="relative p-4 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl shadow-lg">
-                      <FiUsers className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 bg-clip-text text-transparent">
-                      Patient Management
-                    </h1>
-                    <p className="text-gray-600 mt-2 text-base sm:text-lg">
-                      {isMWO(user?.role) 
-                        ? 'View and manage patient records' 
-                        : 'Comprehensive patient records and medical information management'}
-                    </p>
-                  </div>
-                </div>
-                
-                {/* Enhanced Stats Cards */}
-                {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                    <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-sm">
-                          <FiUsers className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Total Patients</p>
-                          <p className="text-2xl font-bold text-gray-900 mt-1">{data?.data?.pagination?.total || 0}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-blue-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  </div>
-                  
-                  <div className="group relative bg-gradient-to-br from-amber-50 to-orange-100/50 rounded-xl p-5 border border-amber-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                    <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg shadow-sm">
-                          <FiHeart className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Complex Cases</p>
-                          <p className="text-2xl font-bold text-gray-900 mt-1">
-                            {data?.data?.patients?.filter(p => p.has_adl_file || p.case_complexity === 'complex').length || 0}
-                        </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-orange-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  </div>
-                  
-                  <div className="group relative bg-gradient-to-br from-purple-50 to-pink-100/50 rounded-xl p-5 border border-purple-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                    <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg shadow-sm">
-                          <FiFileText className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">ADL Files</p>
-                          <p className="text-2xl font-bold text-gray-900 mt-1">
-                          {data?.data?.patients?.filter(p => p.has_adl_file).length || 0}
-                        </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-400 to-pink-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  </div>
-                  
-                  <div className="group relative bg-gradient-to-br from-emerald-50 to-green-100/50 rounded-xl p-5 border border-emerald-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                    <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg shadow-sm">
-                          <FiShield className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Assigned</p>
-                          <p className="text-2xl font-bold text-gray-900 mt-1">
-                          {data?.data?.patients?.filter(p => p.assigned_doctor_name).length || 0}
-                        </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-green-600 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  </div>
-                </div> */}
-              </div>
-              
-              {!isMWO(user?.role) && (
-                <div className="flex flex-col sm:flex-row gap-3 lg:flex-col xl:flex-row">
-                  <Button
-                    variant="outline"
-                    className="bg-white/80 border-2 border-primary-200 hover:bg-primary-50 hover:border-primary-300 shadow-sm transition-all duration-200 whitespace-nowrap"
-                    onClick={() => refetch()}
-                    disabled={isFetching}
-                  >
-                    <FiRefreshCw className={`mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-                    {isFetching ? 'Refreshing...' : 'Refresh'}
-                  </Button>
-                  <Link to="/patients/new">
-                    <Button className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-lg hover:shadow-xl transition-all duration-200 whitespace-nowrap">
-                      <FiPlus className="mr-2" />
-                      Add Patient
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* {user?.role === 'MWO' && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <FiMapPin className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-blue-800 font-medium">Registration Notice</p>
-                <p className="text-blue-600 text-sm">To register a new patient, please go to Outpatient Records → New Record</p>
-              </div>
-            </div>
-          </div>
-        )} */}
-
         {/* Main Content Card */}
         <Card className="shadow-lg border border-gray-200/50 bg-white/90 backdrop-blur-sm">
           {error && (
@@ -552,6 +421,16 @@ const PatientsPage = () => {
                   className="pl-12 h-12 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-200 shadow-sm hover:shadow-md"
                 />
               </div>
+              {!isMWO(user?.role) && (
+                <div className="flex flex-col sm:flex-row gap-3 lg:flex-col xl:flex-row">
+                  <Link to="/patients/new">
+                    <Button className="bg-gradient-to-r h-12 px-5 from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-lg hover:shadow-xl transition-all duration-200 whitespace-nowrap">
+                      <FiPlus className="mr-2" />
+                      Add Patient
+                    </Button>
+                  </Link>
+                </div>
+              )}
               <div className="flex gap-3">
                 <Button
                   variant="outline"
