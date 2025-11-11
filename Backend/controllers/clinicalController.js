@@ -1274,11 +1274,16 @@ class ClinicalController {
         });
       }
 
-      // Only allow the doctor who created the proforma or admin to update
-      if (proforma.filled_by !== req.user.id && req.user.role !== 'Admin') {
+      // Allow the doctor who created the proforma, System Administrator, or JR/SR roles to update
+      const isCreator = proforma.filled_by === req.user.id;
+      const isAdmin = req.user.role === 'System Administrator';
+      const isJR = req.user.role === 'Faculty Residents (Junior Resident (JR))';
+      const isSR = req.user.role === 'Faculty Residents (Senior Resident (SR))';
+      
+      if (!isCreator && !isAdmin && !isJR && !isSR) {
         return res.status(403).json({
           success: false,
-          message: 'Access denied. You can only update proformas you created.'
+          message: 'Access denied. You can only update proformas if you created them, or if you are a System Administrator, JR, or SR.'
         });
       }
 
@@ -1569,11 +1574,16 @@ class ClinicalController {
         });
       }
 
-      // Only allow the doctor who created the proforma or admin to delete
-      if (proforma.filled_by !== req.user.id && req.user.role !== 'Admin') {
+      // Allow the doctor who created the proforma, System Administrator, or JR/SR roles to delete
+      const isCreator = proforma.filled_by === req.user.id;
+      const isAdmin = req.user.role === 'System Administrator';
+      const isJR = req.user.role === 'Faculty Residents (Junior Resident (JR))';
+      const isSR = req.user.role === 'Faculty Residents (Senior Resident (SR))';
+      
+      if (!isCreator && !isAdmin && !isJR && !isSR) {
         return res.status(403).json({
           success: false,
-          message: 'Access denied. You can only delete proformas you created.'
+          message: 'Access denied. You can only delete proformas if you created them, or if you are a System Administrator, JR, or SR.'
         });
       }
 

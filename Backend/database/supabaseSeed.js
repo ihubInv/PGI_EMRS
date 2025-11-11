@@ -208,110 +208,7 @@ class SupabaseSeeder {
     }
   }
 
-  async seedOutpatientRecords() {
-    try {
-      console.log('📋 Seeding outpatient records...');
-
-      // Check if outpatient records already exist
-      const { count: existingCount } = await supabase
-        .from('outpatient_record')
-        .select('*', { count: 'exact', head: true });
-
-      if (existingCount > 0) {
-        console.log(`⚠️  ${existingCount} outpatient records already exist. Skipping.`);
-        return;
-      }
-
-      // Get some patients and MWO users
-      const { data: patients } = await supabase
-        .from('patients')
-        .select('id')
-        .limit(5);
-
-      const { data: mwoUsers } = await supabase
-        .from('users')
-        .select('id')
-        .eq('role', 'MWO')
-        .limit(1);
-      
-      if (!patients || patients.length === 0 || !mwoUsers || mwoUsers.length === 0) {
-        console.log('⚠️  No patients or MWO users found. Skipping outpatient records.');
-        return;
-      }
-
-      const mwoId = mwoUsers[0].id;
-      const sampleRecords = [
-        {
-          marital_status: 'Single',
-          occupation: 'Software Engineer',
-          education_level: 'Graduate',
-          religion: 'Hinduism',
-          family_type: 'Nuclear',
-          locality: 'Urban'
-        },
-        {
-          marital_status: 'Married',
-          occupation: 'Teacher',
-          education_level: 'Master/Professional',
-          religion: 'Hinduism',
-          family_type: 'Joint',
-          locality: 'Urban'
-        },
-        {
-          marital_status: 'Married',
-          occupation: 'Business',
-          education_level: 'Graduate',
-          religion: 'Sikhism',
-          family_type: 'Nuclear',
-          locality: 'Urban'
-        },
-        {
-          marital_status: 'Single',
-          occupation: 'Student',
-          education_level: 'Inter/Diploma',
-          religion: 'Hinduism',
-          family_type: 'Nuclear',
-          locality: 'Urban'
-        },
-        {
-          marital_status: 'Married',
-          occupation: 'Housewife',
-          education_level: 'Matric',
-          religion: 'Hinduism',
-          family_type: 'Extended',
-          locality: 'Rural'
-        }
-      ];
-
-      for (let i = 0; i < Math.min(patients.length, sampleRecords.length); i++) {
-        const patientId = patients[i].id;
-        const record = sampleRecords[i];
-
-        const { error } = await supabase
-          .from('outpatient_record')
-          .insert({
-            patient_id: patientId,
-            filled_by: mwoId,
-            marital_status: record.marital_status,
-            occupation: record.occupation,
-            education_level: record.education_level,
-            religion: record.religion,
-            family_type: record.family_type,
-            locality: record.locality,
-            contact_number: '9876543210'
-          });
-
-        if (error && error.code !== '23505') {
-          console.error(`Failed to seed outpatient record ${i + 1}:`, error.message);
-        }
-      }
-
-      console.log(`✅ Seeded ${Math.min(patients.length, sampleRecords.length)} outpatient records`);
-    } catch (error) {
-      console.error('❌ Failed to seed outpatient records:', error.message);
-      throw error;
-    }
-  }
+ 
 
   async seedClinicalProformas() {
     try {
@@ -536,7 +433,6 @@ class SupabaseSeeder {
 
       await this.seedUsers();
       await this.seedPatients();
-      await this.seedOutpatientRecords();
       await this.seedClinicalProformas();
       await this.seedADLFiles();
 

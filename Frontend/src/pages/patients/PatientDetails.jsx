@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
-import { FiSave, FiX, FiEdit } from 'react-icons/fi';
+import {  FiX, FiEdit } from 'react-icons/fi';
 import {
   useGetPatientByIdQuery,
   useUpdatePatientMutation,
@@ -16,7 +16,7 @@ import Button from '../../components/Button';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PatientDetailsView from './PatientDetailsView';
 import PatientDetailsEdit from './PatientDetailsEdit';
-// import { useNavigate } from "react-router-dom";
+
 
 
 const PatientDetails = () => {
@@ -69,9 +69,9 @@ const PatientDetails = () => {
   
   const { data: usersData } = useGetDoctorsQuery({ page: 1, limit: 100 });
 
-  const [updatePatient, { isLoading: isUpdating }] = useUpdatePatientMutation();
+  const [updatePatient] = useUpdatePatientMutation();
 
-  const [assignPatient, { isLoading: isAssigning }] = useAssignPatientMutation();
+  const [assignPatient] = useAssignPatientMutation();
 
   const [formData, setFormData] = useState({
     // Basic patient info
@@ -421,152 +421,6 @@ const PatientDetails = () => {
     }
   }, [patientData, patientId]); // Add patientId as dependency
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
- 
-
-  // const handleSave = async () => {
-  //   try {
-  //     // Update basic patient information
-  //     const patientPayload = {
-  //       id,
-  //       name: formData.name,
-  //       sex: formData.sex,
-  //       actual_age: parseInt(formData.actual_age),
-  //       assigned_room: formData.assigned_room,
-  //       contact_number: formData.contact_number,
-        
-  //       // Include fields that are stored in the patients table
-  //       age_group: formData.age_group,
-  //       marital_status: formData.marital_status,
-  //       year_of_marriage: formData.year_of_marriage ? parseInt(formData.year_of_marriage) : null,
-  //       no_of_children: formData.no_of_children ? parseInt(formData.no_of_children) : null,
-  //       no_of_children_male: formData.no_of_children_male ? parseInt(formData.no_of_children_male) : null,
-  //       no_of_children_female: formData.no_of_children_female ? parseInt(formData.no_of_children_female) : null,
-  //       occupation: formData.occupation,
-  //       actual_occupation: formData.actual_occupation,
-  //       education_level: formData.education_level,
-  //       completed_years_of_education: formData.completed_years_of_education ? parseInt(formData.completed_years_of_education) : null,
-  //       patient_income: formData.patient_income ? parseFloat(formData.patient_income) : null,
-  //       family_income: formData.family_income ? parseFloat(formData.family_income) : null,
-        
-  //       // Address fields
-  //       present_address_line_1: formData.present_address_line_1,
-  //       present_address_line_2: formData.present_address_line_2,
-  //       present_city_town_village: formData.present_city_town_village,
-  //       present_district: formData.present_district,
-  //       present_state: formData.present_state,
-  //       present_pin_code: formData.present_pin_code,
-  //       present_country: formData.present_country,
-        
-  //       permanent_address_line_1: formData.permanent_address_line_1,
-  //       permanent_address_line_2: formData.permanent_address_line_2,
-  //       permanent_city_town_village: formData.permanent_city_town_village,
-  //       permanent_district: formData.permanent_district,
-  //       permanent_state: formData.permanent_state,
-  //       permanent_pin_code: formData.permanent_pin_code,
-  //       permanent_country: formData.permanent_country,
-        
-  //       address_line_1: formData.address_line_1,
-  //       address_line_2: formData.address_line_2,
-  //       city_town_village: formData.city_town_village,
-  //       district: formData.district,
-  //       state: formData.state,
-  //       pin_code: formData.pin_code,
-  //       country: formData.country,
-        
-  //       // Additional fields
-  //       religion: formData.religion,
-  //       family_type: formData.family_type,
-  //       locality: formData.locality,
-  //       head_name: formData.head_name,
-  //       head_age: formData.head_age ? parseInt(formData.head_age) : null,
-  //       head_relationship: formData.head_relationship,
-  //       head_education: formData.head_education,
-  //       head_occupation: formData.head_occupation,
-  //       head_income: formData.head_income ? parseFloat(formData.head_income) : null,
-  //       distance_from_hospital: formData.distance_from_hospital,
-  //       mobility: formData.mobility,
-  //       referred_by: formData.referred_by,
-  //       exact_source: formData.exact_source,
-  //       seen_in_walk_in_on: formData.seen_in_walk_in_on,
-  //       worked_up_on: formData.worked_up_on,
-  //       school_college_office: formData.school_college_office,
-        
-  //       // Registration details
-  //       department: formData.department,
-  //       unit_consit: formData.unit_consit,
-  //       room_no: formData.room_no,
-  //       serial_no: formData.serial_no,
-  //       file_no: formData.file_no,
-  //       unit_days: formData.unit_days,
-        
-  //       // Additional fields
-  //       category: formData.category,
-  //       special_clinic_no: formData.special_clinic_no,
-  //     };
-
-  //     await updatePatient(patientPayload).unwrap();
-
-  //     // Update outpatient record if it exists
-  //     // if (patientData?.data?.record?.id) {
-  //     //   const outpatientPayload = {
-  //     //     id: patientData.data.record.id,
-  //     //     age_group: formData.age_group,
-  //     //     marital_status: formData.marital_status,
-  //     //     year_of_marriage: formData.year_of_marriage ? parseInt(formData.year_of_marriage) : null,
-  //     //     no_of_children: formData.no_of_children ? parseInt(formData.no_of_children) : null,
-  //     //     occupation: formData.occupation,
-  //     //     actual_occupation: formData.actual_occupation,
-  //     //     education_level: formData.education_level,
-  //     //     completed_years_of_education: formData.completed_years_of_education ? parseInt(formData.completed_years_of_education) : null,
-  //     //     patient_income: formData.patient_income ? parseFloat(formData.patient_income) : null,
-  //     //     family_income: formData.family_income ? parseFloat(formData.family_income) : null,
-  //     //     religion: formData.religion,
-  //     //     family_type: formData.family_type,
-  //     //     locality: formData.locality,
-  //     //     head_name: formData.head_name,
-  //     //     head_age: formData.head_age ? parseInt(formData.head_age) : null,
-  //     //     head_relationship: formData.head_relationship,
-  //     //     head_education: formData.head_education,
-  //     //     head_occupation: formData.head_occupation,
-  //     //     head_income: formData.head_income ? parseFloat(formData.head_income) : null,
-  //     //     distance_from_hospital: formData.distance_from_hospital,
-  //     //     mobility: formData.mobility,
-  //     //     referred_by: formData.referred_by,
-  //     //     exact_source: formData.exact_source,
-  //     //     present_address: formData.present_address,
-  //     //     permanent_address: formData.permanent_address,
-  //     //     local_address: formData.local_address,
-  //     //     school_college_office: formData.school_college_office,
-  //     //     contact_number: formData.contact_number,
-  //     //   };
-
-  //     //   await updateOutpatientRecord(outpatientPayload).unwrap();
-  //     // }
-
-  //     // Handle doctor assignment separately (if needed)
-  //     if (formData.assigned_doctor_id) {
-  //       try {
-  //         await assignPatient({
-  //           patient_id: Number(id),
-  //           assigned_doctor: Number(formData.assigned_doctor_id),
-  //           room_no: formData.assigned_room || ''
-  //         }).unwrap();
-  //       } catch (_) {}
-  //     }
-
-  //     toast.success('Patient updated successfully!');
-  //     setIsEditing(false);
-  //     // Refetch patient data to show updated information
-  //     // The query will automatically refetch due to RTK Query cache invalidation
-  //   } catch (err) {
-  //     toast.error(err?.data?.message || 'Failed to update patient');
-  //   }
-  // };
 
 
 const handleSave = async () => {

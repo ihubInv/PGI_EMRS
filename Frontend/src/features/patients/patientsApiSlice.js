@@ -34,7 +34,7 @@ export const patientsApiSlice = apiSlice.injectEndpoints({
         method: 'POST',
         body: patientData,
       }),
-      invalidatesTags: ['Patient', 'Stats', 'OutpatientRecord'],
+      invalidatesTags: ['Patient', 'Stats', 'ClinicalProforma', 'ADLFile'],
     }),
     updatePatient: builder.mutation({
       query: ({ id, ...data }) => ({

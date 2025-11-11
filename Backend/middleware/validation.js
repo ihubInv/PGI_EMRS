@@ -370,37 +370,7 @@ const validatePatientRegistration = [
   handleValidationErrors
 ];
 
-// Outpatient record validation
-const validateOutpatientRecord = [
-  body('patient_id')
-    .isInt({ min: 1 })
-    .withMessage('Valid patient ID is required'),
-  body('age_group')
-    .optional()
-    .isLength({ max: 20 })
-    .withMessage('Age group must not exceed 20 characters'),
-  body('marital_status')
-    .optional()
-    .isLength({ max: 20 })
-    .withMessage('Marital status must not exceed 20 characters'),
-  body('occupation')
-    .optional()
-    .isLength({ max: 50 })
-    .withMessage('Occupation must not exceed 50 characters'),
-  body('education_level')
-    .optional()
-    .isLength({ max: 50 })
-    .withMessage('Education level must not exceed 50 characters'),
-  body('religion')
-    .optional()
-    .isLength({ max: 20 })
-    .withMessage('Religion must not exceed 20 characters'),
-  body('contact_number')
-    .optional()
-    .isLength({ max: 20 })
-    .withMessage('Contact number must not exceed 20 characters'),
-  handleValidationErrors
-];
+
 
 // Clinical proforma validation
 const validateClinicalProforma = [
@@ -478,7 +448,6 @@ module.exports = {
   validateUserLogin,
   validatePatient,
   validatePatientRegistration,
-  validateOutpatientRecord,
   validateClinicalProforma,
   validateADLFile,
   validateId,
