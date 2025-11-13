@@ -168,6 +168,42 @@ class User {
     }
   }
 
+  // Activate user
+  async activate() {
+    try {
+      const result = await db.query(
+        'UPDATE users SET is_active = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id, name, email, role, is_active, created_at',
+        [this.id]
+      );
+
+      if (result.rows.length > 0) {
+        this.is_active = true;
+        return this;
+      }
+      throw new Error('User not found');
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Deactivate user
+  async deactivate() {
+    try {
+      const result = await db.query(
+        'UPDATE users SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id, name, email, role, is_active, created_at',
+        [this.id]
+      );
+
+      if (result.rows.length > 0) {
+        this.is_active = false;
+        return this;
+      }
+      throw new Error('User not found');
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // Change password
   async changePassword(currentPassword, newPassword) {
     try {

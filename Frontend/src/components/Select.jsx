@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { FiChevronDown, FiCheck } from 'react-icons/fi';
+import { FiChevronDown, FiCheck, FiSearch } from 'react-icons/fi';
 import { createPortal } from 'react-dom';
 
 const Select = ({
@@ -16,12 +16,15 @@ const Select = ({
   containerClassName = '',
   dropdownZIndex = 999999,
   usePortal = true,
+  searchable = false,
   ...props
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const triggerRef = useRef(null);
+  const searchInputRef = useRef(null);
   const [menuStyle, setMenuStyle] = useState({ top: 0, left: 0, width: 0 });
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -60,6 +63,30 @@ const Select = ({
 
   const selectedOption = options.find(opt => opt.value === value);
 
+  // Filter options based on search query
+  const filteredOptions = searchable && searchQuery
+    ? options.filter(option =>
+        option.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        option.value.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : options;
+
+  // Focus search input when dropdown opens
+  useEffect(() => {
+    if (isOpen && searchable && searchInputRef.current) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
+    }
+  }, [isOpen, searchable]);
+
+  // Reset search when dropdown closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchQuery('');
+    }
+  }, [isOpen]);
+
   const handleSelect = (optionValue) => {
     const event = {
       target: {
@@ -69,6 +96,7 @@ const Select = ({
     };
     onChange(event);
     setIsOpen(false);
+    setSearchQuery('');
   };
 
   const Menu = (
@@ -80,13 +108,29 @@ const Select = ({
         zIndex: dropdownZIndex,
       }}
     >
-      <div className="overflow-y-auto py-1" style={{ maxHeight: '232px' }}>
-        {options.length === 0 ? (
+      {searchable && (
+        <div className="p-2 border-b border-gray-200">
+          <div className="relative">
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search..."
+              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
+      <div className="overflow-y-auto py-1" style={{ maxHeight: searchable ? '180px' : '232px' }}>
+        {filteredOptions.length === 0 ? (
           <div className="px-4 py-3 text-sm text-gray-500 text-center">
-            No options available
+            {searchQuery ? 'No matching options' : 'No options available'}
           </div>
         ) : (
-          options.map((option, index) => (
+          filteredOptions.map((option, index) => (
             <button
               key={option.value}
               type="button"

@@ -159,7 +159,7 @@ app.get('/', (req, res) => {
       patients: '/api/patients',
       clinicalProformas: '/api/clinical-proformas',
       adlFiles: '/api/adl-files',
-      prescriptions: '/api/prescriptions'
+      prescriptions: '/api/prescriptions',
     }
   });
 });
@@ -185,7 +185,7 @@ app.use('*', (req, res) => {
       'GET /api/adl-files',
       'POST /api/adl-files',
       'GET /api/prescriptions',
-      'POST /api/prescriptions'
+      'POST /api/prescriptions',
     ]
   });
 });

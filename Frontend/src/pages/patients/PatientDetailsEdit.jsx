@@ -12,8 +12,8 @@ import Select from '../../components/Select';
 import Textarea from '../../components/Textarea';
 import { formatDate, formatDateTime } from '../../utils/formatters';
 import {
-  SEX_OPTIONS, MARITAL_STATUS, FAMILY_TYPE, LOCALITY, RELIGION,
-  AGE_GROUP_OPTIONS, OCCUPATION_OPTIONS, EDUCATION_OPTIONS,
+  SEX_OPTIONS, MARITAL_STATUS, FAMILY_TYPE_OPTIONS, LOCALITY_OPTIONS, RELIGION_OPTIONS,
+  AGE_GROUP_OPTIONS, OCCUPATION_OPTIONS, EDUCATION_OPTIONS, HEAD_RELATIONSHIP_OPTIONS,
   MOBILITY_OPTIONS, REFERRED_BY_OPTIONS, INDIAN_STATES, UNIT_DAYS_OPTIONS
 } from '../../utils/constants';
 import { isJR, isSR, isMWO, isAdmin, isJrSr } from '../../utils/constants';
@@ -839,7 +839,7 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                     name="religion"
                     value={localFormData.religion || ''}
                     onChange={handlePatientChange}
-                    options={RELIGION}
+                    options={RELIGION_OPTIONS}
                     icon={<FiShield className="w-4 h-4" />}
                   />
                   <RadioGroup
@@ -847,7 +847,7 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                     name="family_type"
                     value={localFormData.family_type || ''}
                     onChange={handlePatientChange}
-                    options={FAMILY_TYPE}
+                    options={FAMILY_TYPE_OPTIONS}
                     icon={<FiUsers className="w-4 h-4" />}
                   />
                   <RadioGroup
@@ -855,7 +855,7 @@ const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersDat
                     name="locality"
                     value={localFormData.locality || ''}
                     onChange={handlePatientChange}
-                    options={LOCALITY}
+                    options={LOCALITY_OPTIONS}
                     icon={<FiMapPin className="w-4 h-4" />}
                   />
                   <IconInput

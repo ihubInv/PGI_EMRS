@@ -7,7 +7,14 @@ export const usersApiSlice = apiSlice.injectEndpoints({
         url: '/users',
         params: { page, limit, ...filters },
       }),
-      providesTags: ['User'],
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.data?.users?.map(({ id }) => ({ type: 'User', id })) || [],
+              { type: 'User', id: 'LIST' },
+              'User',
+            ]
+          : ['User'],
     }),
     getUserById: builder.query({
       query: (id) => `/users/${id}`,
@@ -19,7 +26,7 @@ export const usersApiSlice = apiSlice.injectEndpoints({
         method: 'POST',
         body: userData,
       }),
-      invalidatesTags: ['User', 'Stats'],
+      invalidatesTags: [{ type: 'User', id: 'LIST' }, 'User', 'Stats'],
     }),
     updateUser: builder.mutation({
       query: ({ id, ...data }) => ({
@@ -27,14 +34,23 @@ export const usersApiSlice = apiSlice.injectEndpoints({
         method: 'PUT',
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'User', id }, 'User'],
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'User', id },
+        { type: 'User', id: 'LIST' },
+        'User',
+      ],
     }),
     deleteUser: builder.mutation({
       query: (id) => ({
         url: `/users/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['User', 'Stats'],
+      invalidatesTags: (result, error, id) => [
+        { type: 'User', id },
+        { type: 'User', id: 'LIST' },
+        'User',
+        'Stats',
+      ],
     }),
     getUserStats: builder.query({
       query: () => '/users/stats',
@@ -45,14 +61,24 @@ export const usersApiSlice = apiSlice.injectEndpoints({
         url: `/users/${id}/activate`,
         method: 'PUT',
       }),
-      invalidatesTags: (result, error, id) => [{ type: 'User', id }, 'User'],
+      invalidatesTags: (result, error, id) => [
+        { type: 'User', id },
+        { type: 'User', id: 'LIST' },
+        'User',
+        'Stats',
+      ],
     }),
     deactivateUser: builder.mutation({
       query: (id) => ({
         url: `/users/${id}/deactivate`,
         method: 'PUT',
       }),
-      invalidatesTags: (result, error, id) => [{ type: 'User', id }, 'User'],
+      invalidatesTags: (result, error, id) => [
+        { type: 'User', id },
+        { type: 'User', id: 'LIST' },
+        'User',
+        'Stats',
+      ],
     }),
     resetUserPassword: builder.mutation({
       query: ({ id, ...data }) => ({

@@ -8,9 +8,9 @@ export const getEnumLabel = (value, options) => {
 // Specific mapping functions for common enums
 export const getSexLabel = (sex) => getEnumLabel(sex, SEX_OPTIONS);
 export const getMaritalStatusLabel = (status) => getEnumLabel(status, MARITAL_STATUS);
-export const getFamilyTypeLabel = (type) => getEnumLabel(type, FAMILY_TYPE);
-export const getLocalityLabel = (locality) => getEnumLabel(locality, LOCALITY);
-export const getReligionLabel = (religion) => getEnumLabel(religion, RELIGION);
+export const getFamilyTypeLabel = (type) => getEnumLabel(type, FAMILY_TYPE_OPTIONS);
+export const getLocalityLabel = (locality) => getEnumLabel(locality, LOCALITY_OPTIONS);
+export const getReligionLabel = (religion) => getEnumLabel(religion, RELIGION_OPTIONS);
 export const getAgeGroupLabel = (ageGroup) => getEnumLabel(ageGroup, AGE_GROUP_OPTIONS);
 export const getOccupationLabel = (occupation) => getEnumLabel(occupation, OCCUPATION_OPTIONS);
 export const getEducationLabel = (education) => getEnumLabel(education, EDUCATION_OPTIONS);
@@ -66,7 +66,7 @@ export const formatDateTime = (dateString) => {
 
 // Import constants
 import { 
-  SEX_OPTIONS, MARITAL_STATUS, FAMILY_TYPE, LOCALITY, RELIGION, 
+  SEX_OPTIONS, MARITAL_STATUS, FAMILY_TYPE_OPTIONS, LOCALITY_OPTIONS, RELIGION_OPTIONS, 
   AGE_GROUP_OPTIONS, OCCUPATION_OPTIONS, EDUCATION_OPTIONS, 
   MOBILITY_OPTIONS, REFERRED_BY_OPTIONS, FILE_STATUS, CASE_SEVERITY, DOCTOR_DECISION 
 } from './constants';

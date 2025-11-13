@@ -34,6 +34,7 @@ import ADLFileDetails from './pages/adl/ADLFileDetails';
 // User Management Pages
 import UsersPage from './pages/users/UsersPage';
 import CreateUser from './pages/users/CreateUser';
+import EditUser from './pages/users/EditUser';
 
 // Profile
 import Profile from './pages/Profile';
@@ -100,7 +101,7 @@ function App() {
               <Route element={<ProtectedRoute allowedRoles={['System Administrator']} />}>
                 <Route path="/users" element={<UsersPage />} />
                 <Route path="/users/new" element={<CreateUser />} />
-                <Route path="/users/:id/edit" element={<div>Edit User</div>} />
+                <Route path="/users/:id/edit" element={<EditUser />} />
               </Route>
 
               {/* Profile - All authenticated users */}

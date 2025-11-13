@@ -1,17 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FiArrowLeft } from 'react-icons/fi';
-import { useCreateUserMutation } from '../../features/users/usersApiSlice';
+import { useCreateUserMutation, useUpdateUserMutation } from '../../features/users/usersApiSlice';
 import Card from '../../components/Card';
 import Input from '../../components/Input';
 import Select from '../../components/Select';
 import Button from '../../components/Button';
 import { USER_ROLES } from '../../utils/constants';
 
-const CreateUser = () => {
+const CreateUser = ({ editMode = false, existingUser = null, userId = null }) => {
   const navigate = useNavigate();
-  const [createUser, { isLoading }] = useCreateUserMutation();
+  const [createUser, { isLoading: isCreating }] = useCreateUserMutation();
+  const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
+  const isLoading = isCreating || isUpdating;
 
   const [formData, setFormData] = useState({
     name: '',
@@ -22,6 +24,19 @@ const CreateUser = () => {
   });
 
   const [errors, setErrors] = useState({});
+
+  // Populate form when editing
+  useEffect(() => {
+    if (editMode && existingUser) {
+      setFormData({
+        name: existingUser.name || '',
+        email: existingUser.email || '',
+        password: '',
+        confirmPassword: '',
+        role: existingUser.role || '',
+      });
+    }
+  }, [editMode, existingUser]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -44,13 +59,22 @@ const CreateUser = () => {
       newErrors.email = 'Email is invalid';
     }
 
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+    // Password validation - required for create, optional for edit
+    if (!editMode) {
+      if (!formData.password) {
+        newErrors.password = 'Password is required';
+      } else if (formData.password.length < 8) {
+        newErrors.password = 'Password must be at least 8 characters';
+      }
+    } else {
+      // In edit mode, if password is provided, validate it
+      if (formData.password && formData.password.length < 8) {
+        newErrors.password = 'Password must be at least 8 characters';
+      }
     }
 
-    if (formData.password !== formData.confirmPassword) {
+    // Only validate confirm password if password is provided
+    if (formData.password && formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
@@ -71,12 +95,21 @@ const CreateUser = () => {
     }
 
     try {
-      const { confirmPassword, ...submitData } = formData;
-      await createUser(submitData).unwrap();
-      toast.success('User created successfully!');
+      if (editMode) {
+        // For edit mode, only send fields that can be updated (name, email, role)
+        // Password is handled separately via reset-password endpoint
+        const { password, confirmPassword, ...submitData } = formData;
+        await updateUser({ id: userId, ...submitData }).unwrap();
+        toast.success('User updated successfully!');
+      } else {
+        // For create mode, include password
+        const { confirmPassword, ...submitData } = formData;
+        await createUser(submitData).unwrap();
+        toast.success('User created successfully!');
+      }
       navigate('/users');
     } catch (err) {
-      toast.error(err?.data?.message || 'Failed to create user');
+      toast.error(err?.data?.message || (editMode ? 'Failed to update user' : 'Failed to create user'));
     }
   };
 
@@ -86,92 +119,109 @@ const CreateUser = () => {
   }));
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Link to="/users">
-          <Button variant="ghost" size="sm">
-            <FiArrowLeft className="mr-2" /> Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Create New User</h1>
-          <p className="text-gray-600 mt-1">Add a new system user</p>
-        </div>
-      </div>
-
-      <form onSubmit={handleSubmit}>
-        <Card>
-          <div className="space-y-6">
-            <Input
-              label="Full Name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Enter full name"
-              error={errors.name}
-              required
-            />
-
-            <Input
-              label="Email Address"
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="user@pgimer.edu.in"
-              error={errors.email}
-              required
-            />
-
-            <Select
-              label="Role"
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              options={roleOptions}
-              error={errors.role}
-              required
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Input
-                label="Password"
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Minimum 8 characters"
-                error={errors.password}
-                required
-              />
-
-              <Input
-                label="Confirm Password"
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Re-enter password"
-                error={errors.confirmPassword}
-                required
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate('/users')}
-              >
-                Cancel
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        <div className="w-full space-y-6">
+          <div className="flex items-center gap-4">
+            <Link to="/users">
+              <Button variant="ghost" size="sm">
+                <FiArrowLeft className="mr-2" /> Back
               </Button>
-              <Button type="submit" loading={isLoading}>
-                Create User
-              </Button>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {editMode ? 'Edit User' : 'Create New User'}
+              </h1>
+              <p className="text-gray-600 mt-1">
+                {editMode ? 'Update user information' : 'Add a new system user'}
+              </p>
             </div>
           </div>
-        </Card>
-      </form>
+
+          <form onSubmit={handleSubmit}>
+            <Card className="shadow-lg border border-gray-200/50 bg-white/90 backdrop-blur-sm">
+              <div className="space-y-6 p-6">
+                <Input
+                  label="Full Name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Enter full name"
+                  error={errors.name}
+                  required
+                />
+
+                <Input
+                  label="Email Address"
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="user@pgimer.edu.in"
+                  error={errors.email}
+                  required
+                />
+
+                <Select
+                  label="Role"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  options={roleOptions}
+                  error={errors.role}
+                  required
+                />
+
+                {!editMode && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Input
+                      label="Password"
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="Minimum 8 characters"
+                      error={errors.password}
+                      required
+                    />
+
+                    <Input
+                      label="Confirm Password"
+                      type="password"
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      placeholder="Re-enter password"
+                      error={errors.confirmPassword}
+                      required
+                    />
+                  </div>
+                )}
+                {editMode && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800">
+                      <strong>Note:</strong> To change the user's password, use the password reset feature from the user management page.
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate('/users')}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" loading={isLoading}>
+                    {editMode ? 'Update User' : 'Create User'}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </form>
+        </div>
+      </div>
     </div>
   );
 };

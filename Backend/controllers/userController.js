@@ -381,6 +381,86 @@ class UserController {
     }
   }
 
+  // Activate user by ID (Admin only)
+  static async activateUserById(req, res) {
+    try {
+      const { id } = req.params;
+      
+      // Prevent admin from deactivating themselves
+      if (parseInt(id) === req.user.id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot activate your own account (already active)'
+        });
+      }
+
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      await user.activate();
+
+      res.json({
+        success: true,
+        message: 'User activated successfully',
+        data: {
+          user: user.toJSON()
+        }
+      });
+    } catch (error) {
+      console.error('Activate user by ID error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to activate user',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+
+  // Deactivate user by ID (Admin only)
+  static async deactivateUserById(req, res) {
+    try {
+      const { id } = req.params;
+      
+      // Prevent admin from deactivating themselves
+      if (parseInt(id) === req.user.id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot deactivate your own account'
+        });
+      }
+
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      await user.deactivate();
+
+      res.json({
+        success: true,
+        message: 'User deactivated successfully',
+        data: {
+          user: user.toJSON()
+        }
+      });
+    } catch (error) {
+      console.error('Deactivate user by ID error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to deactivate user',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+
   // Delete user by ID (Admin only)
   static async deleteUserById(req, res) {
     try {

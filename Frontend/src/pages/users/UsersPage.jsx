@@ -39,8 +39,8 @@ const UsersPage = () => {
     refetchOnMountOrArgChange: true,
   });
   const [deleteUser] = useDeleteUserMutation();
-  const [activateUser] = useActivateUserMutation();
-  const [deactivateUser] = useDeactivateUserMutation();
+  const [activateUser, { isLoading: isActivating }] = useActivateUserMutation();
+  const [deactivateUser, { isLoading: isDeactivating }] = useDeactivateUserMutation();
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
@@ -57,6 +57,8 @@ const UsersPage = () => {
     try {
       await activateUser(id).unwrap();
       toast.success('User activated successfully');
+      // Refetch users list to update the UI immediately
+      await refetch();
     } catch (err) {
       toast.error(err?.data?.message || 'Failed to activate user');
     }
@@ -67,6 +69,8 @@ const UsersPage = () => {
       try {
         await deactivateUser(id).unwrap();
         toast.success('User deactivated successfully');
+        // Refetch users list to update the UI immediately
+        await refetch();
       } catch (err) {
         toast.error(err?.data?.message || 'Failed to deactivate user');
       }
@@ -153,20 +157,23 @@ const UsersPage = () => {
           <span className="font-semibold">Status</span>
         </div>
       ),
-      render: (row) => (
-        <Badge 
-          variant={row.is_active ? 'success' : 'default'}
-          className={row.is_active 
-            ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200' 
-            : 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-800 border-gray-200'
-          }
-        >
-          <div className="flex items-center gap-1.5">
-            <div className={`w-2 h-2 rounded-full ${row.is_active ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-            {row.is_active ? 'Active' : 'Inactive'}
-          </div>
-        </Badge>
-      ),
+      render: (row) => {
+        const isActive = row.is_active === true || row.is_active === 1;
+        return (
+          <Badge 
+            variant={isActive ? 'success' : 'default'}
+            className={isActive 
+              ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200 font-semibold' 
+              : 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-800 border-gray-200 font-semibold'
+            }
+          >
+            <div className="flex items-center gap-1.5">
+              <div className={`w-2.5 h-2.5 rounded-full ${isActive ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+              <span className="font-medium">{isActive ? 'Active' : 'Inactive'}</span>
+            </div>
+          </Badge>
+        );
+      },
     },
     {
       header: (
@@ -223,15 +230,17 @@ const UsersPage = () => {
               <FiEdit className="w-4 h-4 text-blue-600" />
             </Button>
           </Link>
-          {row.is_active ? (
+          {(row.is_active === true || row.is_active === 1) ? (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => handleDeactivate(row.id)}
               title="Deactivate User"
-              className="h-9 w-9 p-0 bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200 hover:border-orange-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
+              disabled={isDeactivating || isActivating}
+              loading={isDeactivating}
+              className="h-9 w-9 p-0 bg-gradient-to-r from-red-50 to-rose-50 hover:from-red-100 hover:to-rose-100 border border-red-200 hover:border-red-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <FiUserX className="w-4 h-4 text-orange-600" />
+              <FiUserX className="w-4 h-4 text-red-600" />
             </Button>
           ) : (
             <Button
@@ -239,7 +248,9 @@ const UsersPage = () => {
               size="sm"
               onClick={() => handleActivate(row.id)}
               title="Activate User"
-              className="h-9 w-9 p-0 bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 border border-green-200 hover:border-green-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg"
+              disabled={isActivating || isDeactivating}
+              loading={isActivating}
+              className="h-9 w-9 p-0 bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 border border-green-200 hover:border-green-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FiUserCheck className="w-4 h-4 text-green-600" />
             </Button>
