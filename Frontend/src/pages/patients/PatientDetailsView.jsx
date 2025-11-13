@@ -175,7 +175,7 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Age</label>
-                    <p className="text-base font-semibold text-gray-900 mt-1">{patient.actual_age ? `${patient.actual_age} years` : 'N/A'}</p>
+                    <p className="text-base font-semibold text-gray-900 mt-1">{patient.age ? `${patient.age} years` : 'N/A'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Age Group</label>
@@ -522,14 +522,14 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
               )}
 
               {/* Quick Entry Address - if available */}
-              {(patient.address_line_1 || patient.city_town_village || patient.district || patient.state || patient.pin_code || patient.country) && (
+              {(patient.address_line || patient.city || patient.district || patient.state || patient.pin_code || patient.country) && (
                 <div>
                   <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Quick Entry Address</h4>
                   <div>
                     <p className="text-sm text-gray-900 mt-1">{formatAddress({
-                      address_line_1: patient.address_line_1,
+                      address_line: patient.address_line,
                       address_line_2: patient.address_line_2,
-                      city_town_village: patient.city_town_village,
+                      city: patient.city,
                       district: patient.district,
                       state: patient.state,
                       pin_code: patient.pin_code,
@@ -569,9 +569,9 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
                       <div>
                         <label className="text-sm font-medium text-gray-600">Present Address</label>
                         <p className="text-sm text-gray-900 mt-1">{formatAddress({
-                          address_line_1: patient.present_address_line_1,
+                          address_line: patient.present_address_line_1,
                           address_line_2: patient.present_address_line_2,
-                          city_town_village: patient.present_city_town_village,
+                          city: patient.present_city_town_village,
                           district: patient.present_district,
                           state: patient.present_state,
                           pin_code: patient.present_pin_code,
@@ -583,9 +583,9 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
                       <div>
                         <label className="text-sm font-medium text-gray-600">Permanent Address</label>
                         <p className="text-sm text-gray-900 mt-1">{formatAddress({
-                          address_line_1: patient.permanent_address_line_1,
+                          address_line: patient.permanent_address_line_1,
                           address_line_2: patient.permanent_address_line_2,
-                          city_town_village: patient.permanent_city_town_village,
+                          city: patient.permanent_city_town_village,
                           district: patient.permanent_district,
                           state: patient.permanent_state,
                           pin_code: patient.permanent_pin_code,

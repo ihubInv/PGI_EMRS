@@ -546,7 +546,7 @@ const PrescribeMedication = () => {
                     <span className="font-bold">CR Number:</span> <span className="ml-2 font-mono">{patient.cr_no}</span>
                   </div>
                   <div>
-                    <span className="font-bold">Age/Sex:</span> <span className="ml-2">{patient.actual_age} years, {patient.sex}</span>
+                    <span className="font-bold">Age/Sex:</span> <span className="ml-2">{patient.age} years, {patient.sex}</span>
                   </div>
                   {patient.psy_no && (
                     <div>
@@ -684,7 +684,7 @@ const PrescribeMedication = () => {
                     <FiUser className="w-4 h-4 text-green-600" />
                     <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Age / Sex</label>
                   </div>
-                  <p className="text-lg font-bold text-gray-900">{patient.actual_age} years, {patient.sex}</p>
+                  <p className="text-lg font-bold text-gray-900">{patient.age} years, {patient.sex}</p>
                 </div>
                 {patient.psy_no && (
                   <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg p-4 border border-orange-100">

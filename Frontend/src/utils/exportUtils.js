@@ -270,7 +270,7 @@ export const formatPatientsForExport = (patients) => {
     // === BASIC INFORMATION ===
     'Patient Name': patient.name || 'N/A',
     'Sex': patient.sex || 'N/A',
-    'Actual Age': (patient.actual_age !== null && patient.actual_age !== undefined) ? `${patient.actual_age} years` : 'N/A',
+    'Actual Age': (patient.age !== null && patient.age !== undefined) ? `${patient.age} years` : 'N/A',
     'Age Group': patient.age_group || 'N/A',
     'Marital Status': patient.marital_status || 'N/A',
     'Year of Marriage': patient.year_of_marriage || 'N/A',
@@ -311,9 +311,9 @@ export const formatPatientsForExport = (patients) => {
     
     // === ADDRESS INFORMATION ===
     // Quick Entry Address
-    'Address Line 1': patient.address_line_1 || 'N/A',
+    'Address Line 1': patient.address_line || 'N/A',
     'Address Line 2': patient.address_line_2 || 'N/A',
-    'City/Town/Village': patient.city_town_village || 'N/A',
+    'City/Town/Village': patient.city || 'N/A',
     'District': patient.district || 'N/A',
     'State': patient.state || 'N/A',
     'Pin Code': patient.pin_code || 'N/A',
@@ -583,7 +583,7 @@ export const formatPatientsForExportSelective = (patients, selectedFields = []) 
     // Basic Information
     'name': 'Patient Name',
     'sex': 'Sex',
-    'actual_age': 'Actual Age',
+    'age': 'Actual Age',
     'age_group': 'Age Group',
     'marital_status': 'Marital Status',
     'year_of_marriage': 'Year of Marriage',
@@ -623,9 +623,9 @@ export const formatPatientsForExportSelective = (patients, selectedFields = []) 
     'worked_up_on': 'Worked Up On',
     
     // Address Information
-    'address_line_1': 'Address Line 1',
+    'address_line': 'Address Line 1',
     'address_line_2': 'Address Line 2',
-    'city_town_village': 'City/Town/Village',
+    'city': 'City/Town/Village',
     'district': 'District',
     'state': 'State',
     'pin_code': 'Pin Code',
@@ -690,7 +690,7 @@ export const formatPatientsForExportSelective = (patients, selectedFields = []) 
         const value = patient[field];
         
         // Format specific fields
-        if (field === 'actual_age' && value !== null && value !== undefined) {
+        if (field === 'age' && value !== null && value !== undefined) {
           exportData[fieldMapping[field]] = `${value} years`;
         } else if ((field === 'patient_income' || field === 'family_income' || field === 'head_income') && value !== null && value !== undefined) {
           exportData[fieldMapping[field]] = `₹${value}`;
@@ -731,7 +731,7 @@ export const getExportFieldOptions = () => {
       fields: [
         { key: 'name', label: 'Patient Name' },
         { key: 'sex', label: 'Sex' },
-        { key: 'actual_age', label: 'Actual Age' },
+        { key: 'age', label: 'Actual Age' },
         { key: 'age_group', label: 'Age Group' },
         { key: 'marital_status', label: 'Marital Status' },
         { key: 'year_of_marriage', label: 'Year of Marriage' },
@@ -779,8 +779,8 @@ export const getExportFieldOptions = () => {
     {
       category: 'Address Information',
       fields: [
-        { key: 'address_line_1', label: 'Address Line 1' },
-        { key: 'city_town_village', label: 'City/Town/Village' },
+        { key: 'address_line', label: 'Address Line 1' },
+        { key: 'city', label: 'City/Town/Village' },
         { key: 'district', label: 'District' },
         { key: 'state', label: 'State' },
         { key: 'pin_code', label: 'Pin Code' },

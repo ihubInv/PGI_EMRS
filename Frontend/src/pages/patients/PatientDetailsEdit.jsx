@@ -1,1720 +1,1116 @@
-import { useState, useMemo, useEffect } from 'react';
-import {
-  FiUser, FiUsers, FiBriefcase, FiDollarSign, FiMapPin, FiPhone, FiFileText,
-  FiFolder, FiCalendar, FiHome, FiActivity, FiHeart, FiClock,
-  FiShield, FiLayers, FiHash, FiEdit3, FiBookOpen,
-  FiNavigation, FiUserCheck, FiInfo, FiChevronDown, FiChevronUp, FiTag,
-  FiPackage, FiSave
-} from 'react-icons/fi';
-import Card from '../../components/Card';
-import Badge from '../../components/Badge';
-import Select from '../../components/Select';
-import Textarea from '../../components/Textarea';
-import { formatDate, formatDateTime } from '../../utils/formatters';
-import {
-  SEX_OPTIONS, MARITAL_STATUS, FAMILY_TYPE_OPTIONS, LOCALITY_OPTIONS, RELIGION_OPTIONS,
-  AGE_GROUP_OPTIONS, OCCUPATION_OPTIONS, EDUCATION_OPTIONS, HEAD_RELATIONSHIP_OPTIONS,
-  MOBILITY_OPTIONS, REFERRED_BY_OPTIONS, INDIAN_STATES, UNIT_DAYS_OPTIONS
-} from '../../utils/constants';
-import { isJR, isSR, isMWO, isAdmin, isJrSr } from '../../utils/constants';
-import { useGetPrescriptionsByProformaIdQuery, useUpdatePrescriptionMutation } from '../../features/prescriptions/prescriptionApiSlice';
-import {
-  useUpdatePatientMutation,
-} from '../../features/patients/patientsApiSlice';
-import {
-  useUpdateClinicalProformaMutation,
-} from '../../features/clinical/clinicalApiSlice';
-import {
-  useUpdateADLFileMutation,
-} from '../../features/adl/adlApiSlice';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import {
+  FiUser, FiUsers, FiBriefcase, FiDollarSign, FiHome, FiMapPin, FiPhone,
+  FiCalendar, FiGlobe, FiFileText, FiHash, FiClock,
+  FiHeart, FiBookOpen, FiTrendingUp, FiShield,
+  FiNavigation, FiTruck, FiEdit3, FiSave, FiX, FiLayers, FiLoader
+} from 'react-icons/fi';
+import { useUpdatePatientMutation, useAssignPatientMutation, useCheckCRNumberExistsQuery } from '../../features/patients/patientsApiSlice';
+import { useGetDoctorsQuery } from '../../features/users/usersApiSlice';
+import Card from '../../components/Card';
+import Select from '../../components/Select';
+import Button from '../../components/Button';
+import DatePicker from '../../components/CustomDatePicker';
+import {
+  MARITAL_STATUS, FAMILY_TYPE_OPTIONS, LOCALITY_OPTIONS, RELIGION_OPTIONS, SEX_OPTIONS,
+  AGE_GROUP_OPTIONS, OCCUPATION_OPTIONS, EDUCATION_OPTIONS,
+  MOBILITY_OPTIONS, REFERRED_BY_OPTIONS, INDIAN_STATES, UNIT_DAYS_OPTIONS,
+  isJR, isSR, HEAD_RELATIONSHIP_OPTIONS, CATEGORY_OPTIONS
+} from '../../utils/constants';
 
-// Enhanced Radio button component
-const RadioGroup = ({ label, name, value, onChange, options, className = "", inline = true, error, icon }) => {
-  return (
-    <div className={`space-y-3 ${className}`}>
-      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
-        {icon && <span className="text-primary-600">{icon}</span>}
-        {label}
-      </label>
-      <div className={`flex ${inline ? 'flex-wrap gap-4' : 'flex-col space-y-3'}`}>
-        {options.map((option) => (
-          <label key={option.value} className="flex items-center space-x-3 cursor-pointer group">
-            <input
-              type="radio"
-              name={name}
-              value={option.value}
-              checked={value === option.value}
-              onChange={onChange}
-              className="w-4 h-4 text-primary-600 border-2 border-gray-300 focus:ring-primary-500 focus:ring-2 rounded-full transition-all duration-200 group-hover:border-primary-400"
-            />
-            <span className="text-sm text-gray-700 group-hover:text-primary-700 transition-colors duration-200">{option.label}</span>
-          </label>
-        ))}
-      </div>
-      {error && <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
-        <FiInfo className="w-3 h-3" />
-        {error}
-      </p>}
-    </div>
-  );
-};
-
-// Enhanced Input component with icons
-const IconInput = ({ icon, label, defaultValue, ...props }) => {
+// Enhanced Input component with glassmorphism styling (matching CreatePatient)
+const IconInput = ({ icon, label, loading = false, error, defaultValue, ...props }) => {
   // Remove defaultValue if value is provided to avoid controlled/uncontrolled warning
   const inputProps = props.value !== undefined ? { ...props } : { ...props, defaultValue };
-  
+
   return (
     <div className="space-y-2">
-      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+      <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
         {icon && <span className="text-primary-600">{icon}</span>}
         {label}
+        {loading && (
+          <FiLoader className="w-4 h-4 text-blue-500 animate-spin" />
+        )}
       </label>
       <div className="relative">
         {icon && (
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <span className="text-gray-400">{icon}</span>
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+            <span className="text-gray-500">{icon}</span>
           </div>
         )}
         <input
           {...inputProps}
-          className={`w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 hover:border-gray-300 ${icon ? 'pl-10' : ''
-            } ${inputProps.className || ''}`}
+          className={`w-full px-4 py-3 ${icon ? 'pl-11' : 'pl-4'} bg-white/60 backdrop-blur-md border-2 border-gray-300/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 focus:bg-white/80 transition-all duration-300 hover:bg-white/70 hover:border-primary-400/70 placeholder:text-gray-400 text-gray-900 font-medium ${inputProps.className || ''}`}
         />
       </div>
+      {error && (
+        <p className="text-red-500 text-xs mt-1 flex items-center gap-1 font-medium">
+          <FiX className="w-3 h-3" />
+          {error}
+        </p>
+      )}
     </div>
   );
 };
 
-// Enhanced Date Input component
-const DateInput = ({ icon, label, ...props }) => {
-  return (
-    <div className="space-y-2">
-      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-        {icon && <span className="text-primary-600">{icon}</span>}
-        {label}
-      </label>
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <FiCalendar className="w-5 h-5 text-gray-400" />
-        </div>
-        <input
-          {...props}
-          type="date"
-          className="w-full px-4 py-2 pl-10 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 hover:border-gray-300 appearance-none"
-        />
-      </div>
-    </div>
-  );
-};
+const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, adlData, usersData, userRole, onSave, onCancel }) => {
+ debugger
+  const navigate = useNavigate();
+  const [updatePatient, { isLoading }] = useUpdatePatientMutation();
+  const [assignPatient, { isLoading: isAssigning }] = useAssignPatientMutation();
+  const { data: doctorsData } = useGetDoctorsQuery({ page: 1, limit: 100 });
 
-const PatientDetailsEdit = ({ patient, formData, clinicalData, adlData, usersData, userRole, onSave, onCancel }) => {
-  const [expandedCards, setExpandedCards] = useState({
-    patient: false,
-    clinical: false,
-    adl: false,
-    prescriptions: false
+  console.log(">>>>",patient)
+  // Initialize form data from patient and formData props
+  const [formData, setFormData] = useState(() => {
+    // Merge patient data with initialFormData, prioritizing patient data
+    const merged = {
+      // Basic info
+      name: patient?.name || initialFormData?.name || '',
+      sex: patient?.sex || initialFormData?.sex || '',
+      age: patient?.age || initialFormData?.age || '',
+      cr_no: patient?.cr_no || initialFormData?.cr_no || '',
+      psy_no: patient?.psy_no || initialFormData?.psy_no || '',
+      special_clinic_no: patient?.special_clinic_no || initialFormData?.special_clinic_no || '',
+      contact_number: patient?.contact_number || initialFormData?.contact_number || '',
+      father_name: patient?.father_name || initialFormData?.father_name || '',
+      category: patient?.category || initialFormData?.category || '',
+      
+      // Dates
+      date: initialFormData?.date || patient?.date || '',
+      seen_in_walk_in_on: patient?.seen_in_walk_in_on || initialFormData?.seen_in_walk_in_on || '',
+      worked_up_on: patient?.worked_up_on || initialFormData?.worked_up_on || '',
+      
+      // Quick Entry
+      department: patient?.department || initialFormData?.department || '',
+      unit_consit: patient?.unit_consit || initialFormData?.unit_consit || '',
+      room_no: patient?.room_no || initialFormData?.room_no || '',
+      serial_no: patient?.serial_no || initialFormData?.serial_no || '',
+      file_no: patient?.file_no || initialFormData?.file_no || '',
+      unit_days: patient?.unit_days || initialFormData?.unit_days || '',
+      
+      // Personal Information
+      age_group: patient?.age_group || initialFormData?.age_group || '',
+      marital_status: patient?.marital_status || initialFormData?.marital_status || '',
+      year_of_marriage: patient?.year_of_marriage || initialFormData?.year_of_marriage || '',
+      no_of_children_male: patient?.no_of_children_male || initialFormData?.no_of_children_male || '',
+      no_of_children_female: patient?.no_of_children_female || initialFormData?.no_of_children_female || '',
+      
+      // Occupation & Education
+      occupation: patient?.occupation || initialFormData?.occupation || '',
+      education: patient?.education || initialFormData?.education || '',
+      locality: patient?.locality || initialFormData?.locality || '',
+      income: patient?.income || initialFormData?.income || '',
+      religion: patient?.religion || initialFormData?.religion || '',
+      family_type: patient?.family_type || initialFormData?.family_type || '',
+      
+      // Head of Family
+      head_name: patient?.head_name || initialFormData?.head_name || '',
+      head_age: patient?.head_age || initialFormData?.head_age || '',
+      head_relationship: patient?.head_relationship || initialFormData?.head_relationship || '',
+      head_education: patient?.head_education || initialFormData?.head_education || '',
+      head_occupation: patient?.head_occupation || initialFormData?.head_occupation || '',
+      head_income: patient?.head_income || initialFormData?.head_income || '',
+      
+      // Referral & Mobility
+      distance_from_hospital: patient?.distance_from_hospital || initialFormData?.distance_from_hospital || '',
+      mobility: patient?.mobility || initialFormData?.mobility || '',
+      referred_by: patient?.referred_by || initialFormData?.referred_by || '',
+      
+      // Address
+      address_line: patient?.address_line || initialFormData?.address_line || '',
+      country: patient?.country || initialFormData?.country || '',
+      state: patient?.state || initialFormData?.state || '',
+      district: patient?.district || initialFormData?.district || '',
+      city: patient?.city || initialFormData?.city || '',
+      pin_code: patient?.pin_code || initialFormData?.pin_code || '',
+      
+      // Assignment
+      assigned_doctor_id: patient?.assigned_doctor_id ? String(patient.assigned_doctor_id) : initialFormData?.assigned_doctor_id || '',
+      assigned_doctor_name: patient?.assigned_doctor_name || initialFormData?.assigned_doctor_name || '',
+      assigned_room: patient?.assigned_room || initialFormData?.assigned_room || '',
+    };
+    return merged;
   });
 
-  const toggleCard = (cardName) => {
-    setExpandedCards(prev => ({
-      ...prev,
-      [cardName]: !prev[cardName]
-    }));
-  };
+  // State declarations
+  const [errors, setErrors] = useState({});
+  const [crValidationTimeout, setCrValidationTimeout] = useState(null);
+  const [currentCRNumber, setCurrentCRNumber] = useState('');
 
-  // Mutation hooks
-  const [updatePatient, { isLoading: isUpdatingPatient }] = useUpdatePatientMutation();
-  const [updateClinicalProforma, { isLoading: isUpdatingClinical }] = useUpdateClinicalProformaMutation();
-  const [updateADLFile, { isLoading: isUpdatingADL }] = useUpdateADLFileMutation();
-  const [updatePrescription, { isLoading: isUpdatingPrescription }] = useUpdatePrescriptionMutation();
+  // CR number validation
+  const { data: crExists, isLoading: isCheckingCR } = useCheckCRNumberExistsQuery(
+    currentCRNumber,
+    { skip: !currentCRNumber || currentCRNumber.length < 3 || currentCRNumber === patient?.cr_no }
+  );
 
-  // Local state for form data
-  const [localFormData, setLocalFormData] = useState(formData || {});
-  const [clinicalFormData, setClinicalFormData] = useState({});
-  const [adlFormData, setAdlFormData] = useState({});
-  
-  // State for editable prescriptions
-  const [editablePrescriptions, setEditablePrescriptions] = useState({});
-  const [editingPrescriptionId, setEditingPrescriptionId] = useState(null);
-
-  // Filter ADL files for this patient
-  const patientAdlFiles = adlData?.data?.adlFiles || [];
-
-  // Get clinical proformas for this patient
-  const patientProformas = Array.isArray(clinicalData?.data?.proformas) 
-    ? clinicalData.data.proformas 
-    : [];
-
-  // Fetch prescriptions for all proformas
-  // Always compute proformaIds as an array with exactly 10 elements (padding with null)
-  // This ensures hooks are always called with the same structure
-  const proformaIds = useMemo(() => {
-    const ids = patientProformas.map(p => p?.id).filter(Boolean).slice(0, 10);
-    // Pad to exactly 10 elements with null to ensure consistent hook calls
-    while (ids.length < 10) {
-      ids.push(null);
-    }
-    return ids;
-  }, [patientProformas]);
-
-  // Always call the same number of hooks (10) in the same order
-  // This ensures React hooks are called in a consistent order every render
-  // proformaIds is guaranteed to have exactly 10 elements (padded with null if needed)
-  const prescriptionResult1 = useGetPrescriptionsByProformaIdQuery(proformaIds[0], { skip: !proformaIds[0] });
-  const prescriptionResult2 = useGetPrescriptionsByProformaIdQuery(proformaIds[1], { skip: !proformaIds[1] });
-  const prescriptionResult3 = useGetPrescriptionsByProformaIdQuery(proformaIds[2], { skip: !proformaIds[2] });
-  const prescriptionResult4 = useGetPrescriptionsByProformaIdQuery(proformaIds[3], { skip: !proformaIds[3] });
-  const prescriptionResult5 = useGetPrescriptionsByProformaIdQuery(proformaIds[4], { skip: !proformaIds[4] });
-  const prescriptionResult6 = useGetPrescriptionsByProformaIdQuery(proformaIds[5], { skip: !proformaIds[5] });
-  const prescriptionResult7 = useGetPrescriptionsByProformaIdQuery(proformaIds[6], { skip: !proformaIds[6] });
-  const prescriptionResult8 = useGetPrescriptionsByProformaIdQuery(proformaIds[7], { skip: !proformaIds[7] });
-  const prescriptionResult9 = useGetPrescriptionsByProformaIdQuery(proformaIds[8], { skip: !proformaIds[8] });
-  const prescriptionResult10 = useGetPrescriptionsByProformaIdQuery(proformaIds[9], { skip: !proformaIds[9] });
-
-  // Combine all prescription results - always use all 10 results
-  const prescriptionResults = [
-    prescriptionResult1,
-    prescriptionResult2,
-    prescriptionResult3,
-    prescriptionResult4,
-    prescriptionResult5,
-    prescriptionResult6,
-    prescriptionResult7,
-    prescriptionResult8,
-    prescriptionResult9,
-    prescriptionResult10,
-  ];
-
-  // Combine all prescriptions and group by proforma/visit date
-  const allPrescriptions = useMemo(() => {
-    const prescriptions = [];
-    prescriptionResults.forEach((result, index) => {
-      const proformaId = proformaIds[index];
-      if (proformaId && result.data?.data?.prescriptions) {
-        const proforma = patientProformas.find(p => p.id === proformaId);
-        result.data.data.prescriptions.forEach(prescription => {
-          prescriptions.push({
-            ...prescription,
-            proforma_id: proformaId,
-            visit_date: proforma?.visit_date || proforma?.created_at,
-            visit_type: proforma?.visit_type
-          });
-        });
-      }
-    });
-    // Sort by visit date (most recent first)
-    return prescriptions.sort((a, b) => {
-      const dateA = new Date(a.visit_date || 0);
-      const dateB = new Date(b.visit_date || 0);
-      return dateB - dateA;
-    });
-  }, [prescriptionResults, patientProformas, proformaIds]);
-
-  // Group prescriptions by visit date
-  const prescriptionsByVisit = useMemo(() => {
-    const grouped = {};
-    allPrescriptions.forEach(prescription => {
-      const visitDate = prescription.visit_date
-        ? formatDate(prescription.visit_date)
-        : 'Unknown Date';
-      if (!grouped[visitDate]) {
-        grouped[visitDate] = {
-          date: prescription.visit_date,
-          visitType: prescription.visit_type,
-          prescriptions: []
-        };
-      }
-      grouped[visitDate].prescriptions.push(prescription);
-    });
-    return grouped;
-  }, [allPrescriptions]);
-
-  // Check if user can view prescriptions (Admin or JR/SR, not MWO)
-  const canViewPrescriptions = !isMWO(userRole) && (isAdmin(userRole) || isJrSr(userRole));
-
-  // Initialize clinical and ADL form data
+  // CR validation effect
   useEffect(() => {
-    if (patientProformas.length > 0) {
-      // Use the first/latest proforma for editing
-      const latestProforma = patientProformas[0];
-      setClinicalFormData({
-        id: latestProforma.id,
-        visit_date: latestProforma.visit_date || '',
-        visit_type: latestProforma.visit_type || '',
-        room_no: latestProforma.room_no || '',
-        case_severity: latestProforma.case_severity || '',
-        decision: latestProforma.decision || '',
-        diagnosis: latestProforma.diagnosis || '',
-      });
-    }
-  }, [patientProformas]);
+    const currentCR = formData.cr_no;
 
-  useEffect(() => {
-    if (patientAdlFiles.length > 0) {
-      // Use the first/latest ADL file for editing
-      const latestADL = patientAdlFiles[0];
+    if (currentCR && currentCR.length >= 3) {
+      // Skip validation if CR number matches the patient's existing CR number
+      if (currentCR === patient?.cr_no) {
+        setErrors((prev) => ({ ...prev, patientCRNo: '' }));
+        return;
+      }
 
-      // Parse JSON fields if they're strings
-      const parseJSONField = (field) => {
-        if (!field) return [];
-        if (Array.isArray(field)) return field;
-        try {
-          return typeof field === 'string' ? JSON.parse(field) : field;
-        } catch {
-          return [];
+      if (currentCR !== currentCRNumber) {
+        setErrors((prev) => ({ ...prev, patientCRNo: '' }));
+        setCurrentCRNumber(currentCR);
+        return;
+      } else if (currentCR === currentCRNumber && !isCheckingCR) {
+        if (crExists === true) {
+          setErrors((prev) => ({ ...prev, patientCRNo: 'CR No. already exists.' }));
+        } else if (crExists === false) {
+          setErrors((prev) => ({ ...prev, patientCRNo: '' }));
+        } else {
+          setErrors((prev) => ({ ...prev, patientCRNo: '' }));
         }
-      };
-
-      setAdlFormData({
-        id: latestADL.id,
-        // Basic fields
-        adl_no: latestADL.adl_no || '',
-        file_status: latestADL.file_status || '',
-        physical_file_location: latestADL.physical_file_location || '',
-        notes: latestADL.notes || '',
-        // Complaints
-        complaints_patient: parseJSONField(latestADL.complaints_patient),
-        complaints_informant: parseJSONField(latestADL.complaints_informant),
-        informants: parseJSONField(latestADL.informants),
-        // History
-        history_narrative: latestADL.history_narrative || '',
-        history_specific_enquiry: latestADL.history_specific_enquiry || '',
-        history_drug_intake: latestADL.history_drug_intake || '',
-        history_treatment_place: latestADL.history_treatment_place || '',
-        history_treatment_drugs: latestADL.history_treatment_drugs || '',
-        history_treatment_response: latestADL.history_treatment_response || '',
-        // Past History
-        past_history_medical: latestADL.past_history_medical || '',
-        past_history_psychiatric_diagnosis: latestADL.past_history_psychiatric_diagnosis || '',
-        past_history_psychiatric_treatment: latestADL.past_history_psychiatric_treatment || '',
-        past_history_psychiatric_interim: latestADL.past_history_psychiatric_interim || '',
-        // Family History
-        family_history_father_age: latestADL.family_history_father_age || '',
-        family_history_father_education: latestADL.family_history_father_education || '',
-        family_history_father_occupation: latestADL.family_history_father_occupation || '',
-        family_history_father_personality: latestADL.family_history_father_personality || '',
-        family_history_father_deceased: latestADL.family_history_father_deceased || false,
-        family_history_mother_age: latestADL.family_history_mother_age || '',
-        family_history_mother_education: latestADL.family_history_mother_education || '',
-        family_history_mother_occupation: latestADL.family_history_mother_occupation || '',
-        family_history_mother_personality: latestADL.family_history_mother_personality || '',
-        family_history_mother_deceased: latestADL.family_history_mother_deceased || false,
-        family_history_siblings: parseJSONField(latestADL.family_history_siblings),
-        // MSE
-        mse_general_demeanour: latestADL.mse_general_demeanour || '',
-        mse_affect_subjective: latestADL.mse_affect_subjective || '',
-        mse_thought_flow: latestADL.mse_thought_flow || '',
-        mse_cognitive_consciousness: latestADL.mse_cognitive_consciousness || '',
-        mse_cognitive_orientation_time: latestADL.mse_cognitive_orientation_time || '',
-        mse_cognitive_orientation_place: latestADL.mse_cognitive_orientation_place || '',
-        mse_insight_understanding: latestADL.mse_insight_understanding || '',
-        mse_insight_judgement: latestADL.mse_insight_judgement || '',
-        // Diagnostic
-        diagnostic_formulation_summary: latestADL.diagnostic_formulation_summary || '',
-        diagnostic_formulation_features: latestADL.diagnostic_formulation_features || '',
-        diagnostic_formulation_psychodynamic: latestADL.diagnostic_formulation_psychodynamic || '',
-        provisional_diagnosis: latestADL.provisional_diagnosis || '',
-        treatment_plan: latestADL.treatment_plan || '',
-        consultant_comments: latestADL.consultant_comments || '',
-      });
+      }
+    } else {
+      setErrors((prev) => ({ ...prev, patientCRNo: '' }));
+      setCurrentCRNumber('');
     }
-  }, [patientAdlFiles]);
+  }, [formData.cr_no, crExists, isCheckingCR, currentCRNumber, patient?.cr_no]);
 
-  // Update local form data when prop changes
-  useEffect(() => {
-    if (formData) {
-      setLocalFormData(formData);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+
+    // Clear any existing CR number error when user starts typing
+    if (name === 'cr_no') {
+      setErrors((prev) => ({ ...prev, patientCRNo: '' }));
+
+      if (crValidationTimeout) {
+        clearTimeout(crValidationTimeout);
+      }
+
+      setCurrentCRNumber('');
+
+      if (value.length >= 3) {
+        const timeout = setTimeout(() => {
+          setCurrentCRNumber(value);
+        }, 500);
+        setCrValidationTimeout(timeout);
+      }
     }
-  }, [formData]);
+
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+
+    // Auto-select age group based on age
+    if (name === 'age') {
+      const age = parseInt(value);
+      if (!isNaN(age)) {
+        let ageGroup = '';
+        if (age >= 0 && age <= 15) ageGroup = '0-15';
+        else if (age >= 16 && age <= 30) ageGroup = '15-30';
+        else if (age >= 31 && age <= 45) ageGroup = '30-45';
+        else if (age >= 46 && age <= 60) ageGroup = '45-60';
+        else if (age >= 61) ageGroup = '60+';
+
+        if (ageGroup) {
+          setFormData(prev => ({ ...prev, age_group: ageGroup }));
+        }
+      }
+    }
+  };
 
   const handlePatientChange = (e) => {
     const { name, value } = e.target;
-    setLocalFormData(prev => ({ ...prev, [name]: value }));
-  };
+    setFormData(prev => ({ ...prev, [name]: value }));
 
-  const handleClinicalChange = (e) => {
-    const { name, value } = e.target;
-    setClinicalFormData(prev => ({ ...prev, [name]: value }));
-  };
+    // Clear any existing CR number error when user starts typing
+    if (name === 'cr_no') {
+      setErrors((prev) => ({ ...prev, patientCRNo: '' }));
 
-  const handleADLChange = (e) => {
-    const { name, value, type } = e.target;
-    if (type === 'checkbox') {
-      setAdlFormData(prev => ({ ...prev, [name]: e.target.checked }));
-    } else {
-      setAdlFormData(prev => ({ ...prev, [name]: value }));
+      if (crValidationTimeout) {
+        clearTimeout(crValidationTimeout);
+      }
+
+      setCurrentCRNumber('');
+
+      if (value.length >= 3) {
+        const timeout = setTimeout(() => {
+          setCurrentCRNumber(value);
+        }, 500);
+        setCrValidationTimeout(timeout);
+      }
     }
   };
 
-  const handleADLArrayChange = (fieldName, index, subField, value) => {
-    setAdlFormData(prev => {
-      const array = [...(prev[fieldName] || [])];
-      if (!array[index]) array[index] = {};
-      array[index][subField] = value;
-      return { ...prev, [fieldName]: array };
-    });
-  };
-
-  // Handle prescription edit
-  const handlePrescriptionEdit = (prescription) => {
-    setEditingPrescriptionId(prescription.id);
-    setEditablePrescriptions(prev => ({
-      ...prev,
-      [prescription.id]: {
-        medicine: prescription.medicine || '',
-        dosage: prescription.dosage || '',
-        when_to_take: prescription.when_to_take || prescription.when || '',
-        frequency: prescription.frequency || '',
-        duration: prescription.duration || '',
-        quantity: prescription.quantity || prescription.qty || '',
-        details: prescription.details || '',
-        notes: prescription.notes || '',
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (crValidationTimeout) {
+        clearTimeout(crValidationTimeout);
       }
-    }));
-  };
+    };
+  }, [crValidationTimeout]);
 
-  const handlePrescriptionChange = (prescriptionId, field, value) => {
-    setEditablePrescriptions(prev => ({
-      ...prev,
-      [prescriptionId]: {
-        ...prev[prescriptionId],
-        [field]: value
+  const validate = () => {
+    const newErrors = {};
+
+    const patientName = formData.name || '';
+    const patientSex = formData.sex || '';
+    const patientAge = formData.age || '';
+    const patientCRNo = formData.cr_no || '';
+
+    if (!patientName || !patientName.trim()) newErrors.patientName = 'Name is required';
+    if (!patientSex) newErrors.patientSex = 'Sex is required';
+    if (!patientAge) newErrors.patientAge = 'Age is required';
+
+    // CR number validation
+    if (patientCRNo) {
+      if (patientCRNo.length < 3) {
+        newErrors.patientCRNo = 'CR number must be at least 3 characters long';
       }
-    }));
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handlePrescriptionCancel = (prescriptionId) => {
-    setEditingPrescriptionId(null);
-    setEditablePrescriptions(prev => {
-      const updated = { ...prev };
-      delete updated[prescriptionId];
-      return updated;
-    });
-  };
+  const handleSubmit = async (e) => {
+    debugger
+    e.preventDefault();
 
-  const handlePrescriptionSave = async (prescription) => {
+    if (!validate()) {
+      toast.error('Please fix the errors in the form');
+      return;
+    }
+
+    if (!patient?.id) {
+      toast.error('Patient ID is required');
+      return;
+    }
+
+    // Get patient data early for validation
+    const patientName = (formData.name || '').trim();
+    const patientSex = formData.sex || '';
+    const patientAge = formData.age || '';
+    const patientCRNo = formData.cr_no || '';
+
+    // Don't submit while checking CR number
+    if (patientCRNo && patientCRNo !== patient?.cr_no && isCheckingCR) {
+      toast.error('Please wait while we check the CR number...');
+      return;
+    }
+
     try {
-      const editedData = editablePrescriptions[prescription.id];
-      if (!editedData) return;
+      // Validate required fields
+      if (!patientName) {
+        toast.error('Patient name is required');
+        return;
+      }
+      if (!patientSex) {
+        toast.error('Patient sex is required');
+        return;
+      }
+      if (!patientAge) {
+        toast.error('Patient age is required');
+        return;
+      }
 
-      const payload = {
-        id: prescription.id,
-        medicine: editedData.medicine || prescription.medicine,
-        dosage: editedData.dosage || null,
-        when_to_take: editedData.when_to_take || null,
-        frequency: editedData.frequency || null,
-        duration: editedData.duration || null,
-        quantity: editedData.quantity || null,
-        details: editedData.details || null,
-        notes: editedData.notes || null,
+      const parseIntSafe = (val) => {
+        if (val === '' || val === undefined || val === null) return null;
+        const parsed = parseInt(val);
+        return isNaN(parsed) ? null : parsed;
       };
 
-      await updatePrescription(payload).unwrap();
-      toast.success('Prescription updated successfully');
-      setEditingPrescriptionId(null);
-      setEditablePrescriptions(prev => {
-        const updated = { ...prev };
-        delete updated[prescription.id];
-        return updated;
-      });
-    } catch (error) {
-      console.error('Error updating prescription:', error);
-      toast.error(error?.data?.message || 'Failed to update prescription');
-    }
-  };
+      const parseFloatSafe = (val) => {
+        if (val === '' || val === undefined || val === null) return null;
+        const parsed = parseFloat(val);
+        return isNaN(parsed) ? null : parsed;
+      };
 
-  const handleSaveAll = async () => {
-    try {
-      // Save patient data
-      if (patient?.id) {
-        const patientPayload = {
-          id: patient.id,
-          name: localFormData.name,
-          sex: localFormData.sex,
-          actual_age: localFormData.actual_age ? parseInt(localFormData.actual_age) : null,
-          assigned_room: localFormData.assigned_room,
-          contact_number: localFormData.contact_number,
-          age_group: localFormData.age_group,
-          marital_status: localFormData.marital_status,
-          year_of_marriage: localFormData.year_of_marriage ? parseInt(localFormData.year_of_marriage) : null,
-          no_of_children: localFormData.no_of_children ? parseInt(localFormData.no_of_children) : null,
-          no_of_children_male: localFormData.no_of_children_male ? parseInt(localFormData.no_of_children_male) : null,
-          no_of_children_female: localFormData.no_of_children_female ? parseInt(localFormData.no_of_children_female) : null,
-          dob: localFormData.dob || null,
-          occupation: localFormData.occupation,
-          actual_occupation: localFormData.actual_occupation,
-          education_level: localFormData.education_level,
-          completed_years_of_education: localFormData.completed_years_of_education ? parseInt(localFormData.completed_years_of_education) : null,
-          patient_income: localFormData.patient_income ? parseFloat(localFormData.patient_income) : null,
-          family_income: localFormData.family_income ? parseFloat(localFormData.family_income) : null,
-          religion: localFormData.religion,
-          family_type: localFormData.family_type,
-          locality: localFormData.locality,
-          head_name: localFormData.head_name,
-          head_age: localFormData.head_age ? parseInt(localFormData.head_age) : null,
-          head_relationship: localFormData.head_relationship,
-          head_education: localFormData.head_education,
-          head_occupation: localFormData.head_occupation,
-          head_income: localFormData.head_income ? parseFloat(localFormData.head_income) : null,
-          distance_from_hospital: localFormData.distance_from_hospital,
-          mobility: localFormData.mobility,
-          referred_by: localFormData.referred_by,
-          exact_source: localFormData.exact_source,
-          seen_in_walk_in_on: localFormData.seen_in_walk_in_on,
-          worked_up_on: localFormData.worked_up_on,
-          present_address: localFormData.present_address,
-          permanent_address: localFormData.permanent_address,
-          local_address: localFormData.local_address,
-          school_college_office: localFormData.school_college_office,
-          present_address_line_1: localFormData.present_address_line_1,
-          present_address_line_2: localFormData.present_address_line_2,
-          present_city_town_village: localFormData.present_city_town_village,
-          present_district: localFormData.present_district,
-          present_state: localFormData.present_state,
-          present_pin_code: localFormData.present_pin_code,
-          present_country: localFormData.present_country,
-          permanent_address_line_1: localFormData.permanent_address_line_1,
-          permanent_address_line_2: localFormData.permanent_address_line_2,
-          permanent_city_town_village: localFormData.permanent_city_town_village,
-          permanent_district: localFormData.permanent_district,
-          permanent_state: localFormData.permanent_state,
-          permanent_pin_code: localFormData.permanent_pin_code,
-          permanent_country: localFormData.permanent_country,
-          address_line_1: localFormData.address_line_1,
-          address_line_2: localFormData.address_line_2,
-          city_town_village: localFormData.city_town_village,
-          district: localFormData.district,
-          state: localFormData.state,
-          pin_code: localFormData.pin_code,
-          country: localFormData.country,
-          department: localFormData.department,
-          unit_consit: localFormData.unit_consit,
-          room_no: localFormData.room_no,
-          serial_no: localFormData.serial_no,
-          file_no: localFormData.file_no,
-          unit_days: localFormData.unit_days,
-          category: localFormData.category,
-          special_clinic_no: localFormData.special_clinic_no,
-          distance_from_hospital: localFormData.distance_from_hospital,
-          mobility: localFormData.mobility,
-          referred_by: localFormData.referred_by,
-          exact_source: localFormData.exact_source,
-          seen_in_walk_in_on: localFormData.seen_in_walk_in_on,
-          worked_up_on: localFormData.worked_up_on,
-          school_college_office: localFormData.school_college_office,
-          local_address: localFormData.local_address,
-        };
+      const updatePatientData = {
+        // Required basic fields
+        name: patientName,
+        sex: patientSex,
+        date: formData.date || null,
+        age: parseIntSafe(patientAge),
+        assigned_room: formData.assigned_room || null,
+        assigned_doctor_id: formData.assigned_doctor_id || null,
+        assigned_doctor_name: formData.assigned_doctor_name || null,
+        ...(patientCRNo && { cr_no: patientCRNo }),
+        psy_no: formData.psy_no || null,
+        seen_in_walk_in_on: formData.seen_in_walk_in_on || formData.date || null,
+        worked_up_on: formData.worked_up_on || null,
+        special_clinic_no: formData.special_clinic_no || null,
 
-        await updatePatient(patientPayload).unwrap();
-        toast.success('Patient details updated successfully');
-      }
+        // Personal Information
+        age_group: formData.age_group || null,
+        marital_status: formData.marital_status || null,
+        year_of_marriage: parseIntSafe(formData.year_of_marriage),
+        no_of_children_male: parseIntSafe(formData.no_of_children_male),
+        no_of_children_female: parseIntSafe(formData.no_of_children_female),
 
-      // Save clinical proforma data
-      if (clinicalFormData.id) {
-        await updateClinicalProforma(clinicalFormData).unwrap();
-        toast.success('Clinical proforma updated successfully');
-      }
+        // Occupation & Education
+        occupation: formData.occupation || null,
+        education: formData.education || null,
 
-      // Save ADL file data
-      if (adlFormData.id) {
-        const adlPayload = {
-          id: adlFormData.id,
-          file_status: adlFormData.file_status,
-          physical_file_location: adlFormData.physical_file_location,
-          notes: adlFormData.notes,
-          complaints_patient: JSON.stringify(adlFormData.complaints_patient),
-          complaints_informant: JSON.stringify(adlFormData.complaints_informant),
-          informants: JSON.stringify(adlFormData.informants),
-          history_narrative: adlFormData.history_narrative,
-          history_specific_enquiry: adlFormData.history_specific_enquiry,
-          history_drug_intake: adlFormData.history_drug_intake,
-          history_treatment_place: adlFormData.history_treatment_place,
-          history_treatment_drugs: adlFormData.history_treatment_drugs,
-          history_treatment_response: adlFormData.history_treatment_response,
-          past_history_medical: adlFormData.past_history_medical,
-          past_history_psychiatric_diagnosis: adlFormData.past_history_psychiatric_diagnosis,
-          past_history_psychiatric_treatment: adlFormData.past_history_psychiatric_treatment,
-          past_history_psychiatric_interim: adlFormData.past_history_psychiatric_interim,
-          family_history_father_age: adlFormData.family_history_father_age,
-          family_history_father_education: adlFormData.family_history_father_education,
-          family_history_father_occupation: adlFormData.family_history_father_occupation,
-          family_history_father_personality: adlFormData.family_history_father_personality,
-          family_history_father_deceased: adlFormData.family_history_father_deceased,
-          family_history_mother_age: adlFormData.family_history_mother_age,
-          family_history_mother_education: adlFormData.family_history_mother_education,
-          family_history_mother_occupation: adlFormData.family_history_mother_occupation,
-          family_history_mother_personality: adlFormData.family_history_mother_personality,
-          family_history_mother_deceased: adlFormData.family_history_mother_deceased,
-          family_history_siblings: JSON.stringify(adlFormData.family_history_siblings),
-          mse_general_demeanour: adlFormData.mse_general_demeanour,
-          mse_affect_subjective: adlFormData.mse_affect_subjective,
-          mse_thought_flow: adlFormData.mse_thought_flow,
-          mse_cognitive_consciousness: adlFormData.mse_cognitive_consciousness,
-          mse_cognitive_orientation_time: adlFormData.mse_cognitive_orientation_time,
-          mse_cognitive_orientation_place: adlFormData.mse_cognitive_orientation_place,
-          mse_insight_understanding: adlFormData.mse_insight_understanding,
-          mse_insight_judgement: adlFormData.mse_insight_judgement,
-          diagnostic_formulation_summary: adlFormData.diagnostic_formulation_summary,
-          diagnostic_formulation_features: adlFormData.diagnostic_formulation_features,
-          diagnostic_formulation_psychodynamic: adlFormData.diagnostic_formulation_psychodynamic,
-          provisional_diagnosis: adlFormData.provisional_diagnosis,
-          treatment_plan: adlFormData.treatment_plan,
-          consultant_comments: adlFormData.consultant_comments,
-        };
+        // Financial Information
+        income: parseFloatSafe(formData.income),
 
-        await updateADLFile(adlPayload).unwrap();
-        toast.success('ADL file updated successfully');
-      }
+        // Family Information
+        religion: formData.religion || null,
+        family_type: formData.family_type || null,
+        locality: formData.locality || null,
+        head_name: formData.head_name || formData.father_name || null,
+        head_age: parseIntSafe(formData.head_age),
+        head_relationship: formData.head_relationship || null,
+        head_education: formData.head_education || null,
+        head_occupation: formData.head_occupation || null,
+        head_income: parseFloatSafe(formData.head_income),
 
+        // Referral & Mobility
+        distance_from_hospital: formData.distance_from_hospital || null,
+        mobility: formData.mobility || null,
+        referred_by: formData.referred_by || null,
+
+        // Contact Information
+        contact_number: formData.contact_number || null,
+
+        // Quick Entry fields
+        department: formData.department || null,
+        unit_consit: formData.unit_consit || null,
+        room_no: formData.room_no || null,
+        serial_no: formData.serial_no || null,
+        file_no: formData.file_no || null,
+        unit_days: formData.unit_days || null,
+
+        // Address fields
+        address_line: formData.address_line || null,
+        country: formData.country || null,
+        state: formData.state || null,
+        district: formData.district || null,
+        city: formData.city || null,
+        pin_code: formData.pin_code || null,
+
+        // Additional fields
+        category: formData.category || null,
+        // assigned_doctor_id is UUID (string), not integer
+        ...(formData.assigned_doctor_id && { assigned_doctor_id: String(formData.assigned_doctor_id) }),
+      };
+
+      // Update patient record (backend handles assigned_doctor_id via patient_visits)
+      await updatePatient({
+        id: patient.id,
+        ...updatePatientData
+      }).unwrap();
+
+      toast.success('Patient updated successfully!');
+
+      // Call onSave callback if provided
       if (onSave) {
         onSave();
+      } else {
+        // Navigate back to patients list
+        navigate('/patients');
       }
-    } catch (error) {
-      console.error('Error saving data:', error);
-      toast.error(error?.data?.message || 'Failed to save changes');
+
+    } catch (err) {
+      console.error('Update error:', err);
+
+      // Handle specific error cases
+      if (err?.data?.message?.includes('duplicate key value violates unique constraint "patients_cr_no_key"') ||
+        err?.data?.error?.includes('duplicate key value violates unique constraint "patients_cr_no_key"')) {
+        toast.error('CR number is already registered');
+        setFormData(prev => ({ ...prev, cr_no: patient?.cr_no || '' }));
+      } else if (err?.data?.message?.includes('duplicate key value violates unique constraint') ||
+        err?.data?.error?.includes('duplicate key value violates unique constraint')) {
+        toast.error('A record with this information already exists. Please check your data and try again.');
+      } else {
+        toast.error(err?.data?.message || err?.data?.error || 'Failed to update patient');
+      }
     }
   };
 
-  const isLoading = isUpdatingPatient || isUpdatingClinical || isUpdatingADL;
-
   return (
-    <div className="space-y-6">
-      {/* Card 1: Patient Details */}
-      <Card className="shadow-lg border-0 bg-white">
-        <div
-          className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
-          onClick={() => toggleCard('patient')}
-        >
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <FiUser className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-gray-900">Patient Details</h3>
-              <p className="text-sm text-gray-500 mt-1">{patient?.name || 'N/A'} - {patient?.cr_no || 'N/A'}</p>
-            </div>
-          </div>
-          {expandedCards.patient ? (
-            <FiChevronUp className="h-6 w-6 text-gray-500" />
-          ) : (
-            <FiChevronDown className="h-6 w-6 text-gray-500" />
-          )}
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/30 to-indigo-100/40 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl"></div>
+      </div>
 
-        {expandedCards.patient && (
-          <div className="p-6">
+      <div className="relative w-full px-4 sm:px-6 lg:px-8 py-6 lg:py-10 space-y-6 lg:space-y-8">
+
+        {/* Quick Entry Section with Glassmorphism */}
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-3xl blur-xl"></div>
+          <Card
+            title={
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
+                  <FiEdit3 className="w-6 h-6 text-indigo-600" />
+                </div>
+                <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Quick Entry</span>
+              </div>
+            }
+            className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl overflow-hidden">
             <div className="space-y-8">
-              {/* Basic Information Section */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Basic Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <IconInput
-                    icon={<FiUser className="w-4 h-4" />}
-                    label="Name"
-                    name="name"
-                    value={localFormData.name || ''}
-                    onChange={handlePatientChange}
-                    required
-                  />
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 mb-2 block">CR Number</label>
-                    <p className="text-base font-semibold text-gray-900">{patient?.cr_no || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 mb-2 block">PSY Number</label>
-                    <p className="text-base font-semibold text-gray-900">{patient?.psy_no || 'N/A'}</p>
-                  </div>
-                  <RadioGroup
+              {/* First Row - Basic Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <IconInput
+                  icon={<FiHash className="w-4 h-4" />}
+                  label="CR No."
+                  name="cr_no"
+                  value={formData.cr_no || ''}
+                  onChange={handleChange}
+                  placeholder="Enter CR number"
+                  error={errors.patientCRNo}
+                  loading={isCheckingCR && formData.cr_no && formData.cr_no.length >= 3}
+                  className={`${errors.patientCRNo
+                    ? 'border-red-400/50 focus:border-red-500 focus:ring-red-500/50 bg-red-50/30'
+                    : formData.cr_no && formData.cr_no.length >= 3 && !isCheckingCR && !errors.patientCRNo
+                      ? 'border-green-400/50 focus:border-green-500 focus:ring-green-500/50 bg-green-50/30'
+                      : ''
+                    }`}
+                />
+                <DatePicker
+                  icon={<FiCalendar className="w-4 h-4" />}
+                  label="Date"
+                  name="date"
+                  value={formData.date || ''}
+                  onChange={handleChange}
+                  defaultToday={false}
+                />
+                <IconInput
+                  icon={<FiUser className="w-4 h-4" />}
+                  label="Name"
+                  name="name"
+                  value={formData.name || ''}
+                  onChange={handleChange}
+                  placeholder="Enter patient name"
+                  error={errors.patientName}
+                  className=""
+                />
+                <IconInput
+                  icon={<FiPhone className="w-4 h-4" />}
+                  label="Mobile No."
+                  name="contact_number"
+                  value={formData.contact_number || ''}
+                  onChange={handleChange}
+                  placeholder="Enter mobile number"
+                  className=""
+                />
+              </div>
+
+              {/* Second Row - Age, Sex, Category, Father's Name */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <IconInput
+                  icon={<FiClock className="w-4 h-4" />}
+                  label="Age"
+                  name="age"
+                  value={formData.age || ''}
+                  onChange={handleChange}
+                  type="number"
+                  placeholder="Enter age"
+                  error={errors.patientAge}
+                  className=""
+                />
+                <div className="space-y-2">
+                  <Select
                     label="Sex"
                     name="sex"
-                    value={localFormData.sex || ''}
-                    onChange={handlePatientChange}
+                    value={formData.sex || ''}
+                    onChange={handleChange}
                     options={SEX_OPTIONS}
-                    icon={<FiHeart className="w-4 h-4" />}
-                  />
-                  <IconInput
-                    icon={<FiClock className="w-4 h-4" />}
-                    label="Age"
-                    type="number"
-                    name="actual_age"
-                    value={localFormData.actual_age || ''}
-                    onChange={handlePatientChange}
-                    min="0"
-                    max="150"
-                  />
-                  <RadioGroup
-                    label="Age Group"
-                    name="age_group"
-                    value={localFormData.age_group || ''}
-                    onChange={handlePatientChange}
-                    options={AGE_GROUP_OPTIONS}
-                    icon={<FiUsers className="w-4 h-4" />}
-                  />
-                  <IconInput
-                    icon={<FiHome className="w-4 h-4" />}
-                    label="Room"
-                    name="assigned_room"
-                    value={localFormData.assigned_room || ''}
-                    onChange={handlePatientChange}
-                  />
-                  <IconInput
-                    icon={<FiPhone className="w-4 h-4" />}
-                    label="Contact Number"
-                    name="contact_number"
-                    value={localFormData.contact_number || ''}
-                    onChange={handlePatientChange}
-                  />
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 mb-2 block">Status</label>
-                    <Badge
-                      className={`${patient?.is_active
-                          ? 'bg-green-100 text-green-800 border-green-200'
-                          : 'bg-gray-100 text-gray-800 border-gray-200'
-                        } text-sm font-medium`}
-                    >
-                      {patient?.is_active ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-
-              {/* Status Information Section */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Status Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 mb-2 block">Assigned Doctor</label>
-                    <Select
-                      name="assigned_doctor_id"
-                      value={localFormData.assigned_doctor_id || ''}
-                      onChange={handlePatientChange}
-                      options={(usersData?.data?.users || [])
-                        .map(u => ({
-                          value: String(u.id),
-                          label: `${u.name} (${isJR(u.role) ? 'JR' : isSR(u.role) ? 'SR' : u.role})`
-                        }))}
-                      placeholder="Select doctor (optional)"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 mb-2 block">Case Complexity</label>
-                    <Badge
-                      className={`${patient?.case_complexity === 'complex'
-                          ? 'bg-orange-100 text-orange-800 border-orange-200'
-                          : 'bg-green-100 text-green-800 border-green-200'
-                        } text-sm font-medium`}
-                    >
-                      {patient?.case_complexity === 'complex' ? 'Complex' : 'Simple'}
-                    </Badge>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 mb-2 block">ADL File</label>
-                    <Badge
-                      className={`${patient?.has_adl_file
-                          ? 'bg-green-100 text-green-800 border-green-200'
-                          : 'bg-gray-100 text-gray-800 border-gray-200'
-                        } text-sm font-medium`}
-                    >
-                      {patient?.has_adl_file ? 'Available' : 'Not Available'}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-
-              {/* Personal Information Section */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Personal Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <RadioGroup
-                    label="Marital Status"
-                    name="marital_status"
-                    value={localFormData.marital_status || ''}
-                    onChange={handlePatientChange}
-                    options={MARITAL_STATUS}
-                    icon={<FiHeart className="w-4 h-4" />}
-                  />
-                  <IconInput
-                    icon={<FiCalendar className="w-4 h-4" />}
-                    label="Year of Marriage"
-                    type="number"
-                    name="year_of_marriage"
-                    value={localFormData.year_of_marriage || ''}
-                    onChange={handlePatientChange}
-                    min="1900"
-                    max={new Date().getFullYear()}
-                  />
-                  <IconInput
-                    icon={<FiUsers className="w-4 h-4" />}
-                    label="Number of Children"
-                    type="number"
-                    name="no_of_children"
-                    value={localFormData.no_of_children || ''}
-                    onChange={handlePatientChange}
-                    min="0"
-                  />
-                  <IconInput
-                    icon={<FiUsers className="w-4 h-4" />}
-                    label="Number of Children (Male)"
-                    type="number"
-                    name="no_of_children_male"
-                    value={localFormData.no_of_children_male || ''}
-                    onChange={handlePatientChange}
-                    min="0"
-                  />
-                  <IconInput
-                    icon={<FiUsers className="w-4 h-4" />}
-                    label="Number of Children (Female)"
-                    type="number"
-                    name="no_of_children_female"
-                    value={localFormData.no_of_children_female || ''}
-                    onChange={handlePatientChange}
-                    min="0"
-                  />
-                  <DateInput
-                    icon={<FiCalendar className="w-4 h-4" />}
-                    label="Date of Birth"
-                    name="dob"
-                    value={patient?.dob ? patient.dob.split('T')[0] : ''}
-                    onChange={handlePatientChange}
-                  />
-                  <RadioGroup
-                    label="Occupation"
-                    name="occupation"
-                    value={localFormData.occupation || ''}
-                    onChange={handlePatientChange}
-                    options={OCCUPATION_OPTIONS}
-                    icon={<FiBriefcase className="w-4 h-4" />}
-                  />
-                  <IconInput
-                    icon={<FiEdit3 className="w-4 h-4" />}
-                    label="Actual Occupation"
-                    name="actual_occupation"
-                    value={localFormData.actual_occupation || ''}
-                    onChange={handlePatientChange}
-                  />
-                  <RadioGroup
-                    label="Education Level"
-                    name="education_level"
-                    value={localFormData.education_level || ''}
-                    onChange={handlePatientChange}
-                    options={EDUCATION_OPTIONS}
-                    icon={<FiBookOpen className="w-4 h-4" />}
+                    placeholder="Select sex"
+                    error={errors.patientSex}
+                    searchable={true}
+                    className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
                   />
                 </div>
-              </div>
-
-              {/* Financial Information */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Financial Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <IconInput
-                    icon={<FiDollarSign className="w-4 h-4" />}
-                    label="Patient Income (₹)"
-                    type="number"
-                    name="patient_income"
-                    value={localFormData.patient_income || ''}
-                    onChange={handlePatientChange}
-                    min="0"
-                  />
-                  <IconInput
-                    icon={<FiDollarSign className="w-4 h-4" />}
-                    label="Family Income (₹)"
-                    type="number"
-                    name="family_income"
-                    value={localFormData.family_income || ''}
-                    onChange={handlePatientChange}
-                    min="0"
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                    <FiShield className="w-4 h-4 text-primary-600" />
+                    Category
+                  </label>
+                  <Select
+                    name="category"
+                    value={formData.category || ''}
+                    onChange={handleChange}
+                    options={CATEGORY_OPTIONS}
+                    placeholder="Select category"
+                    searchable={true}
+                    className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
                   />
                 </div>
+                <IconInput
+                  icon={<FiUsers className="w-4 h-4" />}
+                  label="Father's Name"
+                  name="father_name"
+                  value={formData.father_name || ''}
+                  onChange={handleChange}
+                  placeholder="Enter father's name"
+                  className=""
+                />
+              </div>
+              {/* Fourth Row - Department, Unit/Consit, Room No., Serial No. */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <IconInput
+                  icon={<FiLayers className="w-4 h-4" />}
+                  label="Department"
+                  name="department"
+                  value={formData.department || ''}
+                  onChange={handleChange}
+                  placeholder="Enter department"
+                  className=""
+                />
+                <IconInput
+                  icon={<FiUsers className="w-4 h-4" />}
+                  label="Unit/Consit"
+                  name="unit_consit"
+                  value={formData.unit_consit || ''}
+                  onChange={handleChange}
+                  placeholder="Enter unit/consit"
+                  className=""
+                />
+                <IconInput
+                  icon={<FiHome className="w-4 h-4" />}
+                  label="Room No."
+                  name="room_no"
+                  value={formData.room_no || ''}
+                  onChange={handleChange}
+                  placeholder="Enter room number"
+                  className=""
+                />
+                <IconInput
+                  icon={<FiHash className="w-4 h-4" />}
+                  label="Serial No."
+                  name="serial_no"
+                  value={formData.serial_no || ''}
+                  onChange={handleChange}
+                  placeholder="Enter serial number"
+                  className=""
+                />
               </div>
 
-              {/* Family Information */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Family Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <RadioGroup
-                    label="Religion"
-                    name="religion"
-                    value={localFormData.religion || ''}
-                    onChange={handlePatientChange}
-                    options={RELIGION_OPTIONS}
-                    icon={<FiShield className="w-4 h-4" />}
-                  />
-                  <RadioGroup
-                    label="Family Type"
-                    name="family_type"
-                    value={localFormData.family_type || ''}
-                    onChange={handlePatientChange}
-                    options={FAMILY_TYPE_OPTIONS}
-                    icon={<FiUsers className="w-4 h-4" />}
-                  />
-                  <RadioGroup
-                    label="Locality"
-                    name="locality"
-                    value={localFormData.locality || ''}
-                    onChange={handlePatientChange}
-                    options={LOCALITY_OPTIONS}
-                    icon={<FiMapPin className="w-4 h-4" />}
-                  />
-                  <IconInput
-                    icon={<FiUser className="w-4 h-4" />}
-                    label="Head of Family Name"
-                    name="head_name"
-                    value={localFormData.head_name || ''}
-                    onChange={handlePatientChange}
-                  />
-                  <IconInput
-                    icon={<FiClock className="w-4 h-4" />}
-                    label="Head Age"
-                    type="number"
-                    name="head_age"
-                    value={localFormData.head_age || ''}
-                    onChange={handlePatientChange}
-                    min="0"
-                    max="150"
-                  />
-                  <IconInput
-                    icon={<FiUsers className="w-4 h-4" />}
-                    label="Head Relationship"
-                    name="head_relationship"
-                    value={localFormData.head_relationship || ''}
-                    onChange={handlePatientChange}
-                  />
-                  <IconInput
-                    icon={<FiBookOpen className="w-4 h-4" />}
-                    label="Head Education"
-                    name="head_education"
-                    value={localFormData.head_education || ''}
-                    onChange={handlePatientChange}
-                  />
-                  <IconInput
-                    icon={<FiBriefcase className="w-4 h-4" />}
-                    label="Head Occupation"
-                    name="head_occupation"
-                    value={localFormData.head_occupation || ''}
-                    onChange={handlePatientChange}
-                  />
-                  <IconInput
-                    icon={<FiDollarSign className="w-4 h-4" />}
-                    label="Head Income (₹)"
-                    type="number"
-                    name="head_income"
-                    value={localFormData.head_income || ''}
-                    onChange={handlePatientChange}
-                    min="0"
-                  />
-                  <IconInput
-                    icon={<FiUser className="w-4 h-4" />}
-                    label="Head Relationship"
-                    name="head_relationship"
-                    value={localFormData.head_relationship || ''}
-                    onChange={handlePatientChange}
-                  />
-                  <IconInput
-                    icon={<FiBookOpen className="w-4 h-4" />}
-                    label="Head Education"
-                    name="head_education"
-                    value={localFormData.head_education || ''}
-                    onChange={handlePatientChange}
-                  />
-                </div>
-              </div>
-
-              {/* Referral & Mobility Information */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Referral & Mobility Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <IconInput
-                    icon={<FiMapPin className="w-4 h-4" />}
-                    label="Distance from Hospital"
-                    name="distance_from_hospital"
-                    value={localFormData.distance_from_hospital || ''}
-                    onChange={handlePatientChange}
-                  />
-                  <RadioGroup
-                    label="Mobility"
-                    name="mobility"
-                    value={localFormData.mobility || ''}
-                    onChange={handlePatientChange}
-                    options={MOBILITY_OPTIONS}
-                    icon={<FiNavigation className="w-4 h-4" />}
-                  />
-                  <RadioGroup
-                    label="Referred By"
-                    name="referred_by"
-                    value={localFormData.referred_by || ''}
-                    onChange={handlePatientChange}
-                    options={REFERRED_BY_OPTIONS}
-                    icon={<FiUserCheck className="w-4 h-4" />}
-                  />
-                  <IconInput
-                    icon={<FiInfo className="w-4 h-4" />}
-                    label="Exact Source"
-                    name="exact_source"
-                    value={localFormData.exact_source || ''}
-                    onChange={handlePatientChange}
-                  />
-                  <DateInput
-                    icon={<FiCalendar className="w-4 h-4" />}
-                    label="Seen in Walk-in On"
-                    name="seen_in_walk_in_on"
-                    value={localFormData.seen_in_walk_in_on ? localFormData.seen_in_walk_in_on.split('T')[0] : ''}
-                    onChange={handlePatientChange}
-                  />
-                  <DateInput
-                    icon={<FiCalendar className="w-4 h-4" />}
-                    label="Worked Up On"
-                    name="worked_up_on"
-                    value={localFormData.worked_up_on ? localFormData.worked_up_on.split('T')[0] : ''}
-                    onChange={handlePatientChange}
-                  />
-                  <IconInput
-                    icon={<FiHome className="w-4 h-4" />}
-                    label="School/College/Office"
-                    name="school_college_office"
-                    value={localFormData.school_college_office || ''}
-                    onChange={handlePatientChange}
-                  />
-                </div>
-              </div>
-
-              {/* Registration Details */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Registration Details</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <IconInput
-                    icon={<FiBriefcase className="w-4 h-4" />}
-                    label="Department"
-                    name="department"
-                    value={localFormData.department || ''}
-                    onChange={handlePatientChange}
-                  />
-                  <IconInput
-                    icon={<FiLayers className="w-4 h-4" />}
-                    label="Unit/Constituent"
-                    name="unit_consit"
-                    value={localFormData.unit_consit || ''}
-                    onChange={handlePatientChange}
-                  />
-                  <IconInput
-                    icon={<FiHome className="w-4 h-4" />}
-                    label="Room Number"
-                    name="room_no"
-                    value={localFormData.room_no || ''}
-                    onChange={handlePatientChange}
-                  />
-                  <IconInput
-                    icon={<FiHash className="w-4 h-4" />}
-                    label="Serial Number"
-                    name="serial_no"
-                    value={localFormData.serial_no || ''}
-                    onChange={handlePatientChange}
-                  />
-                  <IconInput
-                    icon={<FiFileText className="w-4 h-4" />}
-                    label="File Number"
-                    name="file_no"
-                    value={localFormData.file_no || ''}
-                    onChange={handlePatientChange}
-                  />
-                  <IconInput
-                    icon={<FiClock className="w-4 h-4" />}
+              {/* Fifth Row - File No., Unit Days */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <IconInput
+                  icon={<FiFileText className="w-4 h-4" />}
+                  label="File No."
+                  name="file_no"
+                  value={formData.file_no || ''}
+                  onChange={handleChange}
+                  placeholder="Enter file number"
+                  className=""
+                />
+                <div className="space-y-2">
+                  <Select
                     label="Unit Days"
                     name="unit_days"
-                    value={localFormData.unit_days || ''}
-                    onChange={handlePatientChange}
+                    value={formData.unit_days || ''}
+                    onChange={handleChange}
+                    options={UNIT_DAYS_OPTIONS}
+                    placeholder="Select unit days"
+                    searchable={true}
+                    className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
                   />
+                </div>
+              </div>
+
+              {/* Address Details */}
+              <div className="space-y-6 pt-6 border-t border-white/30">
+                <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                  <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-md">
+                    <FiMapPin className="w-5 h-5 text-blue-600" />
+                  </div>
+                  Address Details
+                </h4>
+
+                <div className="space-y-6">
+                  {/* Address Line */}
                   <IconInput
-                    icon={<FiTag className="w-4 h-4" />}
-                    label="Category"
-                    name="category"
-                    value={localFormData.category || ''}
-                    onChange={handlePatientChange}
+                    icon={<FiHome className="w-4 h-4" />}
+                    label="Address Line (House No., Street, Locality)"
+                    name="address_line"
+                    value={formData.address_line || ''}
+                    onChange={handleChange}
+                    placeholder="Enter house number, street, locality"
+                    required
+                    className=""
                   />
-                </div>
-              </div>
 
-              {/* Additional Address Information */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Additional Address Information</h4>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 mb-2 block">Local Address</label>
-                    <Textarea
-                      name="local_address"
-                      value={localFormData.local_address || ''}
-                      onChange={handlePatientChange}
-                      rows={3}
-                      className="w-full"
+                  {/* Location Fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <IconInput
+                      icon={<FiGlobe className="w-4 h-4" />}
+                      label="Country"
+                      name="country"
+                      value={formData.country || ''}
+                      onChange={handleChange}
+                      placeholder="Enter country"
+                      className=""
+                    />
+                    <IconInput
+                      icon={<FiMapPin className="w-4 h-4" />}
+                      label="State"
+                      name="state"
+                      value={formData.state || ''}
+                      onChange={handleChange}
+                      placeholder="Enter state"
+                      required
+                      className=""
+                    />
+                    <IconInput
+                      icon={<FiLayers className="w-4 h-4" />}
+                      label="District"
+                      name="district"
+                      value={formData.district || ''}
+                      onChange={handleChange}
+                      placeholder="Enter district"
+                      required
+                      className=""
+                    />
+                    <IconInput
+                      icon={<FiHome className="w-4 h-4" />}
+                      label="City/Town/Village"
+                      name="city"
+                      value={formData.city || ''}
+                      onChange={handleChange}
+                      placeholder="Enter city, town or village"
+                      required
+                      className=""
                     />
                   </div>
-                </div>
-              </div>
 
-              {/* Address Information */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Address Information</h4>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 mb-2 block">Present Address</label>
-                    <Textarea
-                      name="present_address"
-                      value={localFormData.present_address || ''}
-                      onChange={handlePatientChange}
-                      rows={3}
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 mb-2 block">Permanent Address</label>
-                    <Textarea
-                      name="permanent_address"
-                      value={localFormData.permanent_address || ''}
-                      onChange={handlePatientChange}
-                      rows={3}
-                      className="w-full"
+                  {/* Pin Code Row */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <IconInput
+                      icon={<FiHash className="w-4 h-4" />}
+                      label="Pin Code"
+                      name="pin_code"
+                      value={formData.pin_code || ''}
+                      onChange={handleChange}
+                      placeholder="Enter pin code"
+                      type="number"
+                      required
+                      className=""
                     />
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-      </Card>
+          </Card>
+        </div>
 
-      {/* Card 2: Clinical Proforma - Hide for MWO */}
-      {!isMWO(userRole) && patientProformas.length > 0 && (
-        <Card className="shadow-lg border-0 bg-white">
-          <div
-            className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
-            onClick={() => toggleCard('clinical')}
-          >
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <FiFileText className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">Clinical Proforma</h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  {patientProformas.length} record{patientProformas.length > 1 ? 's' : ''} found
-                </p>
-              </div>
-            </div>
-            {expandedCards.clinical ? (
-              <FiChevronUp className="h-6 w-6 text-gray-500" />
-            ) : (
-              <FiChevronDown className="h-6 w-6 text-gray-500" />
-            )}
-          </div>
+        <form onSubmit={handleSubmit}>
+          {/* Basic Information with Glassmorphism */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 rounded-3xl blur-xl"></div>
+            <Card
+              title={
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
+                    <FiUser className="w-6 h-6 text-emerald-600" />
+                  </div>
+                  <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Basic Information</span>
+                </div>
+              }
+              className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl overflow-visible"
+            >
+              <div className="space-y-8">
+                {/* Patient Identification */}
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <IconInput
+                      icon={<FiFileText className="w-4 h-4" />}
+                      label="Psy. No."
+                      name="psy_no"
+                      value={formData.psy_no || ''}
+                      onChange={handlePatientChange}
+                      placeholder="Enter PSY number"
+                      className=""
+                    />
+                    <IconInput
+                      icon={<FiHeart className="w-4 h-4" />}
+                      label="Special Clinic No."
+                      name="special_clinic_no"
+                      value={formData.special_clinic_no || ''}
+                      onChange={handleChange}
+                      placeholder="Enter special clinic number"
+                      className=""
+                    />
+                    <Select
+                      label="Age Group"
+                      name="age_group"
+                      value={formData.age_group || ''}
+                      onChange={handleChange}
+                      options={AGE_GROUP_OPTIONS}
+                      placeholder="Select age group"
+                      searchable={true}
+                      className="bg-gradient-to-r from-blue-50 to-indigo-50"
+                    />
+                    <Select
+                      label="Family Type"
+                      name="family_type"
+                      value={formData.family_type || ''}
+                      onChange={handleChange}
+                      options={FAMILY_TYPE_OPTIONS}
+                      placeholder="Select family type"
+                      searchable={true}
+                      className="bg-gradient-to-r from-teal-50 to-cyan-50"
+                    />
+                    <Select
+                      label="Locality"
+                      name="locality"
+                      value={formData.locality || ''}
+                      onChange={handleChange}
+                      options={LOCALITY_OPTIONS}
+                      placeholder="Select locality"
+                      searchable={true}
+                      className="bg-gradient-to-r from-teal-50 to-cyan-50"
+                    />
+                    <Select
+                      label="Religion"
+                      name="religion"
+                      value={formData.religion || ''}
+                      onChange={handleChange}
+                      options={RELIGION_OPTIONS}
+                      placeholder="Select religion"
+                      searchable={true}
+                      className="bg-gradient-to-r from-teal-50 to-cyan-50"
+                    />
+                    <IconInput
+                      icon={<FiTrendingUp className="w-4 h-4" />}
+                      label="Income (₹)"
+                      name="head_income"
+                      value={formData.head_income || ''}
+                      onChange={handleChange}
+                      type="number"
+                      placeholder="Monthly income"
+                      min="0"
+                      className="bg-gradient-to-r from-teal-50 to-cyan-50"
+                    />
+                    <Select
+                      icon={<FiBriefcase className="w-4 h-4" />}
+                      label=" Occupation"
+                      name="occupation"
+                      value={formData.occupation || ''}
+                      onChange={handleChange}
+                      options={OCCUPATION_OPTIONS}
+                      placeholder="Select occupation"
+                      searchable={true}
+                      className="bg-gradient-to-r from-green-50 to-emerald-50"
+                    />
+                    <Select
+                      icon={<FiBookOpen className="w-4 h-4" />}
+                      label="Education"
+                      name="education"
+                      value={formData.education || ''}
+                      onChange={handleChange}
+                      options={EDUCATION_OPTIONS}
+                      placeholder="Select education"
+                      searchable={true}
+                      className="bg-gradient-to-r from-green-50 to-emerald-50"
+                    />
+                  </div>
+                </div>
 
-          {expandedCards.clinical && (
-            <div className="p-6">
-              <div className="space-y-6">
-                {patientProformas.map((proforma, index) => (
-                  <div key={proforma.id || index} className="border border-gray-200 rounded-lg p-6 bg-gray-50">
-                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
-                      <h4 className="text-lg font-semibold text-gray-900">Visit #{index + 1}</h4>
-                      <span className="text-sm text-gray-500">{proforma.visit_date ? formatDate(proforma.visit_date) : 'N/A'}</span>
-                    </div>
+                {/* Divider */}
+                <div className="border-t border-white/30 my-6"></div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      <DateInput
-                        icon={<FiCalendar className="w-4 h-4" />}
-                        label="Visit Date"
-                        name="visit_date"
-                        value={clinicalFormData.visit_date || ''}
-                        onChange={handleClinicalChange}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full"></div>
+                    <h4 className="text-xl font-bold text-gray-900">Appointment & Assignment</h4>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <DatePicker
+                      icon={<FiCalendar className="w-4 h-4" />}
+                      label="Seen in Walk-in-on"
+                      name="seen_in_walk_in_on"
+                      value={formData.seen_in_walk_in_on || ''}
+                      onChange={handleChange}
+                      defaultToday={false}
+                    />
+                    <DatePicker
+                      icon={<FiCalendar className="w-4 h-4" />}
+                      label="Worked up on"
+                      name="worked_up_on"
+                      value={formData.worked_up_on || ''}
+                      onChange={handleChange}
+                      defaultToday={false}
+                    />
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <FiUser className="w-4 h-4 text-primary-600" />
+                        Assigned Doctor
+                      </label>
+                      <Select
+                        name="assigned_doctor_id"
+                        value={formData.assigned_doctor_id || ''}
+                        onChange={handlePatientChange}
+                        options={(doctorsData?.data?.users || [])
+                          .map(u => ({
+                            value: String(u.id),
+                            label: `${u.name} (${isJR(u.role) ? 'JR' : isSR(u.role) ? 'SR' : u.role})`
+                          }))}
+                        placeholder="Select doctor (optional)"
+                        searchable={true}
+                        className="bg-gradient-to-r from-violet-50 to-purple-50"
+                        containerClassName="relative z-[9999]"
+                        dropdownZIndex={2147483647}
                       />
-                      <div>
-                        <label className="text-sm font-medium text-gray-600 mb-2 block">Visit Type</label>
-                        <Select
-                          name="visit_type"
-                          value={clinicalFormData.visit_type || ''}
-                          onChange={handleClinicalChange}
-                          options={[
-                            { value: 'first_visit', label: 'First Visit' },
-                            { value: 'follow_up', label: 'Follow-up' }
-                          ]}
-                        />
-                      </div>
+                    </div>
+                    <div className="space-y-2">
                       <IconInput
                         icon={<FiHome className="w-4 h-4" />}
-                        label="Room Number"
-                        name="room_no"
-                        value={clinicalFormData.room_no || ''}
-                        onChange={handleClinicalChange}
-                      />
-                      <div>
-                        <label className="text-sm font-medium text-gray-600 mb-2 block">Case Severity</label>
-                        <Select
-                          name="case_severity"
-                          value={clinicalFormData.case_severity || ''}
-                          onChange={handleClinicalChange}
-                          options={[
-                            { value: 'mild', label: 'Mild' },
-                            { value: 'moderate', label: 'Moderate' },
-                            { value: 'severe', label: 'Severe' }
-                          ]}
-                        />
-                      </div>
-                      <IconInput
-                        icon={<FiFileText className="w-4 h-4" />}
-                        label="Decision"
-                        name="decision"
-                        value={clinicalFormData.decision || ''}
-                        onChange={handleClinicalChange}
-                      />
-                    </div>
-
-                    <div className="mt-6">
-                      <label className="text-sm font-medium text-gray-600 mb-2 block">Diagnosis</label>
-                      <Textarea
-                        name="diagnosis"
-                        value={clinicalFormData.diagnosis || ''}
-                        onChange={handleClinicalChange}
-                        rows={4}
-                        className="w-full"
+                        label="Assigned Room"
+                        name="assigned_room"
+                        value={formData.assigned_room || ''}
+                        onChange={handleChange}
+                        placeholder="Enter assigned room"
+                        className="bg-gradient-to-r from-teal-50 to-cyan-50"
                       />
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </Card>
-      )}
-
-      {/* Card 3: Additional Details (ADL File) - Only show if ADL file exists, Hide for MWO */}
-      {!isMWO(userRole) && patientAdlFiles.length > 0 && (
-        <Card className="shadow-lg border-0 bg-white">
-          <div
-            className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
-            onClick={() => toggleCard('adl')}
-          >
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <FiFolder className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">Additional Details (ADL File)</h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  {patientAdlFiles.length} file{patientAdlFiles.length > 1 ? 's' : ''} found
-                </p>
-              </div>
-            </div>
-            {expandedCards.adl ? (
-              <FiChevronUp className="h-6 w-6 text-gray-500" />
-            ) : (
-              <FiChevronDown className="h-6 w-6 text-gray-500" />
-            )}
-          </div>
-
-          {expandedCards.adl && (
-            <div className="p-6">
-              <div className="space-y-8">
-                {patientAdlFiles.map((file, index) => (
-                  <div key={file.id || index} className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
-                    <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-gray-300">
-                      <div>
-                        <h4 className="text-xl font-bold text-gray-900">ADL File #{index + 1}</h4>
-                        {file.adl_no && (
-                          <p className="text-sm text-gray-600 mt-1">ADL Number: {file.adl_no}</p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <div>
-                          <label className="text-sm font-medium text-gray-600 mb-2 block">File Status</label>
-                          <Select
-                            name="file_status"
-                            value={adlFormData.file_status || ''}
-                            onChange={handleADLChange}
-                            options={[
-                              { value: 'created', label: 'Created' },
-                              { value: 'stored', label: 'Stored' },
-                              { value: 'retrieved', label: 'Retrieved' },
-                              { value: 'active', label: 'Active' },
-                              { value: 'archived', label: 'Archived' }
-                            ]}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-8">
-                      {/* Basic Information */}
-                      <div>
-                        <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Basic Information</h5>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          <IconInput
-                            icon={<FiMapPin className="w-4 h-4" />}
-                            label="Physical Location"
-                            name="physical_file_location"
-                            value={adlFormData.physical_file_location || ''}
-                            onChange={handleADLChange}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Complaints */}
-                      <div>
-                        <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Complaints</h5>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="text-sm font-medium text-gray-600 mb-2 block">Patient Complaints</label>
-                            {(adlFormData.complaints_patient || []).map((complaint, idx) => (
-                              <div key={idx} className="bg-blue-50 p-3 rounded border border-blue-200 mb-2">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <IconInput
-                                    label="Complaint"
-                                    name={`complaint_${idx}`}
-                                    value={complaint.complaint || ''}
-                                    onChange={(e) => handleADLArrayChange('complaints_patient', idx, 'complaint', e.target.value)}
-                                  />
-                                  <IconInput
-                                    label="Duration"
-                                    name={`duration_${idx}`}
-                                    value={complaint.duration || ''}
-                                    onChange={(e) => handleADLArrayChange('complaints_patient', idx, 'duration', e.target.value)}
-                                  />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* History of Present Illness */}
-                      <div>
-                        <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">History of Present Illness</h5>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="text-sm font-medium text-gray-600 mb-2 block">Narrative History</label>
-                            <Textarea
-                              name="history_narrative"
-                              value={adlFormData.history_narrative || ''}
-                              onChange={handleADLChange}
-                              rows={4}
-                              className="w-full"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium text-gray-600 mb-2 block">Specific Enquiry</label>
-                            <Textarea
-                              name="history_specific_enquiry"
-                              value={adlFormData.history_specific_enquiry || ''}
-                              onChange={handleADLChange}
-                              rows={4}
-                              className="w-full"
-                            />
-                          </div>
-                          <IconInput
-                            icon={<FiFileText className="w-4 h-4" />}
-                            label="Drug Intake"
-                            name="history_drug_intake"
-                            value={adlFormData.history_drug_intake || ''}
-                            onChange={handleADLChange}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Mental Status Examination */}
-                      <div>
-                        <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Mental Status Examination (MSE)</h5>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <IconInput
-                            icon={<FiUser className="w-4 h-4" />}
-                            label="General Demeanour"
-                            name="mse_general_demeanour"
-                            value={adlFormData.mse_general_demeanour || ''}
-                            onChange={handleADLChange}
-                          />
-                          <IconInput
-                            icon={<FiHeart className="w-4 h-4" />}
-                            label="Affect (Subjective)"
-                            name="mse_affect_subjective"
-                            value={adlFormData.mse_affect_subjective || ''}
-                            onChange={handleADLChange}
-                          />
-                          <IconInput
-                            icon={<FiFileText className="w-4 h-4" />}
-                            label="Thought Flow"
-                            name="mse_thought_flow"
-                            value={adlFormData.mse_thought_flow || ''}
-                            onChange={handleADLChange}
-                          />
-                          <IconInput
-                            icon={<FiActivity className="w-4 h-4" />}
-                            label="Consciousness"
-                            name="mse_cognitive_consciousness"
-                            value={adlFormData.mse_cognitive_consciousness || ''}
-                            onChange={handleADLChange}
-                          />
-                          <IconInput
-                            icon={<FiClock className="w-4 h-4" />}
-                            label="Orientation (Time)"
-                            name="mse_cognitive_orientation_time"
-                            value={adlFormData.mse_cognitive_orientation_time || ''}
-                            onChange={handleADLChange}
-                          />
-                          <IconInput
-                            icon={<FiMapPin className="w-4 h-4" />}
-                            label="Orientation (Place)"
-                            name="mse_cognitive_orientation_place"
-                            value={adlFormData.mse_cognitive_orientation_place || ''}
-                            onChange={handleADLChange}
-                          />
-                          <IconInput
-                            icon={<FiInfo className="w-4 h-4" />}
-                            label="Insight (Understanding)"
-                            name="mse_insight_understanding"
-                            value={adlFormData.mse_insight_understanding || ''}
-                            onChange={handleADLChange}
-                          />
-                          <IconInput
-                            icon={<FiShield className="w-4 h-4" />}
-                            label="Insight (Judgement)"
-                            name="mse_insight_judgement"
-                            value={adlFormData.mse_insight_judgement || ''}
-                            onChange={handleADLChange}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Diagnostic Formulation */}
-                      <div>
-                        <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Diagnostic Formulation</h5>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="text-sm font-medium text-gray-600 mb-2 block">Summary</label>
-                            <Textarea
-                              name="diagnostic_formulation_summary"
-                              value={adlFormData.diagnostic_formulation_summary || ''}
-                              onChange={handleADLChange}
-                              rows={4}
-                              className="w-full"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium text-gray-600 mb-2 block">Features</label>
-                            <Textarea
-                              name="diagnostic_formulation_features"
-                              value={adlFormData.diagnostic_formulation_features || ''}
-                              onChange={handleADLChange}
-                              rows={4}
-                              className="w-full"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium text-gray-600 mb-2 block">Psychodynamic</label>
-                            <Textarea
-                              name="diagnostic_formulation_psychodynamic"
-                              value={adlFormData.diagnostic_formulation_psychodynamic || ''}
-                              onChange={handleADLChange}
-                              rows={4}
-                              className="w-full"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Provisional Diagnosis */}
-                      <div>
-                        <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Provisional Diagnosis</h5>
-                        <Textarea
-                          name="provisional_diagnosis"
-                          value={adlFormData.provisional_diagnosis || ''}
-                          onChange={handleADLChange}
-                          rows={3}
-                          className="w-full"
-                        />
-                      </div>
-
-                      {/* Treatment Plan */}
-                      <div>
-                        <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Treatment Plan</h5>
-                        <Textarea
-                          name="treatment_plan"
-                          value={adlFormData.treatment_plan || ''}
-                          onChange={handleADLChange}
-                          rows={4}
-                          className="w-full"
-                        />
-                      </div>
-
-                      {/* Consultant Comments */}
-                      <div>
-                        <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Consultant Comments</h5>
-                        <Textarea
-                          name="consultant_comments"
-                          value={adlFormData.consultant_comments || ''}
-                          onChange={handleADLChange}
-                          rows={4}
-                          className="w-full"
-                        />
-                      </div>
-
-                      {/* Notes */}
-                      <div>
-                        <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Additional Notes</h5>
-                        <Textarea
-                          name="notes"
-                          value={adlFormData.notes || ''}
-                          onChange={handleADLChange}
-                          rows={3}
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </Card>
-      )}
-
-      {/* Card 4: Prescription History - Only show for Admin and JR/SR, not MWO */}
-      {canViewPrescriptions && (
-        <Card className="shadow-lg border-0 bg-white">
-          <div
-            className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
-            onClick={() => toggleCard('prescriptions')}
-          >
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-amber-100 rounded-lg">
-                <FiPackage className="h-6 w-6 text-amber-600" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">Prescription History</h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  {allPrescriptions.length > 0
-                    ? `${allPrescriptions.length} prescription${allPrescriptions.length > 1 ? 's' : ''} across ${Object.keys(prescriptionsByVisit).length} visit${Object.keys(prescriptionsByVisit).length > 1 ? 's' : ''}`
-                    : 'No prescriptions found'}
-                </p>
-              </div>
-            </div>
-            {expandedCards.prescriptions ? (
-              <FiChevronUp className="h-6 w-6 text-gray-500" />
-            ) : (
-              <FiChevronDown className="h-6 w-6 text-gray-500" />
-            )}
-          </div>
-
-          {expandedCards.prescriptions && (
-            <div className="p-6">
-              {allPrescriptions.length > 0 ? (
+                </div>
                 <div className="space-y-6">
-                  {Object.entries(prescriptionsByVisit).map(([visitDate, visitData]) => (
-                    <div key={visitDate} className="border border-gray-200 rounded-lg p-6 bg-gray-50">
-                      <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
-                        <div>
-                          <h4 className="text-lg font-semibold text-gray-900">Visit on {visitDate}</h4>
-                          {visitData.visitType && (
-                            <p className="text-sm text-gray-600 mt-1">
-                              {visitData.visitType === 'first_visit' ? 'First Visit' : 'Follow-up Visit'}
-                            </p>
-                          )}
-                        </div>
-                        <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-sm font-medium">
-                          {visitData.prescriptions.length} {visitData.prescriptions.length === 1 ? 'Medication' : 'Medications'}
-                        </Badge>
-                      </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full"></div>
+                    <h4 className="text-xl font-bold text-gray-900">Marital Status</h4>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <Select
+                      label="Marital Status"
+                      name="marital_status"
+                      value={formData.marital_status || ''}
+                      onChange={handleChange}
+                      options={MARITAL_STATUS}
+                      placeholder="Select marital status"
+                      searchable={true}
+                      className="bg-gradient-to-r from-pink-50 to-rose-50"
+                    />
+                    <IconInput
+                      icon={<FiCalendar className="w-4 h-4" />}
+                      label="Year of marriage"
+                      name="year_of_marriage"
+                      value={formData.year_of_marriage || ''}
+                      onChange={handleChange}
+                      type="number"
+                      placeholder="Enter year of marriage"
+                      min="1900"
+                      max={new Date().getFullYear()}
+                      className="bg-gradient-to-r from-purple-50 to-pink-50"
+                    />
+                    <IconInput
+                      icon={<FiUsers className="w-4 h-4" />}
+                      label="No. of Children: M"
+                      name="no_of_children_male"
+                      value={formData.no_of_children_male || ''}
+                      onChange={handleChange}
+                      type="number"
+                      placeholder="Male"
+                      min="0"
+                      max="20"
+                      className="bg-gradient-to-r from-blue-50 to-indigo-50"
+                    />
+                    <IconInput
+                      icon={<FiUsers className="w-4 h-4" />}
+                      label="No. of Children: F"
+                      name="no_of_children_female"
+                      value={formData.no_of_children_female || ''}
+                      onChange={handleChange}
+                      type="number"
+                      placeholder="Female"
+                      min="0"
+                      max="20"
+                      className="bg-gradient-to-r from-pink-50 to-rose-50"
+                    />
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
 
-                      <div className="space-y-4">
-                        {visitData.prescriptions.map((prescription, idx) => {
-                          const isEditing = editingPrescriptionId === prescription.id;
-                          const editedData = editablePrescriptions[prescription.id] || {};
-                          const displayData = isEditing ? editedData : prescription;
-
-                          return (
-                            <div key={prescription.id || idx} className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-                              <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
-                                <h5 className="text-sm font-semibold text-gray-700">Prescription #{idx + 1}</h5>
-                                {!isEditing ? (
-                                  <button
-                                    onClick={() => handlePrescriptionEdit(prescription)}
-                                    className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
-                                  >
-                                    <FiEdit3 className="w-4 h-4" />
-                                    Edit
-                                  </button>
-                                ) : (
-                                  <div className="flex items-center gap-2">
-                                    <button
-                                      onClick={() => handlePrescriptionCancel(prescription.id)}
-                                      className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                                    >
-                                      Cancel
-                                    </button>
-                                    <button
-                                      onClick={() => handlePrescriptionSave(prescription)}
-                                      disabled={isUpdatingPrescription}
-                                      className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                      <FiSave className="w-4 h-4" />
-                                      {isUpdatingPrescription ? 'Saving...' : 'Save'}
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <div>
-                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 block">Medicine</label>
-                                  {isEditing ? (
-                                    <input
-                                      type="text"
-                                      value={displayData.medicine || ''}
-                                      onChange={(e) => handlePrescriptionChange(prescription.id, 'medicine', e.target.value)}
-                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                                      placeholder="Medicine name"
-                                    />
-                                  ) : (
-                                    <p className="text-base font-bold text-gray-900 mt-1">{prescription.medicine || 'N/A'}</p>
-                                  )}
-                                </div>
-                                <div>
-                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 block">Dosage</label>
-                                  {isEditing ? (
-                                    <input
-                                      type="text"
-                                      value={displayData.dosage || ''}
-                                      onChange={(e) => handlePrescriptionChange(prescription.id, 'dosage', e.target.value)}
-                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                                      placeholder="e.g., 1-0-1"
-                                    />
-                                  ) : (
-                                    <p className="text-base font-semibold text-gray-900 mt-1">{prescription.dosage || 'N/A'}</p>
-                                  )}
-                                </div>
-                                <div>
-                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 block">When to Take</label>
-                                  {isEditing ? (
-                                    <input
-                                      type="text"
-                                      value={displayData.when_to_take || displayData.when || ''}
-                                      onChange={(e) => handlePrescriptionChange(prescription.id, 'when_to_take', e.target.value)}
-                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                                      placeholder="Before/After food"
-                                    />
-                                  ) : (
-                                    <p className="text-base font-semibold text-gray-900 mt-1">{prescription.when_to_take || prescription.when || 'N/A'}</p>
-                                  )}
-                                </div>
-                                <div>
-                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 block">Frequency</label>
-                                  {isEditing ? (
-                                    <input
-                                      type="text"
-                                      value={displayData.frequency || ''}
-                                      onChange={(e) => handlePrescriptionChange(prescription.id, 'frequency', e.target.value)}
-                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                                      placeholder="Daily"
-                                    />
-                                  ) : (
-                                    <p className="text-base font-semibold text-gray-900 mt-1">{prescription.frequency || 'N/A'}</p>
-                                  )}
-                                </div>
-                                <div>
-                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 block">Duration</label>
-                                  {isEditing ? (
-                                    <input
-                                      type="text"
-                                      value={displayData.duration || ''}
-                                      onChange={(e) => handlePrescriptionChange(prescription.id, 'duration', e.target.value)}
-                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                                      placeholder="5 days"
-                                    />
-                                  ) : (
-                                    <p className="text-base font-semibold text-gray-900 mt-1">{prescription.duration || 'N/A'}</p>
-                                  )}
-                                </div>
-                                <div>
-                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 block">Quantity</label>
-                                  {isEditing ? (
-                                    <input
-                                      type="text"
-                                      value={displayData.quantity || displayData.qty || ''}
-                                      onChange={(e) => handlePrescriptionChange(prescription.id, 'quantity', e.target.value)}
-                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                                      placeholder="Quantity"
-                                    />
-                                  ) : (
-                                    <p className="text-base font-semibold text-gray-900 mt-1">{prescription.quantity || prescription.qty || 'N/A'}</p>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
-                                <div>
-                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 block">Details</label>
-                                  {isEditing ? (
-                                    <textarea
-                                      value={displayData.details || ''}
-                                      onChange={(e) => handlePrescriptionChange(prescription.id, 'details', e.target.value)}
-                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                                      rows={2}
-                                      placeholder="Additional details"
-                                    />
-                                  ) : (
-                                    <p className="text-sm text-gray-900 mt-1">{prescription.details || 'N/A'}</p>
-                                  )}
-                                </div>
-                                <div>
-                                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1 block">Notes</label>
-                                  {isEditing ? (
-                                    <textarea
-                                      value={displayData.notes || ''}
-                                      onChange={(e) => handlePrescriptionChange(prescription.id, 'notes', e.target.value)}
-                                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                                      rows={2}
-                                      placeholder="Notes"
-                                    />
-                                  ) : (
-                                    <p className="text-sm text-gray-900 mt-1">{prescription.notes || 'N/A'}</p>
-                                  )}
-                                </div>
-                              </div>
-                              {prescription.created_at && (
-                                <div className="mt-3 pt-3 border-t border-gray-100">
-                                  <p className="text-xs text-gray-500">Prescribed on: {formatDateTime(prescription.created_at)}</p>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
+          {/* Family Information with Glassmorphism */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-violet-500/10 to-fuchsia-500/10 rounded-3xl blur-xl"></div>
+            <Card
+              title={
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-gradient-to-br from-purple-500/20 to-violet-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
+                    <FiHome className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Family Information</span>
+                </div>
+              }
+              className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl">
+              <div className="space-y-8">
+                <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                  <FiUsers className="w-6 h-6 text-primary-600" />
+                  Head of the Family
+                </h4>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <IconInput
+                      icon={<FiUser className="w-4 h-4" />}
+                      label="Family Head Name"
+                      name="head_name"
+                      value={formData.head_name || ''}
+                      onChange={handleChange}
+                      placeholder="Enter head of family name"
+                      className="bg-gradient-to-r from-blue-50 to-indigo-50"
+                    />
+                    <IconInput
+                      icon={<FiClock className="w-4 h-4" />}
+                      label=" Family Head  Age"
+                      name="head_age"
+                      value={formData.head_age || ''}
+                      onChange={handleChange}
+                      type="number"
+                      placeholder="Enter age"
+                      min="0"
+                      max="150"
+                      className="bg-gradient-to-r from-orange-50 to-yellow-50"
+                    />
+                    <div className="space-y-2">
+                      <Select
+                        label="Relationship With Family Head"
+                        name="head_relationship"
+                        value={formData.head_relationship || ''}
+                        onChange={handleChange}
+                        options={HEAD_RELATIONSHIP_OPTIONS}
+                        placeholder="Select relationship"
+                        searchable={true}
+                        className="bg-gradient-to-r from-green-50 to-emerald-50"
+                      />
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 text-gray-500">
-                  <FiPackage className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p className="text-base">No prescription history found</p>
-                  <p className="text-sm text-gray-400 mt-1">Prescriptions will appear here once medications are prescribed</p>
-                </div>
-              )}
-            </div>
-          )}
-        </Card>
-      )}
+                    <div className="space-y-2">
+                      <Select
+                        icon={<FiBookOpen className="w-4 h-4" />}
+                        label="Family Head Education"
+                        name="head_education"
+                        value={formData.head_education || ''}
+                        onChange={handleChange}
+                        options={EDUCATION_OPTIONS}
+                        placeholder="Select education"
+                        searchable={true}
+                        className="bg-gradient-to-r from-green-50 to-emerald-50"
+                      />
+                    </div>
+                  </div>
 
-      {/* Save Button */}
-      <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
-        <button
-          onClick={onCancel}
-          className="px-6 py-2 border-2 border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSaveAll}
-          disabled={isLoading}
-          className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading ? 'Saving...' : 'Save All Changes'}
-        </button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Select
+                      icon={<FiBriefcase className="w-4 h-4" />}
+                      label=" Family Head Occupation"
+                      name="head_occupation"
+                      value={formData.head_occupation || ''}
+                      onChange={handleChange}
+                      options={OCCUPATION_OPTIONS}
+                      placeholder="Select occupation"
+                      searchable={true}
+                      className="bg-gradient-to-r from-green-50 to-emerald-50"
+                    />
+                    <IconInput
+                      icon={<FiTrendingUp className="w-4 h-4" />}
+                      label="Income (₹)"
+                      name="head_income"
+                      value={formData.head_income || ''}
+                      onChange={handleChange}
+                      type="number"
+                      placeholder="Monthly income"
+                      min="0"
+                      className="bg-gradient-to-r from-amber-50 to-orange-50"
+                    />
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Referral & Mobility with Glassmorphism */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-sky-500/10 to-blue-500/10 rounded-3xl blur-xl"></div>
+            <Card
+              title={
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-gradient-to-br from-cyan-500/20 to-sky-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
+                    <FiMapPin className="w-6 h-6 text-cyan-600" />
+                  </div>
+                  <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Referral & Mobility</span>
+                </div>
+              }
+              className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl">
+              <div className="space-y-6">
+                <IconInput
+                  icon={<FiNavigation className="w-4 h-4" />}
+                  label="Exact distance from hospital"
+                  name="distance_from_hospital"
+                  value={formData.distance_from_hospital || ''}
+                  onChange={handleChange}
+                  placeholder="Enter distance from hospital"
+                  className=""
+                />
+
+                <div className="space-y-2">
+                  <Select
+                    label="Mobility of the patient"
+                    name="mobility"
+                    value={formData.mobility || ''}
+                    onChange={handleChange}
+                    options={MOBILITY_OPTIONS}
+                    placeholder="Select mobility"
+                    searchable={true}
+                    className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Select
+                    label="Referred by"
+                    name="referred_by"
+                    value={formData.referred_by || ''}
+                    onChange={handleChange}
+                    options={REFERRED_BY_OPTIONS}
+                    placeholder="Select referred by"
+                    searchable={true}
+                    className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
+                  />
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Submit Button with Glassmorphism */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 via-indigo-500/20 to-blue-500/20 rounded-3xl blur-xl"></div>
+            <div className="relative bg-white/70 backdrop-blur-xl rounded-3xl p-6 lg:p-8 shadow-2xl border border-white/30">
+              <div className="flex flex-col sm:flex-row justify-end gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onCancel || (() => navigate('/patients'))}
+                  className="px-6 lg:px-8 py-3 bg-white/60 backdrop-blur-md border border-white/30 hover:bg-white/80 hover:border-gray-300/50 text-gray-800 font-semibold shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                  <FiX className="mr-2" />
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  loading={isLoading || isAssigning}
+                  disabled={isLoading || isAssigning}
+                  className="px-6 lg:px-8 py-3 bg-gradient-to-r from-primary-600 via-indigo-600 to-blue-600 hover:from-primary-700 hover:via-indigo-700 hover:to-blue-700 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                >
+                  <FiSave className="mr-2" />
+                  {isLoading || isAssigning ? 'Updating Record...' : 'Update Patient'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   );

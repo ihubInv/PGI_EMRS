@@ -52,6 +52,17 @@ const query = async (text, params = []) => {
       return await executeRawSQLQuery(text, params, start);
     }
     
+    // If query contains complex subqueries (SELECT in SELECT) with registered_patient, use raw SQL
+    // This handles queries with subqueries that Supabase query builder can't handle
+    if ((text.includes('LEFT JOIN') || text.includes('RIGHT JOIN') || text.includes('INNER JOIN')) &&
+        text.includes('FROM registered_patient') &&
+        (text.includes('SELECT') && (text.match(/SELECT/gi) || []).length > 2)) {
+      // Check if it has subqueries referencing patient_visits or users
+      if (text.includes('FROM patient_visits') || text.includes('FROM users') || text.includes('COALESCE')) {
+        return await executeRawSQLQuery(text, params, start);
+      }
+    }
+    
     if (text.includes('LEFT JOIN') || text.includes('RIGHT JOIN') || text.includes('INNER JOIN')) {
       return await executeJoinQuery(text, params, start);
     }
@@ -90,17 +101,21 @@ async function executeAggregationQuery(text, params, startTime) {
   const tableMatch = text.match(/FROM\s+(\w+)/i);
   if (!tableMatch) throw new Error('Could not extract table name');
 
-  const tableName = tableMatch[1];
+  let tableName = tableMatch[1];
+  // Map 'patients' to 'registered_patient' for backward compatibility
+  if (tableName === 'registered_patient') {
+    tableName = 'registered_patient';
+  }
 
   // For simple COUNT(*) queries
   if (text.includes('COUNT(*)') && !text.includes('CASE WHEN')) {
     let query = supabaseAdmin.from(tableName).select('*', { count: 'exact', head: true });
 
-    // Handle WHERE conditions for ILIKE search (for patients table)
-    if (text.includes('ILIKE') && params.length > 0 && typeof params[0] === 'string') {
-      const searchPattern = params[0].replace(/%/g, '');
-      query = query.or(`name.ilike.%${searchPattern}%,cr_no.ilike.%${searchPattern}%,psy_no.ilike.%${searchPattern}%,adl_no.ilike.%${searchPattern}%`);
-    }
+      // Handle WHERE conditions for ILIKE search (for registered_patient table)
+      if (text.includes('ILIKE') && params.length > 0 && typeof params[0] === 'string') {
+        const searchPattern = params[0].replace(/%/g, '');
+        query = query.or(`name.ilike.%${searchPattern}%,cr_no.ilike.%${searchPattern}%,psy_no.ilike.%${searchPattern}%,adl_no.ilike.%${searchPattern}%`);
+      }
 
     // Handle WHERE conditions for adl_files COUNT query
     if (tableName === 'adl_files' && text.includes('WHERE') && params.length > 0) {
@@ -226,7 +241,11 @@ async function executeJoinQuery(text, params, startTime) {
   const tableMatch = text.match(/FROM\s+(\w+)\s+\w+\s*(LEFT JOIN|RIGHT JOIN|INNER JOIN|\sORDER|$)/i);
   if (!tableMatch) throw new Error('Could not parse table name');
   
-  const mainTable = tableMatch[1];
+  let mainTable = tableMatch[1];
+  // Map 'patients' to 'registered_patient' for backward compatibility
+  if (mainTable === 'registered_patient') {
+    mainTable = 'registered_patient';
+  }
   
   // Extract LIMIT and OFFSET
   const limitMatch = text.match(/LIMIT\s+(\d+)/i);
@@ -417,7 +436,7 @@ async function executeJoinQuery(text, params, startTime) {
         let patientsMap = {};
         if (patientIds.length > 0) {
           const { data: patients } = await supabaseAdmin
-            .from('patients')
+            .from('registered_patient')
             .select('id, name, cr_no, psy_no')
             .in('id', patientIds);
           if (patients) {
@@ -708,7 +727,7 @@ async function executeJoinQuery(text, params, startTime) {
 
     // Fetch patient data
     const { data: patients, error: patientsError } = await supabaseAdmin
-      .from('patients')
+      .from('registered_patient')
       .select('id, name, cr_no, psy_no')
       .in('id', patientIds);
 
@@ -752,10 +771,10 @@ async function executeJoinQuery(text, params, startTime) {
   }
 
   // For patients joins with doctor assignments
-  if (mainTable === 'patients') {
+  if (mainTable === 'registered_patient') {
     // Extract WHERE conditions
     const whereMatch = text.match(/WHERE\s+(.+?)\s+(?:GROUP BY|ORDER BY|LIMIT|$)/is);
-    let query = supabaseAdmin.from('patients').select('*');
+    let query = supabaseAdmin.from('registered_patient').select('*');
 
     // Handle WHERE p.id = $1 condition (for findById queries)
     if (whereMatch && params.length > 0) {
@@ -796,7 +815,7 @@ async function executeJoinQuery(text, params, startTime) {
     const patientIds = patients.map(p => p.id);
     const { data: visits, error: visitsError } = await supabaseAdmin
       .from('patient_visits')
-      .select('patient_id, assigned_doctor, visit_date')
+      .select('patient_id, assigned_doctor_id, visit_date')
       .in('patient_id', patientIds)
       .order('visit_date', { ascending: false });
 
@@ -863,7 +882,11 @@ async function executeSelectWithOrderLimit(text, params, startTime) {
   const tableMatch = text.match(/FROM\s+(\w+)/i);
   if (!tableMatch) throw new Error('Could not parse table name');
   
-  const tableName = tableMatch[1];
+  let tableName = tableMatch[1];
+  // Map 'patients' to 'registered_patient' for backward compatibility
+  if (tableName === 'registered_patient') {
+    tableName = 'registered_patient';
+  }
   
   const limitMatch = text.match(/LIMIT\s+(\d+)/i);
   const offsetMatch = text.match(/OFFSET\s+(\d+)/i);
@@ -913,7 +936,11 @@ async function executeSimpleQuery(text, params, startTime) {
   const tableMatch = text.match(/FROM\s+(\w+)/i);
   if (!tableMatch) throw new Error('Could not parse table name');
   
-  const tableName = tableMatch[1];
+  let tableName = tableMatch[1];
+  // Map 'patients' to 'registered_patient' for backward compatibility
+  if (tableName === 'registered_patient') {
+    tableName = 'registered_patient';
+  }
   
   let query = supabaseAdmin.from(tableName).select('*');
   
@@ -976,7 +1003,11 @@ async function executeInsertQuery(text, params, startTime) {
     const tableMatch = text.match(/INSERT INTO\s+(\w+)/i);
     if (!tableMatch) throw new Error('Could not parse table name from INSERT statement');
     
-    const tableName = tableMatch[1];
+    let tableName = tableMatch[1];
+    // Map 'patients' to 'registered_patient' for backward compatibility
+    if (tableName === 'registered_patient') {
+      tableName = 'registered_patient';
+    }
     
     // Extract column names and values from the INSERT statement
     const valuesMatch = text.match(/VALUES\s*\(([^)]+)\)/i);
@@ -1034,7 +1065,11 @@ async function executeUpdateQuery(text, params, startTime) {
       throw new Error('Could not parse table name from UPDATE statement');
     }
     
-    const tableName = tableMatch[1];
+    let tableName = tableMatch[1];
+    // Map 'patients' to 'registered_patient' for backward compatibility
+    if (tableName === 'registered_patient') {
+      tableName = 'registered_patient';
+    }
     console.log('[executeUpdateQuery] Table name:', tableName);
     
     // Extract SET clause - use non-greedy match to stop at WHERE
@@ -1246,7 +1281,11 @@ async function executeRawSQLQuery(text, params, startTime) {
     
     // Extract main table name
     const tableMatch = text.match(/FROM\s+(\w+)\s+\w+/i);
-    const mainTable = tableMatch ? tableMatch[1] : null;
+    let mainTable = tableMatch ? tableMatch[1] : null;
+    // Map 'patients' to 'registered_patient' for backward compatibility
+    if (mainTable === 'registered_patient') {
+      mainTable = 'registered_patient';
+    }
     
     // For the findById query with LATERAL, we can:
     // 1. Get the patient by ID
@@ -1254,15 +1293,29 @@ async function executeRawSQLQuery(text, params, startTime) {
     // 3. Get the assigned doctor info
     // 4. Combine the results
     
-    // Check if this is a findById query
-    const findByIdMatch = text.match(/WHERE\s+p\.id\s*=\s*\$(\d+)/i);
-    if (findByIdMatch && mainTable === 'patients') {
-      const paramIndex = parseInt(findByIdMatch[1]) - 1;
+    // Check if this is a findById query with complex subqueries
+    // Match patterns like: WHERE p.id = $1 or WHERE p.id = $1::uuid
+    const findByIdMatch1 = text.match(/WHERE\s+p\.id\s*=\s*\$(\d+)(?:::\w+)?/i);
+    const findByIdMatch2 = text.match(/WHERE\s+(\w+)\.id\s*=\s*\$(\d+)(?:::\w+)?/i);
+    const findByIdMatch = findByIdMatch1 || findByIdMatch2;
+    
+    // Check if this is a registered_patient query
+    const isRegisteredPatientQuery = (
+      mainTable === 'registered_patient' || 
+      text.includes('FROM registered_patient') ||
+      text.includes('registered_patient p') ||
+      text.includes('registered_patient AS p')
+    );
+    
+    if (findByIdMatch && isRegisteredPatientQuery) {
+      const paramIndex = parseInt(findByIdMatch[1] || findByIdMatch[2]) - 1;
       const patientId = params[paramIndex];
+      
+      console.log('[executeRawSQLQuery] Processing findById query for patient:', patientId);
       
       // Get patient
       const { data: patientData, error: patientError } = await supabaseAdmin
-        .from('patients')
+        .from('registered_patient')
         .select('*')
         .eq('id', patientId)
         .single();
@@ -1272,33 +1325,8 @@ async function executeRawSQLQuery(text, params, startTime) {
         return { rows: [], rowCount: 0, command: 'SELECT' };
       }
       
-      // Get latest visit
-      const { data: visits, error: visitsError } = await supabaseAdmin
-        .from('patient_visits')
-        .select('*')
-        .eq('patient_id', patientId)
-        .order('visit_date', { ascending: false })
-        .limit(1);
-      
-      if (visitsError) console.error('Error fetching visits:', visitsError);
-      const latestVisit = visits && visits.length > 0 ? visits[0] : null;
-      
-      // Get assigned doctor info if visit exists
-      let assignedDoctor = null;
-      if (latestVisit && latestVisit.assigned_doctor) {
-        const { data: doctorData, error: doctorError } = await supabaseAdmin
-          .from('users')
-          .select('id, name, role')
-          .eq('id', latestVisit.assigned_doctor)
-          .single();
-        
-        if (!doctorError && doctorData) {
-          assignedDoctor = doctorData;
-        }
-      }
-      
       // Get ADL file info
-      const { data: adlFiles, error: adlError } = await supabaseAdmin
+      const { data: adlFiles } = await supabaseAdmin
         .from('adl_files')
         .select('id')
         .eq('patient_id', patientId)
@@ -1306,25 +1334,129 @@ async function executeRawSQLQuery(text, params, startTime) {
       
       const hasAdlFile = adlFiles && adlFiles.length > 0;
       
-      // Combine results to match expected format
+      // Get latest visit
+      const { data: visits } = await supabaseAdmin
+        .from('patient_visits')
+        .select('assigned_doctor_id, visit_date')
+        .eq('patient_id', patientId)
+        .order('visit_date', { ascending: false })
+        .limit(1);
+      
+      const latestVisit = visits && visits.length > 0 ? visits[0] : null;
+      
+      // Determine assigned_doctor_id: prioritize registered_patient, fallback to patient_visits
+      const assignedDoctorId = patientData.assigned_doctor_id || latestVisit?.assigned_doctor_id || null;
+      
+      // Get assigned doctor info - try to fetch from users table
+      let assignedDoctorName = patientData.assigned_doctor_name || null;
+      let assignedDoctorRole = null;
+      
+      if (assignedDoctorId) {
+        try {
+          const { data: doctorData } = await supabaseAdmin
+            .from('users')
+            .select('id, name, role')
+            .eq('id', assignedDoctorId)
+            .maybeSingle();
+          
+          if (doctorData) {
+            assignedDoctorName = assignedDoctorName || doctorData.name;
+            assignedDoctorRole = doctorData.role;
+          }
+        } catch (err) {
+          console.warn('[executeRawSQLQuery] Could not fetch doctor from users table (type mismatch expected):', err.message);
+        }
+      }
+      
+      // Combine results to match expected format from the SQL query
       const combinedRow = {
         ...patientData,
-        has_adl_file: hasAdlFile,
+        has_adl_file: hasAdlFile || patientData.has_adl_file || false,
         case_complexity: hasAdlFile ? 'complex' : (patientData.case_complexity || 'simple'),
-        assigned_doctor_id: latestVisit?.assigned_doctor || null,
-        assigned_doctor_name: assignedDoctor?.name || null,
-        assigned_doctor_role: assignedDoctor?.role || null,
+        assigned_doctor_id: assignedDoctorId,
+        assigned_doctor_name: assignedDoctorName,
+        assigned_doctor_role: assignedDoctorRole,
         last_assigned_date: latestVisit?.visit_date || null
       };
       
       const duration = Date.now() - startTime;
-      console.log('Raw SQL query (findById) executed successfully', { duration });
+      console.log('[executeRawSQLQuery] Raw SQL query (findById) executed successfully', { duration });
       
       return {
         rows: [combinedRow],
         rowCount: 1,
         command: 'SELECT'
       };
+    }
+    
+    // If it's a registered_patient query with WHERE clause but pattern didn't match, try fallback
+    if (isRegisteredPatientQuery && text.includes('WHERE') && params.length > 0) {
+      console.log('[executeRawSQLQuery] Attempting fallback for registered_patient query');
+      // Try using first parameter as patient ID
+      const patientId = params[0];
+      
+      const { data: patientData, error: patientError } = await supabaseAdmin
+        .from('registered_patient')
+        .select('*')
+        .eq('id', patientId)
+        .maybeSingle();
+      
+      if (!patientError && patientData) {
+        // Use same logic as above
+        const { data: adlFiles } = await supabaseAdmin
+          .from('adl_files')
+          .select('id')
+          .eq('patient_id', patientId)
+          .limit(1);
+        
+        const hasAdlFile = adlFiles && adlFiles.length > 0;
+        
+        const { data: visits } = await supabaseAdmin
+          .from('patient_visits')
+          .select('assigned_doctor_id, visit_date')
+          .eq('patient_id', patientId)
+          .order('visit_date', { ascending: false })
+          .limit(1);
+        
+        const latestVisit = visits && visits.length > 0 ? visits[0] : null;
+        const assignedDoctorId = patientData.assigned_doctor_id || latestVisit?.assigned_doctor_id || null;
+        
+        let assignedDoctorName = patientData.assigned_doctor_name || null;
+        let assignedDoctorRole = null;
+        
+        if (assignedDoctorId) {
+          try {
+            const { data: doctorData } = await supabaseAdmin
+              .from('users')
+              .select('id, name, role')
+              .eq('id', assignedDoctorId)
+              .maybeSingle();
+            
+            if (doctorData) {
+              assignedDoctorName = assignedDoctorName || doctorData.name;
+              assignedDoctorRole = doctorData.role;
+            }
+          } catch (err) {
+            // Type mismatch expected
+          }
+        }
+        
+        const combinedRow = {
+          ...patientData,
+          has_adl_file: hasAdlFile || patientData.has_adl_file || false,
+          case_complexity: hasAdlFile ? 'complex' : (patientData.case_complexity || 'simple'),
+          assigned_doctor_id: assignedDoctorId,
+          assigned_doctor_name: assignedDoctorName,
+          assigned_doctor_role: assignedDoctorRole,
+          last_assigned_date: latestVisit?.visit_date || null
+        };
+        
+        return {
+          rows: [combinedRow],
+          rowCount: 1,
+          command: 'SELECT'
+        };
+      }
     }
     
     // For other LATERAL queries, throw an error as they're not supported

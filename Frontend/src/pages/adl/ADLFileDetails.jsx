@@ -311,7 +311,7 @@ const ADLFileDetails = () => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Age</label>
-                  <p className="text-lg">{patient.actual_age}</p>
+                  <p className="text-lg">{patient.age}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Marital Status</label>

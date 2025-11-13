@@ -168,7 +168,7 @@ export const PATIENT_REGISTRATION_FORM = [
   { value: 'head_income', label: 'Family Head Income' },
 
   // Exact Distance from Hospital
-  { value: 'exact_distance_from_hospital', label: 'Exact Distance from Hospital' },
+  { value: 'distance_from_hospital', label: 'Exact Distance from Hospital' },
 
   // Mobility
   { value: 'mobility', label: 'Mobility' },
@@ -186,7 +186,8 @@ export const PATIENT_REGISTRATION_FORM = [
 
 
 //Addictional field
-  { value: 'assigned_doctor', label: 'Assigned Doctor' },
+  { value: 'assigned_doctor_name', label: 'Assigned Doctor Name' },
+  { value: 'assigned_doctor_id', label: 'Assigned Doctor ID' },
   { value: 'assigned_room', label: 'Assigned Room' },
 
 ];

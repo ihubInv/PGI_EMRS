@@ -266,7 +266,6 @@ const server = app.listen(PORT, () => {
 🏥 Endpoints:
    - Users: http://localhost:${PORT}/api/users
    - Patients: http://localhost:${PORT}/api/patients
-   - Outpatient Records: http://localhost:${PORT}/api/outpatient-records
    - Clinical Proformas: http://localhost:${PORT}/api/clinical-proformas
    - Additional Detail File: http://localhost:${PORT}/api/adl-files
    - Prescriptions: http://localhost:${PORT}/api/prescriptions

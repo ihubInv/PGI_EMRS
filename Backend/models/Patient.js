@@ -1,117 +1,92 @@
 
-
 // models/Patient.js
 const db = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
 class Patient {
   constructor(data = {}) {
-    // Core identifiers
+    // 🔹 Core identifiers
     this.id = data.id || null;
     this.cr_no = data.cr_no || null;
     this.psy_no = data.psy_no || null;
     this.adl_no = data.adl_no || null;
     this.special_clinic_no = data.special_clinic_no || null;
 
-    // Basic patient info
+    // 🔹 Registration & Quick Entry details
+    this.date = data.date || null;
     this.name = data.name || null;
+    this.age = data.age || null;
     this.sex = data.sex || null;
-    this.actual_age = data.actual_age || null;
-    this.age_group = data.age_group || null;
-    this.marital_status = data.marital_status || null;
-    this.year_of_marriage = data.year_of_marriage || null;
-    this.no_of_children = data.no_of_children || null;
-    this.no_of_children_male = data.no_of_children_male || null;
-    this.no_of_children_female = data.no_of_children_female || null;
-
-    // Flags / status
-    this.has_adl_file = data.has_adl_file || false;
-    this.file_status = data.file_status || null;
-    this.case_complexity = data.case_complexity || null;
-
-    // Room / assignment
-    this.assigned_room = data.assigned_room || null;
-    this.assigned_doctor_id = data.assigned_doctor_id || null;
-
-    // Contact / family
-    this.contact_number = data.contact_number || null;
-    this.head_name = data.head_name || null;
-    this.head_age = data.head_age || null;
-    this.head_relationship = data.head_relationship || null;
-    this.head_education = data.head_education || null;
-    this.head_occupation = data.head_occupation || null;
-    this.head_income = data.head_income || null;
-
-    // Income / occupation / education
-    this.occupation = data.occupation || null;
-    this.actual_occupation = data.actual_occupation || null;
-    this.education_level = data.education_level || null;
-    this.completed_years_of_education = data.completed_years_of_education || null;
-    this.patient_income = data.patient_income || null;
-    this.family_income = data.family_income || null;
-
-    // Addresses (quick/present/permanent)
-    this.address_line_1 = data.address_line_1 || null;
-    this.address_line_2 = data.address_line_2 || null;
-    this.country = data.country || null;
-    this.state = data.state || null;
-    this.district = data.district || null;
-    this.city_town_village = data.city_town_village || null;
-    this.pin_code = data.pin_code || null;
-
-    this.present_address_line_1 = data.present_address_line_1 || null;
-    this.present_address_line_2 = data.present_address_line_2 || null;
-    this.present_country = data.present_country || null;
-    this.present_state = data.present_state || null;
-    this.present_district = data.present_district || null;
-    this.present_city_town_village = data.present_city_town_village || null;
-    this.present_pin_code = data.present_pin_code || null;
-
-    this.permanent_address_line_1 = data.permanent_address_line_1 || null;
-    this.permanent_address_line_2 = data.permanent_address_line_2 || null;
-    this.permanent_country = data.permanent_country || null;
-    this.permanent_state = data.permanent_state || null;
-    this.permanent_district = data.permanent_district || null;
-    this.permanent_city_town_village = data.permanent_city_town_village || null;
-    this.permanent_pin_code = data.permanent_pin_code || null;
-
-    // Quick Entry / registration helper fields
+    this.category = data.category || null;
+    this.father_name = data.father_name || null;
     this.department = data.department || null;
     this.unit_consit = data.unit_consit || null;
     this.room_no = data.room_no || null;
     this.serial_no = data.serial_no || null;
     this.file_no = data.file_no || null;
     this.unit_days = data.unit_days || null;
+    this.contact_number = data.contact_number || data.contact_number || null;
 
-    // Legacy Address Fields
-    this.present_address = data.present_address || null;
-    this.permanent_address = data.permanent_address || null;
-    this.local_address = data.local_address || null;
-
-    // misc
-    this.religion = data.religion || null;
-    this.family_type = data.family_type || null;
-    this.locality = data.locality || null;
-    this.school_college_office = data.school_college_office || null;
-    this.distance_from_hospital = data.distance_from_hospital || null;
-    this.mobility = data.mobility || null;
-    this.referred_by = data.referred_by || null;
-    this.exact_source = data.exact_source || null;
+    // 🔹 Examination & clinic details
     this.seen_in_walk_in_on = data.seen_in_walk_in_on || null;
     this.worked_up_on = data.worked_up_on || null;
-    this.category = data.category || null;
+    this.age_group = data.age_group || null;
+
+    // 🔹 Personal information
+    this.marital_status = data.marital_status || null;
+    this.year_of_marriage = data.year_of_marriage || null;
+    this.no_of_children_male = data.no_of_children_male || null;
+    this.no_of_children_female = data.no_of_children_female || null;
+
+    // 🔹 Occupation & education
+    this.occupation = data.occupation || null;
+    this.education = data.education || null;
+    this.locality = data.locality || null;
+    this.income = data.income || null;
+    this.religion = data.religion || null;
+    this.family_type = data.family_type || null;
+
+    // 🔹 Head of family
+    this.head_name = data.head_name || data.father_name || null;
+    this.head_age = data.head_age || null;
+    this.head_relationship = data.head_relationship || null;
+    this.head_education = data.head_education || null;
+    this.head_occupation = data.head_occupation || null;
+    this.head_income = data.head_income || null;
+
+    // 🔹 Distance & mobility
+    this.distance_from_hospital = data.distance_from_hospital || null;
+    this.mobility = data.mobility || null;
+
+    // 🔹 Referral & assignment
+    this.referred_by = data.referred_by || null;
+    this.assigned_room = data.assigned_room || null;
+
+    // 🔹 Address details
+    this.address_line = data.address_line || null;
+    this.country = data.country || null;
+    this.state = data.state || null;
+    this.district = data.district || null;
+    this.city = data.city || null;
+    this.pin_code = data.pin_code || null;
+
+    // 🔹 Optional system / metadata fields
+    this.has_adl_file = data.has_adl_file || false;
+    this.file_status = data.file_status || null;
+    this.case_complexity = data.case_complexity || null;
     this.filled_by = data.filled_by || null;
     this.filled_by_name = data.filled_by_name || null;
 
-    // timestamps
+    // 🔹 Timestamps
     this.created_at = data.created_at || null;
     this.updated_at = data.updated_at || null;
 
-    // joined fields (if returned by queries)
+    // 🔹 Joined / derived fields (query results)
     this.patient_name = data.patient_name || this.name || null;
     this.assigned_doctor_name = data.assigned_doctor_name || null;
     this.assigned_doctor_role = data.assigned_doctor_role || null;
     this.last_assigned_date = data.last_assigned_date || null;
+    this.assigned_doctor_id = data.assigned_doctor_id || null;
   }
 
   // Utilities for unique numbers
@@ -136,30 +111,74 @@ class Patient {
   // Create new patient record
   static async create(patientData) {
     try {
-      // Extract basic required fields
       const {
-        name, sex, actual_age, assigned_room, cr_no, psy_no, assigned_doctor_id, contact_number,
-        // All other fields that might be provided
-        filled_by, special_clinic_no, seen_in_walk_in_on, worked_up_on,
-        age_group, marital_status, year_of_marriage, no_of_children, 
-        no_of_children_male, no_of_children_female,
-        occupation, actual_occupation, education_level, completed_years_of_education,
-        patient_income, family_income,
-        religion, family_type, locality, head_name, head_age, head_relationship,
-        head_education, head_occupation, head_income,
-        distance_from_hospital, mobility, referred_by, exact_source,
-        school_college_office,
-        department, unit_consit, room_no, serial_no, file_no, unit_days,
-        address_line_1, address_line_2, country, state, district, 
-        city_town_village, pin_code,
-        present_address_line_1, present_address_line_2, present_country, 
-        present_state, present_district, present_city_town_village, present_pin_code,
-        permanent_address_line_1, permanent_address_line_2, permanent_country, 
-        permanent_state, permanent_district, permanent_city_town_village, 
-        permanent_pin_code,
-        // Legacy address fields
-        present_address, permanent_address, local_address,
-        category, has_adl_file, file_status, case_complexity
+        // Registration & Quick Entry
+        cr_no,
+        date,
+        name,
+        contact_number,
+        age,
+        sex,
+        category,
+        father_name,
+        department,
+        unit_consit,
+        room_no,
+        serial_no,
+        file_no,
+        unit_days,
+      
+        // Examination Details
+        seen_in_walk_in_on,
+        worked_up_on,
+        psy_no,
+        special_clinic_no,
+        age_group,
+      
+        // Personal Information
+        marital_status,
+        year_of_marriage,
+        no_of_children_male,
+        no_of_children_female,
+      
+        // Occupation & Education
+        occupation,
+        education,
+        locality,
+        income,
+        religion,
+        family_type,
+      
+        // Head of Family
+        head_name,
+        head_age,
+        head_relationship,
+        head_education,
+        head_occupation,
+        head_income,
+      
+        // Distance & Mobility
+        distance_from_hospital,
+        mobility,
+      
+        // Referred By
+        referred_by,
+      
+        // Address Details
+        address_line,
+        country,
+        state,
+        district,
+        city,
+        pin_code,
+      
+        // Additional Fields
+        assigned_doctor_name,
+        assigned_doctor_id,
+        assigned_room,
+        filled_by,
+        has_adl_file,
+        file_status
       } = patientData;
 
       // Generate CR and PSY numbers if not provided
@@ -189,33 +208,64 @@ class Patient {
       placeholders.push(`$${++paramCount}`);
       values.push(sex);
 
-      fields.push('actual_age');
+      fields.push('age');
       placeholders.push(`$${++paramCount}`);
-      values.push(actual_age);
+      values.push(age);
+
+      // Handle field mappings and fallbacks
+
+      
 
       // Optional fields - only include if they have values
       const optionalFields = {
-        assigned_room, assigned_doctor_id, contact_number, filled_by,
-        special_clinic_no, seen_in_walk_in_on, worked_up_on,
-        age_group, marital_status, year_of_marriage, no_of_children,
-        no_of_children_male, no_of_children_female,
-        occupation, actual_occupation, education_level, completed_years_of_education,
-        patient_income, family_income,
-        religion, family_type, locality, head_name, head_age, head_relationship,
-        head_education, head_occupation, head_income,
-        distance_from_hospital, mobility, referred_by, exact_source,
-        school_college_office,
-        department, unit_consit, room_no, serial_no, file_no, unit_days,
-        address_line_1, address_line_2, country, state, district,
-        city_town_village, pin_code,
-        present_address_line_1, present_address_line_2, present_country,
-        present_state, present_district, present_city_town_village, present_pin_code,
-        permanent_address_line_1, permanent_address_line_2, permanent_country,
-        permanent_state, permanent_district, permanent_city_town_village,
-        permanent_pin_code,
-        // Legacy address fields
-        present_address, permanent_address, local_address,
-        category, has_adl_file, file_status, case_complexity
+        name,
+        sex,
+        age,
+        date,
+        contact_number,
+        category,
+        father_name,
+        department,
+        unit_consit,
+        room_no,
+        serial_no,
+        file_no,
+        unit_days,
+        seen_in_walk_in_on,
+        worked_up_on,
+        special_clinic_no,
+        age_group,
+        marital_status,
+        year_of_marriage,
+        no_of_children_male,
+        no_of_children_female,
+        occupation,
+        education,
+        locality,
+        income,
+        religion,
+        family_type,
+        head_name,
+        head_age,
+        head_relationship,
+        head_education,
+        head_occupation,
+        head_income,
+        distance_from_hospital,
+        mobility,
+        referred_by,
+        address_line,
+        country,
+        state,
+        district,
+        city,
+        pin_code,
+        assigned_doctor_name,
+        assigned_doctor_id,
+        assigned_room,
+        filled_by,
+        has_adl_file,
+        file_status
       };
 
       // Add optional fields that have values
@@ -227,13 +277,34 @@ class Patient {
         }
       }
 
+      // If assigned_doctor_id is provided but assigned_doctor_name is not, fetch it
+      if (assigned_doctor_id && !assigned_doctor_name) {
+        try {
+          const doctorResult = await db.query(
+            'SELECT name FROM users WHERE id = $1',
+            [assigned_doctor_id]
+          );
+          if (doctorResult.rows.length > 0) {
+            const doctorName = doctorResult.rows[0].name;
+            // Only add if not already in fields
+            if (!fields.includes('assigned_doctor_name')) {
+              fields.push('assigned_doctor_name');
+              placeholders.push(`$${++paramCount}`);
+              values.push(doctorName);
+            }
+          }
+        } catch (err) {
+          console.warn('[Patient.create] Could not fetch doctor name:', err.message);
+        }
+      }
+
       // Add created_at timestamp
       fields.push('created_at');
       placeholders.push('CURRENT_TIMESTAMP');
 
       // Build and execute INSERT query
       const query = `
-        INSERT INTO patients (${fields.join(', ')})
+        INSERT INTO registered_patient (${fields.join(', ')})
         VALUES (${placeholders.join(', ')})
         RETURNING *
       `;
@@ -254,123 +325,382 @@ class Patient {
     }
   }
 
-  // Find by id
+  // Find by id (supports both integer and UUID)
+  // static async findById(id) {
+  //   try {
+  //     if (!id) {
+  //       console.error(`[Patient.findById] No ID provided`);
+  //       return null;
+  //     }
+
+  //     // Check if ID is a UUID (contains hyphens) or integer
+  //     const isUUID = typeof id === 'string' && id.includes('-') && id.length === 36;
+  //     let patientId;
+      
+  //     if (isUUID) {
+  //       // UUID format - use as-is, ensure it's a valid UUID format
+  //       patientId = id.trim();
+  //       // Validate UUID format (basic check: 8-4-4-4-12 hex digits with hyphens)
+  //       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  //       if (!uuidRegex.test(patientId)) {
+  //         console.error(`[Patient.findById] Invalid UUID format: ${patientId}`);
+  //         return null;
+  //       }
+  //       console.log(`[Patient.findById] Querying for patient UUID: ${patientId}`);
+  //     } else {
+  //       // Try to parse as integer
+  //       patientId = parseInt(id, 10);
+  //       if (isNaN(patientId) || patientId <= 0) {
+  //         console.error(`[Patient.findById] Invalid ID provided: ${id}`);
+  //         return null;
+  //       }
+  //       console.log(`[Patient.findById] Querying for patient ID: ${patientId}`);
+  //     }
+      
+  //     // Build query with explicit type casting based on ID type
+  //     // For UUID, cast parameter to UUID; for integer, use integer comparison
+  //     let query;
+  //     let queryParam;
+      
+  //     if (isUUID) {
+  //       // For UUID, explicitly cast parameter to UUID type
+  //       query = `
+  //       SELECT 
+  //         p.*,
+  //         CASE WHEN af.id IS NOT NULL THEN true ELSE COALESCE(p.has_adl_file, false) END as has_adl_file,
+  //         CASE 
+  //           WHEN af.id IS NOT NULL THEN 'complex'
+  //           ELSE 'simple'
+  //         END as case_complexity,
+  //         COALESCE(
+  //           p.assigned_doctor_id,
+  //           (
+  //             SELECT assigned_doctor_id 
+  //             FROM patient_visits 
+  //             WHERE patient_id = p.id
+  //             ORDER BY visit_date DESC 
+  //             LIMIT 1
+  //           )
+  //         ) as assigned_doctor_id,
+  //         COALESCE(
+  //           p.assigned_doctor_name,
+  //           (
+  //             SELECT u.name 
+  //             FROM patient_visits pv
+  //             JOIN users u ON u.id = pv.assigned_doctor_id
+  //             WHERE pv.patient_id = p.id
+  //             ORDER BY pv.visit_date DESC 
+  //             LIMIT 1
+  //           )
+  //         ) as assigned_doctor_name,
+  //           (
+  //             SELECT u.role 
+  //             FROM patient_visits pv
+  //             JOIN users u ON u.id = pv.assigned_doctor_id
+  //             WHERE pv.patient_id = p.id
+  //             ORDER BY pv.visit_date DESC 
+  //             LIMIT 1
+  //           ) as assigned_doctor_role,
+  //           (
+  //             SELECT visit_date 
+  //             FROM patient_visits 
+  //             WHERE patient_id = p.id
+  //             ORDER BY visit_date DESC 
+  //             LIMIT 1
+  //           ) as last_assigned_date
+  //       FROM registered_patient p
+  //       LEFT JOIN adl_files af ON af.patient_id = p.id
+  //         WHERE p.id = $1::uuid
+  //       `;
+  //       queryParam = patientId; // UUID string
+  //     } else {
+  //       // For integer, use integer comparison
+  //       query = `
+  //         SELECT 
+  //           p.*,
+  //           CASE WHEN af.id IS NOT NULL THEN true ELSE COALESCE(p.has_adl_file, false) END as has_adl_file,
+  //           CASE 
+  //             WHEN af.id IS NOT NULL THEN 'complex'
+  //             ELSE 'simple'
+  //           END as case_complexity,
+  //           COALESCE(
+  //             p.assigned_doctor_id,
+  //             (
+  //               SELECT assigned_doctor_id 
+  //               FROM patient_visits 
+  //               WHERE patient_id = p.id
+  //               ORDER BY visit_date DESC
+  //               LIMIT 1
+  //             )
+  //           ) as assigned_doctor_id,
+  //           COALESCE(
+  //             p.assigned_doctor_name,
+  //             (
+  //               SELECT u.name 
+  //               FROM patient_visits pv
+  //               JOIN users u ON u.id = pv.assigned_doctor_id
+  //               WHERE pv.patient_id = p.id
+  //               ORDER BY pv.visit_date DESC 
+  //               LIMIT 1
+  //             )
+  //           ) as assigned_doctor_name,
+  //           (
+  //             SELECT u.role 
+  //             FROM patient_visits pv
+  //             JOIN users u ON u.id = pv.assigned_doctor_id
+  //             WHERE pv.patient_id = p.id
+  //             ORDER BY pv.visit_date DESC 
+  //             LIMIT 1
+  //           ) as assigned_doctor_role,
+  //           (
+  //             SELECT visit_date 
+  //             FROM patient_visits 
+  //             WHERE patient_id = p.id
+  //             ORDER BY visit_date DESC 
+  //             LIMIT 1
+  //           ) as last_assigned_date
+  //         FROM registered_patient p
+  //         LEFT JOIN adl_files af ON af.patient_id = p.id
+  //       WHERE p.id = $1
+  //     `;
+  //       queryParam = patientId; // Integer
+  //     }
+      
+  //     let result;
+  //     try {
+  //       result = await db.query(query, [queryParam]);
+  //     } catch (queryError) {
+  //       // If UUID casting fails, the column is likely INTEGER type, not UUID
+  //       // In this case, a UUID patient ID cannot exist in an INTEGER column
+  //       // Return null instead of trying fallback (which could give wrong results)
+  //       if (isUUID && queryError.message && (
+  //         queryError.message.includes('invalid input syntax for type uuid') ||
+  //         queryError.message.includes('cannot cast') ||
+  //         queryError.message.includes('uuid')
+  //       )) {
+  //         console.error(`[Patient.findById] UUID cast failed - column is likely INTEGER type, not UUID. Cannot query UUID ${patientId} in INTEGER column. Error: ${queryError.message}`);
+  //         return null;
+  //       } else {
+  //         throw queryError;
+  //       }
+  //     }
+      
+  //     if (result.rows.length === 0) {
+  //       console.log(`[Patient.findById] No patient found with ID: ${patientId}`);
+  //       return null;
+  //     }
+      
+  //     if (result.rows.length > 1) {
+  //       console.warn(`[Patient.findById] WARNING: Multiple rows returned for ID ${patientId}, using first row`);
+  //     }
+      
+  //     const row = result.rows[0];
+      
+  //     // Verify the returned patient ID matches the requested ID
+  //     // Handle both UUID and integer IDs - use strict string comparison for UUIDs
+  //     const returnedId = row.id;
+  //     let idMatches;
+      
+  //     if (isUUID) {
+  //       // For UUID, must match exactly as strings (case-insensitive UUID comparison)
+  //       const returnedStr = String(returnedId).toLowerCase().trim();
+  //       const requestedStr = String(patientId).toLowerCase().trim();
+  //       idMatches = returnedStr === requestedStr;
+  //     } else {
+  //       // For integer, compare as integers
+  //       idMatches = parseInt(returnedId, 10) === parseInt(patientId, 10);
+  //     }
+      
+  //     if (!idMatches) {
+  //       console.error(`[Patient.findById] CRITICAL ERROR: ID mismatch! Requested: ${patientId} (type: ${typeof patientId}), Returned: ${returnedId} (type: ${typeof returnedId})`);
+  //       // Return null instead of throwing error - this means the patient with this exact ID doesn't exist
+  //       // The query matched a different patient, which indicates a data integrity issue or wrong query
+  //       console.error(`[Patient.findById] Returning null - no exact match found for ID: ${patientId}`);
+  //       return null;
+  //     }
+      
+  //     console.log(`[Patient.findById] Successfully found patient ID: ${returnedId}, Name: ${row.name}`);
+      
+  //     const patient = new Patient(row);
+      
+  //     // Ensure joined fields are set on the Patient instance
+  //     patient.assigned_doctor_id = row.assigned_doctor_id || patient.assigned_doctor_id;
+  //     patient.assigned_doctor_name = row.assigned_doctor_name || patient.assigned_doctor_name;
+  //     patient.assigned_doctor_role = row.assigned_doctor_role || patient.assigned_doctor_role;
+  //     patient.last_assigned_date = row.last_assigned_date || patient.last_assigned_date;
+      
+  //     return patient;
+  //   } catch (error) {
+  //     console.error('[Patient.findById] Error:', error);
+  //     throw error;
+  //   }
+  // }
+
   static async findById(id) {
     try {
-      // Ensure ID is parsed as integer
-      const patientId = parseInt(id, 10);
-      if (isNaN(patientId) || patientId <= 0) {
-        console.error(`[Patient.findById] Invalid ID provided: ${id}`);
+      if (!id) {
+        console.error(`[Patient.findById] ❌ No ID provided`);
         return null;
       }
-      
-      console.log(`[Patient.findById] Querying for patient ID: ${patientId}`);
-      
+  
+      const isUUID =
+        typeof id === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id.trim());
+  
+      if (!isUUID) {
+        console.error(`[Patient.findById] ❌ Invalid UUID format: ${id}`);
+        return null;
+      }
+  
+      const patientId = id.trim();
+  
       const query = `
         SELECT 
-          p.id, p.name, p.cr_no, p.psy_no, p.adl_no, p.sex, p.actual_age, 
-          p.dob, p.age_group, p.marital_status, p.year_of_marriage, 
-          p.no_of_children, p.no_of_children_male, p.no_of_children_female,
-          p.occupation, p.education_level, p.religion, p.family_type, p.locality,
-          p.patient_income, p.family_income, p.contact_number,
-          p.head_name, p.head_age, p.head_relationship, p.head_education, 
-          p.head_occupation, p.head_income,
-          p.present_address_line_1, p.present_address_line_2, p.present_country, p.present_state, 
-          p.present_district, p.present_city_town_village, p.present_pin_code,
-          p.permanent_address_line_1, p.permanent_address_line_2, p.permanent_country, p.permanent_state,
-          p.permanent_district, p.permanent_city_town_village, p.permanent_pin_code,
-          p.address_line_1, p.address_line_2, p.country, p.state, p.district, p.city_town_village, p.pin_code,
-          p.category, p.special_clinic_no, p.assigned_room, p.created_at, p.updated_at,
-          p.filled_by, p.seen_in_walk_in_on, p.worked_up_on, p.school_college_office,
-          p.distance_from_hospital, p.mobility, p.referred_by, p.exact_source,
-          p.present_address, p.permanent_address, p.local_address,
-          p.department, p.unit_consit, p.room_no, p.serial_no, p.file_no, p.unit_days,
-          p.actual_occupation, p.completed_years_of_education,
-          CASE WHEN af.id IS NOT NULL THEN true ELSE COALESCE(p.has_adl_file, false) END as has_adl_file,
-          CASE 
-            WHEN af.id IS NOT NULL THEN 'complex'
-            WHEN p.case_complexity IS NOT NULL THEN p.case_complexity
-            ELSE 'simple'
-          END as case_complexity,
-          p.file_status,
-          pa.assigned_doctor as assigned_doctor_id,
-          u.name as assigned_doctor_name,
-          u.role as assigned_doctor_role,
-          pa.visit_date as last_assigned_date
-        FROM patients p
+          p.id, p.cr_no, p.date, p.name, p.age, p.sex, p.category, p.department, p.unit_consit,
+          p.room_no, p.serial_no, p.file_no, p.unit_days, p.contact_number, p.seen_in_walk_in_on,
+          p.worked_up_on, p.psy_no, p.special_clinic_no, p.age_group, p.marital_status,
+          p.year_of_marriage, p.no_of_children_male, p.no_of_children_female, p.occupation,
+          p.education, p.locality, p.income, p.religion, p.family_type, p.head_name, p.head_age,
+          p.head_relationship, p.head_education, p.head_occupation, p.head_income,
+          p.distance_from_hospital, p.mobility, p.referred_by, p.address_line, p.country,
+          p.state, p.district, p.city, p.pin_code, p.assigned_room, p.filled_by,
+          p.has_adl_file, p.file_status, p.created_at, p.updated_at,
+          -- ✅ Store original assigned_doctor_id and assigned_doctor_name before overriding
+          p.assigned_doctor_id,
+          p.assigned_doctor_name,
+          -- ✅ Ensure ADL and complexity flags
+          CASE WHEN af.id IS NOT NULL THEN true ELSE COALESCE(p.has_adl_file, false) END AS has_adl_file,
+          CASE WHEN af.id IS NOT NULL THEN 'complex' ELSE 'simple' END AS case_complexity,
+          -- ✅ Assigned Doctor ID: use p.assigned_doctor_id directly (it's already in the table)
+          -- Only fallback to patient_visits if it's NULL
+          COALESCE(
+            p.assigned_doctor_id,
+            (
+              SELECT pv.assigned_doctor_id
+              FROM patient_visits pv
+              WHERE pv.patient_id = p.id
+              ORDER BY pv.visit_date DESC
+              LIMIT 1
+            )
+          ) AS assigned_doctor_id,
+          -- ✅ Doctor name: use p.assigned_doctor_name directly (it's already in the table)
+          -- Only try to fetch from users/visits if it's NULL or empty
+          COALESCE(
+            NULLIF(p.assigned_doctor_name, ''),
+            (
+              -- Try to get from patient_visits if available
+              SELECT u.name
+              FROM patient_visits pv
+              LEFT JOIN users u ON (
+                -- Handle both UUID and INTEGER types for users.id
+                (u.id::text = pv.assigned_doctor_id::text) OR
+                (pv.assigned_doctor_id::text LIKE u.id::text || '%')
+              )
+              WHERE pv.patient_id = p.id
+              ORDER BY pv.visit_date DESC
+              LIMIT 1
+            )
+          ) AS assigned_doctor_name,
+          -- ✅ Doctor role: try to fetch from users, but only if we have an assigned_doctor_id
+          -- Note: This may return NULL if users.id is INTEGER and assigned_doctor_id is UUID
+          (
+            SELECT u.role
+            FROM users u
+            WHERE (
+              -- Try to match UUID to INTEGER (won't work, but handle gracefully)
+              (u.id::text = COALESCE(
+                p.assigned_doctor_id::text,
+                (
+                  SELECT pv.assigned_doctor_id::text
+                  FROM patient_visits pv
+                  WHERE pv.patient_id = p.id
+                  ORDER BY pv.visit_date DESC
+                  LIMIT 1
+                )
+              )) OR
+              -- Try partial match (for backward compatibility)
+              (COALESCE(
+                p.assigned_doctor_id::text,
+                (
+                  SELECT pv.assigned_doctor_id::text
+                  FROM patient_visits pv
+                  WHERE pv.patient_id = p.id
+                  ORDER BY pv.visit_date DESC
+                  LIMIT 1
+                )
+              ) LIKE u.id::text || '%')
+            )
+            LIMIT 1
+          ) AS assigned_doctor_role,
+          -- ✅ Last assigned date from patient_visits
+          (
+            SELECT pv.visit_date
+            FROM patient_visits pv
+            WHERE pv.patient_id = p.id
+            ORDER BY pv.visit_date DESC
+            LIMIT 1
+          ) AS last_assigned_date
+        FROM registered_patient p
         LEFT JOIN adl_files af ON af.patient_id = p.id
-        LEFT JOIN LATERAL (
-          SELECT * FROM patient_visits
-          WHERE patient_id = p.id
-          ORDER BY visit_date DESC
-          LIMIT 1
-        ) pa ON true
-        LEFT JOIN users u ON pa.assigned_doctor = u.id
-        WHERE p.id = $1
-        GROUP BY p.id, p.name, p.cr_no, p.psy_no, p.adl_no, p.sex, p.actual_age, 
-          p.dob, p.age_group, p.marital_status, p.year_of_marriage, 
-          p.no_of_children, p.no_of_children_male, p.no_of_children_female,
-          p.occupation, p.education_level, p.religion, p.family_type, p.locality,
-          p.patient_income, p.family_income, p.contact_number,
-          p.head_name, p.head_age, p.head_relationship, p.head_education, 
-          p.head_occupation, p.head_income,
-          p.present_address_line_1, p.present_address_line_2, p.present_country, p.present_state, 
-          p.present_district, p.present_city_town_village, p.present_pin_code,
-          p.permanent_address_line_1, p.permanent_address_line_2, p.permanent_country, p.permanent_state,
-          p.permanent_district, p.permanent_city_town_village, p.permanent_pin_code,
-          p.address_line_1, p.address_line_2, p.country, p.state, p.district, p.city_town_village, p.pin_code,
-          p.category, p.special_clinic_no, p.assigned_room, p.created_at, p.updated_at,
-          p.filled_by, p.seen_in_walk_in_on, p.worked_up_on, p.school_college_office,
-          p.distance_from_hospital, p.mobility, p.referred_by, p.exact_source,
-          p.present_address, p.permanent_address, p.local_address,
-          p.department, p.unit_consit, p.room_no, p.serial_no, p.file_no, p.unit_days,
-          p.actual_occupation, p.completed_years_of_education,
-          p.has_adl_file, p.case_complexity, p.file_status, af.id,
-          pa.assigned_doctor, u.name, u.role, pa.visit_date
+        WHERE p.id = $1::uuid
+        LIMIT 1;
       `;
-      
+  
       const result = await db.query(query, [patientId]);
-      
+  
       if (result.rows.length === 0) {
-        console.log(`[Patient.findById] No patient found with ID: ${patientId}`);
+        console.warn(`[Patient.findById] ⚠️ No patient found for ID ${patientId}`);
         return null;
       }
-      
-      // If multiple rows returned (shouldn't happen with GROUP BY, but safety check)
-      if (result.rows.length > 1) {
-        console.warn(`[Patient.findById] WARNING: Multiple rows returned for ID ${patientId}, using first row`);
-      }
-      
+  
       const row = result.rows[0];
       
-      // CRITICAL: Verify the returned patient ID matches the requested ID
-      const returnedId = parseInt(row.id, 10);
-      if (returnedId !== patientId) {
-        console.error(`[Patient.findById] CRITICAL ERROR: ID mismatch! Requested: ${patientId}, Returned: ${returnedId}`);
-        throw new Error(`Data integrity error: Patient ID mismatch. Requested ${patientId}, got ${returnedId}`);
-      }
-      
-      console.log(`[Patient.findById] Successfully found patient ID: ${returnedId}, Name: ${row.name}`);
+      // Debug: Log the raw row data to see what we're getting
+      console.log(`[Patient.findById] 🔍 Raw row data:`, {
+        original_assigned_doctor_id: row.original_assigned_doctor_id,
+        original_assigned_doctor_name: row.original_assigned_doctor_name,
+        assigned_doctor_id: row.assigned_doctor_id,
+        assigned_doctor_name: row.assigned_doctor_name,
+        assigned_doctor_role: row.assigned_doctor_role,
+        last_assigned_date: row.last_assigned_date
+      });
       
       const patient = new Patient(row);
+
+      // ✅ Explicitly map joined/derived doctor fields
+      // Use the COALESCE result (assigned_doctor_id alias), but fallback to original if needed
+      const doctorId = row.assigned_doctor_id || null;
+      const doctorName = row.assigned_doctor_name || null;
+      const doctorRole = row.assigned_doctor_role || null;
       
-      // Ensure joined fields are set on the Patient instance
-      patient.assigned_doctor_id = row.assigned_doctor_id || patient.assigned_doctor_id;
-      patient.assigned_doctor_name = row.assigned_doctor_name || patient.assigned_doctor_name;
-      patient.assigned_doctor_role = row.assigned_doctor_role || patient.assigned_doctor_role;
-      patient.last_assigned_date = row.last_assigned_date || patient.last_assigned_date;
+      if (doctorId !== undefined && doctorId !== null) {
+        patient.assigned_doctor_id = String(doctorId);
+      } else {
+        patient.assigned_doctor_id = null;
+      }
       
+      patient.assigned_doctor_name = doctorName || null;
+      patient.assigned_doctor_role = doctorRole || null;
+      patient.last_assigned_date = row.last_assigned_date || null;
+
+      console.log(
+        `[Patient.findById] ✅ Found patient ${row.name} (${row.id}) — Doctor ID: ${patient.assigned_doctor_id}, Name: ${patient.assigned_doctor_name || 'None'}, Role: ${patient.assigned_doctor_role || 'None'}`
+      );
+
       return patient;
     } catch (error) {
-      console.error('[Patient.findById] Error:', error);
+      console.error('[Patient.findById] ❌ Error:', error);
       throw error;
     }
   }
+  
+  
+  
 
   // Find by cr, psy, adl
   static async findByCRNo(cr_no) {
     try {
-      const result = await db.query('SELECT * FROM patients WHERE cr_no = $1', [cr_no]);
+      const result = await db.query('SELECT * FROM registered_patient WHERE cr_no = $1', [cr_no]);
       if (result.rows.length === 0) return null;
       return new Patient(result.rows[0]);
     } catch (error) {
@@ -380,7 +710,7 @@ class Patient {
 
   static async findByPSYNo(psy_no) {
     try {
-      const result = await db.query('SELECT * FROM patients WHERE psy_no = $1', [psy_no]);
+      const result = await db.query('SELECT * FROM registered_patient WHERE psy_no = $1', [psy_no]);
       if (result.rows.length === 0) return null;
       return new Patient(result.rows[0]);
     } catch (error) {
@@ -390,7 +720,7 @@ class Patient {
 
   static async findByADLNo(adl_no) {
     try {
-      const result = await db.query('SELECT * FROM patients WHERE adl_no = $1', [adl_no]);
+      const result = await db.query('SELECT * FROM registered_patient WHERE adl_no = $1', [adl_no]);
       if (result.rows.length === 0) return null;
       return new Patient(result.rows[0]);
     } catch (error) {
@@ -404,53 +734,25 @@ class Patient {
       const offset = (page - 1) * limit;
       const searchPattern = `%${searchTerm}%`;
 
-      // Use Supabase-compatible query without LATERAL joins
-      // First, get matching patients with ADL file info
       const query = `
         SELECT
-          p.id, p.name, p.cr_no, p.psy_no, p.adl_no, p.sex, p.actual_age, 
-          p.dob, p.age_group, p.marital_status, p.year_of_marriage, 
-          p.no_of_children, p.no_of_children_male, p.no_of_children_female,
-          p.occupation, p.education_level, p.religion, p.family_type, p.locality,
-          p.patient_income, p.family_income, p.contact_number,
-          p.head_name, p.head_age, p.head_relationship, p.head_education, 
-          p.head_occupation, p.head_income,
-          p.present_address_line_1, p.present_country, p.present_state, 
-          p.present_district, p.present_city_town_village, p.present_pin_code,
-          p.permanent_address_line_1, p.permanent_country, p.permanent_state,
-          p.permanent_district, p.permanent_city_town_village, p.permanent_pin_code,
-          p.address_line_1, p.country, p.state, p.district, p.city_town_village, p.pin_code,
-          p.category, p.special_clinic_no, p.assigned_room, p.created_at,
+          p.*,
           CASE WHEN af.id IS NOT NULL THEN true ELSE COALESCE(p.has_adl_file, false) END as has_adl_file,
           CASE 
             WHEN af.id IS NOT NULL THEN 'complex'
             WHEN p.case_complexity IS NOT NULL THEN p.case_complexity
             ELSE 'simple'
-          END as case_complexity,
-          p.file_status
-        FROM patients p
+          END as case_complexity
+        FROM registered_patient p
         LEFT JOIN adl_files af ON af.patient_id = p.id
         WHERE p.name ILIKE $1 OR p.cr_no ILIKE $1 OR p.psy_no ILIKE $1 OR p.adl_no ILIKE $1
-        GROUP BY p.id, p.name, p.cr_no, p.psy_no, p.adl_no, p.sex, p.actual_age, 
-          p.dob, p.age_group, p.marital_status, p.year_of_marriage, 
-          p.no_of_children, p.no_of_children_male, p.no_of_children_female,
-          p.occupation, p.education_level, p.religion, p.family_type, p.locality,
-          p.patient_income, p.family_income, p.contact_number,
-          p.head_name, p.head_age, p.head_relationship, p.head_education, 
-          p.head_occupation, p.head_income,
-          p.present_address_line_1, p.present_country, p.present_state, 
-          p.present_district, p.present_city_town_village, p.present_pin_code,
-          p.permanent_address_line_1, p.permanent_country, p.permanent_state,
-          p.permanent_district, p.permanent_city_town_village, p.permanent_pin_code,
-          p.address_line_1, p.country, p.state, p.district, p.city_town_village, p.pin_code,
-          p.category, p.special_clinic_no, p.assigned_room, p.created_at,
-          p.has_adl_file, p.case_complexity, p.file_status, af.id
+        GROUP BY p.id, af.id
         ORDER BY p.created_at DESC
         LIMIT $2 OFFSET $3
       `;
 
       const countQuery = `
-        SELECT COUNT(DISTINCT p.id) as cnt FROM patients p
+        SELECT COUNT(DISTINCT p.id) as cnt FROM registered_patient p
         LEFT JOIN adl_files af ON af.patient_id = p.id
         WHERE p.name ILIKE $1 OR p.cr_no ILIKE $1 OR p.psy_no ILIKE $1 OR p.adl_no ILIKE $1
       `;
@@ -463,7 +765,7 @@ class Patient {
       const total = parseInt(countResult.rows[0].cnt, 10);
       const patientIds = result.rows.map(row => row.id);
 
-      // Fetch latest visit and doctor info separately using Supabase (no LATERAL joins)
+      // Fetch latest visit and doctor info separately
       let visitMap = new Map();
       let doctorMap = new Map();
       
@@ -474,13 +776,13 @@ class Patient {
           // Get latest visit per patient
           const { data: visits, error: visitsError } = await supabaseAdmin
             .from('patient_visits')
-            .select('patient_id, visit_date, assigned_doctor')
+            .select('patient_id, visit_date, assigned_doctor_id')
             .in('patient_id', patientIds)
             .order('visit_date', { ascending: false });
 
           if (!visitsError && Array.isArray(visits)) {
             // Get unique doctor IDs
-            const doctorIds = [...new Set(visits.map(v => v.assigned_doctor).filter(id => id))];
+            const doctorIds = [...new Set(visits.map(v => v.assigned_doctor_id).filter(id => id))];
             
             // Fetch doctor info
             if (doctorIds.length > 0) {
@@ -500,7 +802,7 @@ class Patient {
             visits.forEach(v => {
               if (!visitMap.has(v.patient_id)) {
                 visitMap.set(v.patient_id, {
-                  assigned_doctor_id: v.assigned_doctor,
+                  assigned_doctor_id: v.assigned_doctor_id,
                   visit_date: v.visit_date
                 });
               }
@@ -508,11 +810,9 @@ class Patient {
           }
         } catch (supabaseError) {
           console.warn('[Patient.search] Error fetching visit/doctor info:', supabaseError.message);
-          // Continue without visit/doctor info
         }
       }
 
-      // Return rich object using row data (not limited to toJSON)
       const patients = result.rows.map(row => {
         const patient = new Patient(row);
         const visitInfo = visitMap.get(row.id);
@@ -520,7 +820,6 @@ class Patient {
         
         return {
           ...patient.toJSON(),
-          // include joined fields explicitly
           assigned_doctor_id: visitInfo?.assigned_doctor_id || null,
           assigned_doctor_name: doctorInfo?.name || null,
           assigned_doctor_role: doctorInfo?.role || null,
@@ -543,7 +842,7 @@ class Patient {
     }
   }
 
-  // Get all with filters (robust parameter handling)
+  // Get all with filters
   static async findAll(page = 1, limit = 10, filters = {}) {
     try {
       const offset = (page - 1) * limit;
@@ -556,16 +855,14 @@ class Patient {
         params.push(filters.sex);
       }
       if (filters.case_complexity) {
-        // For complex filter, check both stored value and actual ADL file existence
         if (filters.case_complexity === 'complex') {
           where.push(`(p.case_complexity = 'complex' OR af.id IS NOT NULL)`);
         } else {
           where.push(`p.case_complexity = $${idx++}`);
-        params.push(filters.case_complexity);
+          params.push(filters.case_complexity);
         }
       }
       if (filters.has_adl_file !== undefined) {
-        // For has_adl_file filter, check both stored value and actual ADL file existence
         if (filters.has_adl_file) {
           where.push(`(p.has_adl_file = true OR af.id IS NOT NULL)`);
         } else {
@@ -585,69 +882,32 @@ class Patient {
 
       const query = `
         SELECT 
-          p.id, p.name, p.cr_no, p.psy_no, p.adl_no, p.sex, p.actual_age, 
-          p.dob, p.age_group, p.marital_status, p.year_of_marriage, 
-          p.no_of_children, p.no_of_children_male, p.no_of_children_female,
-          p.occupation, p.education_level, p.religion, p.family_type, p.locality,
-          p.patient_income, p.family_income, p.contact_number,
-          p.head_name, p.head_age, p.head_relationship, p.head_education, 
-          p.head_occupation, p.head_income,
-          p.present_address_line_1, p.present_country, p.present_state, 
-          p.present_district, p.present_city_town_village, p.present_pin_code,
-          p.permanent_address_line_1, p.permanent_country, p.permanent_state,
-          p.permanent_district, p.permanent_city_town_village, p.permanent_pin_code,
-          p.address_line_1, p.country, p.state, p.district, p.city_town_village, p.pin_code,
-          p.category, p.special_clinic_no, p.assigned_room, p.created_at,
+          p.*,
           CASE WHEN af.id IS NOT NULL THEN true ELSE COALESCE(p.has_adl_file, false) END as has_adl_file,
           CASE 
             WHEN af.id IS NOT NULL THEN 'complex'
             WHEN p.case_complexity IS NOT NULL THEN p.case_complexity
             ELSE 'simple'
-          END as case_complexity,
-          p.file_status
-        FROM patients p
+          END as case_complexity
+        FROM registered_patient p
         LEFT JOIN adl_files af ON af.patient_id = p.id
         ${whereClause}
-        GROUP BY p.id, p.name, p.cr_no, p.psy_no, p.adl_no, p.sex, p.actual_age, 
-          p.dob, p.age_group, p.marital_status, p.year_of_marriage, 
-          p.no_of_children, p.no_of_children_male, p.no_of_children_female,
-          p.occupation, p.education_level, p.religion, p.family_type, p.locality,
-          p.patient_income, p.family_income, p.contact_number,
-          p.head_name, p.head_age, p.head_relationship, p.head_education, 
-          p.head_occupation, p.head_income,
-          p.present_address_line_1, p.present_country, p.present_state, 
-          p.present_district, p.present_city_town_village, p.present_pin_code,
-          p.permanent_address_line_1, p.permanent_country, p.permanent_state,
-          p.permanent_district, p.permanent_city_town_village, p.permanent_pin_code,
-          p.address_line_1, p.country, p.state, p.district, p.city_town_village, p.pin_code,
-          p.category, p.special_clinic_no, p.assigned_room, p.created_at,
-          p.has_adl_file, p.case_complexity, p.file_status, af.id
+        GROUP BY p.id, af.id
         ORDER BY p.created_at DESC
         LIMIT $${idx++} OFFSET $${idx++}
       `;
       params.push(limit, offset);
 
-      // Build count query with same filters but without LIMIT/OFFSET
-      const countParams = params.slice(0, params.length - 2); // Remove limit and offset params
+      const countParams = params.slice(0, params.length - 2);
       const countQuery = `
-        SELECT COUNT(DISTINCT p.id) as cnt FROM patients p
+        SELECT COUNT(DISTINCT p.id) as cnt FROM registered_patient p
         LEFT JOIN adl_files af ON af.patient_id = p.id
         ${whereClause}
       `;
 
       const [patientsResult, countResult] = await Promise.all([
-        db.query(query, params).catch(err => {
-          console.error('[Patient.findAll] Query error:', err);
-          console.error('[Patient.findAll] Query:', query);
-          console.error('[Patient.findAll] Params:', params);
-          throw err;
-        }),
-        db.query(countQuery, countParams).catch(err => {
-          console.error('[Patient.findAll] Count query error:', err);
-          console.error('[Patient.findAll] Count query:', countQuery);
-          console.error('[Patient.findAll] Count params:', countParams);
-          throw err;
-        })
+        db.query(query, params),
+        db.query(countQuery, countParams)
       ]);
 
       const patients = patientsResult.rows.map(r => new Patient(r).toJSON());
@@ -667,17 +927,19 @@ class Patient {
     }
   }
 
-  // Update patient (allows multiple fields)
+  // Update patient
   async update(updateData = {}) {
     try {
-      // broaden allowed updatable fields as required
       const allowedFields = [
-        'name','sex','actual_age','assigned_room','case_complexity','file_status','has_adl_file',
-        'contact_number','assigned_doctor_id','occupation','education_level','patient_income',
-        'family_income','present_address_line_1','present_country','present_state','present_district',
-        'present_city_town_village','present_pin_code','permanent_address_line_1','permanent_country',
-        'permanent_state','permanent_district','permanent_city_town_village','permanent_pin_code',
-        'address_line_1','country','state','district','city_town_village','pin_code','category'
+        'name', 'sex', 'age', 'date', 'contact_number', 'category', 'father_name',
+        'department', 'unit_consit', 'room_no', 'serial_no', 'file_no', 'unit_days',
+        'seen_in_walk_in_on', 'worked_up_on', 'age_group',
+        'marital_status', 'year_of_marriage', 'no_of_children_male', 'no_of_children_female',
+        'occupation', 'education', 'locality', 'income', 'religion', 'family_type',
+        'head_name', 'head_age', 'head_relationship', 'head_education', 'head_occupation', 'head_income',
+        'distance_from_hospital', 'mobility', 'referred_by',
+        'address_line', 'country', 'state', 'district', 'city', 'pin_code',
+        'assigned_room', 'assigned_doctor_id', 'assigned_doctor_name', 'file_status', 'has_adl_file', 'special_clinic_no'
       ];
 
       const updates = [];
@@ -697,7 +959,7 @@ class Patient {
 
       values.push(this.id);
       const result = await db.query(
-        `UPDATE patients SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${idx} RETURNING *`,
+        `UPDATE registered_patient SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${idx} RETURNING *`,
         values
       );
 
@@ -711,7 +973,7 @@ class Patient {
     }
   }
 
-  // Create ADL file (transactional)
+  // Create ADL file
   async createADLFile(clinicalProformaId, createdBy) {
     const client = await db.getClient();
     try {
@@ -724,7 +986,7 @@ class Patient {
       const adl_no = Patient.generateADLNo();
 
       await client.query(
-        `UPDATE patients SET adl_no = $1, has_adl_file = true, file_status = $2, case_complexity = $3 WHERE id = $4`,
+        `UPDATE registered_patient SET adl_no = $1, has_adl_file = true, file_status = $2, case_complexity = $3 WHERE id = $4`,
         [adl_no, 'created', 'complex', this.id]
       );
 
@@ -761,7 +1023,7 @@ class Patient {
       const result = await db.query(
         `SELECT pv.*, u.name as doctor_name, u.role as doctor_role
          FROM patient_visits pv
-         LEFT JOIN users u ON pv.assigned_doctor = u.id
+         LEFT JOIN users u ON pv.assigned_doctor_id = u.id
          WHERE pv.patient_id = $1
          ORDER BY pv.visit_date DESC`,
         [this.id]
@@ -806,15 +1068,14 @@ class Patient {
     }
   }
 
-  // Delete patient and all related records (cascade delete)
+  // Delete patient and all related records
   async delete() {
     try {
       console.log(`[Patient.delete] Starting deletion for patient ID: ${this.id}`);
       
-      // Use Supabase directly for DELETE operations since the db.query wrapper doesn't handle DELETE
       const { supabaseAdmin } = require('../config/database');
       
-      // Step 1: Get all clinical_proforma IDs for this patient (needed for prescriptions)
+      // Step 1: Get all clinical_proforma IDs
       const { data: clinicalProformas, error: clinicalProformasError } = await supabaseAdmin
         .from('clinical_proforma')
         .select('id')
@@ -825,26 +1086,24 @@ class Patient {
       }
       
       const clinicalProformaIds = clinicalProformas ? clinicalProformas.map(cp => cp.id) : [];
-      console.log(`[Patient.delete] Found ${clinicalProformaIds.length} clinical proforma(s) for patient ${this.id}`);
+      console.log(`[Patient.delete] Found ${clinicalProformaIds.length} clinical proforma(s)`);
       
-      // Step 2: Delete prescriptions first (they reference clinical_proforma)
+      // Step 2: Delete prescriptions
       if (clinicalProformaIds.length > 0) {
-        const { error: prescriptionsError, count: prescriptionsCount } = await supabaseAdmin
+        const { error: prescriptionsError } = await supabaseAdmin
           .from('prescriptions')
           .delete()
-          .in('clinical_proforma_id', clinicalProformaIds)
-          .select('*', { count: 'exact', head: true });
+          .in('clinical_proforma_id', clinicalProformaIds);
         
         if (prescriptionsError) {
           console.warn(`[Patient.delete] Error deleting prescriptions: ${prescriptionsError.message}`);
         } else {
-          console.log(`[Patient.delete] Deleted prescriptions for ${clinicalProformaIds.length} clinical proforma(s)`);
+          console.log(`[Patient.delete] Deleted prescriptions`);
         }
       }
       
-      // Step 3: Delete file movements (they reference ADL files and patients)
+      // Step 3: Delete file movements
       try {
-        // First get ADL file IDs
         const { data: adlFiles } = await supabaseAdmin
           .from('adl_files')
           .select('id')
@@ -853,37 +1112,27 @@ class Patient {
         const adlFileIds = adlFiles ? adlFiles.map(af => af.id) : [];
         
         if (adlFileIds.length > 0) {
-          const { error: fileMovementsError } = await supabaseAdmin
+          await supabaseAdmin
             .from('file_movements')
             .delete()
             .in('adl_file_id', adlFileIds);
-          
-          if (fileMovementsError) {
-            console.warn(`[Patient.delete] Error deleting file_movements by adl_file_id: ${fileMovementsError.message}`);
-          }
         }
         
-        // Also delete file movements by patient_id
-        const { error: fileMovementsError2 } = await supabaseAdmin
+        await supabaseAdmin
           .from('file_movements')
           .delete()
           .eq('patient_id', this.id);
         
-        if (fileMovementsError2) {
-          console.warn(`[Patient.delete] Error deleting file_movements by patient_id: ${fileMovementsError2.message}`);
-        } else {
-          console.log(`[Patient.delete] Deleted file movements for patient ${this.id}`);
-        }
+        console.log(`[Patient.delete] Deleted file movements`);
       } catch (fileMovementsErr) {
-        console.warn(`[Patient.delete] Could not delete file_movements (table may not exist): ${fileMovementsErr.message}`);
+        console.warn(`[Patient.delete] Could not delete file_movements: ${fileMovementsErr.message}`);
       }
       
-      // Step 4: Delete ADL files (they reference clinical_proforma and patients)
-      const { error: adlError, count: adlCount } = await supabaseAdmin
+      // Step 4: Delete ADL files
+      const { error: adlError } = await supabaseAdmin
         .from('adl_files')
         .delete()
-        .eq('patient_id', this.id)
-        .select('*', { count: 'exact', head: true });
+        .eq('patient_id', this.id);
       
       if (adlError) {
         console.error(`[Patient.delete] Error deleting ADL files: ${adlError.message}`);
@@ -891,12 +1140,11 @@ class Patient {
       }
       console.log(`[Patient.delete] Deleted ADL files for patient ${this.id}`);
       
-      // Step 5: Delete clinical proformas (they reference patients)
-      const { error: clinicalError, count: clinicalCount } = await supabaseAdmin
+      // Step 5: Delete clinical proformas
+      const { error: clinicalError } = await supabaseAdmin
         .from('clinical_proforma')
         .delete()
-        .eq('patient_id', this.id)
-        .select('*', { count: 'exact', head: true });
+        .eq('patient_id', this.id);
       
       if (clinicalError) {
         console.error(`[Patient.delete] Error deleting clinical proformas: ${clinicalError.message}`);
@@ -905,11 +1153,10 @@ class Patient {
       console.log(`[Patient.delete] Deleted clinical proformas for patient ${this.id}`);
       
       // Step 6: Delete patient visits
-      const { error: visitsError, count: visitsCount } = await supabaseAdmin
+      const { error: visitsError } = await supabaseAdmin
         .from('patient_visits')
         .delete()
-        .eq('patient_id', this.id)
-        .select('*', { count: 'exact', head: true });
+        .eq('patient_id', this.id);
       
       if (visitsError) {
         console.warn(`[Patient.delete] Error deleting patient visits: ${visitsError.message}`);
@@ -918,11 +1165,10 @@ class Patient {
       }
       
       // Step 7: Delete outpatient records
-      const { error: outpatientError, count: outpatientCount } = await supabaseAdmin
+      const { error: outpatientError } = await supabaseAdmin
         .from('outpatient_record')
         .delete()
-        .eq('patient_id', this.id)
-        .select('*', { count: 'exact', head: true });
+        .eq('patient_id', this.id);
       
       if (outpatientError) {
         console.warn(`[Patient.delete] Error deleting outpatient records: ${outpatientError.message}`);
@@ -931,19 +1177,14 @@ class Patient {
       }
 
       // Step 8: Finally, delete the patient record itself
-      const { error: patientDeleteError, count: patientDeleteCount } = await supabaseAdmin
-        .from('patients')
+      const { error: patientDeleteError } = await supabaseAdmin
+        .from('registered_patient')
         .delete()
-        .eq('id', this.id)
-        .select('*', { count: 'exact', head: true });
+        .eq('id', this.id);
       
       if (patientDeleteError) {
         console.error(`[Patient.delete] Error deleting patient: ${patientDeleteError.message}`);
         throw new Error(`Failed to delete patient: ${patientDeleteError.message}`);
-      }
-      
-      if (patientDeleteCount === 0) {
-        throw new Error('Patient was not deleted. No rows affected.');
       }
       
       console.log(`[Patient.delete] Successfully deleted patient ID: ${this.id}`);
@@ -966,7 +1207,7 @@ class Patient {
           COUNT(CASE WHEN has_adl_file = true THEN 1 END) as patients_with_adl,
           COUNT(CASE WHEN case_complexity = 'complex' THEN 1 END) as complex_cases,
           COUNT(CASE WHEN case_complexity = 'simple' THEN 1 END) as simple_cases
-        FROM patients
+        FROM registered_patient
       `);
       return result.rows[0];
     } catch (error) {
@@ -987,7 +1228,7 @@ class Patient {
       // Basic info
       name: this.name,
       sex: this.sex,
-      actual_age: this.actual_age,
+      age: this.age,
       age_group: this.age_group,
       marital_status: this.marital_status,
       year_of_marriage: this.year_of_marriage,
@@ -1033,12 +1274,12 @@ class Patient {
       unit_days: this.unit_days,
   
       // Addresses - Quick Entry
-      address_line_1: this.address_line_1,
+      address_line: this.address_line,
       address_line_2: this.address_line_2,
       country: this.country,
       state: this.state,
       district: this.district,
-      city_town_village: this.city_town_village,
+      city: this.city,
       pin_code: this.pin_code,
   
       // Present Address

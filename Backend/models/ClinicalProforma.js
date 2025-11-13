@@ -1577,16 +1577,43 @@ class ClinicalProforma {
   // Find clinical proforma by patient ID
   static async findByPatientId(patient_id) {
     try {
-      const result = await db.query(
-        `SELECT cp.*, p.name as patient_name, p.cr_no, p.psy_no, 
-                u.name as doctor_name, u.role as doctor_role
-         FROM clinical_proforma cp
-         LEFT JOIN patients p ON cp.patient_id = p.id
-         LEFT JOIN users u ON cp.filled_by = u.id
-         WHERE cp.patient_id = $1
-         ORDER BY cp.visit_date DESC`,
-        [patient_id]
-      );
+      // Check if ID is a UUID (contains hyphens and is 36 chars) or integer
+      const isUUID = typeof patient_id === 'string' && patient_id.includes('-') && patient_id.length === 36;
+      
+      console.log(`[ClinicalProforma.findByPatientId] Querying for patient_id: ${patient_id}, isUUID: ${isUUID}`);
+      
+      // If UUID, use text comparison directly (since clinical_proforma.patient_id may be INTEGER)
+      // This avoids type casting issues
+      let query;
+      let queryParam;
+      
+      if (isUUID) {
+        // Use text comparison to handle both UUID and INTEGER column types
+        query = `
+          SELECT cp.*, p.name as patient_name, p.cr_no, p.psy_no, 
+                 u.name as doctor_name, u.role as doctor_role
+          FROM clinical_proforma cp
+          LEFT JOIN registered_patient p ON cp.patient_id::text = p.id::text
+          LEFT JOIN users u ON cp.filled_by = u.id
+          WHERE cp.patient_id::text = $1
+          ORDER BY cp.visit_date DESC
+        `;
+        queryParam = String(patient_id);
+      } else {
+        // For integer, use integer comparison
+        query = `
+          SELECT cp.*, p.name as patient_name, p.cr_no, p.psy_no, 
+                 u.name as doctor_name, u.role as doctor_role
+          FROM clinical_proforma cp
+          LEFT JOIN registered_patient p ON cp.patient_id = p.id
+          LEFT JOIN users u ON cp.filled_by = u.id
+          WHERE cp.patient_id = $1
+          ORDER BY cp.visit_date DESC
+        `;
+        queryParam = parseInt(patient_id, 10);
+      }
+      
+      const result = await db.query(query, [queryParam]);
 
       return result.rows.map(row => new ClinicalProforma(row));
     } catch (error) {

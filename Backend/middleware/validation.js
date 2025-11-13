@@ -57,7 +57,7 @@ const validatePatient = [
     .optional()
     .isIn(['M', 'F', 'Other'])
     .withMessage('Sex must be M, F, or Other'),
-  body('actual_age')
+  body('age')
     .optional()
     .isInt({ min: 0, max: 150 })
     .withMessage('Age must be between 0 and 150'),
@@ -89,7 +89,7 @@ const validatePatientRegistration = [
     .optional()
     .isIn(['M', 'F', 'Other'])
     .withMessage('Sex must be M, F, or Other'),
-  body('actual_age')
+  body('age')
     .optional()
     .isInt({ min: 0, max: 150 })
     .withMessage('Age must be between 0 and 150'),
@@ -268,7 +268,7 @@ const validatePatientRegistration = [
     }),
   
   // Address Information
-  body('address_line_1')
+  body('address_line')
     .optional()
     .isLength({ max: 255 })
     .withMessage('Address line 1 must not exceed 255 characters'),
@@ -284,7 +284,7 @@ const validatePatientRegistration = [
     .optional()
     .isLength({ max: 100 })
     .withMessage('District must not exceed 100 characters'),
-  body('city_town_village')
+  body('city')
     .optional()
     .isLength({ max: 100 })
     .withMessage('City/Town/Village must not exceed 100 characters'),
@@ -362,10 +362,11 @@ const validatePatientRegistration = [
     .optional()
     .isIn(['GEN', 'SC', 'ST', 'OBC', 'EWS'])
     .withMessage('Category must be one of: GEN, SC, ST, OBC, EWS'),
-  body('assigned_doctor_id')
+    body('assigned_doctor_id')
     .optional({ nullable: true })
-    .isInt({ min: 1 })
-    .withMessage('Assigned doctor ID must be a positive integer'),
+    .isUUID()
+    .withMessage('Assigned doctor ID must be a valid UUID'),
+  
   
   handleValidationErrors
 ];
@@ -421,11 +422,34 @@ const validateADLFile = [
   handleValidationErrors
 ];
 
-// ID parameter validation
+// ID parameter validation (supports both UUID and integer)
 const validateId = [
   param('id')
-    .isInt({ min: 1 })
-    .withMessage('Valid ID is required'),
+    .custom((value) => {
+      if (!value) {
+        throw new Error('ID is required');
+      }
+      
+      // Convert to string for validation
+      const idStr = String(value).trim();
+      if (idStr === '') {
+        throw new Error('ID is required');
+      }
+      
+      // Check if it's a valid UUID format (contains hyphens and is 36 chars)
+      const isUUID = idStr.includes('-') && idStr.length === 36;
+      
+      // Check if it's a valid integer
+      const isInt = !isNaN(parseInt(idStr, 10)) && parseInt(idStr, 10) > 0;
+      
+      // Accept either UUID or positive integer
+      if (isUUID || isInt) {
+        return true;
+      }
+      
+      throw new Error('ID must be a valid UUID or positive integer');
+    })
+    .withMessage('Valid ID (UUID or integer) is required'),
   handleValidationErrors
 ];
 

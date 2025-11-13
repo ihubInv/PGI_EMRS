@@ -25,9 +25,9 @@ export const formatAddress = (addressData) => {
   if (!addressData) return '';
   
   const parts = [];
-  if (addressData.address_line_1) parts.push(addressData.address_line_1);
+  if (addressData.address_line) parts.push(addressData.address_line);
   if (addressData.address_line_2) parts.push(addressData.address_line_2);
-  if (addressData.city_town_village) parts.push(addressData.city_town_village);
+  if (addressData.city) parts.push(addressData.city);
   if (addressData.district) parts.push(addressData.district);
   if (addressData.state) parts.push(addressData.state);
   if (addressData.pin_code) parts.push(addressData.pin_code);

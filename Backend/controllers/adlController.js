@@ -98,40 +98,19 @@ class ADLController {
     }
   }
 
-  // Get ADL files by patient ID
+  // Get ADL files by patient ID (supports both UUID and integer)
   static async getADLFilesByPatientId(req, res) {
     try {
       const { patient_id } = req.params;
       
-      // Ensure patient_id is a valid integer
-      const patientIdNum = parseInt(patient_id, 10);
-      if (isNaN(patientIdNum)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid patient ID'
-        });
-      }
-
-      console.log(`[ADLController.getADLFilesByPatientId] Fetching ADL files for patient_id: ${patientIdNum}`);
+      console.log(`[ADLController.getADLFilesByPatientId] Fetching ADL files for patient_id: ${patient_id}`);
       
-      const adlFiles = await ADLFile.findByPatientId(patientIdNum);
-
-      // Double-check that all returned files belong to this patient
-      const filteredFiles = adlFiles.filter(file => {
-        const filePatientId = file.patient_id ? parseInt(file.patient_id, 10) : null;
-        return filePatientId === patientIdNum;
-      });
-
-      if (filteredFiles.length !== adlFiles.length) {
-        console.warn(`[ADLController.getADLFilesByPatientId] Filtered out ${adlFiles.length - filteredFiles.length} files that didn't match patient_id ${patientIdNum}`);
-      }
-
-      console.log(`[ADLController.getADLFilesByPatientId] Returning ${filteredFiles.length} ADL files for patient_id: ${patientIdNum}`);
+      const adlFiles = await ADLFile.findByPatientId(patient_id);
 
       res.json({
         success: true,
         data: {
-          adlFiles: filteredFiles.map(file => file.toJSON())
+          adlFiles: adlFiles.map(file => file.toJSON())
         }
       });
     } catch (error) {

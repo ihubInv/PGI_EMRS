@@ -19,6 +19,7 @@ import Badge from '../../components/Badge';
 import { isAdmin, isMWO, isJrSr } from '../../utils/constants';
 
 const PatientsPage = () => {
+  debugger
   const user = useSelector(selectCurrentUser);
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
@@ -43,48 +44,49 @@ const PatientsPage = () => {
  
 
   // Helper function to extract a single patient ID from row data
-  const getPatientId = (row) => {
-    if (!row) {
-      console.warn('[getPatientId] Row is null or undefined');
-      return null;
-    }
+  // const getPatientId = (row) => {
+  //   if (!row) {
+  //     console.warn('[getPatientId] Row is null or undefined');
+  //     return null;
+  //   }
     
-    let extractedId = null;
+  //   let extractedId = null;
     
-    // Check if id is an array (handle edge case)
-    if (Array.isArray(row.id)) {
-      console.warn('[getPatientId] row.id is an array, taking first element:', row.id);
-      extractedId = row.id.length > 0 ? row.id[0] : null;
-    }
-    // Direct access to id field (should be a single value)
-    else if (row.id !== null && row.id !== undefined && row.id !== '') {
-      extractedId = row.id;
-    }
-    // Fallback: try to get id from other possible fields
-    else {
-      extractedId = row.patient_id || row.patientId || null;
-    }
+  //   // Check if id is an array (handle edge case)
+  //   if (Array.isArray(row.id)) {
+  //     console.warn('[getPatientId] row.id is an array, taking first element:', row.id);
+  //     extractedId = row.id.length > 0 ? row.id[0] : null;
+  //   }
+  //   // Direct access to id field (should be a single value)
+  //   else if (row.id !== null && row.id !== undefined && row.id !== '') {
+  //     extractedId = row.id;
+  //   }
+  //   // Fallback: try to get id from other possible fields
+  //   else {
+  //     extractedId = row.patient_id || row.patientId || null;
+  //   }
     
-    // Ensure the ID is a valid number or can be converted to one
-    if (extractedId !== null && extractedId !== undefined && extractedId !== '') {
-      // Convert to number to ensure it's valid
-      const numericId = Number(extractedId);
-      if (!isNaN(numericId) && numericId > 0) {
-        return numericId; // Return as number for consistency
-      } else {
-        console.warn('[getPatientId] Invalid numeric ID:', extractedId);
-        return null;
-      }
-    }
+  //   // Ensure the ID is a valid number or can be converted to one
+  //   if (extractedId !== null && extractedId !== undefined && extractedId !== '') {
+  //     // Convert to number to ensure it's valid
+  //     const numericId = Number(extractedId);
+  //     if (!isNaN(numericId) && numericId > 0) {
+  //       return numericId; // Return as number for consistency
+  //     } else {
+  //       console.warn('[getPatientId] Invalid numeric ID:', extractedId);
+  //       return null;
+  //     }
+  //   }
     
-    console.warn('[getPatientId] No valid ID found in row:', row);
-    return null;
-  };
+  //   console.warn('[getPatientId] No valid ID found in row:', row);
+  //   return null;
+  // };
 
   // Handle view patient details
   const handleView = (row) => {
    
-    const patientId = getPatientId(row);
+    const patientId = row.id
+    //  getPatientId(row);
     
     if (!patientId) {
       toast.error('Invalid patient ID. Unable to view patient details.');
@@ -96,7 +98,9 @@ const PatientsPage = () => {
 
   // Handle edit patient
   const handleEdit = (row) => {
-    const patientId = getPatientId(row);
+    debugger
+    const patientId = row.id
+    // getPatientId(row.id);
     
     if (!patientId) {
       toast.error('Invalid patient ID. Unable to edit patient.');
@@ -187,7 +191,7 @@ const PatientsPage = () => {
           <div className="flex items-center gap-4 text-sm text-gray-600">
             <span className="flex items-center gap-1">
               <FiClock className="w-3 h-3" />
-              {row.actual_age} years
+              {row.age} years
             </span>
             <span className="px-2 py-1 bg-gray-100 rounded-full text-xs font-medium">
               {row.sex}
@@ -287,7 +291,8 @@ const PatientsPage = () => {
         </div>
       ),
       render: (row) => {
-        const patientId = getPatientId(row);
+        const patientId = row.id
+        // getPatientId(row);
         return (
         <div className="flex gap-2">
             <Button 

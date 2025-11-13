@@ -108,7 +108,7 @@ const SelectExistingPatient = () => {
     try {
       await assignPatient({
         patient_id: selectedPatient.id,
-        assigned_doctor: Number(newDoctorId),
+        assigned_doctor_id: Number(newDoctorId),
         room_no: selectedPatient.assigned_room || '',
       }).unwrap();
       toast.success('Doctor assigned successfully!');
@@ -235,7 +235,7 @@ const SelectExistingPatient = () => {
                       <FiClock className="w-4 h-4 text-green-600" />
                       <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Age</span>
                     </div>
-                    <p className="text-lg font-bold text-gray-900">{selectedPatient.actual_age} years</p>
+                    <p className="text-lg font-bold text-gray-900">{selectedPatient.age} years</p>
                   </div>
                   
                   {selectedPatient.psy_no && (
@@ -923,7 +923,7 @@ const SelectExistingPatient = () => {
                             <p className="text-sm text-gray-900 leading-relaxed">{existingDemo.local_address}</p>
                           </div>
                         )}
-                        {(existingDemo.address_line_1 || existingDemo.city_town_village || existingDemo.district || existingDemo.state) && (
+                        {(existingDemo.address_line || existingDemo.city || existingDemo.district || existingDemo.state) && (
                           <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                             <div className="flex items-center gap-2 mb-2">
                               <FiGlobe className="w-4 h-4 text-gray-500" />
@@ -931,9 +931,9 @@ const SelectExistingPatient = () => {
                             </div>
                             <p className="text-sm text-gray-900 leading-relaxed">
                               {[
-                                existingDemo.address_line_1,
+                                existingDemo.address_line,
                                 existingDemo.address_line_2,
-                                existingDemo.city_town_village,
+                                existingDemo.city,
                                 existingDemo.district,
                                 existingDemo.state,
                                 existingDemo.pin_code,

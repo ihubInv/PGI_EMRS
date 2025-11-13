@@ -118,61 +118,61 @@ class SupabaseSeeder {
         {
           name: 'Rahul Sharma',
           sex: 'M',
-          actual_age: 28,
+          age: 28,
           assigned_room: '205'
         },
         {
           name: 'Priya Patel',
           sex: 'F',
-          actual_age: 35,
+          age: 35,
           assigned_room: '206'
         },
         {
           name: 'Amit Kumar',
           sex: 'M',
-          actual_age: 42,
+          age: 42,
           assigned_room: '205'
         },
         {
           name: 'Sunita Devi',
           sex: 'F',
-          actual_age: 31,
+          age: 31,
           assigned_room: '206'
         },
         {
           name: 'Vikram Singh',
           sex: 'M',
-          actual_age: 26,
+          age: 26,
           assigned_room: '205'
         },
         {
           name: 'Meera Joshi',
           sex: 'F',
-          actual_age: 38,
+          age: 38,
           assigned_room: '206'
         },
         {
           name: 'Ravi Gupta',
           sex: 'M',
-          actual_age: 45,
+          age: 45,
           assigned_room: '205'
         },
         {
           name: 'Kavita Reddy',
           sex: 'F',
-          actual_age: 29,
+          age: 29,
           assigned_room: '206'
         },
         {
           name: 'Suresh Malhotra',
           sex: 'M',
-          actual_age: 33,
+          age: 33,
           assigned_room: '205'
         },
         {
           name: 'Deepika Agarwal',
           sex: 'F',
-          actual_age: 27,
+          age: 27,
           assigned_room: '206'
         }
       ];
@@ -191,7 +191,7 @@ class SupabaseSeeder {
             psy_no: psy_no,
             name: patient.name,
             sex: patient.sex,
-            actual_age: patient.actual_age,
+            age: patient.age,
             assigned_room: patient.assigned_room,
             case_complexity: 'simple'
           });

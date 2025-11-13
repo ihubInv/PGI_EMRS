@@ -79,7 +79,7 @@ const PatientRow = ({ patient, activeTab, navigate }) => {
                   <FiUser className="w-4 h-4 flex-shrink-0 text-gray-500" />
                   <span className="font-medium">{patient.sex}</span>
                   <span className="text-gray-400">•</span>
-                  <span>{patient.actual_age} years</span>
+                  <span>{patient.age} years</span>
                 </span>
                 {patient.contact_number && (
                   <span className="flex items-center gap-1.5 whitespace-nowrap bg-gray-50 px-2.5 py-1 rounded-md">

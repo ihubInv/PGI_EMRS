@@ -41,7 +41,7 @@ const {
  *           type: string
  *           enum: [M, F, Other]
  *           description: Patient's sex (radio button selection)
- *         actual_age:
+ *         age:
  *           type: integer
  *           description: Patient's actual age
  *         has_adl_file:
@@ -76,7 +76,7 @@ const {
  *         sex:
  *           type: string
  *           enum: [M, F, Other]
- *         actual_age:
+ *         age:
  *           type: integer
  *           minimum: 0
  *           maximum: 150
@@ -94,7 +94,7 @@ const {
  *         sex:
  *           type: string
  *           enum: [M, F, Other]
- *         actual_age:
+ *         age:
  *           type: integer
  *           minimum: 0
  *           maximum: 150
@@ -184,7 +184,7 @@ router.post('/', authenticateToken, requireMWOOrDoctor, validatePatient, Patient
  *                 enum: [M, F, Other]
  *                 example: "M"
  *                 description: Patient's sex (radio button selection)
- *               actual_age:
+ *               age:
  *                 type: integer
  *                 minimum: 0
  *                 maximum: 150
@@ -628,7 +628,7 @@ router.get('/stats', authenticateToken, authorizeRoles('System Administrator', '
  *                             type: string
  *                             enum: [M, F, Other]
  *                             description: Patient sex
- *                           actual_age:
+ *                           age:
  *                             type: integer
  *                             description: Patient age
  *                           age_group:

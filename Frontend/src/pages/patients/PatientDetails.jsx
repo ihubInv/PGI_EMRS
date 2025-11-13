@@ -20,12 +20,33 @@ import PatientDetailsEdit from './PatientDetailsEdit';
 const PatientDetails = () => {
   const { id } = useParams();
   const user = useSelector(selectCurrentUser);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const returnTab = searchParams.get('returnTab'); // Get returnTab from URL
+  const [isEditing, setIsEditing] = useState(false);
 
-  // Parse and validate patient ID from URL
-  const patientId = id ? parseInt(id, 10) : null;
+  // Helper function to validate patient ID (supports both UUID and integer)
+  const isValidPatientId = (patientId) => {
+    if (!patientId) return false;
+    
+    // Convert to string for validation
+    const idStr = String(patientId).trim();
+    if (idStr === '') return false;
+    
+    // Check if it's a valid UUID format (contains hyphens and is 36 chars)
+    const isUUID = idStr.includes('-') && idStr.length === 36;
+    
+    // Check if it's a valid integer
+    const isInt = !isNaN(parseInt(idStr, 10)) && parseInt(idStr, 10) > 0;
+    
+    return isUUID || isInt;
+  };
 
-  // Validate ID is a valid number
-  if (!patientId || isNaN(patientId) || patientId <= 0) {
+  // Parse and validate patient ID from URL (supports both UUID and integer)
+  const patientId = id || '';
+
+  // Validate ID is a valid UUID or integer
+  if (!isValidPatientId(patientId)) {
     return (
       <div className="text-center py-12">
         <p className="text-red-500">Invalid patient ID in URL</p>
@@ -39,11 +60,6 @@ const PatientDetails = () => {
     );
   }
 
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const returnTab = searchParams.get('returnTab'); // Get returnTab from URL
-  const [isEditing, setIsEditing] = useState(false);
-
   // Check for edit query parameter on mount
   useEffect(() => {
     if (searchParams.get('edit') === 'true') {
@@ -56,14 +72,16 @@ const PatientDetails = () => {
 
   // Ensure queries refetch when ID changes by using skip option if id is invalid
   const { data: patientData, isLoading: patientLoading } = useGetPatientByIdQuery(patientId, {
-    skip: !patientId || isNaN(patientId) || patientId <= 0, // Skip query if id is not available or invalid
+    skip: !isValidPatientId(patientId), // Skip query if id is not available or invalid
   });
   const { data: clinicalData } = useGetClinicalProformaByPatientIdQuery(patientId, {
-    skip: !patientId || isNaN(patientId) || patientId <= 0,
+    skip: !isValidPatientId(patientId),
   });
   const { data: adlData } = useGetADLFileByPatientIdQuery(patientId, {
-    skip: !patientId || isNaN(patientId) || patientId <= 0,
+    skip: !isValidPatientId(patientId),
   });
+  // const clinicalData=[]
+  // const adlData=[]
 
   const { data: usersData } = useGetDoctorsQuery({ page: 1, limit: 100 });
 
@@ -71,7 +89,7 @@ const PatientDetails = () => {
     // Basic patient info
     name: '',
     sex: '',
-    actual_age: '',
+    age: '',
     assigned_room: '',
     assigned_doctor_id: '',
     contact_number: '',
@@ -136,9 +154,9 @@ const PatientDetails = () => {
     permanent_pin_code: '',
     permanent_country: '',
 
-    address_line_1: '',
+    address_line: '',
     address_line_2: '',
-    city_town_village: '',
+    city: '',
     district: '',
     state: '',
     pin_code: '',
@@ -166,7 +184,7 @@ const PatientDetails = () => {
       // Basic patient info
       name: '',
       sex: '',
-      actual_age: '',
+      age: '',
       assigned_room: '',
       assigned_doctor_id: '',
       contact_number: '',
@@ -231,9 +249,9 @@ const PatientDetails = () => {
       permanent_pin_code: '',
       permanent_country: '',
 
-      address_line_1: '',
+      address_line: '',
       address_line_2: '',
-      city_town_village: '',
+      city: '',
       district: '',
       state: '',
       pin_code: '',
@@ -258,9 +276,10 @@ const PatientDetails = () => {
   useEffect(() => {
     if (patientData?.data?.patient) {
       const patient = patientData.data.patient;
-
+   console.log(">>>>fff",patient)
       // Verify the patient ID matches the URL ID to prevent showing wrong patient data
-      const patientDataId = patient.id ? parseInt(patient.id, 10) : null;
+      const patientDataId = patient.id || null;
+      // ? parseInt(patient.id, 10) : null;
       if (patientDataId && patientDataId !== patientId) {
         console.error(`[PatientDetails] CRITICAL: Patient ID mismatch! URL ID: ${patientId}, Patient data ID: ${patientDataId}`);
         toast.error(`Data mismatch: Expected patient ID ${patientId}, but received ${patientDataId}`);
@@ -274,7 +293,7 @@ const PatientDetails = () => {
         // Basic info
         name: patient.name ?? '',
         sex: patient.sex ?? '',
-        actual_age: patient.actual_age ?? '',
+        age: patient.age ?? '',
         assigned_room: patient.assigned_room ?? '',
         assigned_doctor_id: patient.assigned_doctor_id ? String(patient.assigned_doctor_id) : '',
         contact_number: patient.contact_number ?? '',
@@ -341,9 +360,9 @@ const PatientDetails = () => {
         permanent_country: patient.permanent_country ?? prev.permanent_country ?? '',
 
         // Detailed address fields - Quick Entry Address
-        address_line_1: patient.address_line_1 ?? prev.address_line_1 ?? '',
+        address_line: patient.address_line ?? prev.address_line ?? '',
         address_line_2: patient.address_line_2 ?? prev.address_line_2 ?? '',
-        city_town_village: patient.city_town_village ?? prev.city_town_village ?? '',
+        city: patient.city ?? prev.city ?? '',
         district: patient.district ?? prev.district ?? '',
         state: patient.state ?? prev.state ?? '',
         pin_code: patient.pin_code ?? prev.pin_code ?? '',
@@ -366,11 +385,12 @@ const PatientDetails = () => {
 
   // Update form data when outpatient record data changes
   useEffect(() => {
-    if (patientData?.data?.record) {
-      const record = patientData.data.record;
+    if (patientData?.data?.patient) {
+      const record = patientData.data.patient;
 
       // Verify the record belongs to the current patient
-      const recordPatientId = record.patient_id ? parseInt(record.patient_id, 10) : null;
+      const recordPatientId = record.patient_id || null;
+      // ? parseInt(record.patient_id, 10) : null;
       if (recordPatientId && recordPatientId !== patientId) {
         console.warn(`[PatientDetails] Record patient ID mismatch: URL ID is ${patientId}, but record patient_id is ${recordPatientId}`);
         return; // Don't update form data if IDs don't match
@@ -438,9 +458,10 @@ const PatientDetails = () => {
   }
 
   // Verify patient ID matches URL ID before rendering
-  const returnedPatientId = patient.id ? parseInt(patient.id, 10) : null;
+  const returnedPatientId = patient.id || null;
+  // ? parseInt(patient.id, 10) : null;
   if (returnedPatientId && returnedPatientId !== patientId) {
-    console.error(`[PatientDetails] CRITICAL: Patient ID mismatch! URL ID: ${patientId}, Patient ID: ${returnedPatientId}`);
+    // console.error(`[PatientDetails] CRITICAL: Patient ID mismatch! URL ID: ${patientId}, Patient ID: ${returnedPatientId}`);
     return (
       <div className="text-center py-12">
         <p className="text-red-500">Error: Patient ID mismatch. Expected ID {patientId}, but received {returnedPatientId}. Please refresh the page.</p>
@@ -472,7 +493,7 @@ const PatientDetails = () => {
     adl_no: patient.adl_no,
     name: patient.name || formData.name,
     sex: patient.sex || formData.sex,
-    actual_age: patient.actual_age || formData.actual_age,
+    age: patient.age || formData.age,
     assigned_room: patient.assigned_room || formData.assigned_room,
     assigned_doctor_id: patient.assigned_doctor_id || formData.assigned_doctor_id,
     assigned_doctor_name: patient.assigned_doctor_name,

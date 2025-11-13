@@ -1882,56 +1882,99 @@ class ADLFile {
     }
   }
 
-  // Find ADL file by patient ID
+  // Find ADL file by patient ID (supports both UUID and integer)
   static async findByPatientId(patient_id) {
     try {
-      // Ensure patient_id is a number for proper comparison
-      const patientIdNum = parseInt(patient_id, 10);
-      if (isNaN(patientIdNum)) {
-        console.error('[ADLFile.findByPatientId] Invalid patient_id:', patient_id);
-        return [];
-      }
-
-      console.log(`[ADLFile.findByPatientId] Querying ADL files for patient_id: ${patientIdNum}`);
-
-      const result = await db.query(
-        `SELECT af.*, 
-                p.name as patient_name, p.cr_no, p.psy_no, 
-                u1.name as created_by_name, u1.role as created_by_role,
-                u2.name as last_accessed_by_name,
-                cp.assigned_doctor, cp.visit_date as proforma_visit_date,
-                u3.name as assigned_doctor_name, u3.role as assigned_doctor_role,
-                cp.id as clinical_proforma_id
-         FROM adl_files af
-         LEFT JOIN patients p ON af.patient_id = p.id
-         LEFT JOIN users u1 ON af.created_by = u1.id
-         LEFT JOIN users u2 ON af.last_accessed_by = u2.id
-         LEFT JOIN clinical_proforma cp ON af.clinical_proforma_id = cp.id
-         LEFT JOIN users u3 ON cp.assigned_doctor = u3.id
-         WHERE af.patient_id = $1
-         ORDER BY af.file_created_date DESC`,
-        [patientIdNum]
-      );
-
-      console.log(`[ADLFile.findByPatientId] Found ${result.rows.length} rows from database for patient_id: ${patientIdNum}`);
+      // Check if ID is a UUID (contains hyphens and is 36 chars) or integer
+      const isUUID = typeof patient_id === 'string' && patient_id.includes('-') && patient_id.length === 36;
       
-      // Verify all returned files belong to this patient (double-check)
-      const filteredRows = result.rows.filter(row => {
-        const rowPatientId = row.patient_id ? parseInt(row.patient_id, 10) : null;
-        const matches = rowPatientId === patientIdNum;
-        if (!matches) {
-          console.warn(`[ADLFile.findByPatientId] Row with id ${row.id} has patient_id ${rowPatientId}, expected ${patientIdNum}`);
+      let query;
+      let queryParam;
+      
+      if (isUUID) {
+        // For UUID, explicitly cast parameter to UUID type
+        query = `
+          SELECT af.*, 
+                 p.name as patient_name, p.cr_no, p.psy_no, 
+                 u1.name as created_by_name, u1.role as created_by_role,
+                 u2.name as last_accessed_by_name,
+                 cp.assigned_doctor, cp.visit_date as proforma_visit_date,
+                 u3.name as assigned_doctor_name, u3.role as assigned_doctor_role,
+                 cp.id as clinical_proforma_id
+          FROM adl_files af
+          LEFT JOIN registered_patient p ON af.patient_id = p.id
+          LEFT JOIN users u1 ON af.created_by = u1.id
+          LEFT JOIN users u2 ON af.last_accessed_by = u2.id
+          LEFT JOIN clinical_proforma cp ON af.clinical_proforma_id = cp.id
+          LEFT JOIN users u3 ON cp.assigned_doctor = u3.id
+          WHERE af.patient_id = $1::uuid
+          ORDER BY af.file_created_date DESC
+        `;
+        queryParam = patient_id;
+      } else {
+        // For integer, use integer comparison
+        const patientIdNum = parseInt(patient_id, 10);
+        if (isNaN(patientIdNum)) {
+          console.error('[ADLFile.findByPatientId] Invalid patient_id:', patient_id);
+          return [];
         }
-        return matches;
-      });
-
-      if (filteredRows.length !== result.rows.length) {
-        console.warn(`[ADLFile.findByPatientId] Filtered out ${result.rows.length - filteredRows.length} rows that didn't match patient_id ${patientIdNum}`);
+        query = `
+          SELECT af.*, 
+                 p.name as patient_name, p.cr_no, p.psy_no, 
+                 u1.name as created_by_name, u1.role as created_by_role,
+                 u2.name as last_accessed_by_name,
+                 cp.assigned_doctor, cp.visit_date as proforma_visit_date,
+                 u3.name as assigned_doctor_name, u3.role as assigned_doctor_role,
+                 cp.id as clinical_proforma_id
+          FROM adl_files af
+          LEFT JOIN registered_patient p ON af.patient_id = p.id
+          LEFT JOIN users u1 ON af.created_by = u1.id
+          LEFT JOIN users u2 ON af.last_accessed_by = u2.id
+          LEFT JOIN clinical_proforma cp ON af.clinical_proforma_id = cp.id
+          LEFT JOIN users u3 ON cp.assigned_doctor = u3.id
+          WHERE af.patient_id = $1
+          ORDER BY af.file_created_date DESC
+        `;
+        queryParam = patientIdNum;
       }
 
-      console.log(`[ADLFile.findByPatientId] Returning ${filteredRows.length} ADL files for patient_id: ${patientIdNum}`);
+      let result;
+      try {
+        result = await db.query(query, [queryParam]);
+      } catch (queryError) {
+        // If UUID casting fails, try text comparison as fallback
+        if (isUUID && queryError.message && (
+          queryError.message.includes('invalid input syntax for type uuid') ||
+          queryError.message.includes('cannot cast') ||
+          queryError.message.includes('uuid')
+        )) {
+          console.warn(`[ADLFile.findByPatientId] UUID cast failed, trying text comparison: ${queryError.message}`);
+          const fallbackQuery = `
+            SELECT af.*, 
+                   p.name as patient_name, p.cr_no, p.psy_no, 
+                   u1.name as created_by_name, u1.role as created_by_role,
+                   u2.name as last_accessed_by_name,
+                   cp.assigned_doctor, cp.visit_date as proforma_visit_date,
+                   u3.name as assigned_doctor_name, u3.role as assigned_doctor_role,
+                   cp.id as clinical_proforma_id
+            FROM adl_files af
+            LEFT JOIN registered_patient p ON af.patient_id::text = p.id::text
+            LEFT JOIN users u1 ON af.created_by = u1.id
+            LEFT JOIN users u2 ON af.last_accessed_by = u2.id
+            LEFT JOIN clinical_proforma cp ON af.clinical_proforma_id = cp.id
+            LEFT JOIN users u3 ON cp.assigned_doctor = u3.id
+            WHERE af.patient_id::text = $1
+            ORDER BY af.file_created_date DESC
+          `;
+          result = await db.query(fallbackQuery, [String(patient_id)]);
+        } else {
+          throw queryError;
+        }
+      }
 
-      return filteredRows.map(row => new ADLFile(row));
+      console.log(`[ADLFile.findByPatientId] Found ${result.rows.length} ADL files for patient_id: ${patient_id}`);
+
+      return result.rows.map(row => new ADLFile(row));
     } catch (error) {
       console.error('[ADLFile.findByPatientId] Error:', error);
       throw error;

@@ -1629,7 +1629,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
                 />
                 <Input
                   label="Age / Sex"
-                  value={`${fullPatientData.data.patient.actual_age || ''} / ${fullPatientData.data.patient.sex || ''}`}
+                  value={`${fullPatientData.data.patient.age || ''} / ${fullPatientData.data.patient.sex || ''}`}
                   disabled
                 />
                 {fullPatientData.data.patient.psy_no && (
@@ -1943,7 +1943,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
               <div className="space-y-2">
                 <div className="flex items-center gap-3 text-lg font-semibold text-gray-800">
                   <FiEdit3 className="w-5 h-5 text-rose-600" />
-                  <span>Precipitating factor</span>
+                  <span>Precipitating factor</span>4
                 </div>
             <Textarea
               name="precipitating_factor"
