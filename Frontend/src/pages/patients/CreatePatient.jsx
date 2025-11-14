@@ -6,7 +6,8 @@ import {
   FiUser, FiUsers, FiBriefcase, FiDollarSign, FiHome, FiMapPin, FiPhone,
   FiCalendar, FiGlobe, FiFileText, FiHash, FiClock,
   FiHeart, FiBookOpen, FiTrendingUp, FiShield,
-  FiNavigation, FiTruck, FiEdit3, FiSave, FiX, FiLayers, FiLoader
+  FiNavigation, FiTruck, FiEdit3, FiSave, FiX, FiLayers, FiLoader,
+  FiChevronDown, FiChevronUp
 } from 'react-icons/fi';
 import { useCreatePatientMutation, useAssignPatientMutation, useCreatePatientCompleteMutation, useCheckCRNumberExistsQuery } from '../../features/patients/patientsApiSlice';
 import { useGetDoctorsQuery } from '../../features/users/usersApiSlice';
@@ -71,6 +72,7 @@ const CreatePatient = () => {
   const [errors, setErrors] = useState({});
   const [crValidationTimeout, setCrValidationTimeout] = useState(null);
   const [currentCRNumber, setCurrentCRNumber] = useState('');
+  const [expandedPatientDetails, setExpandedPatientDetails] = useState(true);
 
   // CR number validation
   const { data: crExists, isLoading: isCheckingCR } = useCheckCRNumberExistsQuery(
@@ -417,20 +419,44 @@ const CreatePatient = () => {
 
       <div className="relative w-full px-4 sm:px-6 lg:px-8 py-6 lg:py-10 space-y-6 lg:space-y-8">
 
-
-        {/* Quick Entry Section with Glassmorphism */}
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-3xl blur-xl"></div>
-          <Card
-            title={
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
-                  <FiEdit3 className="w-6 h-6 text-indigo-600" />
-                </div>
-                <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Quick Entry</span>
+        {/* Patient Details Card - Collapsible */}
+        <Card className="shadow-lg border-0 bg-white">
+          <div
+            className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
+            onClick={() => setExpandedPatientDetails(!expandedPatientDetails)}
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <FiUser className="h-6 w-6 text-blue-600" />
               </div>
-            }
-            className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl overflow-hidden">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Patient Details</h3>
+                <p className="text-sm text-gray-500 mt-1">Quick Entry, Basic Information, Family Information, Referral & Mobility</p>
+              </div>
+            </div>
+            {expandedPatientDetails ? (
+              <FiChevronUp className="h-6 w-6 text-gray-500" />
+            ) : (
+              <FiChevronDown className="h-6 w-6 text-gray-500" />
+            )}
+          </div>
+
+          {expandedPatientDetails && (
+            <div className="p-6">
+              <form onSubmit={handleSubmit}>
+                {/* Quick Entry Section with Glassmorphism */}
+                <div className="relative mb-8">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-3xl blur-xl"></div>
+                  <Card
+                    title={
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
+                          <FiEdit3 className="w-6 h-6 text-indigo-600" />
+                        </div>
+                        <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Quick Entry</span>
+                      </div>
+                    }
+                    className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl overflow-hidden">
             <div className="space-y-8">
               {/* First Row - Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -682,7 +708,6 @@ const CreatePatient = () => {
           </Card>
         </div>
 
-        <form onSubmit={handleSubmit}>
           {/* Basic Information with Glassmorphism */}
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 rounded-3xl blur-xl"></div>
@@ -1104,6 +1129,9 @@ const CreatePatient = () => {
             </div>
           </div>
         </form>
+            </div>
+          )}
+        </Card>
       </div>
     </div>
   );

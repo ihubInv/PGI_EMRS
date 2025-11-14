@@ -69,7 +69,7 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
   const { data: doctorsData } = useGetDoctorsQuery({ page: 1, limit: 100 });
 
   const [expandedCards, setExpandedCards] = useState({
-    patient: false,
+    patient: true,
     clinical: false,
     adl: false,
     prescriptions: false
@@ -506,29 +506,46 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/30 to-indigo-100/40 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-400/20 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-400/20 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl"></div>
-      </div>
+    <div className="space-y-6">
 
-      <div className="relative w-full px-4 sm:px-6 lg:px-8 py-6 lg:py-10 space-y-6 lg:space-y-8">
-
-        {/* Quick Entry Section with Glassmorphism */}
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-3xl blur-xl"></div>
-          <Card
-            title={
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
-                  <FiEdit3 className="w-6 h-6 text-indigo-600" />
-                </div>
-                <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Quick Entry</span>
+        {/* Patient Details Card - Collapsible */}
+        <Card className="shadow-lg border-0 bg-white">
+          <div
+            className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
+            onClick={() => toggleCard('patient')}
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <FiUser className="h-6 w-6 text-blue-600" />
               </div>
-            }
-            className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl overflow-hidden">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Patient Details</h3>
+                <p className="text-sm text-gray-500 mt-1">{patient?.name || 'New Patient'} - {patient?.cr_no || 'N/A'}</p>
+              </div>
+            </div>
+            {expandedCards.patient ? (
+              <FiChevronUp className="h-6 w-6 text-gray-500" />
+            ) : (
+              <FiChevronDown className="h-6 w-6 text-gray-500" />
+            )}
+          </div>
+
+          {expandedCards.patient && (
+            <div className="p-6">
+              <form onSubmit={handleSubmit}>
+                {/* Quick Entry Section with Glassmorphism */}
+                <div className="relative mb-8">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-3xl blur-xl"></div>
+                  <Card
+                    title={
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
+                          <FiEdit3 className="w-6 h-6 text-indigo-600" />
+                        </div>
+                        <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Quick Entry</span>
+                      </div>
+                    }
+                    className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl overflow-hidden">
             <div className="space-y-8">
               {/* First Row - Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -778,7 +795,6 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
           </Card>
         </div>
 
-        <form onSubmit={handleSubmit}>
           {/* Basic Information with Glassmorphism */}
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 rounded-3xl blur-xl"></div>
@@ -1185,113 +1201,39 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
             </div>
           </div>
         </form>
+            </div>
+          )}
+        </Card>
 
         {/* Additional Sections: Clinical Proforma, ADL File, Prescriptions */}
-        <div className="space-y-6 mt-8">
-          {/* Card 1: Clinical Proforma - Show only if current user is Admin, JR, or SR */}
-          {canViewClinicalProforma && (
-            // <Card className="shadow-lg border-0 bg-white">
-            //   <div
-            //     className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
-            //     onClick={() => toggleCard('clinical')}
-            //   >
-            //     <div className="flex items-center gap-4">
-            //       <div className="p-3 bg-green-100 rounded-lg">
-            //         <FiFileText className="h-6 w-6 text-green-600" />
-            //       </div>
-            //       <div>
-            //         <h3 className="text-xl font-bold text-gray-900">Clinical Proforma</h3>
-            //         <p className="text-sm text-gray-500 mt-1">
-            //           {patientProformas.length > 0
-            //             ? `${patientProformas.length} record${patientProformas.length > 1 ? 's' : ''} found`
-            //             : 'No clinical records'}
-            //         </p>
-            //       </div>
-            //     </div>
-            //     {expandedCards.clinical ? (
-            //       <FiChevronUp className="h-6 w-6 text-gray-500" />
-            //     ) : (
-            //       <FiChevronDown className="h-6 w-6 text-gray-500" />
-            //     )}
-            //   </div>
+        {/* Card 1: Clinical Proforma - Show only if current user is Admin, JR, or SR */}
+        {canViewClinicalProforma && (
+          <Card className="shadow-lg border-0 bg-white">
+            <div
+              className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
+              onClick={() => toggleCard('clinical')}
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-green-100 rounded-lg">
+                  <FiFileText className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Clinical Proforma</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {patientProformas.length > 0
+                      ? `${patientProformas.length} record${patientProformas.length > 1 ? 's' : ''} found`
+                      : 'No clinical records'}
+                  </p>
+                </div>
+              </div>
+              {expandedCards.clinical ? (
+                <FiChevronUp className="h-6 w-6 text-gray-500" />
+              ) : (
+                <FiChevronDown className="h-6 w-6 text-gray-500" />
+              )}
+            </div>
 
-            //   {expandedCards.clinical && (
-            //     <div className="p-6">
-            //       {patientProformas.length > 0 ? (
-            //         <div className="space-y-6">
-            //           {patientProformas.map((proforma, index) => (
-            //             <div key={proforma.id || index} className="border border-gray-200 rounded-lg p-6 bg-gray-50">
-            //               <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
-            //                 <div className="flex items-center gap-4">
-            //                   <h4 className="text-lg font-semibold text-gray-900">Visit #{index + 1}</h4>
-            //                   <span className="text-sm text-gray-500">{proforma.visit_date ? formatDate(proforma.visit_date) : 'N/A'}</span>
-            //                 </div>
-            //                 {proforma.id && (
-            //                   <button
-            //                     onClick={(e) => {
-            //                       e.stopPropagation();
-            //                       navigate(`/clinical-proforma/edit/${proforma.id}?returnPath=${encodeURIComponent(`/patients/${patient?.id}/edit`)}`);
-            //                     }}
-            //                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
-            //                     title="Edit Clinical Proforma"
-            //                   >
-            //                     <FiEdit className="w-4 h-4" />
-            //                     Edit
-            //                   </button>
-            //                 )}
-            //               </div>
-            //               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            //                 <div>
-            //                   <label className="text-sm font-medium text-gray-600">Visit Type</label>
-            //                   <p className="text-base font-semibold text-gray-900 mt-1">
-            //                     {proforma.visit_type === 'first_visit' ? 'First Visit' : 'Follow-up'}
-            //                   </p>
-            //                 </div>
-            //                 {proforma.doctor_decision && (
-            //                   <div>
-            //                     <label className="text-sm font-medium text-gray-600">Doctor Decision</label>
-            //                     <p className="text-base font-semibold text-gray-900 mt-1">
-            //                       {proforma.doctor_decision === 'complex_case' ? 'Complex Case' : 'Simple Case'}
-            //                     </p>
-            //                   </div>
-            //                 )}
-            //                 {proforma.case_severity && (
-            //                   <div>
-            //                     <label className="text-sm font-medium text-gray-600">Case Severity</label>
-            //                     <div className="mt-1">
-            //                       <Badge
-            //                         className={`${proforma.case_severity === 'severe'
-            //                             ? 'bg-red-100 text-red-800 border-red-200'
-            //                             : proforma.case_severity === 'moderate'
-            //                               ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
-            //                               : 'bg-green-100 text-green-800 border-green-200'
-            //                           } text-sm font-medium`}
-            //                       >
-            //                         {proforma.case_severity}
-            //                       </Badge>
-            //                     </div>
-            //                   </div>
-            //                 )}
-            //               </div>
-            //               {proforma.diagnosis && (
-            //                 <div className="mt-4 pt-4 border-t border-gray-200">
-            //                   <label className="text-sm font-medium text-gray-600">Diagnosis</label>
-            //                   <p className="text-sm text-gray-900 mt-1">{proforma.diagnosis}</p>
-            //                 </div>
-            //               )}
-            //             </div>
-            //           ))}
-            //         </div>
-            //       ) : (
-            //         <div className="text-center py-12 text-gray-500">
-            //           <FiFileText className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-            //           <p className="text-base">No clinical proforma records found</p>
-            //         </div>
-            //       )}
-            //     </div>
-            //   )}
-            // </Card>
-            <Card className="shadow-lg border-0 bg-white">
+            {expandedCards.clinical && (
               <div className="p-6">
                 {patientProformas.length > 0 ? (
                   <>
@@ -1352,10 +1294,10 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
                   </>
                 ) : (
                   <div>
-                    <div className="mb-6">
+                    {/* <div className="mb-6">
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">Create New Clinical Proforma</h3>
                       <p className="text-sm text-gray-600">No clinical proforma exists for this patient. Create a new one below.</p>
-                    </div>
+                    </div> */}
                     <div className="border-t border-gray-200 pt-6">
                       <CreateClinicalProforma
                         initialData={{
@@ -1372,8 +1314,9 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
                   </div>
                 )}
               </div>
-            </Card>
-          )}
+            )}
+          </Card>
+        )}
 
           {/* Card 2: Additional Details (ADL File) - Show only if case is complex OR ADL file exists */}
           {canViewADLFile && (
@@ -1501,8 +1444,7 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
               )}
             </Card>
           )}
-        </div>
-      </div>
+        
     </div>
   );
 };
