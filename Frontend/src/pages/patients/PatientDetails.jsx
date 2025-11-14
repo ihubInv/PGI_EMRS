@@ -276,10 +276,9 @@ const PatientDetails = () => {
   useEffect(() => {
     if (patientData?.data?.patient) {
       const patient = patientData.data.patient;
-   console.log(">>>>fff",patient)
       // Verify the patient ID matches the URL ID to prevent showing wrong patient data
       const patientDataId = patient.id || null;
-      // ? parseInt(patient.id, 10) : null;
+     
       if (patientDataId && patientDataId !== patientId) {
         console.error(`[PatientDetails] CRITICAL: Patient ID mismatch! URL ID: ${patientId}, Patient data ID: ${patientDataId}`);
         toast.error(`Data mismatch: Expected patient ID ${patientId}, but received ${patientDataId}`);

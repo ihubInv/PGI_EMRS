@@ -1218,116 +1218,88 @@ class Patient {
   // toJSON: return all fields for comprehensive export
   toJSON() {
     return {
-      // Identifiers
-      id: this.id,
-      cr_no: this.cr_no,
-      psy_no: this.psy_no,
-      adl_no: this.adl_no,
-      special_clinic_no: this.special_clinic_no,
+    
+      id : this.id ,
+      cr_no : this.cr_no ,
+      psy_no : this.psy_no ,
+      adl_no : this.adl_no ,
+      special_clinic_no : this.special_clinic_no ,
   
-      // Basic info
-      name: this.name,
-      sex: this.sex,
-      age: this.age,
-      age_group: this.age_group,
-      marital_status: this.marital_status,
-      year_of_marriage: this.year_of_marriage,
-      no_of_children: this.no_of_children,
-      no_of_children_male: this.no_of_children_male,
-      no_of_children_female: this.no_of_children_female,
+      // 🔹 Registration & Quick Entry details
+      date : this.date ,
+      name : this.name ,
+      age : this.age ,
+      sex : this.sex ,
+      category : this.category ,
+      father_name : this.father_name ,
+      department : this.department ,
+      unit_consit : this.unit_consit ,
+      room_no : this.room_no ,
+      serial_no : this.serial_no ,
+      file_no : this.file_no ,
+      unit_days : this.unit_days ,
+      contact_number : this.contact_number || this.contact_number ,
   
-      // Flags / status
-      has_adl_file: this.has_adl_file,
-      file_status: this.file_status,
-      case_complexity: this.case_complexity,
+      // 🔹 Examination & clinic details
+      seen_in_walk_in_on : this.seen_in_walk_in_on ,
+      worked_up_on : this.worked_up_on ,
+      age_group : this.age_group ,
   
-      // Room / assignment
-      assigned_room: this.assigned_room,
-      assigned_doctor_id: this.assigned_doctor_id,
-      assigned_doctor_name: this.assigned_doctor_name,
-      assigned_doctor_role: this.assigned_doctor_role,
-      last_assigned_date: this.last_assigned_date,
+      // 🔹 Personal information
+      marital_status : this.marital_status ,
+      year_of_marriage : this.year_of_marriage ,
+      no_of_children_male : this.no_of_children_male ,
+      no_of_children_female : this.no_of_children_female ,
   
-      // Contact / family
-      contact_number: this.contact_number,
-      head_name: this.head_name,
-      head_age: this.head_age,
-      head_relationship: this.head_relationship,
-      head_education: this.head_education,
-      head_occupation: this.head_occupation,
-      head_income: this.head_income,
+      // 🔹 Occupation & education
+      occupation : this.occupation ,
+      education : this.education ,
+      locality : this.locality ,
+      income : this.income ,
+      religion : this.religion ,
+      family_type : this.family_type ,
   
-      // Income / occupation / education
-      occupation: this.occupation,
-      actual_occupation: this.actual_occupation,
-      education_level: this.education_level,
-      completed_years_of_education: this.completed_years_of_education,
-      patient_income: this.patient_income,
-      family_income: this.family_income,
+      // 🔹 Head of family
+      head_name : this.head_name || this.father_name ,
+      head_age : this.head_age ,
+      head_relationship : this.head_relationship ,
+      head_education : this.head_education ,
+      head_occupation : this.head_occupation ,
+      head_income : this.head_income ,
   
-      // Quick entry / registration helper fields
-      department: this.department,
-      unit_consit: this.unit_consit,
-      room_no: this.room_no,
-      serial_no: this.serial_no,
-      file_no: this.file_no,
-      unit_days: this.unit_days,
+      // 🔹 Distance & mobility
+      distance_from_hospital : this.distance_from_hospital ,
+      mobility : this.mobility ,
   
-      // Addresses - Quick Entry
-      address_line: this.address_line,
-      address_line_2: this.address_line_2,
-      country: this.country,
-      state: this.state,
-      district: this.district,
-      city: this.city,
-      pin_code: this.pin_code,
+      // 🔹 Referral & assignment
+      referred_by : this.referred_by ,
+      assigned_room : this.assigned_room ,
   
-      // Present Address
-      present_address_line_1: this.present_address_line_1,
-      present_address_line_2: this.present_address_line_2,
-      present_country: this.present_country,
-      present_state: this.present_state,
-      present_district: this.present_district,
-      present_city_town_village: this.present_city_town_village,
-      present_pin_code: this.present_pin_code,
+      // 🔹 Address details
+      address_line : this.address_line ,
+      country : this.country ,
+      state : this.state ,
+      district : this.district ,
+      city : this.city ,
+      pin_code : this.pin_code ,
   
-      // Permanent Address
-      permanent_address_line_1: this.permanent_address_line_1,
-      permanent_address_line_2: this.permanent_address_line_2,
-      permanent_country: this.permanent_country,
-      permanent_state: this.permanent_state,
-      permanent_district: this.permanent_district,
-      permanent_city_town_village: this.permanent_city_town_village,
-      permanent_pin_code: this.permanent_pin_code,
+      // 🔹 Optional system / metathis fields
+      has_adl_file : this.has_adl_file ,
+      file_status : this.file_status ,
+      case_complexity : this.case_complexity ,
+      filled_by : this.filled_by ,
+      filled_by_name : this.filled_by_name ,
   
-      // Legacy Address Fields
-      present_address: this.present_address,
-      permanent_address: this.permanent_address,
-      local_address: this.local_address,
+      // 🔹 Timestamps
+      created_at : this.created_at ,
+      updated_at : this.updated_at ,
   
-      // Family & Social
-      religion: this.religion,
-      family_type: this.family_type,
-      locality: this.locality,
-      school_college_office: this.school_college_office,
-  
-      // Referral & Mobility
-      distance_from_hospital: this.distance_from_hospital,
-      mobility: this.mobility,
-      referred_by: this.referred_by,
-      exact_source: this.exact_source,
-      seen_in_walk_in_on: this.seen_in_walk_in_on,
-      worked_up_on: this.worked_up_on,
-  
-      // Additional Fields
-      category: this.category,
-      filled_by: this.filled_by,
-      filled_by_name: this.filled_by_name,
-      patient_name: this.patient_name,
-  
-      // Timestamps
-      created_at: this.created_at,
-      updated_at: this.updated_at
+      // 🔹 Joined / derived fields (query results)
+      assigned_doctor_name : this.assigned_doctor_name ,
+      assigned_doctor_role : this.assigned_doctor_role ,
+      last_assigned_date : this.last_assigned_date ,
+      assigned_doctor_id : this.assigned_doctor_id ,
+
     };
   }
   

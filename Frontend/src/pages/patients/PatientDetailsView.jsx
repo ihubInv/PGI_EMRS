@@ -190,6 +190,10 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
                     <p className="text-base font-semibold text-gray-900 mt-1">{patient.contact_number || 'N/A'}</p>
                   </div>
                   <div>
+                    <label className="text-sm font-medium text-gray-600"> Registration Date</label>
+                    <p className="text-base font-semibold text-gray-900 mt-1">{formatDate(patient.created_at) || 'N/A'}</p>
+                  </div>
+                  {/* <div>
                     <label className="text-sm font-medium text-gray-600">Status</label>
                     <div className="mt-1">
                       <Badge
@@ -201,7 +205,7 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
                         {patient.is_active ? 'Active' : 'Inactive'}
                       </Badge>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
 
@@ -221,7 +225,7 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
                       )}
                     </div>
                   </div>
-                  <div>
+                  {/* <div>
                     <label className="text-sm font-medium text-gray-600">Case Complexity</label>
                     <div className="mt-1">
                       <Badge
@@ -233,7 +237,7 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
                         {patient.case_complexity === 'complex' ? 'Complex' : 'Simple'}
                       </Badge>
                     </div>
-                  </div>
+                  </div> */}
                   <div>
                     <label className="text-sm font-medium text-gray-600">ADL File</label>
                     <div className="mt-1">
@@ -259,10 +263,10 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
                       <p className="text-base font-semibold text-gray-900 mt-1">{patient.special_clinic_no}</p>
                     </div>
                   )}
-                  <div>
+                  {/* <div>
                     <label className="text-sm font-medium text-gray-600">Registration Date</label>
                     <p className="text-base font-semibold text-gray-900 mt-1">{formatDate(patient.created_at)}</p>
-                  </div>
+                  </div> */}
                 </div>
               </div>
 

@@ -408,7 +408,7 @@ router.post('/', authenticateToken, requireMWOOrDoctor, validatePatient, Patient
  *               $ref: '#/components/schemas/Error'
  */
 // Comprehensive patient registration with personal information (for Psychiatric Welfare Officer)
-router.post('/register-complete', authenticateToken, authorizeRoles('Psychiatric Welfare Officer'), validatePatientRegistration, PatientController.registerPatientWithDetails);
+router.post('/register-complete', authenticateToken, authorizeRoles('Psychiatric Welfare Officer','Faculty Residents (Junior Resident (JR))','Faculty Residents (Senior Resident (SR))'), validatePatientRegistration, PatientController.registerPatientWithDetails);
 
 /**
  * @swagger
@@ -959,7 +959,7 @@ router.get('/:id/adl-files', authenticateToken, authorizeRoles('System Administr
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/assign', authenticateToken, authorizeRoles('Psychiatric Welfare Officer', 'System Administrator'), PatientController.assignPatient);
+router.post('/assign', authenticateToken, authorizeRoles('System Administrator', 'Psychiatric Welfare Officer', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))'), PatientController.assignPatient);
 
 // Routes for finding patients by specific numbers
 /**

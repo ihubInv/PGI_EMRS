@@ -56,7 +56,6 @@ const IconInput = ({ icon, label, loading = false, error, defaultValue, ...props
 };
 
 const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, adlData, usersData, userRole, onSave, onCancel }) => {
- debugger
   const navigate = useNavigate();
   const [updatePatient, { isLoading }] = useUpdatePatientMutation();
   const [assignPatient, { isLoading: isAssigning }] = useAssignPatientMutation();
@@ -76,10 +75,11 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       special_clinic_no: patient?.special_clinic_no || initialFormData?.special_clinic_no || '',
       contact_number: patient?.contact_number || initialFormData?.contact_number || '',
       father_name: patient?.father_name || initialFormData?.father_name || '',
+     
       category: patient?.category || initialFormData?.category || '',
       
       // Dates
-      date: initialFormData?.date || patient?.date || '',
+      date: patient?.date || initialFormData?.date || '',
       seen_in_walk_in_on: patient?.seen_in_walk_in_on || initialFormData?.seen_in_walk_in_on || '',
       worked_up_on: patient?.worked_up_on || initialFormData?.worked_up_on || '',
       
@@ -276,7 +276,6 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
   };
 
   const handleSubmit = async (e) => {
-    debugger
     e.preventDefault();
 
     if (!validate()) {

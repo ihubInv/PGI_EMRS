@@ -19,7 +19,6 @@ import Badge from '../../components/Badge';
 import { isAdmin, isMWO, isJrSr } from '../../utils/constants';
 
 const PatientsPage = () => {
-  debugger
   const user = useSelector(selectCurrentUser);
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
@@ -98,7 +97,6 @@ const PatientsPage = () => {
 
   // Handle edit patient
   const handleEdit = (row) => {
-    debugger
     const patientId = row.id
     // getPatientId(row.id);
     

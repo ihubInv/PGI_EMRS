@@ -235,7 +235,6 @@ const CreatePatient = () => {
 
 
   const handleSubmit = async (e) => {
-    debugger
     e.preventDefault();
 
     if (!validate()) {
@@ -296,6 +295,7 @@ const CreatePatient = () => {
       
         name: patientName,
         sex: patientSex,
+        father_name: formData.father_name || null,
         age: parseIntSafe(patientAge),
         date: formData.date || null,
         assigned_room: formData.assigned_room || null,
@@ -325,7 +325,7 @@ const CreatePatient = () => {
         religion: formData.religion || null,
         family_type: formData.family_type || null,
         locality: formData.locality || null,
-        head_name: formData.head_name || formData.father_name || null,
+        head_name: formData.head_name || null,
         head_age: parseIntSafe(formData.head_age),
         head_relationship: formData.head_relationship || null,
         head_education: formData.head_education || null,
@@ -450,14 +450,6 @@ const CreatePatient = () => {
                       : ''
                     }`}
                 />
-                <DatePicker
-                  icon={<FiCalendar className="w-4 h-4" />}
-                  label="Date"
-                  name="date"
-                  value={formData.date || ''}
-                  onChange={handleChange}
-                  defaultToday={true}
-                />
                 <IconInput
                   icon={<FiUser className="w-4 h-4" />}
                   label="Name"
@@ -467,6 +459,15 @@ const CreatePatient = () => {
                   placeholder="Enter patient name"
                   className=""
                 />
+                <DatePicker
+                  icon={<FiCalendar className="w-4 h-4" />}
+                  label="Date"
+                  name="date"
+                  value={formData.date || ''}
+                  onChange={handleChange}
+                  defaultToday={true}
+                />
+                
                 <IconInput
                   icon={<FiPhone className="w-4 h-4" />}
                   label="Mobile No."

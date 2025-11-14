@@ -23,6 +23,7 @@ const PatientRow = ({ patient, activeTab, navigate }) => {
       refetchOnReconnect: true,
     }
   );
+ 
   const proformas = proformaData?.data?.proformas || [];
   const hasExistingProforma = proformas.length > 0;
   const latestProformaId = hasExistingProforma ? proformas[0].id : null;
@@ -202,7 +203,6 @@ const ClinicalTodayPatients = () => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const currentUser = useSelector(selectCurrentUser);
-  const [currentPage, setCurrentPage] = useState(1);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   
   // Get tab from URL params - single source of truth
@@ -221,10 +221,11 @@ const ClinicalTodayPatients = () => {
     case_complexity: '',
   });
 
-  // Fetch patients data - must be defined before useEffects that use refetch
+  // Fetch patients data - use a high limit to get all today's patients at once
+  // This ensures newly created patients appear immediately
   const { data, isLoading, isFetching, refetch, error } = useGetAllPatientsQuery({
-    page: currentPage,
-    limit: 10,
+    page: 1,
+    limit: 1000, // High limit to fetch all patients, then filter client-side for today
     // search: search.trim() || undefined // Only include search if it has a value
   }, {
     pollingInterval: 30000, // Auto-refresh every 30 seconds
@@ -233,8 +234,15 @@ const ClinicalTodayPatients = () => {
     refetchOnReconnect: true,
   });
   
+  console.log(">>>>data",data?.data?.patients)
   // Track previous location to detect navigation changes
   const prevLocationRef = useRef(location.pathname);
+  
+  // Refetch on mount to ensure fresh data when returning from patient creation
+  useEffect(() => {
+    refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount - refetch is stable from RTK Query
   
   useEffect(() => {
     // If we navigated away and came back, refetch the data
@@ -515,39 +523,11 @@ const ClinicalTodayPatients = () => {
           </div>
         )}
 
-          {/* Enhanced Pagination */}
-          {apiPagination?.pages > 1 && (
+          {/* Patient count info - no pagination needed since we fetch all today's patients */}
+          {filteredPatients.length > 0 && (
             <div className="px-6 py-5 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-slate-50">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-sm text-gray-700 font-medium">
-                  Showing <span className="font-semibold text-gray-900">{((currentPage - 1) * 10) + 1}</span> to{' '}
-                  <span className="font-semibold text-gray-900">{Math.min(currentPage * 10, apiPagination.total)}</span> of{' '}
-                  <span className="font-semibold text-gray-900">{apiPagination.total}</span> patients
-                </div>
-                <div className="flex items-center gap-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                    className="bg-white border-2 border-primary-200 hover:bg-primary-50 hover:border-primary-300 shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </Button>
-                  <span className="px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 shadow-sm">
-                    Page <span className="font-semibold text-primary-600">{currentPage}</span> of{' '}
-                    <span className="font-semibold text-gray-900">{apiPagination.pages}</span>
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(apiPagination.pages, prev + 1))}
-                    disabled={currentPage === apiPagination.pages}
-                    className="bg-white border-2 border-primary-200 hover:bg-primary-50 hover:border-primary-300 shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </Button>
-                </div>
+              <div className="text-sm text-gray-700 font-medium">
+                Showing <span className="font-semibold text-gray-900">{filteredPatients.length}</span> {activeTab === 'new' ? 'new' : 'existing'} patient{filteredPatients.length !== 1 ? 's' : ''} for today
               </div>
             </div>
           )}
