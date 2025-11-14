@@ -10,7 +10,7 @@ import Input from '../../components/Input';
 import Select from '../../components/Select';
 import Textarea from '../../components/Textarea';
 import Button from '../../components/Button';
-import { FiEdit3, FiClipboard, FiCheckSquare, FiList, FiActivity, FiHeart, FiUser, FiFileText, FiPlus, FiX, FiSave, FiClock, FiChevronDown, FiChevronUp, FiArrowRight, FiArrowLeft, FiCheck, FiTrash2 } from 'react-icons/fi';
+import { FiEdit3, FiClipboard, FiCheckSquare, FiList, FiActivity, FiHeart, FiUser, FiFileText, FiPlus, FiX, FiSave, FiClock, FiChevronDown, FiChevronUp, FiArrowRight, FiArrowLeft, FiCheck, FiTrash2, FiFolder } from 'react-icons/fi';
 import { VISIT_TYPES, CASE_SEVERITY, DOCTOR_DECISION, isJR, isSR } from '../../utils/constants';
 import { useGetClinicalOptionsQuery, useAddClinicalOptionMutation, useDeleteClinicalOptionMutation } from '../../features/clinical/clinicalApiSlice';
 import icd11Codes from '../../assets/ICD11_Codes.json';
@@ -182,7 +182,7 @@ const CheckboxGroup = ({ label, name, value = [], onChange, options = [], rightI
 {/* Options + Add button inline */}
 <div className="flex flex-wrap items-center gap-3">
   {/* Options */}
-  {localOptions.map((opt) => (
+  {localOptions?.map((opt) => (
     <div key={opt} className="relative inline-flex items-center group">
       <button
         type="button"
@@ -421,7 +421,7 @@ const ICD11CodeSelector = ({ value, onChange, error }) => {
           }}
           options={[
             { value: '', label: `Select ${labelText}` },
-            ...children.map(item => ({
+            ...children?.map(item => ({
               value: JSON.stringify(item),
               label: `${item.code || '(Category)'} - ${item.title}`
             }))
@@ -502,7 +502,62 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
   // Initialize form data with initialData if provided (for edit mode)
   const getInitialFormData = () => {
     if (initialData) {
-      return { ...initialData };
+      // Ensure array fields are properly initialized
+      const normalizedData = { ...initialData };
+      // Normalize informants array
+      if (!normalizedData.informants || !Array.isArray(normalizedData.informants)) {
+        normalizedData.informants = normalizedData.informants 
+          ? (Array.isArray(normalizedData.informants) ? normalizedData.informants : [normalizedData.informants])
+          : [{ relationship: '', name: '', reliability: '' }];
+        if (normalizedData.informants.length === 0) {
+          normalizedData.informants = [{ relationship: '', name: '', reliability: '' }];
+        }
+      }
+      // Normalize complaints arrays
+      if (!normalizedData.complaints_patient || !Array.isArray(normalizedData.complaints_patient)) {
+        normalizedData.complaints_patient = normalizedData.complaints_patient 
+          ? (Array.isArray(normalizedData.complaints_patient) ? normalizedData.complaints_patient : [normalizedData.complaints_patient])
+          : [{ complaint: '', duration: '' }];
+        if (normalizedData.complaints_patient.length === 0) {
+          normalizedData.complaints_patient = [{ complaint: '', duration: '' }];
+        }
+      }
+      if (!normalizedData.complaints_informant || !Array.isArray(normalizedData.complaints_informant)) {
+        normalizedData.complaints_informant = normalizedData.complaints_informant 
+          ? (Array.isArray(normalizedData.complaints_informant) ? normalizedData.complaints_informant : [normalizedData.complaints_informant])
+          : [{ complaint: '', duration: '' }];
+        if (normalizedData.complaints_informant.length === 0) {
+          normalizedData.complaints_informant = [{ complaint: '', duration: '' }];
+        }
+      }
+      // Normalize family_history_siblings array
+      if (!normalizedData.family_history_siblings || !Array.isArray(normalizedData.family_history_siblings)) {
+        normalizedData.family_history_siblings = normalizedData.family_history_siblings 
+          ? (Array.isArray(normalizedData.family_history_siblings) ? normalizedData.family_history_siblings : [normalizedData.family_history_siblings])
+          : [{ age: '', sex: '', education: '', occupation: '', marital_status: '' }];
+        if (normalizedData.family_history_siblings.length === 0) {
+          normalizedData.family_history_siblings = [{ age: '', sex: '', education: '', occupation: '', marital_status: '' }];
+        }
+      }
+      // Normalize occupation_jobs array
+      if (!normalizedData.occupation_jobs || !Array.isArray(normalizedData.occupation_jobs)) {
+        normalizedData.occupation_jobs = normalizedData.occupation_jobs 
+          ? (Array.isArray(normalizedData.occupation_jobs) ? normalizedData.occupation_jobs : [normalizedData.occupation_jobs])
+          : [{ job: '', dates: '', adjustment: '', difficulties: '', promotions: '', change_reason: '' }];
+        if (normalizedData.occupation_jobs.length === 0) {
+          normalizedData.occupation_jobs = [{ job: '', dates: '', adjustment: '', difficulties: '', promotions: '', change_reason: '' }];
+        }
+      }
+      // Normalize sexual_children array
+      if (!normalizedData.sexual_children || !Array.isArray(normalizedData.sexual_children)) {
+        normalizedData.sexual_children = normalizedData.sexual_children 
+          ? (Array.isArray(normalizedData.sexual_children) ? normalizedData.sexual_children : [normalizedData.sexual_children])
+          : [{ age: '', sex: '' }];
+        if (normalizedData.sexual_children.length === 0) {
+          normalizedData.sexual_children = [{ age: '', sex: '' }];
+        }
+      }
+      return normalizedData;
     }
     return {
       patient_id: patientIdFromQuery || '',
@@ -768,9 +823,10 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
   // Determine if step 3 (ADL) should be shown
   const showADLStep = formData.doctor_decision === 'complex_case';
   
-  // Card expand/collapse states (all start minimized)
+  // Card expand/collapse states (all start minimized/closed)
   const [expandedCards, setExpandedCards] = useState({
-    basicInfo: false,
+    clinicalProforma: false, // Main Clinical Proforma card
+    patientInfo: false, // Patient information sub-card
     informant: false,
     onset: false,
     presentIllness: false,
@@ -783,7 +839,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
     gpe: false,
     diagnosis: false,
     adl: false,
-    patientInfo: false, // New patient information card
+    prescription: false, // Prescription card
   });
   
   const toggleCard = (cardName) => {
@@ -925,7 +981,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
       visit_date: formData.visit_date,
       visit_type: formData.visit_type,
       room_no: formData.room_no,
-      assigned_doctor: formData.assigned_doctor ? parseInt(formData.assigned_doctor) : null,
+      assigned_doctor: formData.assigned_doctor_name,
     };
 
     // Step 1: Basic Information
@@ -1396,7 +1452,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
       // Create prescription text from valid prescriptions
       const prescriptionText = validPrescriptions.length > 0
         ? validPrescriptions
-            .map((p, idx) => 
+            ?.map((p, idx) => 
               `${idx + 1}. ${p.medicine || ''} | ${p.dosage || ''} | ${p.when || ''} | ${p.frequency || ''} | ${p.duration || ''} | ${p.qty || ''} | ${p.details || ''} | ${p.notes || ''}`
             )
             .join('\n')
@@ -1501,7 +1557,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
     }
     
     // Default: return all patients with CR numbers
-    return patients.slice(0, 5).map(p => ({
+    return patients.slice(0, 5)?.map(p => ({
       value: p.id,
       label: `${p.name} (${p.cr_no})`,
     }));
@@ -1512,7 +1568,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
       <div className="w-full px-6 py-8 space-y-8">
         {/* Header */}
         <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-600/10 to-indigo-600/10 rounded-3xl"></div>
+          {/* <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-600/10 to-indigo-600/10 rounded-3xl"></div>
           <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-r from-fuchsia-600 to-indigo-600 rounded-2xl shadow-lg">
@@ -1520,83 +1576,29 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
               </div>
       <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-fuchsia-600 to-indigo-800 bg-clip-text text-transparent">
-                  Clinical Proforma
+                  Patient Details
                 </h1>
                 <p className="text-gray-600 mt-1">
-                  Walk-in Clinical Proforma
+                  Clinical Proforma
                 </p>
               </div>
             </div>
-          </div>
+          </div> */}
       </div>
 
       <form onSubmit={handleSubmit}>
-        {/* Step Indicator */}
-        <Card className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-          <div className="px-4 py-6">
-            <div className="flex items-center justify-between">
-              {[1, 2, 3].filter(step => step !== 3 || showADLStep).map((step, index, arr) => {
-                const isActive = currentStep === step;
-                const isCompleted = currentStep > step;
-                const isAccessible = currentStep >= step;
-                
-                return (
-                  <React.Fragment key={step}>
-                    <div className="flex items-center flex-1">
-                      <div className="flex flex-col items-center flex-1">
-                        <button
-                          type="button"
-                          onClick={() => goToStep(step)}
-                          disabled={!isAccessible}
-                          className={`relative flex items-center justify-center w-12 h-12 rounded-full font-semibold text-sm transition-all duration-300 ${
-                            isActive
-                              ? 'bg-gradient-to-r from-fuchsia-600 to-indigo-600 text-white shadow-lg scale-110'
-                              : isCompleted
-                              ? 'bg-emerald-500 text-white shadow-md'
-                              : isAccessible
-                              ? 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          }`}
-                        >
-                          {isCompleted ? (
-                            <FiCheck className="w-6 h-6" />
-                          ) : (
-                            step
-                          )}
-                        </button>
-                        <div className={`mt-2 text-xs font-medium text-center max-w-[120px] ${
-                          isActive ? 'text-fuchsia-600 font-bold' : 'text-gray-600'
-                        }`}>
-                          {getStepLabel(step)}
-                        </div>
-                      </div>
-                    </div>
-                    {index < arr.length - 1 && (
-                      <div className={`flex-1 h-1 mx-2 rounded-full transition-all duration-300 ${
-                        currentStep > step ? 'bg-emerald-500' : 'bg-gray-200'
-                      }`} />
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </div>
-          </div>
-        </Card>
-
-        {/* Step 1: Basic Information */}
-        {currentStep === 1 && (
-          <React.Fragment>
-            <div className="space-y-6">
+        <div className="space-y-6">
+          {/* Main Card: Clinical Proforma - Contains all sections */}
           <Card
             title={
-              <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => toggleCard('basicInfo')}>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-sky-100 rounded-lg">
-                  <FiUser className="w-6 h-6 text-sky-600" />
+              <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => toggleCard('clinicalProforma')}>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <FiClipboard className="w-6 h-6 text-green-600" />
+                  </div>
+                  <span className="text-xl font-bold text-gray-900">Clinical Proforma</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">Basic Information</span>
-                </div>
-                {expandedCards.basicInfo ? (
+                {expandedCards.clinicalProforma ? (
                   <FiChevronUp className="w-5 h-5 text-gray-600" />
                 ) : (
                   <FiChevronDown className="w-5 h-5 text-gray-600" />
@@ -1605,191 +1607,89 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
             }
             className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
           >
-          {expandedCards.basicInfo && (
-          <div className="space-y-6">
-            {/* If patient_id is provided, show patient details. Otherwise, show search field */}
-            {formData.patient_id && fullPatientData?.data?.patient ? (
-              // Patient selected via ID - show patient info as read-only
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Input
-                  label="Patient ID"
-                  name="patient_id"
-                  value={formData.patient_id}
-                  disabled
-                />
-                <Input
-                  label="Patient Name"
-                  value={fullPatientData.data.patient.name || ''}
-                  disabled
-                />
-                <Input
-                  label="CR Number"
-                  value={fullPatientData.data.patient.cr_no || ''}
-                  disabled
-                />
-                <Input
-                  label="Age / Sex"
-                  value={`${fullPatientData.data.patient.age || ''} / ${fullPatientData.data.patient.sex || ''}`}
-                  disabled
-                />
-                {fullPatientData.data.patient.psy_no && (
-                  <Input
-                    label="PSY Number"
-                    value={fullPatientData.data.patient.psy_no}
-                    disabled
-                  />
+            {expandedCards.clinicalProforma && (
+              <div className="space-y-6">
+                {/* Sub-card: Patient Details - Show patient information when patient is selected */}
+                {formData.patient_id && fullPatientData?.data?.patient && (
+                  <Card
+                    title={
+                      <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => toggleCard('patientInfo')}>
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-100 rounded-lg">
+                            <FiUser className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <span className="text-lg font-bold text-gray-900">Patient Details</span>
+                        </div>
+                        {expandedCards.patientInfo ? (
+                          <FiChevronUp className="w-4 h-4 text-gray-600" />
+                        ) : (
+                          <FiChevronDown className="w-4 h-4 text-gray-600" />
+                        )}
+                      </div>
+                    }
+                    className="mb-6 shadow-lg border border-gray-200 bg-gray-50"
+                  >
+                    {expandedCards.patientInfo && (
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                          <Input
+                            label="Patient ID"
+                            name="patient_id"
+                            value={formData.patient_id}
+                            disabled
+                          />
+                          <Input
+                            label="Patient Name"
+                            value={fullPatientData.data.patient.name || ''}
+                            disabled
+                          />
+                          <Input
+                            label="CR Number"
+                            value={fullPatientData.data.patient.cr_no || ''}
+                            disabled
+                          />
+                          <Input
+                            label="Age / Sex"
+                            value={`${fullPatientData.data.patient.age || ''} / ${fullPatientData.data.patient.sex || ''}`}
+                            disabled
+                          />
+                          {fullPatientData.data.patient.psy_no && (
+                            <Input
+                              label="PSY Number"
+                              value={fullPatientData.data.patient.psy_no}
+                              disabled
+                            />
+                          )}
+                          {fullPatientData.data.patient.special_clinic_no && (
+                            <Input
+                              label="Special Clinic No."
+                              value={fullPatientData.data.patient.special_clinic_no}
+                              disabled
+                            />
+                          )}
+                          {fullPatientData.data.patient.category && (
+                            <Input
+                              label="Category"
+                              value={fullPatientData.data.patient.category}
+                              disabled
+                            />
+                          )}
+                          {fullPatientData.data.patient.department && (
+                            <Input
+                              label="Department"
+                              value={fullPatientData.data.patient.department}
+                              disabled
+                            />
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </Card>
                 )}
-              </div>
-            ) : (
-              // No patient ID - show search field
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Search Patient by CR Number <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Input
-                    placeholder="e.g., 2024123456 (CR2024123456)"
-                    value={patientSearch.startsWith('CR') ? patientSearch.slice(2) : patientSearch}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setPatientSearch(value.startsWith('CR') ? value : `CR${value}`);
-                    }}
-                    className="pl-10"
-                  />
-                  <span className="absolute left-3 top-3 text-gray-500 font-semibold text-sm">CR</span>
-                </div>
-                
-                {patientSearch && patientSearch.length < 8 && (
-                  <p className="text-xs text-gray-500 mt-1">Enter at least 8 characters to search</p>
-                )}
-                
-                {patientOptions.length > 0 && (
-                  <Select
-                    name="patient_id"
-                    value={formData.patient_id}
-                    onChange={handleChange}
-                    options={patientOptions}
-                    placeholder="Select patient"
-                    error={errors.patient_id}
-                    required
-                    className="mt-2"
-                  />
-                )}
-                
-                {/* No results */}
-                {patientSearch.length >= 8 && !patientsData?.data?.patients?.length && (
-                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm text-yellow-800">
-                      🔍 No patient found with CR number: <strong>{patientSearch}</strong>
-                    </p>
-                    <p className="text-xs text-yellow-700 mt-1">
-                      Make sure the patient has been registered first by MWO
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Input
-                label="Visit Date"
-                type="date"
-                name="visit_date"
-                value={formData.visit_date}
-                onChange={handleChange}
-                error={errors.visit_date}
-                required
-              />
-
-              <Select
-                label="Visit Type"
-                name="visit_type"
-                value={formData.visit_type}
-                onChange={handleChange}
-                options={VISIT_TYPES}
-                required
-              />
-
-              <Input
-                label="Room Number / Ward"
-                name="room_no"
-                value={formData.room_no}
-                onChange={handleChange}
-                placeholder="e.g., Ward A-101"
-              />
-{console.log(formData)}
-              <Select
-                label="Assign Doctor"
-                name="assigned_doctor"
-                value={formData?.
-                  assigned_doctor_name                   }
-                onChange={handleChange}
-                // options={(doctorsData?.data?.users || []).map(doctor => ({
-                //   value: String(doctor.id),
-                //   label: `${doctor.name} (${isJR(doctor.role) ? 'JR' : isSR(doctor.role) ? 'SR' : doctor.role})`
-                // }))}
-                options={(doctorsData?.data?.users || [])
-                  .map(u => ({ 
-                    value: String(u.id), 
-                    label: `${u.name} (${isJR(u.role) ? 'JR' : isSR(u.role) ? 'SR' : u.role})` 
-                  }))}
-                placeholder="Select doctor (optional)"
-                error={errors.assigned_doctor}
-                disabled
-              />
-            </div>
-                </div>
-          )}
-          </Card>
-
-            {/* Informant Present/Absent */}
-          
-            </div>
-          
-          {/* Step 1 Navigation */}
-          <Card className="mt-6 bg-white/80 backdrop-blur-sm border-0 shadow-xl">
-            <div className="flex justify-end gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  if (returnTab) {
-                    navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
-                  } else {
-                    navigate('/clinical-today-patients');
-                  }
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={handleNext}
-                disabled={isCreating}
-                className="flex items-center gap-2"
-              >
-                {isCreating ? (
-                  <>
-                    <span className="animate-spin">⏳</span>
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    Next Step
-                    <FiArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </Button>
-            </div>
-          </Card>
-          </React.Fragment>
-        )}
-
-        {/* Step 2: Clinical Proforma */}
-        {currentStep === 2 && (
-          <React.Fragment>
-          <div className="space-y-6">
-            {/* Present Illness Card */}
+                {/* Clinical Proforma Sections - All visible */}
+                <div className="space-y-6">
+                  {/* Present Illness Card */}
 
             <Card
               title={
@@ -1820,7 +1720,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
                 {[
                   { v: true, t: 'Present' },
                   { v: false, t: 'Absent' },
-                ].map(({ v, t }) => (
+                ]?.map(({ v, t }) => (
                   <label key={t} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
                     formData.informant_present === v ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
                   }`}>
@@ -1844,7 +1744,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
                 <span>Nature of information</span>
               </div>
               <div className="flex flex-wrap gap-3">
-                {['Reliable','Unreliable','Adequate','Inadequate'].map((opt) => (
+                {['Reliable','Unreliable','Adequate','Inadequate']?.map((opt) => (
                   <label key={opt} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
                     formData.nature_of_information === opt ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
                   }`}>
@@ -1894,7 +1794,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
                   <span>Onset</span>
                 </div>
                 <div className="flex flex-col md:flex-row md:flex-wrap gap-3">
-                  {[{v:'<1_week',t:'1. < 1 week'}, {v:'1w_1m',t:'2. 1 week – 1 month'}, {v:'>1_month',t:'3. > 1 month'}, {v:'not_known',t:'4. Not known'}].map(({v,t}) => (
+                  {[{v:'<1_week',t:'1. < 1 week'}, {v:'1w_1m',t:'2. 1 week – 1 month'}, {v:'>1_month',t:'3. > 1 month'}, {v:'not_known',t:'4. Not known'}]?.map(({v,t}) => (
                     <label key={v} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
                       formData.onset_duration === v ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
                     }`}>
@@ -1919,7 +1819,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
                   <span>Course</span>
                 </div>
                 <div className="flex flex-col md:flex-row md:flex-wrap gap-3">
-                  {['Continuous','Episodic','Fluctuating','Deteriorating','Improving'].map((opt) => (
+                  {['Continuous','Episodic','Fluctuating','Deteriorating','Improving']?.map((opt) => (
                     <label key={opt} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
                       formData.course === opt ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
                     }`}>
@@ -2216,82 +2116,48 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
           </div>
           )}
         </Card>
-        
-        {/* Step 2 Navigation */}
-        <Card className="mt-6 bg-white/80 backdrop-blur-sm border-0 shadow-xl">
-          <div className="flex justify-between gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handlePrevious}
-              className="flex items-center gap-2"
-            >
-              <FiArrowLeft className="w-4 h-4" />
-              Previous
-            </Button>
-            <div className="flex gap-3">
-              {showADLStep ? (
-                <Button
-                  type="button"
-                  onClick={handleNext}
-                  className="flex items-center gap-2"
-                >
-                  Next Step
-                  <FiArrowRight className="w-4 h-4" />
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      if (returnTab) {
-                        navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
-                      } else {
-                        navigate('/clinical-today-patients');
-                      }
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    loading={isCreating}
-                    disabled={isCreating}
-                    className="flex items-center gap-2 bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700"
-                  >
-                    <FiSave className="w-4 h-4" />
-                    {isCreating ? 'Saving...' : 'Create Clinical Proforma'}
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        </Card>
-            </div>
-          </React.Fragment>
-        )}
+                </div>
+              </div>
+            )}
+          </Card>
 
-        {/* Step 3: Additional Detail (ADL) - Only shown for complex cases */}
-        {currentStep === 3 && showADLStep && (
-          <React.Fragment>
-            <div className="space-y-6">
-            
-            {/* Multiple Informants */}
-            <Card title="Informants" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+          {/* Card 2: ADL File - Only shown when complex case is selected */}
+          {showADLStep && (
+            <Card
+              title={
+                <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => toggleCard('adl')}>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <FiFolder className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <span className="text-xl font-bold text-gray-900">ADL File</span>
+                  </div>
+                  {expandedCards.adl ? (
+                    <FiChevronUp className="w-5 h-5 text-gray-600" />
+                  ) : (
+                    <FiChevronDown className="w-5 h-5 text-gray-600" />
+                  )}
+                </div>
+              }
+              className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
+            >
+              {expandedCards.adl && (
+                <div className="space-y-6">
+                  {/* Multiple Informants */}
+                  <Card title="Informants" className="mb-8 shadow-lg border border-gray-200 bg-gray-50">
               <div className="space-y-4">
-                {formData.informants.map((informant, index) => (
+                {(formData.informants || [{ relationship: '', name: '', reliability: '' }])?.map((informant, index) => (
                   <div key={index} className="border-b pb-4 last:border-b-0 space-y-3">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium text-gray-700">Informant {index + 1}</h4>
-                      {formData.informants.length > 1 && (
+                      {(formData.informants || []).length > 1 && (
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            const newInformants = formData.informants.filter((_, i) => i !== index);
-                            setFormData(prev => ({ ...prev, informants: newInformants }));
+                            const newInformants = (formData.informants || []).filter((_, i) => i !== index);
+                            setFormData(prev => ({ ...prev, informants: newInformants.length > 0 ? newInformants : [{ relationship: '', name: '', reliability: '' }] }));
                           }}
                           className="text-red-600 hover:text-red-700"
                         >
@@ -2356,7 +2222,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
               <div className="space-y-6">
                 <div>
                   <h4 className="font-semibold text-gray-800 mb-3">Chief Complaints as per patient</h4>
-                  {formData.complaints_patient.map((complaint, index) => (
+                  {(formData.complaints_patient || [{ complaint: '', duration: '' }])?.map((complaint, index) => (
                     <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-3">
                       <div className="md:col-span-2">
                         <Input
@@ -2383,14 +2249,14 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
                         />
                       </div>
                       <div className="flex items-end">
-                        {formData.complaints_patient.length > 1 && (
+                        {(formData.complaints_patient || []).length > 1 && (
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              const newComplaints = formData.complaints_patient.filter((_, i) => i !== index);
-                              setFormData(prev => ({ ...prev, complaints_patient: newComplaints }));
+                              const newComplaints = (formData.complaints_patient || []).filter((_, i) => i !== index);
+                              setFormData(prev => ({ ...prev, complaints_patient: newComplaints.length > 0 ? newComplaints : [{ complaint: '', duration: '' }] }));
                             }}
                             className="text-red-600"
                           >
@@ -2419,7 +2285,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
 
                 <div className="border-t pt-6">
                   <h4 className="font-semibold text-gray-800 mb-3">Chief Complaints as per informant</h4>
-                  {formData.complaints_informant.map((complaint, index) => (
+                  {(formData.complaints_informant || [{ complaint: '', duration: '' }])?.map((complaint, index) => (
                     <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-3">
                       <div className="md:col-span-2">
                         <Input
@@ -2446,14 +2312,14 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
                         />
                       </div>
                       <div className="flex items-end">
-                        {formData.complaints_informant.length > 1 && (
+                        {(formData.complaints_informant || []).length > 1 && (
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              const newComplaints = formData.complaints_informant.filter((_, i) => i !== index);
-                              setFormData(prev => ({ ...prev, complaints_informant: newComplaints }));
+                              const newComplaints = (formData.complaints_informant || []).filter((_, i) => i !== index);
+                              setFormData(prev => ({ ...prev, complaints_informant: newComplaints.length > 0 ? newComplaints : [{ complaint: '', duration: '' }] }));
                             }}
                             className="text-red-600"
                           >
@@ -2753,18 +2619,18 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
 
                 <div className="border-t pt-6">
                   <h4 className="font-semibold text-gray-800 mb-4">Siblings</h4>
-                  {formData.family_history_siblings.map((sibling, index) => (
+                  {(formData.family_history_siblings || [{ age: '', sex: '', education: '', occupation: '', marital_status: '' }])?.map((sibling, index) => (
                     <div key={index} className="border-b pb-4 mb-4 last:border-b-0">
                       <div className="flex items-center justify-between mb-2">
                         <h5 className="font-medium text-gray-700">Sibling {index + 1}</h5>
-                        {formData.family_history_siblings.length > 1 && (
+                        {(formData.family_history_siblings || []).length > 1 && (
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              const newSiblings = formData.family_history_siblings.filter((_, i) => i !== index);
-                              setFormData(prev => ({ ...prev, family_history_siblings: newSiblings }));
+                              const newSiblings = (formData.family_history_siblings || []).filter((_, i) => i !== index);
+                              setFormData(prev => ({ ...prev, family_history_siblings: newSiblings.length > 0 ? newSiblings : [{ age: '', sex: '', education: '', occupation: '', marital_status: '' }] }));
                             }}
                             className="text-red-600"
                           >
@@ -3086,18 +2952,18 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
             <Card title="Occupational History" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
               <div className="space-y-4">
                 <h4 className="font-semibold text-gray-800 mb-3">Jobs held in chronological order</h4>
-                {formData.occupation_jobs.map((job, index) => (
+                {(formData.occupation_jobs || [{ job: '', dates: '', adjustment: '', difficulties: '', promotions: '', change_reason: '' }])?.map((job, index) => (
                   <div key={index} className="border-b pb-4 mb-4 last:border-b-0 space-y-3">
                     <div className="flex items-center justify-between mb-2">
                       <h5 className="font-medium text-gray-700">Job {index + 1}</h5>
-                      {formData.occupation_jobs.length > 1 && (
+                      {(formData.occupation_jobs || []).length > 1 && (
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            const newJobs = formData.occupation_jobs.filter((_, i) => i !== index);
-                            setFormData(prev => ({ ...prev, occupation_jobs: newJobs }));
+                            const newJobs = (formData.occupation_jobs || []).filter((_, i) => i !== index);
+                            setFormData(prev => ({ ...prev, occupation_jobs: newJobs.length > 0 ? newJobs : [{ job: '', dates: '', adjustment: '', difficulties: '', promotions: '', change_reason: '' }] }));
                           }}
                           className="text-red-600"
                         >
@@ -3288,13 +3154,13 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
                 />
                 <div>
                   <h5 className="font-medium text-gray-700 mb-2">Ages and sex of children</h5>
-                  {formData.sexual_children.map((child, index) => (
+                  {(formData.sexual_children || [{ age: '', sex: '' }])?.map((child, index) => (
                     <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
                       <Input
                         label={`Child ${index + 1} - Age`}
                         value={child.age}
                         onChange={(e) => {
-                          const newChildren = [...formData.sexual_children];
+                          const newChildren = [...(formData.sexual_children || [{ age: '', sex: '' }])];
                           newChildren[index].age = e.target.value;
                           setFormData(prev => ({ ...prev, sexual_children: newChildren }));
                         }}
@@ -3304,21 +3170,21 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
                         label="Sex"
                         value={child.sex}
                         onChange={(e) => {
-                          const newChildren = [...formData.sexual_children];
+                          const newChildren = [...(formData.sexual_children || [{ age: '', sex: '' }])];
                           newChildren[index].sex = e.target.value;
                           setFormData(prev => ({ ...prev, sexual_children: newChildren }));
                         }}
                         options={[{ value: '', label: 'Select' }, { value: 'M', label: 'Male' }, { value: 'F', label: 'Female' }]}
                       />
                       <div className="flex items-end">
-                        {formData.sexual_children.length > 1 && (
+                        {(formData.sexual_children || []).length > 1 && (
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              const newChildren = formData.sexual_children.filter((_, i) => i !== index);
-                              setFormData(prev => ({ ...prev, sexual_children: newChildren }));
+                              const newChildren = (formData.sexual_children || []).filter((_, i) => i !== index);
+                              setFormData(prev => ({ ...prev, sexual_children: newChildren.length > 0 ? newChildren : [{ age: '', sex: '' }] }));
                             }}
                             className="text-red-600"
                           >
@@ -3335,7 +3201,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
                     onClick={() => {
                       setFormData(prev => ({
                         ...prev,
-                        sexual_children: [...prev.sexual_children, { age: '', sex: '' }]
+                        sexual_children: [...(prev.sexual_children || [{ age: '', sex: '' }]), { age: '', sex: '' }]
                       }));
                     }}
                     className="flex items-center gap-2 mt-2"
@@ -3388,7 +3254,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
               <div className="space-y-4">
                 <div>
                   <h5 className="font-medium text-gray-700 mb-2">The residents, who all live with the patient</h5>
-                  {formData.living_residents.map((resident, index) => (
+                  {formData.living_residents?.map((resident, index) => (
                     <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
                       <Input
                         label={`Resident ${index + 1} - Name`}
@@ -3495,7 +3361,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
                 />
                 <div className="border-t pt-4">
                   <h5 className="font-medium text-gray-700 mb-2">In case of married women: details of the members in the in-law family</h5>
-                  {formData.living_inlaws.map((inlaw, index) => (
+                  {formData.living_inlaws?.map((inlaw, index) => (
                     <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
                       <Input
                         label={`In-law ${index + 1} - Name`}
@@ -4266,51 +4132,183 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
                 required
                 error={errors.adl_reasoning}
               />
-            </div>
-          </Card>
-          
-          {/* Step 3 Navigation */}
-          <Card className="mt-6 bg-white/80 backdrop-blur-sm border-0 shadow-xl">
-            <div className="flex justify-between gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handlePrevious}
-                className="flex items-center gap-2"
-              >
-                <FiArrowLeft className="w-4 h-4" />
-                Previous
-              </Button>
-              <div className="flex gap-3">
+                </div>
+              </Card>
+                </div>
+              )}
+            </Card>
+          )}
+
+          {/* Card 3: Prescription */}
+          <Card
+            title={
+              <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => toggleCard('prescription')}>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-amber-100 rounded-lg">
+                    <FiFileText className="w-6 h-6 text-amber-600" />
+                  </div>
+                  <span className="text-xl font-bold text-gray-900">Prescription</span>
+                </div>
+                {expandedCards.prescription ? (
+                  <FiChevronUp className="w-5 h-5 text-gray-600" />
+                ) : (
+                  <FiChevronDown className="w-5 h-5 text-gray-600" />
+                )}
+              </div>
+            }
+            className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
+          >
+            {expandedCards.prescription && (
+              <div className="space-y-4">
+                {prescriptions?.map((prescription, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-gray-700">Prescription {index + 1}</h4>
+                      {prescriptions.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const newPrescriptions = prescriptions.filter((_, i) => i !== index);
+                            setPrescriptions(newPrescriptions);
+                          }}
+                          className="text-red-600"
+                        >
+                          <FiX className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Input
+                        label="Medicine"
+                        value={prescription.medicine}
+                        onChange={(e) => {
+                          const newPrescriptions = [...prescriptions];
+                          newPrescriptions[index].medicine = e.target.value;
+                          setPrescriptions(newPrescriptions);
+                        }}
+                        placeholder="Medicine name"
+                      />
+                      <Input
+                        label="Dosage"
+                        value={prescription.dosage}
+                        onChange={(e) => {
+                          const newPrescriptions = [...prescriptions];
+                          newPrescriptions[index].dosage = e.target.value;
+                          setPrescriptions(newPrescriptions);
+                        }}
+                        placeholder="Dosage"
+                      />
+                      <Input
+                        label="When to Take"
+                        value={prescription.when}
+                        onChange={(e) => {
+                          const newPrescriptions = [...prescriptions];
+                          newPrescriptions[index].when = e.target.value;
+                          setPrescriptions(newPrescriptions);
+                        }}
+                        placeholder="Before/after food, etc."
+                      />
+                      <Input
+                        label="Frequency"
+                        value={prescription.frequency}
+                        onChange={(e) => {
+                          const newPrescriptions = [...prescriptions];
+                          newPrescriptions[index].frequency = e.target.value;
+                          setPrescriptions(newPrescriptions);
+                        }}
+                        placeholder="Daily, twice daily, etc."
+                      />
+                      <Input
+                        label="Duration"
+                        value={prescription.duration}
+                        onChange={(e) => {
+                          const newPrescriptions = [...prescriptions];
+                          newPrescriptions[index].duration = e.target.value;
+                          setPrescriptions(newPrescriptions);
+                        }}
+                        placeholder="5 days, 1 month, etc."
+                      />
+                      <Input
+                        label="Quantity"
+                        value={prescription.qty}
+                        onChange={(e) => {
+                          const newPrescriptions = [...prescriptions];
+                          newPrescriptions[index].qty = e.target.value;
+                          setPrescriptions(newPrescriptions);
+                        }}
+                        placeholder="Quantity"
+                      />
+                    </div>
+                    <Textarea
+                      label="Details"
+                      value={prescription.details}
+                      onChange={(e) => {
+                        const newPrescriptions = [...prescriptions];
+                        newPrescriptions[index].details = e.target.value;
+                        setPrescriptions(newPrescriptions);
+                      }}
+                      placeholder="Additional details"
+                      rows={2}
+                    />
+                    <Textarea
+                      label="Notes"
+                      value={prescription.notes}
+                      onChange={(e) => {
+                        const newPrescriptions = [...prescriptions];
+                        newPrescriptions[index].notes = e.target.value;
+                        setPrescriptions(newPrescriptions);
+                      }}
+                      placeholder="Additional notes"
+                      rows={2}
+                    />
+                  </div>
+                ))}
                 <Button
                   type="button"
                   variant="outline"
+                  size="sm"
                   onClick={() => {
-                    if (returnTab) {
-                      navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
-                    } else {
-                      navigate('/clinical-today-patients');
-                    }
+                    setPrescriptions([...prescriptions, { medicine: '', dosage: '', when: '', frequency: '', duration: '', qty: '', details: '', notes: '' }]);
                   }}
+                  className="flex items-center gap-2"
                 >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  loading={isCreating}
-                  disabled={isCreating}
-                  className="flex items-center gap-2 bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700"
-                >
-                  <FiSave className="w-4 h-4" />
-                  {isCreating ? 'Saving...' : 'Create Clinical Proforma'}
+                  <FiPlus className="w-4 h-4" />
+                  Add Prescription
                 </Button>
               </div>
+            )}
+          </Card>
+
+          {/* Submit Button */}
+          <Card className="mt-6 bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (returnTab) {
+                    navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
+                  } else {
+                    navigate('/clinical-today-patients');
+                  }
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                loading={isCreating}
+                disabled={isCreating}
+                className="flex items-center gap-2 bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700"
+              >
+                <FiSave className="w-4 h-4" />
+                {isCreating ? 'Saving...' : (proformaId ? 'Update Clinical Proforma' : 'Create Clinical Proforma')}
+              </Button>
             </div>
           </Card>
-            </div>
-          </React.Fragment>
-        )}
-
+        </div>
       </form>
       </div>
     </div>

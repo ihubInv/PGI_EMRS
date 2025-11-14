@@ -18,6 +18,7 @@ const EditClinicalProforma = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const returnTab = searchParams.get('returnTab');
+  const returnPath = searchParams.get('returnPath');
 
   // Fetch clinical proforma data
   const { 
@@ -466,8 +467,10 @@ const EditClinicalProforma = () => {
 
       toast.success('Clinical proforma updated successfully!');
       
-      // Navigate back
-      if (returnTab) {
+      // Navigate back - prioritize returnPath, then returnTab, then default
+      if (returnPath) {
+        navigate(decodeURIComponent(returnPath));
+      } else if (returnTab) {
         navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
       } else {
         navigate(`/clinical/${id}`);

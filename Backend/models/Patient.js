@@ -76,6 +76,7 @@ class Patient {
     this.case_complexity = data.case_complexity || null;
     this.filled_by = data.filled_by || null;
     this.filled_by_name = data.filled_by_name || null;
+    this.filled_by_role = data.filled_by_role || null;
 
     // 🔹 Timestamps
     this.created_at = data.created_at || null;
@@ -565,6 +566,20 @@ class Patient {
           p.distance_from_hospital, p.mobility, p.referred_by, p.address_line, p.country,
           p.state, p.district, p.city, p.pin_code, p.assigned_room, p.filled_by,
           p.has_adl_file, p.file_status, p.created_at, p.updated_at,
+          -- ✅ Get filled_by user role
+          (
+            SELECT u.role
+            FROM users u
+            WHERE u.id = p.filled_by
+            LIMIT 1
+          ) AS filled_by_role,
+          -- ✅ Get filled_by user name
+          (
+            SELECT u.name
+            FROM users u
+            WHERE u.id = p.filled_by
+            LIMIT 1
+          ) AS filled_by_name,
           -- ✅ Store original assigned_doctor_id and assigned_doctor_name before overriding
           p.assigned_doctor_id,
           p.assigned_doctor_name,
@@ -1289,6 +1304,7 @@ class Patient {
       case_complexity : this.case_complexity ,
       filled_by : this.filled_by ,
       filled_by_name : this.filled_by_name ,
+      filled_by_role : this.filled_by_role ,
   
       // 🔹 Timestamps
       created_at : this.created_at ,

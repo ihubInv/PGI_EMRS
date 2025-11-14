@@ -502,6 +502,7 @@ const PatientDetails = () => {
     file_status: patient.file_status,
     is_active: patient.is_active,
     filled_by_name: patient.filled_by_name,
+    filled_by_role: patient.filled_by_role,
     created_at: patient.created_at,
     updated_at: patient.updated_at,
   };

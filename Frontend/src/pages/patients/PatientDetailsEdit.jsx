@@ -5,7 +5,8 @@ import {
   FiUser, FiUsers, FiBriefcase, FiDollarSign, FiHome, FiMapPin, FiPhone,
   FiCalendar, FiGlobe, FiFileText, FiHash, FiClock,
   FiHeart, FiBookOpen, FiTrendingUp, FiShield,
-  FiNavigation, FiTruck, FiEdit3, FiSave, FiX, FiLayers, FiLoader
+  FiNavigation, FiTruck, FiEdit3, FiSave, FiX, FiLayers, FiLoader,
+  FiFolder, FiChevronDown, FiChevronUp, FiPackage, FiEdit
 } from 'react-icons/fi';
 import { useUpdatePatientMutation, useAssignPatientMutation, useCheckCRNumberExistsQuery } from '../../features/patients/patientsApiSlice';
 import { useGetDoctorsQuery } from '../../features/users/usersApiSlice';
@@ -13,11 +14,17 @@ import Card from '../../components/Card';
 import Select from '../../components/Select';
 import Button from '../../components/Button';
 import DatePicker from '../../components/CustomDatePicker';
+import Badge from '../../components/Badge';
+import { formatDate, formatDateTime } from '../../utils/formatters';
+import CreateClinicalProforma from '../clinical/CreateClinicalProforma';
+import { useGetClinicalProformaByIdQuery } from '../../features/clinical/clinicalApiSlice';
+import { useGetADLFileByIdQuery } from '../../features/adl/adlApiSlice';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import {
   MARITAL_STATUS, FAMILY_TYPE_OPTIONS, LOCALITY_OPTIONS, RELIGION_OPTIONS, SEX_OPTIONS,
   AGE_GROUP_OPTIONS, OCCUPATION_OPTIONS, EDUCATION_OPTIONS,
   MOBILITY_OPTIONS, REFERRED_BY_OPTIONS, INDIAN_STATES, UNIT_DAYS_OPTIONS,
-  isJR, isSR, HEAD_RELATIONSHIP_OPTIONS, CATEGORY_OPTIONS
+  isJR, isSR, HEAD_RELATIONSHIP_OPTIONS, CATEGORY_OPTIONS, isAdmin, isJrSr
 } from '../../utils/constants';
 
 // Enhanced Input component with glassmorphism styling (matching CreatePatient)
@@ -60,6 +67,74 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
   const [updatePatient, { isLoading }] = useUpdatePatientMutation();
   const [assignPatient, { isLoading: isAssigning }] = useAssignPatientMutation();
   const { data: doctorsData } = useGetDoctorsQuery({ page: 1, limit: 100 });
+
+  const [expandedCards, setExpandedCards] = useState({
+    patient: false,
+    clinical: false,
+    adl: false,
+    prescriptions: false
+  });
+
+  const toggleCard = (cardName) => {
+    setExpandedCards(prev => ({
+      ...prev,
+      [cardName]: !prev[cardName]
+    }));
+  };
+
+  // Determine which sections to show based on CURRENT USER's role (userRole)
+  // If current user is System Administrator, JR, or SR → Show all sections
+  const canViewAllSections = userRole && (
+    isAdmin(userRole) || 
+    isJrSr(userRole)
+  );
+  const canViewClinicalProforma = canViewAllSections;
+  const canViewPrescriptions = canViewAllSections;
+
+  // ADL File: Show only if case is complex OR ADL file already exists
+  const patientAdlFiles = adlData?.data?.adlFiles || [];
+  const patientProformas = Array.isArray(clinicalData?.data?.proformas) 
+    ? clinicalData.data.proformas 
+    : [];
+  
+  // Check if case is complex
+  const isComplexCase = patient?.case_complexity === 'complex' || 
+    patient?.has_adl_file === true ||
+    patientAdlFiles.length > 0 ||
+    patientProformas.some(p => p.doctor_decision === 'complex_case');
+  
+  const canViewADLFile = canViewAllSections && isComplexCase;
+
+  // State for selected proforma to edit
+  const [selectedProformaId, setSelectedProformaId] = useState(() => {
+    // Default to the most recent proforma (first one in the array, assuming they're sorted by date)
+    return patientProformas.length > 0 && patientProformas[0]?.id 
+      ? patientProformas[0].id.toString() 
+      : null;
+  });
+
+  // Fetch selected proforma data for editing
+  const { 
+    data: selectedProformaData, 
+    isLoading: isLoadingSelectedProforma 
+  } = useGetClinicalProformaByIdQuery(
+    selectedProformaId,
+    { skip: !selectedProformaId }
+  );
+
+  const selectedProforma = selectedProformaData?.data?.proforma;
+  const isSelectedComplexCase = selectedProforma?.doctor_decision === 'complex_case' && selectedProforma?.adl_file_id;
+
+  // Fetch ADL file data if this is a complex case
+  const { 
+    data: selectedAdlFileData, 
+    isLoading: isLoadingSelectedADL 
+  } = useGetADLFileByIdQuery(
+    selectedProforma?.adl_file_id,
+    { skip: !isSelectedComplexCase }
+  );
+
+  const selectedAdlFile = selectedAdlFileData?.data?.adlFile || selectedAdlFileData?.data?.file;
 
   console.log(">>>>",patient)
   // Initialize form data from patient and formData props
@@ -1110,6 +1185,323 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
             </div>
           </div>
         </form>
+
+        {/* Additional Sections: Clinical Proforma, ADL File, Prescriptions */}
+        <div className="space-y-6 mt-8">
+          {/* Card 1: Clinical Proforma - Show only if current user is Admin, JR, or SR */}
+          {canViewClinicalProforma && (
+            // <Card className="shadow-lg border-0 bg-white">
+            //   <div
+            //     className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
+            //     onClick={() => toggleCard('clinical')}
+            //   >
+            //     <div className="flex items-center gap-4">
+            //       <div className="p-3 bg-green-100 rounded-lg">
+            //         <FiFileText className="h-6 w-6 text-green-600" />
+            //       </div>
+            //       <div>
+            //         <h3 className="text-xl font-bold text-gray-900">Clinical Proforma</h3>
+            //         <p className="text-sm text-gray-500 mt-1">
+            //           {patientProformas.length > 0
+            //             ? `${patientProformas.length} record${patientProformas.length > 1 ? 's' : ''} found`
+            //             : 'No clinical records'}
+            //         </p>
+            //       </div>
+            //     </div>
+            //     {expandedCards.clinical ? (
+            //       <FiChevronUp className="h-6 w-6 text-gray-500" />
+            //     ) : (
+            //       <FiChevronDown className="h-6 w-6 text-gray-500" />
+            //     )}
+            //   </div>
+
+            //   {expandedCards.clinical && (
+            //     <div className="p-6">
+            //       {patientProformas.length > 0 ? (
+            //         <div className="space-y-6">
+            //           {patientProformas.map((proforma, index) => (
+            //             <div key={proforma.id || index} className="border border-gray-200 rounded-lg p-6 bg-gray-50">
+            //               <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+            //                 <div className="flex items-center gap-4">
+            //                   <h4 className="text-lg font-semibold text-gray-900">Visit #{index + 1}</h4>
+            //                   <span className="text-sm text-gray-500">{proforma.visit_date ? formatDate(proforma.visit_date) : 'N/A'}</span>
+            //                 </div>
+            //                 {proforma.id && (
+            //                   <button
+            //                     onClick={(e) => {
+            //                       e.stopPropagation();
+            //                       navigate(`/clinical-proforma/edit/${proforma.id}?returnPath=${encodeURIComponent(`/patients/${patient?.id}/edit`)}`);
+            //                     }}
+            //                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+            //                     title="Edit Clinical Proforma"
+            //                   >
+            //                     <FiEdit className="w-4 h-4" />
+            //                     Edit
+            //                   </button>
+            //                 )}
+            //               </div>
+            //               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            //                 <div>
+            //                   <label className="text-sm font-medium text-gray-600">Visit Type</label>
+            //                   <p className="text-base font-semibold text-gray-900 mt-1">
+            //                     {proforma.visit_type === 'first_visit' ? 'First Visit' : 'Follow-up'}
+            //                   </p>
+            //                 </div>
+            //                 {proforma.doctor_decision && (
+            //                   <div>
+            //                     <label className="text-sm font-medium text-gray-600">Doctor Decision</label>
+            //                     <p className="text-base font-semibold text-gray-900 mt-1">
+            //                       {proforma.doctor_decision === 'complex_case' ? 'Complex Case' : 'Simple Case'}
+            //                     </p>
+            //                   </div>
+            //                 )}
+            //                 {proforma.case_severity && (
+            //                   <div>
+            //                     <label className="text-sm font-medium text-gray-600">Case Severity</label>
+            //                     <div className="mt-1">
+            //                       <Badge
+            //                         className={`${proforma.case_severity === 'severe'
+            //                             ? 'bg-red-100 text-red-800 border-red-200'
+            //                             : proforma.case_severity === 'moderate'
+            //                               ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+            //                               : 'bg-green-100 text-green-800 border-green-200'
+            //                           } text-sm font-medium`}
+            //                       >
+            //                         {proforma.case_severity}
+            //                       </Badge>
+            //                     </div>
+            //                   </div>
+            //                 )}
+            //               </div>
+            //               {proforma.diagnosis && (
+            //                 <div className="mt-4 pt-4 border-t border-gray-200">
+            //                   <label className="text-sm font-medium text-gray-600">Diagnosis</label>
+            //                   <p className="text-sm text-gray-900 mt-1">{proforma.diagnosis}</p>
+            //                 </div>
+            //               )}
+            //             </div>
+            //           ))}
+            //         </div>
+            //       ) : (
+            //         <div className="text-center py-12 text-gray-500">
+            //           <FiFileText className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+            //           <p className="text-base">No clinical proforma records found</p>
+            //         </div>
+            //       )}
+            //     </div>
+            //   )}
+            // </Card>
+            <Card className="shadow-lg border-0 bg-white">
+              <div className="p-6">
+                {patientProformas.length > 0 ? (
+                  <>
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Select Clinical Proforma to Edit
+                      </label>
+                      <Select
+                        value={selectedProformaId || ''}
+                        onChange={(e) => setSelectedProformaId(e.target.value)}
+                        options={patientProformas.map((proforma, index) => ({
+                          value: proforma.id?.toString() || '',
+                          label: `Visit #${index + 1} - ${proforma.visit_date ? formatDate(proforma.visit_date) : 'N/A'} ${proforma.doctor_decision === 'complex_case' ? '(Complex)' : '(Simple)'}`
+                        }))}
+                        placeholder="Select a proforma to edit"
+                        className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
+                      />
+                    </div>
+                    {(isLoadingSelectedProforma || (isSelectedComplexCase && isLoadingSelectedADL)) ? (
+                      <div className="flex items-center justify-center py-12">
+                        <LoadingSpinner />
+                      </div>
+                    ) : selectedProformaId && selectedProforma ? (
+                      <div className="border-t border-gray-200 pt-6">
+                        <CreateClinicalProforma
+                          initialData={(() => {
+                            // Merge proforma and ADL file data similar to EditClinicalProforma
+                            if (!selectedProforma) return null;
+                            
+                            const baseData = { ...selectedProforma };
+                            
+                            // Merge ADL file data if available
+                            if (selectedAdlFile) {
+                              Object.keys(selectedAdlFile).forEach(key => {
+                                if (key !== 'id' && key !== 'created_at' && key !== 'updated_at' && 
+                                    key !== 'patient_id' && key !== 'adl_no' && key !== 'created_by' &&
+                                    key !== 'clinical_proforma_id' && key !== 'file_status' && 
+                                    key !== 'file_created_date' && key !== 'total_visits' && key !== 'is_active' &&
+                                    key !== 'last_accessed_date' && key !== 'last_accessed_by' && key !== 'notes') {
+                                  baseData[key] = selectedAdlFile[key] ?? baseData[key] ?? '';
+                                }
+                              });
+                            }
+                            
+                            return baseData;
+                          })()}
+                          onUpdate={async (updateData) => {
+                            // Handle update - CreateClinicalProforma will handle the actual update
+                            toast.success('Clinical proforma updated successfully!');
+                            // Optionally refresh the page or refetch data
+                            window.location.reload();
+                            return Promise.resolve();
+                          }}
+                          proformaId={selectedProformaId}
+                        />
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  <div>
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Create New Clinical Proforma</h3>
+                      <p className="text-sm text-gray-600">No clinical proforma exists for this patient. Create a new one below.</p>
+                    </div>
+                    <div className="border-t border-gray-200 pt-6">
+                      <CreateClinicalProforma
+                        initialData={{
+                          patient_id: patient?.id?.toString() || '',
+                          visit_date: new Date().toISOString().split('T')[0],
+                          visit_type: 'first_visit',
+                          // Pre-fill at least 3 basic fields to make them visible
+                          room_no: patient?.room_no || '',
+                          assigned_doctor: patient?.assigned_doctor_id?.toString() || '',
+                          informant_present: true,
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {/* Card 2: Additional Details (ADL File) - Show only if case is complex OR ADL file exists */}
+          {canViewADLFile && (
+            <Card className="shadow-lg border-0 bg-white">
+              <div
+                className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                onClick={() => toggleCard('adl')}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-purple-100 rounded-lg">
+                    <FiFolder className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Additional Details (ADL File)</h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {patientAdlFiles.length > 0
+                        ? `${patientAdlFiles.length} file${patientAdlFiles.length > 1 ? 's' : ''} found`
+                        : 'No ADL files'}
+                    </p>
+                  </div>
+                </div>
+                {expandedCards.adl ? (
+                  <FiChevronUp className="h-6 w-6 text-gray-500" />
+                ) : (
+                  <FiChevronDown className="h-6 w-6 text-gray-500" />
+                )}
+              </div>
+
+              {expandedCards.adl && (
+                <div className="p-6">
+                  {patientAdlFiles.length > 0 ? (
+                    <div className="space-y-6">
+                      {patientAdlFiles.map((file, index) => (
+                        <div key={file.id || index} className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+                          <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-gray-300">
+                            <div>
+                              <h4 className="text-xl font-bold text-gray-900">ADL File #{index + 1}</h4>
+                              {file.adl_no && (
+                                <p className="text-sm text-gray-600 mt-1">ADL Number: {file.adl_no}</p>
+                              )}
+                            </div>
+                            {file.file_status && (
+                              <Badge
+                                className={`${file.file_status === 'active'
+                                    ? 'bg-green-100 text-green-800 border-green-200'
+                                    : 'bg-gray-100 text-gray-800 border-gray-200'
+                                  } text-sm font-medium`}
+                              >
+                                {file.file_status}
+                              </Badge>
+                            )}
+                          </div>
+                          {file.file_created_date && (
+                            <p className="text-sm text-gray-500">Created: {formatDate(file.file_created_date)}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-gray-500">
+                      <FiFolder className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p className="text-base">No ADL files found</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </Card>
+          )}
+
+          {/* Card 3: Prescription History - Show only if current user is Admin, JR, or SR */}
+          {canViewPrescriptions && (
+            <Card className="shadow-lg border-0 bg-white">
+              <div
+                className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                onClick={() => toggleCard('prescriptions')}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-amber-100 rounded-lg">
+                    <FiPackage className="h-6 w-6 text-amber-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Prescription History</h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {patientProformas.length > 0
+                        ? `View prescriptions for ${patientProformas.length} visit${patientProformas.length > 1 ? 's' : ''}`
+                        : 'No prescriptions found'}
+                    </p>
+                  </div>
+                </div>
+                {expandedCards.prescriptions ? (
+                  <FiChevronUp className="h-6 w-6 text-gray-500" />
+                ) : (
+                  <FiChevronDown className="h-6 w-6 text-gray-500" />
+                )}
+              </div>
+
+              {expandedCards.prescriptions && (
+                <div className="p-6">
+                  {patientProformas.length > 0 ? (
+                    <div className="space-y-4">
+                      {patientProformas.map((proforma, index) => (
+                        <div key={proforma.id || index} className="border border-gray-200 rounded-lg p-6 bg-gray-50">
+                          <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+                            <h4 className="text-lg font-semibold text-gray-900">Visit #{index + 1}</h4>
+                            <span className="text-sm text-gray-500">{proforma.visit_date ? formatDate(proforma.visit_date) : 'N/A'}</span>
+                          </div>
+                          {proforma.treatment_prescribed ? (
+                            <div>
+                              <label className="text-sm font-medium text-gray-600">Treatment Prescribed</label>
+                              <p className="text-sm text-gray-900 mt-1 leading-relaxed">{proforma.treatment_prescribed}</p>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500 text-center py-4">No treatment prescribed for this visit</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-gray-500">
+                      <FiPackage className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p className="text-base">No prescription records found</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );

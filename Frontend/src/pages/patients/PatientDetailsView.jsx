@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  FiUser, FiFileText, FiFolder, FiChevronDown, FiChevronUp, FiPackage
+  FiUser, FiFileText, FiFolder, FiChevronDown, FiChevronUp, FiPackage, FiEdit
 } from 'react-icons/fi';
 import Card from '../../components/Card';
 import Badge from '../../components/Badge';
@@ -15,6 +16,9 @@ import { isMWO, isAdmin, isJrSr } from '../../utils/constants';
 import { useGetPrescriptionsByProformaIdQuery } from '../../features/prescriptions/prescriptionApiSlice';
 
 const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatientData, userRole }) => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTab = searchParams.get('returnTab');
 
   const [expandedCards, setExpandedCards] = useState({
     patient: false,
@@ -29,6 +33,17 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
       [cardName]: !prev[cardName]
     }));
   };
+
+  // Determine which sections to show based on CURRENT USER's role (userRole), not filled_by_role
+  // If current user is System Administrator, JR, or SR → Show all 4 sections
+  // If current user is Psychiatric Welfare Officer (MWO) → Show only Patient Details
+  const canViewAllSections = userRole && (
+    isAdmin(userRole) || 
+    isJrSr(userRole)
+  );
+  const canViewClinicalProforma = canViewAllSections;
+  const canViewADLFile = canViewAllSections;
+  const canViewPrescriptions = canViewAllSections;
 
 
   const patientAdlFiles = adlData?.data?.adlFiles || [];
@@ -123,8 +138,7 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
     return grouped;
   }, [allPrescriptions]);
 
-  // Check if user can view prescriptions (Admin or JR/SR, not MWO)
-  const canViewPrescriptions = !isMWO(userRole) && (isAdmin(userRole) || isJrSr(userRole));
+  // Note: canViewPrescriptions is now determined by filled_by_role above
 
   return (
     <div className="space-y-6">
@@ -622,8 +636,8 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
         )}
       </Card>
 
-      {/* Card 2: Clinical Proforma - Hide for MWO */}
-      {!isMWO(userRole) && (
+      {/* Card 2: Clinical Proforma - Show only if filled_by_role is Admin, JR, or SR */}
+      {canViewClinicalProforma && (
         <Card className="shadow-lg border-0 bg-white">
           <div
             className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
@@ -656,8 +670,26 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
                   {patientProformas.map((proforma, index) => (
                     <div key={proforma.id || index} className="border border-gray-200 rounded-lg p-6 bg-gray-50">
                       <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
-                        <h4 className="text-lg font-semibold text-gray-900">Visit #{index + 1}</h4>
-                        <span className="text-sm text-gray-500">{proforma.visit_date ? formatDate(proforma.visit_date) : 'N/A'}</span>
+                        <div className="flex items-center gap-4">
+                          <h4 className="text-lg font-semibold text-gray-900">Visit #{index + 1}</h4>
+                          <span className="text-sm text-gray-500">{proforma.visit_date ? formatDate(proforma.visit_date) : 'N/A'}</span>
+                        </div>
+                        {proforma.id && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const returnPath = returnTab 
+                                ? `/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`
+                                : `/patients/${patient?.id}`;
+                              navigate(`/clinical-proforma/edit/${proforma.id}?returnTab=${returnTab || ''}&returnPath=${encodeURIComponent(returnPath)}`);
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+                            title="Edit Clinical Proforma"
+                          >
+                            <FiEdit className="w-4 h-4" />
+                            Edit
+                          </button>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1009,8 +1041,8 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
           )}
         </Card>
       )}
-      {/* Card 3: Additional Details (ADL File) - Only show if ADL file exists for this patient, Hide for MWO */}
-      {!isMWO(userRole) && patientAdlFiles && patientAdlFiles.length > 0 && (
+      {/* Card 3: Additional Details (ADL File) - Show card even if empty, as long as user has permission */}
+      {canViewADLFile && (
         <Card className="shadow-lg border-0 bg-white">
           <div
             className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
@@ -1023,7 +1055,9 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
               <div>
                 <h3 className="text-xl font-bold text-gray-900">Additional Details (ADL File)</h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  {patientAdlFiles.length} file{patientAdlFiles.length > 1 ? 's' : ''} found
+                  {patientAdlFiles.length > 0
+                    ? `${patientAdlFiles.length} file${patientAdlFiles.length > 1 ? 's' : ''} found`
+                    : 'No ADL files'}
                 </p>
               </div>
             </div>
@@ -1036,8 +1070,9 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
 
           {expandedCards.adl && (
             <div className="p-6">
-              <div className="space-y-6">
-                {patientAdlFiles.map((file, index) => {
+              {patientAdlFiles.length > 0 ? (
+                <div className="space-y-6">
+                  {patientAdlFiles.map((file, index) => {
                   // Parse JSON fields if they're strings
                   const complaintsPatient = Array.isArray(file.complaints_patient) ? file.complaints_patient : (file.complaints_patient ? JSON.parse(file.complaints_patient) : []);
                   const complaintsInformant = Array.isArray(file.complaints_informant) ? file.complaints_informant : (file.complaints_informant ? JSON.parse(file.complaints_informant) : []);
@@ -1700,13 +1735,19 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
                     </div>
                   );
                 })}
-              </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <FiFolder className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p className="text-base">No ADL files found</p>
+                </div>
+              )}
             </div>
           )}
         </Card>
       )}
 
-      {/* Card 4: Prescription History - Only show for Admin and JR/SR, not MWO */}
+      {/* Card 4: Prescription History - Show only if current user is Admin, JR, or SR */}
       {canViewPrescriptions && (
         <Card className="shadow-lg border-0 bg-white">
           <div
