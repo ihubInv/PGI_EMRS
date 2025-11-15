@@ -1808,26 +1808,26 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
 
         {/* Additional Sections: Clinical Proforma, ADL File, Prescriptions */}
         {/* Card 1: Clinical Proforma - Show only if current user is Admin, JR, or SR */}
-        {/* {canViewClinicalProforma && ( */}
+        {canViewClinicalProforma && (
           <EditClinicalProforma
-          initialData={{
-            patient_id: patient?.id?.toString() || '',
-            visit_date: new Date().toISOString().split('T')[0],
-            visit_type: 'first_visit',
-            // Pre-fill at least 3 basic fields to make them visible
-            room_no: patient?.room_no || '',
-            assigned_doctor: patient?.assigned_doctor_id?.toString() || '',
-            informant_present: true,
-            doctor_decision: 'simple_case', // Default to simple_case
-          }}
-          onFormDataChange={(formData) => {
-            // Track doctor_decision changes to show/hide ADL card
-            if (formData?.doctor_decision !== undefined) {
-              setCurrentDoctorDecision(formData.doctor_decision);
-            }
-          }}
-        />
-        {/* )} */}
+            initialData={{
+              patient_id: patient?.id?.toString() || '',
+              visit_date: new Date().toISOString().split('T')[0],
+              visit_type: 'first_visit',
+              // Pre-fill at least 3 basic fields to make them visible
+              room_no: patient?.room_no || '',
+              assigned_doctor: patient?.assigned_doctor_id?.toString() || '',
+              informant_present: true,
+              doctor_decision: 'simple_case', // Default to simple_case
+            }}
+            onFormDataChange={(formData) => {
+              // Track doctor_decision changes to show/hide ADL card
+              if (formData?.doctor_decision !== undefined) {
+                setCurrentDoctorDecision(formData.doctor_decision);
+              }
+            }}
+          />
+        )}
 
           {/* Card 2: Additional Details (ADL File) - Show only if case is complex OR ADL file exists */}
           {canViewADLFile && (
