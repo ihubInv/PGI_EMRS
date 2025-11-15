@@ -57,6 +57,7 @@ const MWONavigation = ({ onClose, isMinimized }) => {
       <NavLink
         to="/patients/new"
         onClick={onClose}
+        end
         className={({ isActive }) =>
           `group flex items-center ${isMinimized ? 'justify-center px-2' : 'px-4'} py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${
             isActive
@@ -67,7 +68,7 @@ const MWONavigation = ({ onClose, isMinimized }) => {
         title={isMinimized ? 'Register New Patient' : ''}
       >
         <div className={`p-2 rounded-lg ${isMinimized ? '' : 'mr-3'} transition-colors ${
-          location.pathname === '/outpatient/new'
+          location.pathname === '/patients/new'
             ? 'bg-white/20'
             : 'bg-gray-100 group-hover:bg-primary-100'
         }`}>
@@ -80,18 +81,24 @@ const MWONavigation = ({ onClose, isMinimized }) => {
       <NavLink
         to="/patients"
         onClick={onClose}
-        end
-        className={({ isActive }) =>
-          `group flex items-center ${isMinimized ? 'justify-center px-2' : 'px-4'} py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${
+        className={() => {
+          // Only active on exact /patients or /patients/:id (view/edit) but NOT on /patients/new or /patients/select
+          const isExcluded = location.pathname === '/patients/new' || location.pathname === '/patients/select';
+          const isActive = !isExcluded && (location.pathname === '/patients' || location.pathname.startsWith('/patients/'));
+          
+          return `group flex items-center ${isMinimized ? 'justify-center px-2' : 'px-4'} py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${
             isActive
               ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
               : 'text-gray-700 hover:bg-white/40 hover:text-primary-700 hover:shadow-md'
-          }`
-        }
+          }`;
+        }}
         title={isMinimized ? 'All Patient Records' : ''}
       >
         <div className={`p-2 rounded-lg ${isMinimized ? '' : 'mr-3'} transition-colors ${
-          location.pathname === '/patients'
+          (location.pathname === '/patients' || 
+           (location.pathname.startsWith('/patients/') && 
+            location.pathname !== '/patients/new' && 
+            location.pathname !== '/patients/select'))
             ? 'bg-white/20'
             : 'bg-gray-100 group-hover:bg-primary-100'
         }`}>
@@ -106,6 +113,7 @@ const MWONavigation = ({ onClose, isMinimized }) => {
       <NavLink
         to="/patients/select"
         onClick={onClose}
+        end
         className={({ isActive }) =>
           `group flex items-center ${isMinimized ? 'justify-center px-2' : 'px-4'} py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${
             isActive
@@ -116,7 +124,7 @@ const MWONavigation = ({ onClose, isMinimized }) => {
         title={isMinimized ? 'Existing Patients' : ''}
       >
         <div className={`p-2 rounded-lg ${isMinimized ? '' : 'mr-3'} transition-colors ${
-          location.pathname === '/outpatient/select'
+          location.pathname === '/patients/select'
             ? 'bg-white/20'
             : 'bg-gray-100 group-hover:bg-primary-100'
         }`}>
