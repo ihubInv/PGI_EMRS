@@ -25,7 +25,11 @@ import ClinicalProformaPage from './pages/clinical/ClinicalProformaPage';
 import CreateClinicalProforma from './pages/clinical/CreateClinicalProforma';
 import EditClinicalProforma from './pages/clinical/EditClinicalProforma';
 import ClinicalProformaDetails from './pages/clinical/ClinicalProformaDetails';
-import PrescribeMedication from './pages/clinical/PrescribeMedication';
+
+// Prescription Pages
+import CreatePrescription from './pages/PrescribeMedication/CreatePrescription';
+import PrescriptionEdit from './pages/PrescribeMedication/PrescriptionEdit';
+import PrescriptionView from './pages/PrescribeMedication/PrescriptionView';
 
 // ADL File Pages
 import ADLFilesPage from './pages/adl/ADLFilesPage';
@@ -86,9 +90,15 @@ function App() {
                 <Route path="/clinical" element={<ClinicalProformaPage />} />
                 <Route path="/clinical/new" element={<CreateClinicalProforma />} />
                 <Route path="/clinical-today-patients" element={<ClinicalTodayPatients />} />
-                <Route path="/clinical/prescribe-medication" element={<PrescribeMedication />} />
                 <Route path="/clinical/:id" element={<ClinicalProformaDetails />} />
                 <Route path="/clinical/:id/edit" element={<EditClinicalProforma />} />
+              </Route>
+
+              {/* Prescription Routes - Faculty Residents and System Administrator */}
+              <Route element={<ProtectedRoute allowedRoles={['System Administrator', 'Faculty Residents (Junior Resident (JR))', 'Faculty Residents (Senior Resident (SR))']} />}>
+                <Route path="/prescriptions/create" element={<CreatePrescription />} />
+                <Route path="/prescriptions/edit/:id" element={<PrescriptionEdit />} />
+                <Route path="/prescriptions/view" element={<PrescriptionView />} />
               </Route>
 
               {/* Additional Detail File - Faculty Residents and System Administrator */}

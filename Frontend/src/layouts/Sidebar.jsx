@@ -290,7 +290,7 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
                   // - Prescribe Medication page (when coming from Today's Patients)
                   isActive = location === item.to || 
                              location === '/clinical/new' ||
-                             location === '/clinical/prescribe-medication';
+                             location.startsWith('/prescriptions');
                 } else {
                   // For other routes, use standard matching
                   isActive = location === item.to || location.startsWith(item.to + '/');

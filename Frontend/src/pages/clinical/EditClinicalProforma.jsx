@@ -1,34 +1,348 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { 
   useGetClinicalProformaByIdQuery,
-  useUpdateClinicalProformaMutation
+  useUpdateClinicalProformaMutation,
+  useGetClinicalOptionsQuery,
+  useAddClinicalOptionMutation,
+  useDeleteClinicalOptionMutation
 } from '../../features/clinical/clinicalApiSlice';
 import { useGetADLFileByIdQuery, useUpdateADLFileMutation } from '../../features/adl/adlApiSlice';
-import CreateClinicalProforma from './CreateClinicalProforma';
+import { useGetPatientByIdQuery } from '../../features/patients/patientsApiSlice';
+import { useGetDoctorsQuery } from '../../features/users/usersApiSlice';
+import { CLINICAL_PROFORMA_FORM, VISIT_TYPES, DOCTOR_DECISION, CASE_SEVERITY } from '../../utils/constants';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Card from '../../components/Card';
+import Input from '../../components/Input';
+import Select from '../../components/Select';
+import Textarea from '../../components/Textarea';
 import Button from '../../components/Button';
-import { FiArrowLeft, FiAlertCircle } from 'react-icons/fi';
+import { FiArrowLeft, FiAlertCircle, FiSave, FiHeart, FiActivity, FiUser, FiClipboard, FiList, FiCheckSquare, FiFileText, FiX, FiPlus, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import icd11Codes from '../../assets/ICD11_Codes.json';
 
+// CheckboxGroup Component
+const CheckboxGroup = ({ label, name, value = [], onChange, options = [], rightInlineExtra = null }) => {
+  const [localOptions, setLocalOptions] = useState(options);
+  const [showAdd, setShowAdd] = useState(false);
+  const [customOption, setCustomOption] = useState('');
+  const { data: remoteOptions } = useGetClinicalOptionsQuery(name);
+  const [addOption] = useAddClinicalOptionMutation();
+  const [deleteOption] = useDeleteClinicalOptionMutation();
 
-const EditClinicalProforma = () => {
+  const iconByGroup = {
+    mood: <FiHeart className="w-6 h-6 text-rose-600" />,
+    behaviour: <FiActivity className="w-6 h-6 text-violet-600" />,
+    speech: <FiUser className="w-6 h-6 text-sky-600" />,
+    thought: <FiClipboard className="w-6 h-6 text-indigo-600" />,
+    perception: <FiList className="w-6 h-6 text-cyan-600" />,
+    somatic: <FiActivity className="w-6 h-6 text-emerald-600" />,
+    bio_functions: <FiCheckSquare className="w-6 h-6 text-emerald-600" />,
+    adjustment: <FiList className="w-6 h-6 text-amber-600" />,
+    cognitive_function: <FiActivity className="w-6 h-6 text-fuchsia-600" />,
+    fits: <FiActivity className="w-6 h-6 text-red-600" />,
+    sexual_problem: <FiHeart className="w-6 h-6 text-pink-600" />,
+    substance_use: <FiList className="w-6 h-6 text-teal-600" />,
+    associated_medical_surgical: <FiFileText className="w-6 h-6 text-indigo-600" />,
+    mse_behaviour: <FiActivity className="w-6 h-6 text-violet-600" />,
+    mse_affect: <FiHeart className="w-6 h-6 text-rose-600" />,
+    mse_thought: <FiClipboard className="w-6 h-6 text-indigo-600" />,
+    mse_perception: <FiList className="w-6 h-6 text-cyan-600" />,
+    mse_cognitive_function: <FiActivity className="w-6 h-6 text-fuchsia-600" />,
+  };
+
+  useEffect(() => {
+    setLocalOptions(Array.from(new Set([...(remoteOptions || []), ...(options || [])])));
+  }, [remoteOptions, options]);
+
+  const toggle = (opt) => {
+    const exists = value.includes(opt);
+    const next = exists ? value.filter(v => v !== opt) : [...value, opt];
+    onChange({ target: { name, value: next } });
+  };
+
+  const handleDelete = (opt) => {
+    setLocalOptions((prev) => prev.filter((o) => o !== opt));
+    if (value.includes(opt)) {
+      const next = value.filter((v) => v !== opt);
+      onChange({ target: { name, value: next } });
+    }
+    deleteOption({ group: name, label: opt }).catch(() => {});
+  };
+
+  const handleAddClick = () => setShowAdd(true);
+  const handleCancelAdd = () => {
+    setShowAdd(false);
+    setCustomOption('');
+  };
+
+  const handleSaveAdd = () => {
+    const opt = customOption.trim();
+    if (!opt) {
+      setShowAdd(false);
+      return;
+    }
+    setLocalOptions((prev) => (prev.includes(opt) ? prev : [...prev, opt]));
+    const next = value.includes(opt) ? value : [...value, opt];
+    onChange({ target: { name, value: next } });
+    setCustomOption('');
+    setShowAdd(false);
+    addOption({ group: name, label: opt }).catch(() => {});
+  };
+
+  return (
+    <div className="space-y-2">
+      {label && (
+        <div className="flex items-center gap-3 text-base font-semibold text-gray-800">
+          <span>{iconByGroup[name] || <FiList className="w-6 h-6 text-gray-500" />}</span>
+          <span>{label}</span>
+        </div>
+      )}
+      <div className="flex flex-wrap items-center gap-3">
+        {localOptions?.map((opt) => (
+          <div key={opt} className="relative inline-flex items-center group">
+            <button
+              type="button"
+              onClick={() => handleDelete(opt)}
+              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md opacity-0 pointer-events-none transition-opacity duration-150 group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-red-600"
+              aria-label={`Remove ${opt}`}
+            >
+              <FiX className="w-3 h-3" />
+            </button>
+            <label
+              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm transition-colors duration-150 cursor-pointer
+                ${value.includes(opt)
+                  ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                  : "border-gray-200 bg-white hover:bg-gray-50 text-gray-800"
+                }`}
+            >
+              <input
+                type="checkbox"
+                checked={value.includes(opt)}
+                onChange={() => toggle(opt)}
+                className="h-4 w-4 text-primary-600 rounded"
+              />
+              <span>{opt}</span>
+            </label>
+          </div>
+        ))}
+        {rightInlineExtra && (
+          <div className="inline-flex items-center">
+            {rightInlineExtra}
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          {showAdd && (
+            <Input
+              placeholder="Enter option name"
+              value={customOption}
+              onChange={(e) => setCustomOption(e.target.value)}
+              className="max-w-xs"
+            />
+          )}
+          {showAdd ? (
+            <>
+              <Button
+                type="button"
+                onClick={handleCancelAdd}
+                className="bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30 px-3 py-1.5 rounded-md flex items-center gap-2 text-sm"
+              >
+                <FiX className="w-4 h-4" /> Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSaveAdd}
+                className="bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30 px-3 py-1.5 rounded-md flex items-center gap-2 text-sm"
+              >
+                <FiSave className="w-4 h-4" /> Save
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="button"
+              onClick={handleAddClick}
+              className="bg-white text-black border border-gray-300 px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-200 hover:bg-gradient-to-r hover:from-green-500 hover:to-green-600 hover:text-white hover:shadow-lg hover:shadow-green-500/30"
+            >
+              <FiPlus className="w-4 h-4" /> Add
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ICD-11 Code Selector Component
+const ICD11CodeSelector = ({ value, onChange, error }) => {
+  const [selectedPath, setSelectedPath] = useState([]);
+  const [selectedCode, setSelectedCode] = useState(value || '');
+
+  const getChildren = (levelIndex, parentItem) => {
+    if (levelIndex === 0) {
+      return icd11Codes.filter(item => item.level === 0);
+    }
+    if (!parentItem && levelIndex > 0) return [];
+    const level = levelIndex;
+    return icd11Codes.filter(item => {
+      if (item.level !== level) return false;
+      if (level === 1) {
+        const level0Code = selectedPath[0]?.code || '';
+        return item.parent_code === level0Code;
+      } else if (level === 2) {
+        const level0Code = selectedPath[0]?.code || '';
+        const level1Item = selectedPath[1];
+        const level1Code = level1Item?.code || '';
+        if (level1Code && item.parent_code === level1Code) return true;
+        if (item.parent_code === level0Code) return true;
+        if (item.parent_code === '' && level0Code && item.code) {
+          if (level0Code === '06' && item.code.startsWith('6')) return true;
+          if (item.code.startsWith(level0Code)) return true;
+        }
+        return false;
+      } else {
+        const prevLevelItem = selectedPath[levelIndex - 1];
+        if (!prevLevelItem) return false;
+        const prevLevelCode = prevLevelItem.code || '';
+        return item.parent_code === prevLevelCode;
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (value && !selectedPath.length && value !== selectedCode) {
+      const codeItem = icd11Codes.find(item => item.code === value);
+      if (codeItem) {
+        const path = [];
+        let current = codeItem;
+        while (current) {
+          path.unshift(current);
+          let parent = null;
+          if (current.parent_code) {
+            parent = icd11Codes.find(item => item.code === current.parent_code);
+            if (!parent && current.level > 0) {
+              if (current.level === 1) {
+                parent = icd11Codes.find(item => item.level === 0 && item.code === current.parent_code);
+              } else if (current.level === 2) {
+                parent = icd11Codes.find(item => 
+                  (item.level === 1 && item.parent_code === current.parent_code) ||
+                  (item.level === 0 && item.code === current.parent_code)
+                );
+              } else {
+                parent = icd11Codes.find(item => item.code === current.parent_code);
+              }
+            }
+          }
+          current = parent;
+        }
+        if (path.length > 0) {
+          setSelectedPath(path);
+          setSelectedCode(value);
+        }
+      }
+    }
+  }, [value]);
+
+  useEffect(() => {
+    if (value !== selectedCode) {
+      setSelectedCode(value || '');
+    }
+  }, [value]);
+
+  const handleLevelChange = (levelIndex, selectedItem) => {
+    const newPath = selectedPath.slice(0, levelIndex);
+    if (selectedItem) {
+      newPath[levelIndex] = selectedItem;
+    }
+    setSelectedPath(newPath);
+    let deepestCode = '';
+    for (let i = newPath.length - 1; i >= 0; i--) {
+      if (newPath[i]?.code) {
+        deepestCode = newPath[i].code;
+        break;
+      }
+    }
+    setSelectedCode(deepestCode);
+    onChange({ target: { name: 'icd_code', value: deepestCode } });
+  };
+
+  const renderDropdown = (levelIndex) => {
+    const parentItem = levelIndex > 0 ? selectedPath[levelIndex - 1] : null;
+    const children = getChildren(levelIndex, parentItem);
+    if (children.length === 0 && levelIndex > 0) return null;
+    const selectedItem = selectedPath[levelIndex];
+    const labelText = levelIndex === 0 ? 'Category' : 
+                     levelIndex === 1 ? 'Subcategory' :
+                     levelIndex === 2 ? 'Code Group' : 'Specific Code';
+    return (
+      <div key={levelIndex} className="flex-shrink-0 min-w-[200px]">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {labelText}
+        </label>
+        <Select
+          value={selectedItem ? JSON.stringify(selectedItem) : ''}
+          onChange={(e) => {
+            const item = e.target.value ? JSON.parse(e.target.value) : null;
+            handleLevelChange(levelIndex, item);
+          }}
+          options={[
+            { value: '', label: `Select ${labelText}` },
+            ...children?.map(item => ({
+              value: JSON.stringify(item),
+              label: `${item.code || '(Category)'} - ${item.title}`
+            }))
+          ]}
+          error={levelIndex === 0 && error}
+        />
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        ICD Code
+      </label>
+      <div className="flex flex-wrap items-end gap-4">
+        {renderDropdown(0)}
+        {selectedPath[0] && renderDropdown(1)}
+        {selectedPath[1] && renderDropdown(2)}
+        {selectedPath[2] && selectedPath[2].has_children && renderDropdown(3)}
+        {selectedPath[3] && selectedPath[3].has_children && renderDropdown(4)}
+        {selectedPath[4] && selectedPath[4].has_children && renderDropdown(5)}
+      </div>
+      {selectedCode && (
+        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-sm text-blue-800">
+            <strong>Selected ICD-11 Code:</strong> <span className="font-mono font-semibold">{selectedCode}</span>
+            {selectedPath[selectedPath.length - 1] && (
+              <span className="ml-2 text-blue-600">
+                - {selectedPath[selectedPath.length - 1].title}
+              </span>
+            )}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: propOnUpdate = null, onFormDataChange = null }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const returnTab = searchParams.get('returnTab');
   const returnPath = searchParams.get('returnPath');
 
-  // Fetch clinical proforma data
+  // Fetch clinical proforma data only if id exists and no initialData prop provided
   const { 
     data: proformaData, 
     isLoading: isLoadingProforma, 
     isError: isErrorProforma,
     error: proformaError 
-  } = useGetClinicalProformaByIdQuery(id);
+  } = useGetClinicalProformaByIdQuery(id, { skip: !id || !!propInitialData });
 
-  const proforma = proformaData?.data?.proforma;
+  // Use propInitialData if provided, otherwise use fetched data
+  const proforma = propInitialData ? null : (proformaData?.data?.proforma);
   const isComplexCase = proforma?.doctor_decision === 'complex_case' && proforma?.adl_file_id;
 
   // Fetch ADL file data if this is a complex case
@@ -42,13 +356,21 @@ const EditClinicalProforma = () => {
 
   const adlFile = adlFileData?.data?.adlFile || adlFileData?.data?.file;
 
+  // Fetch patient data - use patient_id from propInitialData or proforma
+  const patientId = propInitialData?.patient_id || proforma?.patient_id;
+  const { data: patientData } = useGetPatientByIdQuery(
+    patientId,
+    { skip: !patientId }
+  );
+  const patient = patientData?.data?.patient;
+
+  // Fetch doctors list
+  const { data: doctorsData } = useGetDoctorsQuery({ page: 1, limit: 100 });
+  const doctors = doctorsData?.data?.doctors || [];
+
   // Update mutations
   const [updateProforma, { isLoading: isUpdating }] = useUpdateClinicalProformaMutation();
   const [updateADLFile] = useUpdateADLFileMutation();
-
-  // Prepare initial form data - MUST be called before any conditional returns (Rules of Hooks)
-  const initialFormData = useMemo(() => {
-    if (!proforma) return null;
 
     // Helper functions
     const normalizeArrayField = (value) => {
@@ -64,23 +386,103 @@ const EditClinicalProforma = () => {
       return value ? [value] : [];
     };
 
-    const normalizeObjectArrayField = (value, defaultStructure = {}) => {
-      if (Array.isArray(value)) {
-        return value.length > 0 ? value : [defaultStructure];
-      }
-      if (typeof value === 'string') {
-        try {
-          const parsed = JSON.parse(value);
-          if (Array.isArray(parsed)) {
-            return parsed.length > 0 ? parsed : [defaultStructure];
-          }
-          return parsed ? [parsed] : [defaultStructure];
-        } catch {
-          return [defaultStructure];
-        }
-      }
-      return [defaultStructure];
-    };
+  // Prepare initial form data - return default values if proforma not found
+  const initialFormData = useMemo(() => {
+    // If initialData prop is provided, use it (merge with defaults)
+    if (propInitialData) {
+      return {
+        patient_id: propInitialData.patient_id || '',
+        visit_date: propInitialData.visit_date || new Date().toISOString().split('T')[0],
+        visit_type: propInitialData.visit_type || 'first_visit',
+        room_no: propInitialData.room_no || '',
+        assigned_doctor: propInitialData.assigned_doctor || '',
+        informant_present: propInitialData.informant_present ?? true,
+        nature_of_information: propInitialData.nature_of_information || '',
+        onset_duration: propInitialData.onset_duration || '',
+        course: propInitialData.course || '',
+        precipitating_factor: propInitialData.precipitating_factor || '',
+        illness_duration: propInitialData.illness_duration || '',
+        current_episode_since: propInitialData.current_episode_since || '',
+        mood: normalizeArrayField(propInitialData.mood),
+        behaviour: normalizeArrayField(propInitialData.behaviour),
+        speech: normalizeArrayField(propInitialData.speech),
+        thought: normalizeArrayField(propInitialData.thought),
+        perception: normalizeArrayField(propInitialData.perception),
+        somatic: normalizeArrayField(propInitialData.somatic),
+        bio_functions: normalizeArrayField(propInitialData.bio_functions),
+        adjustment: normalizeArrayField(propInitialData.adjustment),
+        cognitive_function: normalizeArrayField(propInitialData.cognitive_function),
+        fits: normalizeArrayField(propInitialData.fits),
+        sexual_problem: normalizeArrayField(propInitialData.sexual_problem),
+        substance_use: normalizeArrayField(propInitialData.substance_use),
+        past_history: propInitialData.past_history || '',
+        family_history: propInitialData.family_history || '',
+        associated_medical_surgical: normalizeArrayField(propInitialData.associated_medical_surgical),
+        mse_behaviour: normalizeArrayField(propInitialData.mse_behaviour),
+        mse_affect: normalizeArrayField(propInitialData.mse_affect),
+        mse_thought: propInitialData.mse_thought || '',
+        mse_delusions: propInitialData.mse_delusions || '',
+        mse_perception: normalizeArrayField(propInitialData.mse_perception),
+        mse_cognitive_function: normalizeArrayField(propInitialData.mse_cognitive_function),
+        gpe: propInitialData.gpe || '',
+        diagnosis: propInitialData.diagnosis || '',
+        icd_code: propInitialData.icd_code || '',
+        disposal: propInitialData.disposal || '',
+        workup_appointment: propInitialData.workup_appointment || '',
+        referred_to: propInitialData.referred_to || '',
+        treatment_prescribed: propInitialData.treatment_prescribed || '',
+        doctor_decision: propInitialData.doctor_decision || 'simple_case',
+        case_severity: propInitialData.case_severity || '',
+      };
+    }
+
+    // If no proforma, return default empty form data
+    if (!proforma) {
+      return {
+        patient_id: '',
+        visit_date: new Date().toISOString().split('T')[0],
+        visit_type: 'first_visit',
+        room_no: '',
+        assigned_doctor: '',
+        informant_present: true,
+        nature_of_information: '',
+        onset_duration: '',
+        course: '',
+        precipitating_factor: '',
+        illness_duration: '',
+        current_episode_since: '',
+        mood: [],
+        behaviour: [],
+        speech: [],
+        thought: [],
+        perception: [],
+        somatic: [],
+        bio_functions: [],
+        adjustment: [],
+        cognitive_function: [],
+        fits: [],
+        sexual_problem: [],
+        substance_use: [],
+        past_history: '',
+        family_history: '',
+        associated_medical_surgical: [],
+        mse_behaviour: [],
+        mse_affect: [],
+        mse_thought: '',
+        mse_delusions: '',
+        mse_perception: [],
+        mse_cognitive_function: [],
+        gpe: '',
+        diagnosis: '',
+        icd_code: '',
+        disposal: '',
+        workup_appointment: '',
+        referred_to: '',
+        treatment_prescribed: '',
+        doctor_decision: 'simple_case',
+        case_severity: '',
+      };
+    }
 
     const baseData = {
       patient_id: proforma.patient_id?.toString() || '',
@@ -125,208 +527,245 @@ const EditClinicalProforma = () => {
       treatment_prescribed: proforma.treatment_prescribed || '',
       doctor_decision: proforma.doctor_decision || 'simple_case',
       case_severity: proforma.case_severity || '',
-      requires_adl_file: proforma.requires_adl_file || false,
-      adl_reasoning: proforma.adl_reasoning || '',
-      // Default values for ADL fields
-      history_narrative: '',
-      history_specific_enquiry: '',
-      history_drug_intake: '',
-      history_treatment_place: '',
-      history_treatment_dates: '',
-      history_treatment_drugs: '',
-      history_treatment_response: '',
-      informants: [{ relationship: '', name: '', reliability: '' }],
-      complaints_patient: [{ complaint: '', duration: '' }],
-      complaints_informant: [{ complaint: '', duration: '' }],
-      past_history_medical: '',
-      past_history_psychiatric_dates: '',
-      past_history_psychiatric_diagnosis: '',
-      past_history_psychiatric_treatment: '',
-      past_history_psychiatric_interim: '',
-      past_history_psychiatric_recovery: '',
-      family_history_father_age: '',
-      family_history_father_education: '',
-      family_history_father_occupation: '',
-      family_history_father_personality: '',
-      family_history_father_deceased: false,
-      family_history_father_death_age: '',
-      family_history_father_death_date: '',
-      family_history_father_death_cause: '',
-      family_history_mother_age: '',
-      family_history_mother_education: '',
-      family_history_mother_occupation: '',
-      family_history_mother_personality: '',
-      family_history_mother_deceased: false,
-      family_history_mother_death_age: '',
-      family_history_mother_death_date: '',
-      family_history_mother_death_cause: '',
-      family_history_siblings: [{ age: '', sex: '', education: '', occupation: '', marital_status: '' }],
-      diagnostic_formulation_summary: '',
-      diagnostic_formulation_features: '',
-      diagnostic_formulation_psychodynamic: '',
-      premorbid_personality_passive_active: '',
-      premorbid_personality_assertive: '',
-      premorbid_personality_introvert_extrovert: '',
-      premorbid_personality_traits: [],
-      premorbid_personality_hobbies: '',
-      premorbid_personality_habits: '',
-      premorbid_personality_alcohol_drugs: '',
-      physical_appearance: '',
-      physical_body_build: '',
-      physical_pallor: false,
-      physical_icterus: false,
-      physical_oedema: false,
-      physical_lymphadenopathy: false,
-      physical_pulse: '',
-      physical_bp: '',
-      physical_height: '',
-      physical_weight: '',
-      physical_waist: '',
-      physical_fundus: '',
-      physical_cvs_apex: '',
-      physical_cvs_regularity: '',
-      physical_cvs_heart_sounds: '',
-      physical_cvs_murmurs: '',
-      physical_chest_expansion: '',
-      physical_chest_percussion: '',
-      physical_chest_adventitious: '',
-      physical_abdomen_tenderness: '',
-      physical_abdomen_mass: '',
-      physical_abdomen_bowel_sounds: '',
-      physical_cns_cranial: '',
-      physical_cns_motor_sensory: '',
-      physical_cns_rigidity: '',
-      physical_cns_involuntary: '',
-      physical_cns_superficial_reflexes: '',
-      physical_cns_dtrs: '',
-      physical_cns_plantar: '',
-      physical_cns_cerebellar: '',
-      mse_general_demeanour: '',
-      mse_general_tidy: '',
-      mse_general_awareness: '',
-      mse_general_cooperation: '',
-      mse_psychomotor_verbalization: '',
-      mse_psychomotor_pressure: '',
-      mse_psychomotor_tension: '',
-      mse_psychomotor_posture: '',
-      mse_psychomotor_mannerism: '',
-      mse_psychomotor_catatonic: '',
-      mse_affect_subjective: '',
-      mse_affect_tone: '',
-      mse_affect_resting: '',
-      mse_affect_fluctuation: '',
-      mse_thought_flow: '',
-      mse_thought_form: '',
-      mse_thought_content: '',
-      mse_cognitive_consciousness: '',
-      mse_cognitive_orientation_time: '',
-      mse_cognitive_orientation_place: '',
-      mse_cognitive_orientation_person: '',
-      mse_cognitive_memory_immediate: '',
-      mse_cognitive_memory_recent: '',
-      mse_cognitive_memory_remote: '',
-      mse_cognitive_subtraction: '',
-      mse_cognitive_digit_span: '',
-      mse_cognitive_counting: '',
-      mse_cognitive_general_knowledge: '',
-      mse_cognitive_calculation: '',
-      mse_cognitive_similarities: '',
-      mse_cognitive_proverbs: '',
-      mse_insight_understanding: '',
-      mse_insight_judgement: '',
-      education_start_age: '',
-      education_highest_class: '',
-      education_performance: '',
-      education_disciplinary: '',
-      education_peer_relationship: '',
-      education_hobbies: '',
-      education_special_abilities: '',
-      education_discontinue_reason: '',
-      occupation_jobs: [{ job: '', dates: '', adjustment: '', difficulties: '', promotions: '', change_reason: '' }],
-      sexual_menarche_age: '',
-      sexual_menarche_reaction: '',
-      sexual_education: '',
-      sexual_masturbation: '',
-      sexual_contact: '',
-      sexual_premarital_extramarital: '',
-      sexual_marriage_arranged: '',
-      sexual_marriage_date: '',
-      sexual_spouse_age: '',
-      sexual_spouse_occupation: '',
-      sexual_adjustment_general: '',
-      sexual_adjustment_sexual: '',
-      sexual_children: [{ age: '', sex: '' }],
-      sexual_problems: '',
-      religion_type: '',
-      religion_participation: '',
-      religion_changes: '',
-      living_residents: [{ name: '', relationship: '', age: '' }],
-      living_income_sharing: '',
-      living_expenses: '',
-      living_kitchen: '',
-      living_domestic_conflicts: '',
-      living_social_class: '',
-      living_inlaws: [{ name: '', relationship: '', age: '' }],
-      home_situation_childhood: '',
-      home_situation_parents_relationship: '',
-      home_situation_socioeconomic: '',
-      home_situation_interpersonal: '',
-      personal_birth_date: '',
-      personal_birth_place: '',
-      personal_delivery_type: '',
-      personal_complications_prenatal: '',
-      personal_complications_natal: '',
-      personal_complications_postnatal: '',
-      development_weaning_age: '',
-      development_first_words: '',
-      development_three_words: '',
-      development_walking: '',
-      development_neurotic_traits: '',
-      development_nail_biting: '',
-      development_bedwetting: '',
-      development_phobias: '',
-      development_childhood_illness: '',
-      provisional_diagnosis: '',
-      treatment_plan: '',
-      consultant_comments: '',
-      prescriptions: proforma.prescriptions || [],
     };
 
-    // Merge ADL file data if available
-    if (adlFile) {
-      const jsonbFields = {
-        'informants': { relationship: '', name: '', reliability: '' },
-        'complaints_patient': { complaint: '', duration: '' },
-        'complaints_informant': { complaint: '', duration: '' },
-        'family_history_siblings': { age: '', sex: '', education: '', occupation: '', marital_status: '' },
-        'premorbid_personality_traits': [],
-        'occupation_jobs': { job: '', dates: '', adjustment: '', difficulties: '', promotions: '', change_reason: '' },
-        'sexual_children': { age: '', sex: '' },
-        'living_residents': { name: '', relationship: '', age: '' },
-        'living_inlaws': { name: '', relationship: '', age: '' }
+    return baseData;
+  }, [proforma, propInitialData]);
+
+  // Initialize with default empty values if initialFormData is not ready
+  const defaultFormData = {
+    patient_id: '',
+    visit_date: new Date().toISOString().split('T')[0],
+    visit_type: 'first_visit',
+    room_no: '',
+    assigned_doctor: '',
+    informant_present: true,
+    nature_of_information: '',
+    onset_duration: '',
+    course: '',
+    precipitating_factor: '',
+    illness_duration: '',
+    current_episode_since: '',
+    mood: [],
+    behaviour: [],
+    speech: [],
+    thought: [],
+    perception: [],
+    somatic: [],
+    bio_functions: [],
+    adjustment: [],
+    cognitive_function: [],
+    fits: [],
+    sexual_problem: [],
+    substance_use: [],
+    past_history: '',
+    family_history: '',
+    associated_medical_surgical: [],
+    mse_behaviour: [],
+    mse_affect: [],
+    mse_thought: '',
+    mse_delusions: '',
+    mse_perception: [],
+    mse_cognitive_function: [],
+    gpe: '',
+    diagnosis: '',
+    icd_code: '',
+    disposal: '',
+    workup_appointment: '',
+    referred_to: '',
+    treatment_prescribed: '',
+    doctor_decision: 'simple_case',
+    case_severity: '',
+  };
+
+  const [formData, setFormData] = useState(initialFormData || defaultFormData);
+  const [errors, setErrors] = useState({});
+  
+  // Card expand/collapse state
+  const [expandedCards, setExpandedCards] = useState({
+    clinicalProforma: true, // Default to expanded
+  });
+
+  const toggleCard = (cardName) => {
+    setExpandedCards(prev => ({ ...prev, [cardName]: !prev[cardName] }));
+  };
+
+  // Track previous initialFormData to avoid unnecessary updates
+  const prevInitialDataRef = useRef(null);
+  
+  // Update formData when initialFormData changes (only on mount or when initialData actually changes)
+  useEffect(() => {
+    if (initialFormData) {
+      const prevData = prevInitialDataRef.current;
+      // Only update if this is the first time or if key fields have changed
+      const shouldUpdate = !prevData || 
+        prevData.patient_id !== initialFormData.patient_id ||
+        (prevData.doctor_decision !== initialFormData.doctor_decision && prevData.patient_id === initialFormData.patient_id);
+      
+      if (shouldUpdate) {
+        setFormData(initialFormData);
+        // Notify parent of initial form data
+        if (onFormDataChange) {
+          onFormDataChange(initialFormData);
+        }
+        prevInitialDataRef.current = initialFormData;
+      }
+    }
+  }, [initialFormData, onFormDataChange]);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    const newValue = type === 'checkbox' ? checked : value;
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [name]: newValue,
+      };
+      // Notify parent component of form data changes, especially doctor_decision
+      if (onFormDataChange) {
+        onFormDataChange(updated);
+      }
+      return updated;
+    });
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    const newErrors = {};
+    if (!formData.patient_id) newErrors.patient_id = 'Patient is required';
+    if (!formData.visit_date) newErrors.visit_date = 'Visit date is required';
+    
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
+
+    try {
+      // If using initialData prop and onUpdate callback is provided, use it
+      if (propInitialData && propOnUpdate) {
+        const join = (arr) => Array.isArray(arr) ? arr.join(', ') : arr;
+        const updateData = {
+          patient_id: parseInt(formData.patient_id),
+          visit_date: formData.visit_date,
+          visit_type: formData.visit_type,
+          room_no: formData.room_no,
+          assigned_doctor: formData.assigned_doctor,
+          informant_present: formData.informant_present,
+          nature_of_information: formData.nature_of_information,
+          onset_duration: formData.onset_duration,
+          course: formData.course,
+          precipitating_factor: formData.precipitating_factor,
+          illness_duration: formData.illness_duration,
+          current_episode_since: formData.current_episode_since,
+          mood: join(formData.mood),
+          behaviour: join(formData.behaviour),
+          speech: join(formData.speech),
+          thought: join(formData.thought),
+          perception: join(formData.perception),
+          somatic: join(formData.somatic),
+          bio_functions: join(formData.bio_functions),
+          adjustment: join(formData.adjustment),
+          cognitive_function: join(formData.cognitive_function),
+          fits: join(formData.fits),
+          sexual_problem: join(formData.sexual_problem),
+          substance_use: join(formData.substance_use),
+          past_history: formData.past_history,
+          family_history: formData.family_history,
+          associated_medical_surgical: join(formData.associated_medical_surgical),
+          mse_behaviour: join(formData.mse_behaviour),
+          mse_affect: join(formData.mse_affect),
+          mse_thought: formData.mse_thought,
+          mse_delusions: formData.mse_delusions,
+          mse_perception: join(formData.mse_perception),
+          mse_cognitive_function: join(formData.mse_cognitive_function),
+          gpe: formData.gpe,
+          diagnosis: formData.diagnosis,
+          icd_code: formData.icd_code,
+          disposal: formData.disposal,
+          workup_appointment: formData.workup_appointment,
+          referred_to: formData.referred_to,
+          treatment_prescribed: formData.treatment_prescribed,
+          doctor_decision: formData.doctor_decision,
+          case_severity: formData.case_severity,
+        };
+        await propOnUpdate(updateData);
+        toast.success('Clinical proforma updated successfully!');
+        return;
+      }
+
+      // If no proforma exists, show error (can't update non-existent record)
+      if (!proforma || !id) {
+        toast.error('Cannot update: Clinical proforma not found. Please create a new one first.');
+        return;
+      }
+
+      const join = (arr) => Array.isArray(arr) ? arr.join(', ') : arr;
+      
+      const updateData = {
+        id: parseInt(id),
+        patient_id: parseInt(formData.patient_id),
+        visit_date: formData.visit_date,
+        visit_type: formData.visit_type,
+        room_no: formData.room_no,
+        assigned_doctor: formData.assigned_doctor,
+        informant_present: formData.informant_present,
+        nature_of_information: formData.nature_of_information,
+        onset_duration: formData.onset_duration,
+        course: formData.course,
+        precipitating_factor: formData.precipitating_factor,
+        illness_duration: formData.illness_duration,
+        current_episode_since: formData.current_episode_since,
+        mood: join(formData.mood),
+        behaviour: join(formData.behaviour),
+        speech: join(formData.speech),
+        thought: join(formData.thought),
+        perception: join(formData.perception),
+        somatic: join(formData.somatic),
+        bio_functions: join(formData.bio_functions),
+        adjustment: join(formData.adjustment),
+        cognitive_function: join(formData.cognitive_function),
+        fits: join(formData.fits),
+        sexual_problem: join(formData.sexual_problem),
+        substance_use: join(formData.substance_use),
+        past_history: formData.past_history,
+        family_history: formData.family_history,
+        associated_medical_surgical: join(formData.associated_medical_surgical),
+        mse_behaviour: join(formData.mse_behaviour),
+        mse_affect: join(formData.mse_affect),
+        mse_thought: formData.mse_thought,
+        mse_delusions: formData.mse_delusions,
+        mse_perception: join(formData.mse_perception),
+        mse_cognitive_function: join(formData.mse_cognitive_function),
+        gpe: formData.gpe,
+        diagnosis: formData.diagnosis,
+        icd_code: formData.icd_code,
+        disposal: formData.disposal,
+        workup_appointment: formData.workup_appointment,
+        referred_to: formData.referred_to,
+        treatment_prescribed: formData.treatment_prescribed,
+        doctor_decision: formData.doctor_decision,
+        case_severity: formData.case_severity,
       };
 
-      Object.keys(adlFile).forEach(key => {
-        if (key !== 'id' && key !== 'created_at' && key !== 'updated_at' && 
-            key !== 'patient_id' && key !== 'adl_no' && key !== 'created_by' &&
-            key !== 'clinical_proforma_id' && key !== 'file_status' && 
-            key !== 'file_created_date' && key !== 'total_visits' && key !== 'is_active' &&
-            key !== 'last_accessed_date' && key !== 'last_accessed_by' && key !== 'notes') {
-          
-          if (jsonbFields.hasOwnProperty(key)) {
-            baseData[key] = normalizeObjectArrayField(adlFile[key], jsonbFields[key]);
+      await updateProforma(updateData).unwrap();
+      toast.success('Clinical proforma updated successfully!');
+      
+      if (returnPath) {
+        navigate(decodeURIComponent(returnPath));
+      } else if (returnTab) {
+        navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
           } else {
-            baseData[key] = adlFile[key] ?? baseData[key] ?? '';
+        navigate(`/clinical/${id}`);
           }
-        }
-      });
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to update clinical proforma');
     }
+  };
 
-    return baseData;
-  }, [proforma, adlFile]);
-
-  // Loading state - AFTER all hooks
-  if (isLoadingProforma || (isComplexCase && isLoadingADL)) {
+  // Loading state - only show if fetching by ID (not when using initialData prop)
+  if (!propInitialData && (isLoadingProforma || (isComplexCase && isLoadingADL))) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner />
@@ -334,8 +773,8 @@ const EditClinicalProforma = () => {
     );
   }
 
-  // Error state
-  if (isErrorProforma) {
+  // Error state - only show if fetching by ID (not when using initialData prop)
+  if (!propInitialData && isErrorProforma) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card>
@@ -367,126 +806,433 @@ const EditClinicalProforma = () => {
     );
   }
 
-  // Not found state
-  if (!proforma || !initialFormData) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <Card>
-          <div className="text-center py-12">
-            <FiAlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Clinical Proforma Not Found</h2>
-            <p className="text-gray-600 mb-6">
-              The clinical proforma you're trying to edit doesn't exist or has been deleted.
-            </p>
-            <Button
-              onClick={() => navigate('/clinical')}
-              variant="primary"
-              className="flex items-center gap-2 mx-auto"
-            >
-              <FiArrowLeft className="w-4 h-4" />
-              Back to Clinical Proformas
-            </Button>
-          </div>
-        </Card>
-      </div>
-    );
-  }
+  // Always show form, even if proforma not found - allow editing/creating
+  // initialFormData will always have default values now
 
-  // Handle update
-  const handleUpdate = async (updateData) => {
-    try {
-      // Extract complex case fields for ADL update if needed
-      const complexCaseFields = [
-        'history_narrative', 'history_specific_enquiry', 'history_drug_intake',
-        'history_treatment_place', 'history_treatment_dates', 'history_treatment_drugs', 'history_treatment_response',
-        'informants', 'complaints_patient', 'complaints_informant',
-        'past_history_medical', 'past_history_psychiatric_dates', 'past_history_psychiatric_diagnosis',
-        'past_history_psychiatric_treatment', 'past_history_psychiatric_interim', 'past_history_psychiatric_recovery',
-        'family_history_father_age', 'family_history_father_education', 'family_history_father_occupation',
-        'family_history_father_personality', 'family_history_father_deceased', 'family_history_father_death_age',
-        'family_history_father_death_date', 'family_history_father_death_cause',
-        'family_history_mother_age', 'family_history_mother_education', 'family_history_mother_occupation',
-        'family_history_mother_personality', 'family_history_mother_deceased', 'family_history_mother_death_age',
-        'family_history_mother_death_date', 'family_history_mother_death_cause', 'family_history_siblings',
-        'diagnostic_formulation_summary', 'diagnostic_formulation_features', 'diagnostic_formulation_psychodynamic',
-        'premorbid_personality_passive_active', 'premorbid_personality_assertive', 'premorbid_personality_introvert_extrovert',
-        'premorbid_personality_traits', 'premorbid_personality_hobbies', 'premorbid_personality_habits', 'premorbid_personality_alcohol_drugs',
-        'physical_appearance', 'physical_body_build', 'physical_pallor', 'physical_icterus', 'physical_oedema', 'physical_lymphadenopathy',
-        'physical_pulse', 'physical_bp', 'physical_height', 'physical_weight', 'physical_waist', 'physical_fundus',
-        'physical_cvs_apex', 'physical_cvs_regularity', 'physical_cvs_heart_sounds', 'physical_cvs_murmurs',
-        'physical_chest_expansion', 'physical_chest_percussion', 'physical_chest_adventitious',
-        'physical_abdomen_tenderness', 'physical_abdomen_mass', 'physical_abdomen_bowel_sounds',
-        'physical_cns_cranial', 'physical_cns_motor_sensory', 'physical_cns_rigidity', 'physical_cns_involuntary',
-        'physical_cns_superficial_reflexes', 'physical_cns_dtrs', 'physical_cns_plantar', 'physical_cns_cerebellar',
-        'mse_general_demeanour', 'mse_general_tidy', 'mse_general_awareness', 'mse_general_cooperation',
-        'mse_psychomotor_verbalization', 'mse_psychomotor_pressure', 'mse_psychomotor_tension', 'mse_psychomotor_posture',
-        'mse_psychomotor_mannerism', 'mse_psychomotor_catatonic', 'mse_affect_subjective', 'mse_affect_tone',
-        'mse_affect_resting', 'mse_affect_fluctuation', 'mse_thought_flow', 'mse_thought_form', 'mse_thought_content',
-        'mse_cognitive_consciousness', 'mse_cognitive_orientation_time', 'mse_cognitive_orientation_place',
-        'mse_cognitive_orientation_person', 'mse_cognitive_memory_immediate', 'mse_cognitive_memory_recent',
-        'mse_cognitive_memory_remote', 'mse_cognitive_subtraction', 'mse_cognitive_digit_span', 'mse_cognitive_counting',
-        'mse_cognitive_general_knowledge', 'mse_cognitive_calculation', 'mse_cognitive_similarities', 'mse_cognitive_proverbs',
-        'mse_insight_understanding', 'mse_insight_judgement',
-        'education_start_age', 'education_highest_class', 'education_performance', 'education_disciplinary',
-        'education_peer_relationship', 'education_hobbies', 'education_special_abilities', 'education_discontinue_reason',
-        'occupation_jobs', 'sexual_menarche_age', 'sexual_menarche_reaction', 'sexual_education', 'sexual_masturbation',
-        'sexual_contact', 'sexual_premarital_extramarital', 'sexual_marriage_arranged', 'sexual_marriage_date',
-        'sexual_spouse_age', 'sexual_spouse_occupation', 'sexual_adjustment_general', 'sexual_adjustment_sexual',
-        'sexual_children', 'sexual_problems', 'religion_type', 'religion_participation', 'religion_changes',
-        'living_residents', 'living_income_sharing', 'living_expenses', 'living_kitchen', 'living_domestic_conflicts',
-        'living_social_class', 'living_inlaws', 'home_situation_childhood', 'home_situation_parents_relationship',
-        'home_situation_socioeconomic', 'home_situation_interpersonal', 'personal_birth_date', 'personal_birth_place',
-        'personal_delivery_type', 'personal_complications_prenatal', 'personal_complications_natal', 'personal_complications_postnatal',
-        'development_weaning_age', 'development_first_words', 'development_three_words', 'development_walking',
-        'development_neurotic_traits', 'development_nail_biting', 'development_bedwetting', 'development_phobias',
-        'development_childhood_illness', 'provisional_diagnosis', 'treatment_plan', 'consultant_comments'
-      ];
-
-      const adlUpdateData = {};
-      const proformaUpdateData = { ...updateData };
-      
-      // Separate complex case fields for ADL update
-      complexCaseFields.forEach(field => {
-        if (proformaUpdateData[field] !== undefined) {
-          adlUpdateData[field] = proformaUpdateData[field];
-          delete proformaUpdateData[field];
-        }
-      });
-
-      // Update clinical proforma
-      const result = await updateProforma(proformaUpdateData).unwrap();
-      
-      // Update ADL file if it exists and has complex case data
-      if (proforma?.adl_file_id && Object.keys(adlUpdateData).length > 0) {
-        try {
-          await updateADLFile({ id: proforma.adl_file_id, ...adlUpdateData }).unwrap();
-        } catch (adlError) {
-          console.error('Failed to update ADL file:', adlError);
-        }
-      }
-
-      toast.success('Clinical proforma updated successfully!');
-      
-      // Navigate back - prioritize returnPath, then returnTab, then default
-      if (returnPath) {
-        navigate(decodeURIComponent(returnPath));
-      } else if (returnTab) {
-        navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
-      } else {
-        navigate(`/clinical/${id}`);
-      }
-    } catch (err) {
-      toast.error(err?.data?.message || 'Failed to update clinical proforma');
-      throw err;
-    }
+  // Default options for checkbox groups
+  const defaultOptions = {
+    mood: ['Anxious', 'Sad', 'Cheerful', 'Agitated', 'Fearful', 'Irritable'],
+    behaviour: ['Suspiciousness', 'Talking/Smiling to self', 'Hallucinatory behaviour', 'Increased goal-directed activity', 'Compulsions', 'Apathy', 'Anhedonia', 'Avolution', 'Stupor', 'Posturing', 'Stereotypy', 'Ambitendency', 'Disinhibition', 'Impulsivity', 'Anger outbursts', 'Suicide/self-harm attempts'],
+    speech: ['Irrelevant', 'Incoherent', 'Pressure', 'Alogia', 'Mutism'],
+    thought: ['Reference', 'Persecution', 'Grandiose', 'Love Infidelity', 'Bizarre', 'Pessimism', 'Worthlessness', 'Guilt', 'Poverty', 'Nihilism', 'Hypochondriasis', 'Wish to die', 'Active suicidal ideation', 'Plans', 'Worries', 'Obsessions', 'Phobias', 'Panic attacks'],
+    perception: ['Hallucination - Auditory', 'Hallucination - Visual', 'Hallucination - Tactile', 'Hallucination - Olfactory', 'Passivity', 'Depersonalization', 'Derealization'],
+    somatic: ['Pains', 'Numbness', 'Weakness', 'Fatigue', 'Tremors', 'Palpitations', 'Dyspnoea', 'Dizziness'],
+    bio_functions: ['Sleep', 'Appetite', 'Bowel/Bladder', 'Self-care'],
+    adjustment: ['Work output', 'Socialization'],
+    cognitive_function: ['Disorientation', 'Inattention', 'Impaired Memory', 'Intelligence'],
+    fits: ['Epileptic', 'Dissociative', 'Mixed', 'Not clear'],
+    sexual_problem: ['Dhat', 'Poor erection', 'Early ejaculation', 'Decreased desire', 'Perversion', 'Homosexuality', 'Gender dysphoria'],
+    substance_use: ['Alcohol', 'Opioid', 'Cannabis', 'Benzodiazepines', 'Tobacco'],
+    associated_medical_surgical: ['Hypertension', 'Diabetes', 'Dyslipidemia', 'Thyroid dysfunction'],
+    mse_behaviour: ['Uncooperative', 'Unkempt', 'Fearful', 'Odd', 'Suspicious', 'Retarded', 'Excited', 'Aggressive', 'Apathetic', 'Catatonic', 'Demonstrative'],
+    mse_affect: ['Sad', 'Anxious', 'Elated', 'Inappropriate', 'Blunted', 'Labile'],
+    mse_perception: ['Hallucinations - Auditory', 'Hallucinations - Visual', 'Hallucinations - Tactile', 'Hallucinations - Olfactory', 'Illusions', 'Depersonalization', 'Derealization'],
+    mse_cognitive_function: ['Impaired', 'Not impaired'],
   };
 
+    // Determine if this is embedded (has initialData prop) or standalone page
+  const isEmbedded = !!propInitialData;
+
+  const formContent = (
+    <form onSubmit={handleSubmit}>
+      <Card className={isEmbedded ? "shadow-lg border-0 bg-white" : "mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"}>
+        {/* Collapsible Header */}
+        <div
+          className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
+          onClick={() => toggleCard('clinicalProforma')}
+        >
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-green-100 rounded-lg">
+              <FiClipboard className="h-6 w-6 text-green-600" />
+          </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">Clinical Proforma</h3>
+              {patient && (
+                <p className="text-sm text-gray-500 mt-1">
+                  {patient.name || 'N/A'} - {patient.cr_no || 'N/A'}
+                </p>
+              )}
+      </div>
+          </div>
+          {expandedCards.clinicalProforma ? (
+            <FiChevronUp className="h-6 w-6 text-gray-500" />
+          ) : (
+            <FiChevronDown className="h-6 w-6 text-gray-500" />
+          )}
+        </div>
+
+        {expandedCards.clinicalProforma && (
+          <div className="p-6 space-y-6">
+            {!isEmbedded && <h1 className="text-3xl font-bold text-gray-900 mb-6">Edit Clinical Proforma</h1>}
+              
+              {/* Basic Information Section */}
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Basic Information</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <Input
+                    label="Patient ID"
+                    name="patient_id"
+                    value={formData.patient_id}
+                    onChange={handleChange}
+                    disabled
+                    error={errors.patient_id}
+                  />
+                  {patient && (
+                    <>
+                      <Input
+                        label="Patient Name"
+                        value={patient.name || ''}
+                        disabled
+                      />
+                      <Input
+                        label="CR Number"
+                        value={patient.cr_no || ''}
+                        disabled
+                      />
+                      <Input
+                        label="Age"
+                        value={patient.age || ''}
+                        disabled
+                      />
+                      <Input
+                        label="Sex"
+                        value={patient.sex || ''}
+                        disabled
+                      />
+                    </>
+                  )}
+                  <Input
+                    label="Room Number / Ward"
+                    name="room_no"
+                    value={formData.room_no}
+                    onChange={handleChange}
+                  />
+                  <Select
+                    label="Assigned Doctor"
+                    name="assigned_doctor"
+                    value={formData.assigned_doctor}
+                    onChange={handleChange}
+                    options={[
+                      { value: '', label: 'Select Doctor' },
+                      ...doctors.map(doctor => ({
+                        value: doctor.id.toString(),
+                        label: `${doctor.name} (${doctor.email})`
+                      }))
+                    ]}
+                  />
+                  <Input
+                    label="Visit Date"
+                    name="visit_date"
+                    type="date"
+                    value={formData.visit_date}
+                    onChange={handleChange}
+                    required
+                    error={errors.visit_date}
+                  />
+                  <Select
+                    label="Visit Type"
+                    name="visit_type"
+                    value={formData.visit_type}
+                    onChange={handleChange}
+                    options={VISIT_TYPES}
+                  />
+                </div>
+              </div>
+
+              {/* Informant Section */}
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Informant</h2>
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-3">
+                    {[
+                      { v: true, t: 'Present' },
+                      { v: false, t: 'Absent' },
+                    ].map(({ v, t }) => (
+                      <label key={t} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
+                        formData.informant_present === v ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="informant_present"
+                          checked={formData.informant_present === v}
+                          onChange={() => handleChange({ target: { name: 'informant_present', value: v } })}
+                          className="h-4 w-4 text-primary-600"
+                        />
+                        <span className="font-medium">{t}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    {['Reliable', 'Unreliable', 'Adequate', 'Inadequate'].map((opt) => (
+                      <label key={opt} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
+                        formData.nature_of_information === opt ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="nature_of_information"
+                          value={opt}
+                          checked={formData.nature_of_information === opt}
+                          onChange={handleChange}
+                          className="h-4 w-4 text-primary-600"
+                        />
+                        <span className="font-medium">{opt}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col md:flex-row md:flex-wrap gap-3">
+                      {[{v:'<1_week',t:'1. < 1 week'}, {v:'1w_1m',t:'2. 1 week – 1 month'}, {v:'>1_month',t:'3. > 1 month'}, {v:'not_known',t:'4. Not known'}].map(({v,t}) => (
+                        <label key={v} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
+                          formData.onset_duration === v ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
+                        }`}>
+                          <input
+                            type="radio"
+                            name="onset_duration"
+                            value={v}
+                            checked={formData.onset_duration === v}
+                            onChange={handleChange}
+                            className="h-4 w-4 text-primary-600"
+                          />
+                          <span className="font-medium">{t}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div className="flex flex-col md:flex-row md:flex-wrap gap-3">
+                      {['Continuous', 'Episodic', 'Fluctuating', 'Deteriorating', 'Improving'].map((opt) => (
+                        <label key={opt} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
+                          formData.course === opt ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
+                        }`}>
+                          <input
+                            type="radio"
+                            name="course"
+                            value={opt}
+                            checked={formData.course === opt}
+                            onChange={handleChange}
+                            className="h-4 w-4 text-primary-600"
+                          />
+                          <span className="font-medium">{opt}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <Textarea
+                    label="Precipitating Factor"
+                    name="precipitating_factor"
+                    value={formData.precipitating_factor}
+                    onChange={handleChange}
+                    rows={3}
+                  />
+                  <Input
+                    label="Total Duration of Illness"
+                    name="illness_duration"
+                    value={formData.illness_duration}
+                    onChange={handleChange}
+                  />
+                  <Input
+                    label="Current Episode Duration / Worsening Since"
+                    name="current_episode_since"
+                    value={formData.current_episode_since}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+
+              {/* Complaints / History of Presenting Illness */}
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Complaints / History of Presenting Illness</h2>
+                <div className="space-y-6">
+                  <CheckboxGroup label="Mood" name="mood" value={formData.mood || []} onChange={handleChange} options={defaultOptions.mood} />
+                  <CheckboxGroup label="Behaviour" name="behaviour" value={formData.behaviour || []} onChange={handleChange} options={defaultOptions.behaviour} />
+                  <CheckboxGroup label="Speech" name="speech" value={formData.speech || []} onChange={handleChange} options={defaultOptions.speech} />
+                  <CheckboxGroup label="Thought" name="thought" value={formData.thought || []} onChange={handleChange} options={defaultOptions.thought} />
+                  <CheckboxGroup label="Perception" name="perception" value={formData.perception || []} onChange={handleChange} options={defaultOptions.perception} />
+                  <CheckboxGroup label="Somatic" name="somatic" value={formData.somatic || []} onChange={handleChange} options={defaultOptions.somatic} />
+                  <CheckboxGroup label="Bio-functions" name="bio_functions" value={formData.bio_functions || []} onChange={handleChange} options={defaultOptions.bio_functions} />
+                  <CheckboxGroup label="Adjustment" name="adjustment" value={formData.adjustment || []} onChange={handleChange} options={defaultOptions.adjustment} />
+                  <CheckboxGroup label="Cognitive Function" name="cognitive_function" value={formData.cognitive_function || []} onChange={handleChange} options={defaultOptions.cognitive_function} />
+                  <CheckboxGroup label="Fits" name="fits" value={formData.fits || []} onChange={handleChange} options={defaultOptions.fits} />
+                  <CheckboxGroup label="Sexual Problem" name="sexual_problem" value={formData.sexual_problem || []} onChange={handleChange} options={defaultOptions.sexual_problem} />
+                  <CheckboxGroup label="Substance Use" name="substance_use" value={formData.substance_use || []} onChange={handleChange} options={defaultOptions.substance_use} />
+                </div>
+              </div>
+
+              {/* Additional History */}
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Additional History</h2>
+                <div className="space-y-4">
+                  <Textarea
+                    label="Past Psychiatric History"
+                    name="past_history"
+                    value={formData.past_history}
+                    onChange={handleChange}
+                    rows={4}
+                  />
+                  <Textarea
+                    label="Family History"
+                    name="family_history"
+                    value={formData.family_history}
+                    onChange={handleChange}
+                    rows={4}
+                  />
+                  <CheckboxGroup 
+                    label="Associated Medical/Surgical Illness" 
+                    name="associated_medical_surgical" 
+                    value={formData.associated_medical_surgical || []} 
+                    onChange={handleChange} 
+                    options={defaultOptions.associated_medical_surgical} 
+                  />
+                </div>
+              </div>
+
+              {/* Mental State Examination (MSE) */}
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Mental State Examination (MSE)</h2>
+                <div className="space-y-6">
+                  <CheckboxGroup label="MSE - Behaviour" name="mse_behaviour" value={formData.mse_behaviour || []} onChange={handleChange} options={defaultOptions.mse_behaviour} />
+                  <CheckboxGroup label="MSE - Affect & Mood" name="mse_affect" value={formData.mse_affect || []} onChange={handleChange} options={defaultOptions.mse_affect} />
+                  <CheckboxGroup
+                    label="MSE - Thought (Flow, Form, Content)"
+                    name="mse_thought"
+                    value={formData.mse_thought || []}
+                    onChange={handleChange}
+                    options={[]}
+                    rightInlineExtra={
+                      <Input
+                        name="mse_delusions"
+                        value={formData.mse_delusions}
+                        onChange={handleChange}
+                        placeholder="Delusions / Ideas of (optional)"
+                        className="max-w-xs"
+                      />
+                    }
+                  />
+                  <CheckboxGroup label="MSE - Perception" name="mse_perception" value={formData.mse_perception || []} onChange={handleChange} options={defaultOptions.mse_perception} />
+                  <CheckboxGroup label="MSE - Cognitive Functions" name="mse_cognitive_function" value={formData.mse_cognitive_function || []} onChange={handleChange} options={defaultOptions.mse_cognitive_function} />
+                </div>
+              </div>
+
+              {/* General Physical Examination */}
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">General Physical Examination</h2>
+                <div className="space-y-4">
+                  <Textarea
+                    label="GPE Findings"
+                    name="gpe"
+                    value={formData.gpe}
+                    onChange={handleChange}
+                    rows={4}
+                    placeholder="BP, Pulse, Weight, BMI, General appearance, Systemic examination..."
+                  />
+                </div>
+              </div>
+
+              {/* Diagnosis & Management */}
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Diagnosis & Management</h2>
+                <div className="space-y-4">
+                  <Textarea
+                    label="Diagnosis"
+                    name="diagnosis"
+                    value={formData.diagnosis}
+                    onChange={handleChange}
+                    rows={3}
+                    placeholder="Primary and secondary diagnoses..."
+                  />
+                  <ICD11CodeSelector
+                    value={formData.icd_code}
+                    onChange={handleChange}
+                    error={errors.icd_code}
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Select
+                      label="Case Severity"
+                      name="case_severity"
+                      value={formData.case_severity}
+                      onChange={handleChange}
+                      options={CASE_SEVERITY}
+                    />
+                    <Select
+                      label="Doctor Decision"
+                      name="doctor_decision"
+                      value={formData.doctor_decision}
+                      onChange={handleChange}
+                      options={DOCTOR_DECISION}
+                      required
+                    />
+                  </div>
+                  <Textarea
+                    label="Disposal & Referral"
+                    name="disposal"
+                    value={formData.disposal}
+                    onChange={handleChange}
+                    rows={2}
+                    placeholder="Admission, discharge, follow-up..."
+                  />
+                  <Input
+                    label="Workup Appointment"
+                    type="date"
+                    name="workup_appointment"
+                    value={formData.workup_appointment}
+                    onChange={handleChange}
+                  />
+                  <Textarea
+                    label="Referred To"
+                    name="referred_to"
+                    value={formData.referred_to}
+                    onChange={handleChange}
+                    rows={2}
+                    placeholder="Other departments or specialists..."
+                  />
+                  <Textarea
+                    label="Treatment Prescribed"
+                    name="treatment_prescribed"
+                    value={formData.treatment_prescribed}
+                    onChange={handleChange}
+                    rows={4}
+                    placeholder="Treatment details..."
+                  />
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <div className="flex justify-end gap-3 pt-6 border-t">
+            <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate(-1)}
+                  className="flex items-center gap-2"
+            >
+              <FiArrowLeft className="w-4 h-4" />
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  loading={isUpdating}
+                  disabled={isUpdating}
+                  className="flex items-center gap-2 bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700"
+                >
+                  <FiSave className="w-4 h-4" />
+                  {isUpdating ? 'Updating...' : 'Update Clinical Proforma'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
+      </form>
+    );
+
+  // If embedded, return just the form without full page wrapper
+  if (isEmbedded) {
+    return formContent;
+  }
+
+  // If standalone, return with full page wrapper
   return (
-    <CreateClinicalProforma 
-      initialData={initialFormData}
-      onUpdate={handleUpdate}
-      proformaId={id}
-    />
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-teal-50">
+      <div className="w-full px-6 py-8 space-y-8">
+        {formContent}
+      </div>
+    </div>
   );
 };
 

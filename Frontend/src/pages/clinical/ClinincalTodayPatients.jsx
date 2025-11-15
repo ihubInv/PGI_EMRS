@@ -185,7 +185,7 @@ const PatientRow = ({ patient, activeTab, navigate }) => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`/clinical/prescribe-medication?patient_id=${patient.id}&returnTab=${activeTab}`)}
+              onClick={() => navigate(`/prescriptions/create?patient_id=${patient.id}&returnTab=${activeTab}`)}
               className="flex items-center justify-center gap-2 w-full lg:w-full px-4 py-2.5 text-sm font-medium transition-all hover:shadow-md"
             >
               <FiPlusCircle className="w-4 h-4 flex-shrink-0" />

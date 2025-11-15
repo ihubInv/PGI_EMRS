@@ -21,6 +21,14 @@ export const adlApiSlice = apiSlice.injectEndpoints({
       query: (patientId) => `/adl-files/patient/${patientId}`,
       providesTags: (result, error, patientId) => [{ type: 'ADL', id: `patient-${patientId}` }],
     }),
+    createADLFile: builder.mutation({
+      query: (data) => ({
+        url: '/adl-files',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['ADL', 'Stats'],
+    }),
     updateADLFile: builder.mutation({
       query: ({ id, ...data }) => ({
         url: `/adl-files/${id}`,
@@ -78,6 +86,7 @@ export const {
   useGetADLFileByIdQuery,
   useGetADLFileByADLNoQuery,
   useGetADLFileByPatientIdQuery,
+  useCreateADLFileMutation,
   useUpdateADLFileMutation,
   useRetrieveFileMutation,
   useReturnFileMutation,

@@ -688,6 +688,92 @@ router.get('/', authenticateToken, validatePagination, ADLController.getAllADLFi
 
 /**
  * @swagger
+ * /api/adl-files:
+ *   post:
+ *     summary: Create a new ADL file
+ *     description: |
+ *       Creates a new ADL file with comprehensive patient data for complex cases.
+ *       All fields from ADL_FILE_FORM schema can be included in the request body.
+ *       The ADL number will be auto-generated if not provided.
+ *     tags: [Additional Detail File]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - patient_id
+ *             properties:
+ *               patient_id:
+ *                 type: integer
+ *                 description: Patient ID (required)
+ *               clinical_proforma_id:
+ *                 type: integer
+ *                 description: Clinical proforma ID (optional)
+ *               adl_no:
+ *                 type: string
+ *                 description: ADL number (auto-generated if not provided)
+ *               file_status:
+ *                 type: string
+ *                 enum: [created, stored, retrieved, active, archived]
+ *                 default: created
+ *               # All complex case fields from ADL_FILE_FORM can be included:
+ *               history_narrative:
+ *                 type: string
+ *               history_specific_enquiry:
+ *                 type: string
+ *               informants:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     relationship:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     reliability:
+ *                       type: string
+ *               complaints_patient:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     complaint:
+ *                       type: string
+ *                     duration:
+ *                       type: string
+ *               # ... (all other ADL_FILE_FORM fields can be included)
+ *     responses:
+ *       201:
+ *         description: ADL file created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     adl_file:
+ *                       $ref: '#/components/schemas/ADLFile'
+ *       400:
+ *         description: Bad request (missing required fields)
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.post('/', authenticateToken, ADLController.createADLFile);
+
+/**
+ * @swagger
  * /api/adl-files/stats:
  *   get:
  *     summary: Get ADL file statistics
