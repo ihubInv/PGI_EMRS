@@ -234,7 +234,8 @@ const ClinicalTodayPatients = () => {
     refetchOnReconnect: true,
   });
   
-  console.log(">>>>data",data?.data?.patients)
+  // Debug: Log filtered patients for troubleshooting
+  // console.log("API Patients:", apiPatients?.length, "Today Patients:", todayPatients?.length, "New Patients:", newPatients?.length)
   // Track previous location to detect navigation changes
   const prevLocationRef = useRef(location.pathname);
   
@@ -291,7 +292,11 @@ const ClinicalTodayPatients = () => {
   // Helper: get YYYY-MM-DD string in IST for any date-like input
   const toISTDateString = (dateInput) => {
     try {
+      if (!dateInput) return '';
+      // Handle both string and Date objects
       const d = new Date(dateInput);
+      // Check if date is valid
+      if (isNaN(d.getTime())) return '';
       return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // YYYY-MM-DD
     } catch (_) {
       return '';
@@ -304,9 +309,11 @@ const ClinicalTodayPatients = () => {
     const targetDate = toISTDateString(selectedDate || new Date());
 
     return patients.filter((patient) => {
-      // Check if patient was created today
-      const createdToday = patient?.created_at && 
-        toISTDateString(patient.created_at) === targetDate;
+      if (!patient) return false;
+
+      // Check if patient was created today - be more lenient with date comparison
+      const patientCreatedDate = patient?.created_at ? toISTDateString(patient.created_at) : '';
+      const createdToday = patientCreatedDate && patientCreatedDate === targetDate;
 
       // Check if patient has a visit today (from latest assignment date, visit date, or has_visit_today flag)
       const hasVisitToday = patient?.has_visit_today === true ||
@@ -318,9 +325,14 @@ const ClinicalTodayPatients = () => {
       // Patient appears if created today OR has visit today
       if (!createdToday && !hasVisitToday) return false;
 
-      // If patient was created today and API provides who filled the record, ensure it's MWO
-      if (createdToday && patient?.filled_by_role && !isMWO(patient.filled_by_role)) {
-        return false;
+      // For patients created today: 
+      // - If filled_by_role is provided, it should be MWO (but don't filter if missing)
+      // - Only filter out if explicitly NOT MWO
+      if (createdToday && patient?.filled_by_role) {
+        // Only filter out if role exists and is explicitly NOT MWO
+        if (!isMWO(patient.filled_by_role)) {
+          return false;
+        }
       }
 
       return true;
@@ -335,7 +347,8 @@ const ClinicalTodayPatients = () => {
   const isNewPatient = (patient) => {
     if (!patient?.created_at) return false;
     const targetDate = toISTDateString(selectedDate || new Date());
-    return toISTDateString(patient.created_at) === targetDate;
+    const patientCreatedDate = toISTDateString(patient.created_at);
+    return patientCreatedDate && patientCreatedDate === targetDate;
   };
 
   const isExistingPatient = (patient) => {
@@ -347,20 +360,38 @@ const ClinicalTodayPatients = () => {
       toISTDateString(patient.visit_date) === targetDate);
     
     // Existing patient: has visit today but NOT created today
-    const createdToday = patient?.created_at && 
-      toISTDateString(patient.created_at) === targetDate;
+    const patientCreatedDate = patient?.created_at ? toISTDateString(patient.created_at) : '';
+    const createdToday = patientCreatedDate && patientCreatedDate === targetDate;
     
     return hasVisitToday && !createdToday;
   };
 
   const todayPatients = filterTodayPatients(apiPatients).filter((p) => {
     if (!currentUser) return false;
+    
+    // Admin can see all patients
     if (isAdmin(currentUser.role)) return true;
+    
+    // MWO can see all patients created today (new patients)
+    if (isMWO(currentUser.role)) {
+      // MWO should see all patients - they register new patients
+      return true;
+    }
+    
     // Only allow JR/SR to see patients assigned to them
     if (isJrSr(currentUser.role)) {
       // Prefer direct field; fallback to latest assignment fields if present
-      if (p.assigned_doctor_id) return Number(p.assigned_doctor_id) === Number(currentUser.id);
-      if (p.assigned_doctor) return Number(p.assigned_doctor) === Number(currentUser.id);
+      if (p.assigned_doctor_id) {
+        // Handle both UUID and integer IDs
+        const patientDoctorId = String(p.assigned_doctor_id);
+        const currentUserId = String(currentUser.id);
+        return patientDoctorId === currentUserId;
+      }
+      if (p.assigned_doctor) {
+        const patientDoctorId = String(p.assigned_doctor);
+        const currentUserId = String(currentUser.id);
+        return patientDoctorId === currentUserId;
+      }
       if (p.assigned_doctor_name && p.assigned_doctor_role) {
         // If role exists but id missing, be conservative: hide
         return false;
@@ -368,6 +399,7 @@ const ClinicalTodayPatients = () => {
       // If no assignment info present, hide for doctors
       return false;
     }
+    
     // Other roles: default deny
     return false;
   });
