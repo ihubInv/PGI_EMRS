@@ -14,6 +14,7 @@ import { FiEdit3, FiClipboard, FiCheckSquare, FiList, FiActivity, FiHeart, FiUse
 import { VISIT_TYPES, CASE_SEVERITY, DOCTOR_DECISION, isJR, isSR } from '../../utils/constants';
 import { useGetClinicalOptionsQuery, useAddClinicalOptionMutation, useDeleteClinicalOptionMutation } from '../../features/clinical/clinicalApiSlice';
 import icd11Codes from '../../assets/ICD11_Codes.json';
+import CreatePrescription from '../PrescribeMedication/CreatePrescription';
 
 // Reusable checkbox group with inline add-input and toggle Add/Save button
 const CheckboxGroup = ({ label, name, value = [], onChange, options = [], rightInlineExtra = null }) => {
@@ -90,86 +91,7 @@ const CheckboxGroup = ({ label, name, value = [], onChange, options = [], rightI
   };
 
   return (
-//     <div className="space-y-2">
-//       {label && <label className="block text-sm font-medium text-gray-700">{label}</label>}
-//       <div className="flex flex-wrap gap-3">
-   
-//         {localOptions.map((opt) => (
-//           <div key={opt} className="relative inline-flex items-center group">
-//             <button
-//               type="button"
-//               onClick={() => handleDelete(opt)}
-//               className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md opacity-0 pointer-events-none transition-opacity duration-150 group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-red-600"
-//               aria-label={`Remove ${opt}`}
-//             >
-//               <FiX className="w-3 h-3" />
-//             </button>
-//             <label
-//               className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm transition-colors duration-150 cursor-pointer
-//                 ${value.includes(opt)
-//                   ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
-//                   : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-800'}`}
-//             >
-//               <input
-//                 type="checkbox"
-//                 checked={value.includes(opt)}
-//                 onChange={() => toggle(opt)}
-//                 className="h-4 w-4 text-primary-600 rounded"
-//               />
-//               <span>{opt}</span>
-//             </label>
-//           </div>
-//         ))}
-//       </div>
-//       <div className="mt-2 flex items-center gap-2">
-//         {showAdd && (
-//           <Input
-//             placeholder="Enter option name"
-//             value={customOption}
-//             onChange={(e) => setCustomOption(e.target.value)}
-//             className="max-w-xs"
-            
-//           />
-//         )}
-//         {/* <Button type="button" onClick={addOrToggle} className='bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'>{showAdd ? 'Save' : 'Add'}</Button> */}
-//         <div className="flex justify-end gap-3">
-//   {showAdd ? (
-//     <>
-//       {/* Cancel Button */}
-//       <Button
-//         type="button"
-//         onClick={handleCancelAdd}
-//         className="bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30 px-4 py-2 rounded-md flex items-center gap-2"
-//       >
-//         <FiX className="w-4 h-4" /> Cancel
-//       </Button>
 
-//       {/* Save Button */}
-//       <Button
-//         type="button"
-//         onClick={handleSaveAdd}
-//         className="bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30 px-4 py-2 rounded-md flex items-center gap-2"
-//       >
-//         <FiSave className="w-4 h-4" /> Save
-//       </Button>
-//     </>
-//   ) : (
-//     /* Add Button (default state) */
-//     <Button
-//       type="button"
-//       onClick={handleAddClick}
-//       // className="bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30 px-4 py-2 rounded-md flex items-center gap-2"
-//       className="bg-white text-black border border-gray-300 px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-200 hover:bg-gradient-to-r hover:from-green-500 hover:to-green-600 hover:text-white hover:shadow-lg hover:shadow-green-500/30"
-//     >
-//       <FiPlus className="w-4 h-4" /> Add
-//     </Button>
-//   )}
-// </div>
-
-
-
-//       </div>
-//     </div>
 
 <div className="space-y-2">
 {label && (
@@ -1568,22 +1490,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
       <div className="w-full px-6 py-8 space-y-8">
         {/* Header */}
         <div className="relative">
-          {/* <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-600/10 to-indigo-600/10 rounded-3xl"></div>
-          <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-r from-fuchsia-600 to-indigo-600 rounded-2xl shadow-lg">
-                <FiClipboard className="w-8 h-8 text-white" />
-              </div>
-      <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-fuchsia-600 to-indigo-800 bg-clip-text text-transparent">
-                  Patient Details
-                </h1>
-                <p className="text-gray-600 mt-1">
-                  Clinical Proforma
-                </p>
-              </div>
-            </div>
-          </div> */}
+        
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -1596,7 +1503,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
                   <div className="p-2 bg-green-100 rounded-lg">
                     <FiClipboard className="w-6 h-6 text-green-600" />
                   </div>
-                  <span className="text-xl font-bold text-gray-900">Clinical Proforma</span>
+                  <span className="text-xl font-bold text-gray-900">Clinical Proformas</span>
                 </div>
                 {expandedCards.clinicalProforma ? (
                   <FiChevronUp className="w-5 h-5 text-gray-600" />
@@ -4159,125 +4066,26 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
             className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
           >
             {expandedCards.prescription && (
-              <div className="space-y-4">
-                {prescriptions?.map((prescription, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-gray-700">Prescription {index + 1}</h4>
-                      {prescriptions.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const newPrescriptions = prescriptions.filter((_, i) => i !== index);
-                            setPrescriptions(newPrescriptions);
-                          }}
-                          className="text-red-600"
-                        >
-                          <FiX className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input
-                        label="Medicine"
-                        value={prescription.medicine}
-                        onChange={(e) => {
-                          const newPrescriptions = [...prescriptions];
-                          newPrescriptions[index].medicine = e.target.value;
-                          setPrescriptions(newPrescriptions);
-                        }}
-                        placeholder="Medicine name"
-                      />
-                      <Input
-                        label="Dosage"
-                        value={prescription.dosage}
-                        onChange={(e) => {
-                          const newPrescriptions = [...prescriptions];
-                          newPrescriptions[index].dosage = e.target.value;
-                          setPrescriptions(newPrescriptions);
-                        }}
-                        placeholder="Dosage"
-                      />
-                      <Input
-                        label="When to Take"
-                        value={prescription.when}
-                        onChange={(e) => {
-                          const newPrescriptions = [...prescriptions];
-                          newPrescriptions[index].when = e.target.value;
-                          setPrescriptions(newPrescriptions);
-                        }}
-                        placeholder="Before/after food, etc."
-                      />
-                      <Input
-                        label="Frequency"
-                        value={prescription.frequency}
-                        onChange={(e) => {
-                          const newPrescriptions = [...prescriptions];
-                          newPrescriptions[index].frequency = e.target.value;
-                          setPrescriptions(newPrescriptions);
-                        }}
-                        placeholder="Daily, twice daily, etc."
-                      />
-                      <Input
-                        label="Duration"
-                        value={prescription.duration}
-                        onChange={(e) => {
-                          const newPrescriptions = [...prescriptions];
-                          newPrescriptions[index].duration = e.target.value;
-                          setPrescriptions(newPrescriptions);
-                        }}
-                        placeholder="5 days, 1 month, etc."
-                      />
-                      <Input
-                        label="Quantity"
-                        value={prescription.qty}
-                        onChange={(e) => {
-                          const newPrescriptions = [...prescriptions];
-                          newPrescriptions[index].qty = e.target.value;
-                          setPrescriptions(newPrescriptions);
-                        }}
-                        placeholder="Quantity"
-                      />
-                    </div>
-                    <Textarea
-                      label="Details"
-                      value={prescription.details}
-                      onChange={(e) => {
-                        const newPrescriptions = [...prescriptions];
-                        newPrescriptions[index].details = e.target.value;
-                        setPrescriptions(newPrescriptions);
-                      }}
-                      placeholder="Additional details"
-                      rows={2}
-                    />
-                    <Textarea
-                      label="Notes"
-                      value={prescription.notes}
-                      onChange={(e) => {
-                        const newPrescriptions = [...prescriptions];
-                        newPrescriptions[index].notes = e.target.value;
-                        setPrescriptions(newPrescriptions);
-                      }}
-                      placeholder="Additional notes"
-                      rows={2}
-                    />
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setPrescriptions([...prescriptions, { medicine: '', dosage: '', when: '', frequency: '', duration: '', qty: '', details: '', notes: '' }]);
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <FiPlus className="w-4 h-4" />
-                  Add Prescription
-                </Button>
-              </div>
+              <>
+                <CreatePrescription
+                  patientId={formData.patient_id}
+                  clinicalProformaId={formData.id}
+                  returnTab={formData.returnTab}
+                  currentUser={formData.currentUser}
+                  prescriptions={formData.prescriptions}
+                  setPrescriptions={formData.setPrescriptions}
+                  addPrescriptionRow={formData.addPrescriptionRow}
+                  updatePrescriptionCell={formData.updatePrescriptionCell}
+                  selectMedicine={formData.selectMedicine}
+                  handleMedicineKeyDown={formData.handleMedicineKeyDown}
+                  removePrescriptionRow={formData.removePrescriptionRow}
+                  clearAllPrescriptions={formData.clearAllPrescriptions}
+                  handleSave={formData.handleSave}
+                  handlePrint={formData.handlePrint}
+                  formatDateFull={formData.formatDateFull}
+                  formatDate={formData.formatDate}
+                />
+              </>
             )}
           </Card>
 

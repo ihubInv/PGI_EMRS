@@ -12,6 +12,8 @@ import {
 import { useCreatePatientMutation, useAssignPatientMutation, useCreatePatientCompleteMutation, useCheckCRNumberExistsQuery } from '../../features/patients/patientsApiSlice';
 import { useGetDoctorsQuery } from '../../features/users/usersApiSlice';
 import { updatePatientRegistrationForm, resetPatientRegistrationForm, selectPatientRegistrationForm } from '../../features/form/formSlice';
+import { useCreateClinicalProformaMutation } from '../../features/clinical/clinicalApiSlice';
+
 import Card from '../../components/Card';
 import Select from '../../components/Select';
 import Button from '../../components/Button';
@@ -67,7 +69,7 @@ const CreatePatient = () => {
   const [createRecord, { isLoading }] = useCreatePatientCompleteMutation();
   const [assignPatient, { isLoading: isAssigning }] = useAssignPatientMutation();
   const { data: usersData } = useGetDoctorsQuery({ page: 1, limit: 100 });
-
+  const [createProforma, { isLoading: isCreating }] = useCreateClinicalProformaMutation();
   // State declarations first
   const [errors, setErrors] = useState({});
   const [crValidationTimeout, setCrValidationTimeout] = useState(null);
@@ -237,6 +239,7 @@ const CreatePatient = () => {
 
 
   const handleSubmit = async (e) => {
+    debugger
     e.preventDefault();
 
     if (!validate()) {
@@ -387,6 +390,13 @@ const CreatePatient = () => {
           // Don't show error toast as patient was already created successfully
         }
       }
+      const result = await createProforma({
+        patient_id: patientId,
+        visit_date: new Date().toISOString().split('T')[0]
+        // doctor_id: doctorId,
+        // room_no: formData.assigned_room || ''
+      }).unwrap();
+
 
       // Reset form after successful submission
       dispatch(resetPatientRegistrationForm());

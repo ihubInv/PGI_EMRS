@@ -294,7 +294,7 @@ const validatePatientRegistration = [
     .withMessage('Pin code must be exactly 6 digits'),
   
   // Present Address Information
-  body('present_address_line_1')
+  body('present_address_line')
     .optional()
     .isLength({ max: 255 })
     .withMessage('Present address line 1 must not exceed 255 characters'),
@@ -376,7 +376,8 @@ const validatePatientRegistration = [
 // Clinical proforma validation
 const validateClinicalProforma = [
   body('patient_id')
-    .isInt({ min: 1 })
+    // .isInt({ min: 1 })
+    .isUUID()
     .withMessage('Valid patient ID is required'),
   body('visit_date')
     .isISO8601()
@@ -407,7 +408,8 @@ const validateClinicalProforma = [
 // ADL file validation
 const validateADLFile = [
   body('patient_id')
-    .isInt({ min: 1 })
+    // .isInt({ min: 1 })
+    .isUUID()
     .withMessage('Valid patient ID is required'),
   body('clinical_proforma_id')
     .isInt({ min: 1 })

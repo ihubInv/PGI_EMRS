@@ -8,9 +8,17 @@ import { useGetClinicalProformaByPatientIdQuery } from '../../features/clinical/
 import { useCreateBulkPrescriptionsMutation } from '../../features/prescriptions/prescriptionApiSlice';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
-import { FiPackage, FiUser, FiSave, FiX, FiPlus, FiTrash2, FiHome, FiUserCheck, FiCalendar, FiFileText, FiClock, FiPrinter } from 'react-icons/fi';
+import { FiPackage, FiUser, FiSave, FiX, FiPlus, FiTrash2, FiHome, FiUserCheck, FiCalendar, FiFileText, FiClock, FiPrinter, FiSearch, FiDroplet, FiActivity } from 'react-icons/fi';
 import PGI_Logo from '../../assets/PGI_Logo.png';
 import medicinesData from '../../assets/psychiatric_meds_india.json';
+import { 
+  PRESCRIPTION_FORM,
+  DOSAGE_OPTIONS,
+  WHEN_OPTIONS,
+  FREQUENCY_OPTIONS,
+  DURATION_OPTIONS,
+  QUANTITY_OPTIONS
+} from '../../utils/constants';
 
 const CreatePrescription = () => {
   const navigate = useNavigate();
@@ -38,6 +46,7 @@ const CreatePrescription = () => {
 
   // Get the most recent clinical proforma for past history
   const latestProforma = clinicalHistory.length > 0 ? clinicalHistory[0] : null;
+  
 
   // Get today's proforma or latest proforma for linking prescriptions
   const getProformaForPrescription = () => {
@@ -126,14 +135,32 @@ const CreatePrescription = () => {
 
   // Medicine autocomplete state for each row
   const [medicineSuggestions, setMedicineSuggestions] = useState({});
+  const [filteredSuggestions, setFilteredSuggestions] = useState({}); // Filtered suggestions for dropdown search
+  const [dropdownSearchTerm, setDropdownSearchTerm] = useState({}); // Search term within dropdown
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState({});
   const [showSuggestions, setShowSuggestions] = useState({});
   const [suggestionPositions, setSuggestionPositions] = useState({});
   const inputRefs = useRef({});
+  const dropdownSearchRefs = useRef({});
 
   const addPrescriptionRow = () => {
     setPrescriptions((prev) => ([...prev, { medicine: '', dosage: '', when: '', frequency: '', duration: '', qty: '', details: '', notes: '' }]));
   };
+
+  // Optimized medicine filter function
+  const filterMedicines = useMemo(() => {
+    const filter = (searchTerm) => {
+      if (!searchTerm || searchTerm.trim().length === 0) return [];
+      
+      const term = searchTerm.toLowerCase().trim();
+      return allMedicines.filter(med => 
+        med.name.toLowerCase().includes(term) ||
+        med.displayName.toLowerCase().includes(term) ||
+        (med.genericName && med.genericName.toLowerCase().includes(term))
+      );
+    };
+    return filter;
+  }, [allMedicines]);
 
   const updatePrescriptionCell = (rowIdx, field, value) => {
     setPrescriptions((prev) => prev.map((r, i) => i === rowIdx ? { ...r, [field]: value } : r));
@@ -142,12 +169,25 @@ const CreatePrescription = () => {
     if (field === 'medicine') {
       const searchTerm = value.toLowerCase().trim();
       if (searchTerm.length > 0) {
-        const filtered = allMedicines.filter(med => 
-          med.name.toLowerCase().includes(searchTerm) ||
-          med.displayName.toLowerCase().includes(searchTerm) ||
-          (med.genericName && med.genericName.toLowerCase().includes(searchTerm))
-        ).slice(0, 10); // Limit to 10 suggestions
+        const filtered = filterMedicines(value);
         setMedicineSuggestions(prev => ({ ...prev, [rowIdx]: filtered }));
+        // Initialize dropdown search term with current input value if not set
+        if (!dropdownSearchTerm[rowIdx] || dropdownSearchTerm[rowIdx] === '') {
+          setDropdownSearchTerm(prev => ({ ...prev, [rowIdx]: value }));
+          // Use the filtered results directly when initializing
+          setFilteredSuggestions(prev => ({ ...prev, [rowIdx]: filtered }));
+        } else {
+          // Filter suggestions based on dropdown search if it exists
+          const dropdownSearch = dropdownSearchTerm[rowIdx]?.toLowerCase().trim() || '';
+          const finalFiltered = dropdownSearch 
+            ? filtered.filter(med => 
+                med.name.toLowerCase().includes(dropdownSearch) ||
+                med.displayName.toLowerCase().includes(dropdownSearch) ||
+                (med.genericName && med.genericName.toLowerCase().includes(dropdownSearch))
+              )
+            : filtered;
+          setFilteredSuggestions(prev => ({ ...prev, [rowIdx]: finalFiltered }));
+        }
         setShowSuggestions(prev => ({ ...prev, [rowIdx]: true }));
         setActiveSuggestionIndex(prev => ({ ...prev, [rowIdx]: -1 }));
         
@@ -156,7 +196,7 @@ const CreatePrescription = () => {
           const input = inputRefs.current[`medicine-${rowIdx}`];
           if (input) {
             const rect = input.getBoundingClientRect();
-            const dropdownHeight = 240; // max-h-60 = 240px
+            const dropdownHeight = 280; // Height for 4 items + search box
             const spaceAbove = rect.top;
             const spaceBelow = window.innerHeight - rect.bottom;
             
@@ -168,7 +208,7 @@ const CreatePrescription = () => {
               [rowIdx]: {
                 top: positionAbove ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
                 left: rect.left,
-                width: rect.width
+                width: Math.max(rect.width, 400) // Minimum width for better UX
               }
             }));
           }
@@ -176,8 +216,29 @@ const CreatePrescription = () => {
       } else {
         setShowSuggestions(prev => ({ ...prev, [rowIdx]: false }));
         setMedicineSuggestions(prev => ({ ...prev, [rowIdx]: [] }));
+        setFilteredSuggestions(prev => ({ ...prev, [rowIdx]: [] }));
+        setDropdownSearchTerm(prev => ({ ...prev, [rowIdx]: '' }));
       }
     }
+  };
+
+  // Handle dropdown search input
+  const handleDropdownSearch = (rowIdx, value) => {
+    setDropdownSearchTerm(prev => ({ ...prev, [rowIdx]: value }));
+    const searchTerm = value.toLowerCase().trim();
+    const baseSuggestions = medicineSuggestions[rowIdx] || [];
+    
+    if (searchTerm.length > 0) {
+      const filtered = baseSuggestions.filter(med => 
+        med.name.toLowerCase().includes(searchTerm) ||
+        med.displayName.toLowerCase().includes(searchTerm) ||
+        (med.genericName && med.genericName.toLowerCase().includes(searchTerm))
+      );
+      setFilteredSuggestions(prev => ({ ...prev, [rowIdx]: filtered }));
+    } else {
+      setFilteredSuggestions(prev => ({ ...prev, [rowIdx]: baseSuggestions }));
+    }
+    setActiveSuggestionIndex(prev => ({ ...prev, [rowIdx]: -1 }));
   };
 
   const selectMedicine = (rowIdx, medicine) => {
@@ -186,15 +247,18 @@ const CreatePrescription = () => {
     ));
     setShowSuggestions(prev => ({ ...prev, [rowIdx]: false }));
     setMedicineSuggestions(prev => ({ ...prev, [rowIdx]: [] }));
+    setFilteredSuggestions(prev => ({ ...prev, [rowIdx]: [] }));
+    setDropdownSearchTerm(prev => ({ ...prev, [rowIdx]: '' }));
   };
 
   const handleMedicineKeyDown = (e, rowIdx) => {
-    const suggestions = medicineSuggestions[rowIdx] || [];
+    const suggestions = filteredSuggestions[rowIdx] || medicineSuggestions[rowIdx] || [];
     const currentIndex = activeSuggestionIndex[rowIdx] || -1;
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      const nextIndex = currentIndex < suggestions.length - 1 ? currentIndex + 1 : currentIndex;
+      const maxIndex = Math.min(3, suggestions.length - 1); // Limit to 4 visible items
+      const nextIndex = currentIndex < maxIndex ? currentIndex + 1 : currentIndex;
       setActiveSuggestionIndex(prev => ({ ...prev, [rowIdx]: nextIndex }));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
@@ -288,6 +352,9 @@ const CreatePrescription = () => {
     window.print();
   };
 
+
+
+
   // Format date for display (full format for print)
   const formatDateFull = (dateString) => {
     if (!dateString) return 'N/A';
@@ -330,6 +397,24 @@ const CreatePrescription = () => {
 
   return (
     <>
+      {/* Custom scrollbar styles for dropdown */}
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #10b981;
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #059669;
+        }
+      `}</style>
+
       {/* Print-specific styles */}
       <style>{`
         @media print {
@@ -497,39 +582,8 @@ const CreatePrescription = () => {
         }
       `}</style>
 
-      <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-teal-50">
         <div className="w-full px-6 py-8 space-y-8">
-          {/* Header with PGI Logo */}
-          <div className="relative no-print">
-            <div className="absolute inset-0 bg-gradient-to-r from-green-600/10 to-emerald-600/10 rounded-3xl"></div>
-            <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-white rounded-2xl shadow-lg border-2 border-green-100">
-                    <img src={PGI_Logo} alt="PGIMER Logo" className="h-16 w-16 object-contain" />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-gray-900">
-                      Postgraduate Institute of Medical Education & Research
-                    </h1>
-                    <p className="text-lg font-semibold text-gray-700 mt-1">Department of Psychiatry</p>
-                    <p className="text-base text-gray-600 mt-1">Create Prescription</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Button
-                    type="button"
-                    onClick={handlePrint}
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 flex items-center gap-2"
-                  >
-                    <FiPrinter className="w-4 h-4" />
-                    Print Prescription
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-
+       
           {/* Print Content - Hidden on screen, visible when printing */}
           <div className="print-content" ref={printRef} style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}>
             {/* Print Header with PGI Logo */}
@@ -549,56 +603,57 @@ const CreatePrescription = () => {
 
             {/* Print Patient Information */}
             {patient && (
-              <div className="print-patient-info">
-                <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs">
-                  <div>
-                    <span className="font-bold">Patient Name:</span> <span className="ml-2">{patient.name}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold">CR Number:</span> <span className="ml-2 font-mono">{patient.cr_no}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold">Age/Sex:</span> <span className="ml-2">{patient.age} years, {patient.sex}</span>
-                  </div>
-                  {patient.psy_no && (
-                    <div>
-                      <span className="font-bold">PSY Number:</span> <span className="ml-2 font-mono">{patient.psy_no}</span>
-                    </div>
-                  )}
-                  {patient.assigned_doctor_name && (
-                    <div>
-                      <span className="font-bold">Prescribing Doctor:</span> <span className="ml-2">{patient.assigned_doctor_name} {patient.assigned_doctor_role ? `(${patient.assigned_doctor_role})` : ''}</span>
-                    </div>
-                  )}
-                  <div>
-                    <span className="font-bold">Room Number:</span> <span className="ml-2">{patient.assigned_room || 'N/A'}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold">Date:</span> <span className="ml-2">{formatDateFull(new Date().toISOString())}</span>
-                  </div>
-                </div>
+              // <div className="print-patient-info">
+              //   <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs">
+              //     <div>
+              //       <span className="font-bold">Patient Name:</span> <span className="ml-2">{patient.name}</span>
+              //     </div>
+              //     <div>
+              //       <span className="font-bold">CR Number:</span> <span className="ml-2 font-mono">{patient.cr_no}</span>
+              //     </div>
+              //     <div>
+              //       <span className="font-bold">Age/Sex:</span> <span className="ml-2">{patient.age} years, {patient.sex}</span>
+              //     </div>
+              //     {patient.psy_no && (
+              //       <div>
+              //         <span className="font-bold">PSY Number:</span> <span className="ml-2 font-mono">{patient.psy_no}</span>
+              //       </div>
+              //     )}
+              //     {patient.assigned_doctor_name && (
+              //       <div>
+              //         <span className="font-bold">Prescribing Doctor:</span> <span className="ml-2">{patient.assigned_doctor_name} {patient.assigned_doctor_role ? `(${patient.assigned_doctor_role})` : ''}</span>
+              //       </div>
+              //     )}
+              //     <div>
+              //       <span className="font-bold">Room Number:</span> <span className="ml-2">{patient.assigned_room || 'N/A'}</span>
+              //     </div>
+              //     <div>
+              //       <span className="font-bold">Date:</span> <span className="ml-2">{formatDateFull(new Date().toISOString())}</span>
+              //     </div>
+              //   </div>
 
-                {/* Past History in Print */}
-                {latestProforma && (
-                  <div className="mt-4 pt-3 border-t border-gray-400">
-                    <h3 className="print-section-title">Past Clinical History (Most Recent):</h3>
-                    <div className="text-xs space-y-1 ml-2">
-                      {latestProforma.diagnosis && (
-                        <p><span className="font-semibold">Diagnosis:</span> <span className="ml-1">{latestProforma.diagnosis}</span></p>
-                      )}
-                      {latestProforma.icd_code && (
-                        <p><span className="font-semibold">ICD Code:</span> <span className="ml-1 font-mono">{latestProforma.icd_code}</span></p>
-                      )}
-                      {latestProforma.case_severity && (
-                        <p><span className="font-semibold">Case Severity:</span> <span className="ml-1 capitalize">{latestProforma.case_severity}</span></p>
-                      )}
-                      {latestProforma.visit_date && (
-                        <p><span className="font-semibold">Last Visit:</span> <span className="ml-1">{formatDateFull(latestProforma.visit_date)}</span></p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+              //   {/* Past History in Print */}
+              //   {latestProforma && (
+              //     <div className="mt-4 pt-3 border-t border-gray-400">
+              //       <h3 className="print-section-title">Past Clinical History (Most Recent):</h3>
+              //       <div className="text-xs space-y-1 ml-2">
+              //         {latestProforma.diagnosis && (
+              //           <p><span className="font-semibold">Diagnosis:</span> <span className="ml-1">{latestProforma.diagnosis}</span></p>
+              //         )}
+              //         {latestProforma.icd_code && (
+              //           <p><span className="font-semibold">ICD Code:</span> <span className="ml-1 font-mono">{latestProforma.icd_code}</span></p>
+              //         )}
+              //         {latestProforma.case_severity && (
+              //           <p><span className="font-semibold">Case Severity:</span> <span className="ml-1 capitalize">{latestProforma.case_severity}</span></p>
+              //         )}
+              //         {latestProforma.visit_date && (
+              //           <p><span className="font-semibold">Last Visit:</span> <span className="ml-1">{formatDateFull(latestProforma.visit_date)}</span></p>
+              //         )}
+              //       </div>
+              //     </div>
+              //   )}
+              // </div>
+              <></>
             )}
 
             {/* Print Prescription Table */}
@@ -661,337 +716,373 @@ const CreatePrescription = () => {
             </div>
           </div>
 
-          {/* Screen View - Patient Information */}
+          {/* Patient Info Card */}
           {patient && (
-            <Card
-              title={
+            <Card className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-2 border-blue-200 shadow-lg">
+              <div className="flex flex-wrap items-center gap-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
+                  <div className="p-3 bg-blue-100 rounded-full">
                     <FiUser className="w-6 h-6 text-blue-600" />
                   </div>
-                  <span className="text-xl font-bold text-gray-900">Patient Information</span>
-                </div>
-              }
-              className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm no-print"
-            >
-            <div className="space-y-6">
-              {/* Basic Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <FiUser className="w-4 h-4 text-blue-600" />
-                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Name</label>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">{patient.name}</h3>
+                    <p className="text-sm text-gray-600">CR: {patient.cr_no} {patient.psy_no && `| PSY: ${patient.psy_no}`}</p>
                   </div>
-                  <p className="text-lg font-bold text-gray-900">{patient.name}</p>
                 </div>
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <FiFileText className="w-4 h-4 text-purple-600" />
-                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">CR Number</label>
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <FiCalendar className="w-4 h-4 text-gray-500" />
+                    <span className="text-gray-700"><strong>Age:</strong> {patient.age} years, {patient.sex}</span>
                   </div>
-                  <p className="text-lg font-bold text-gray-900 font-mono">{patient.cr_no}</p>
-                </div>
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <FiUser className="w-4 h-4 text-green-600" />
-                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Age / Sex</label>
-                  </div>
-                  <p className="text-lg font-bold text-gray-900">{patient.age} years, {patient.sex}</p>
-                </div>
-                {patient.psy_no && (
-                  <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg p-4 border border-orange-100">
-                    <div className="flex items-center gap-2 mb-2">
-                      <FiFileText className="w-4 h-4 text-orange-600" />
-                      <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">PSY Number</label>
+                  {patient.assigned_room && (
+                    <div className="flex items-center gap-2">
+                      <FiHome className="w-4 h-4 text-gray-500" />
+                      <span className="text-gray-700"><strong>Room:</strong> {patient.assigned_room}</span>
                     </div>
-                    <p className="text-lg font-bold text-gray-900 font-mono">{patient.psy_no}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Assignment & Visit Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-4 border-t border-gray-200">
-                <div className="bg-gradient-to-r from-sky-50 to-blue-50 rounded-lg p-4 border border-sky-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <FiUserCheck className="w-4 h-4 text-sky-600" />
-                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Assigned Doctor</label>
-                  </div>
-                  {patient.assigned_doctor_name ? (
-                    <>
-                      <p className="text-base font-semibold text-gray-900">{patient.assigned_doctor_name}</p>
-                      {patient.assigned_doctor_role && (
-                        <p className="text-xs text-gray-600 mt-1">({patient.assigned_doctor_role})</p>
-                      )}
-                    </>
-                  ) : (
-                    <p className="text-base text-gray-500 italic">Not assigned</p>
+                  )}
+                  {patient.assigned_doctor_name && (
+                    <div className="flex items-center gap-2">
+                      <FiUserCheck className="w-4 h-4 text-gray-500" />
+                      <span className="text-gray-700"><strong>Doctor:</strong> {patient.assigned_doctor_name}</span>
+                    </div>
                   )}
                 </div>
-                <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg p-4 border border-teal-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <FiHome className="w-4 h-4 text-teal-600" />
-                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Room Number</label>
-                  </div>
-                  <p className="text-base font-semibold text-gray-900">{patient.assigned_room || 'Not assigned'}</p>
-                </div>
-                <div className="bg-gradient-to-r from-rose-50 to-pink-50 rounded-lg p-4 border border-rose-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <FiCalendar className="w-4 h-4 text-rose-600" />
-                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Visit Date</label>
-                  </div>
-                  <p className="text-base font-semibold text-gray-900">{formatDate(new Date().toISOString())}</p>
-                </div>
-                {patient.last_assigned_date && (
-                  <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-lg p-4 border border-violet-100">
-                    <div className="flex items-center gap-2 mb-2">
-                      <FiClock className="w-4 h-4 text-violet-600" />
-                      <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">Last Visit</label>
-                    </div>
-                    <p className="text-base font-semibold text-gray-900">{formatDate(patient.last_assigned_date)}</p>
-                  </div>
-                )}
               </div>
+            </Card>
+          )}
 
-              {/* Past History Section */}
-              {latestProforma && (
-                <div className="pt-4 border-t border-gray-200">
-                  <div className="flex items-center gap-2 mb-4">
-                    <FiFileText className="w-5 h-5 text-indigo-600" />
-                    <h3 className="text-lg font-bold text-gray-900">Past Clinical History</h3>
-                    <span className="text-xs text-gray-500">(Most Recent)</span>
+          {/* Prescription Table Card */}
+          <Card className="bg-white border-2 border-green-200 shadow-xl overflow-hidden" style={{ position: 'relative' }}>
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                    <FiDroplet className="w-6 h-6 text-white" />
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {latestProforma.diagnosis && (
-                      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-100">
-                        <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Diagnosis</label>
-                        <p className="text-sm text-gray-900 whitespace-pre-wrap">{latestProforma.diagnosis}</p>
-                      </div>
-                    )}
-                    {latestProforma.icd_code && (
-                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100">
-                        <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">ICD Code</label>
-                        <p className="text-sm font-mono font-semibold text-gray-900">{latestProforma.icd_code}</p>
-                      </div>
-                    )}
-                    {latestProforma.treatment_prescribed && (
-                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-100 md:col-span-2">
-                        <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Previous Treatment</label>
-                        <p className="text-sm text-gray-900 whitespace-pre-wrap">{latestProforma.treatment_prescribed}</p>
-                      </div>
-                    )}
-                    {latestProforma.case_severity && (
-                      <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-4 border border-amber-100">
-                        <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Case Severity</label>
-                        <p className="text-sm font-semibold text-gray-900 capitalize">{latestProforma.case_severity}</p>
-                      </div>
-                    )}
-                    {latestProforma.visit_date && (
-                      <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg p-4 border border-teal-100">
-                        <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Last Visit Date</label>
-                        <p className="text-sm font-semibold text-gray-900">{formatDate(latestProforma.visit_date)}</p>
-                      </div>
-                    )}
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Prescription Form</h2>
+                    <p className="text-sm text-green-100">Add medications for the patient</p>
                   </div>
                 </div>
-              )}
-            </div>
-          </Card>
-        )}
-
-        {/* Prescription Section */}
-        <Card 
-          title={
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <FiPackage className="w-6 h-6 text-green-600" />
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-medium">
+                    {prescriptions.filter(p => p.medicine || p.dosage || p.frequency || p.details).length} medication(s)
+                  </span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">Prescription</span>
-              </div>
-              <div className="text-sm text-gray-600">
-                <span className="font-semibold">Prescribing Doctor:</span> {currentUser?.name || 'N/A'} ({currentUser?.role || 'N/A'})
               </div>
             </div>
-          }
-          className="shadow-xl border-0 bg-white/80 backdrop-blur-sm no-print"
-        >
-          <div className="space-y-3">
-            <div className="bg-white border border-green-200 rounded-lg" style={{ position: 'relative', overflow: 'visible' }}>
-              <div className="overflow-x-auto" style={{ overflowY: 'visible' }}>
+
+            <div className="overflow-x-auto" style={{ overflowY: 'visible' }}>
               <table className="min-w-full text-sm" style={{ position: 'relative' }}>
-                <thead className="bg-gray-50 text-gray-700">
+                <thead className="bg-gradient-to-r from-gray-50 to-slate-50 border-b-2 border-gray-200">
                   <tr>
-                    <th className="px-3 py-2 text-left w-10">#</th>
-                    <th className="px-3 py-2 text-left">Medicine</th>
-                    <th className="px-3 py-2 text-left">Dosage</th>
-                    <th className="px-3 py-2 text-left">When</th>
-                    <th className="px-3 py-2 text-left">Frequency</th>
-                    <th className="px-3 py-2 text-left">Duration</th>
-                    <th className="px-3 py-2 text-left">Qty</th>
-                    <th className="px-3 py-2 text-left">Details</th>
-                    <th className="px-3 py-2 text-left">Notes</th>
-                    <th className="px-3 py-2"></th>
+                    <th className="px-4 py-3 text-left w-12 font-semibold text-gray-700">
+                      <div className="flex items-center gap-1">
+                        <span>#</span>
+                      </div>
+                    </th>
+                    {PRESCRIPTION_FORM.map((field) => {
+                      const icons = {
+                        medicine: <FiDroplet className="w-4 h-4" />,
+                        dosage: <FiActivity className="w-4 h-4" />,
+                        frequency: <FiClock className="w-4 h-4" />,
+                        duration: <FiCalendar className="w-4 h-4" />,
+                        qty: <FiPackage className="w-4 h-4" />,
+                        details: <FiFileText className="w-4 h-4" />,
+                        notes: <FiFileText className="w-4 h-4" />
+                      };
+                      return (
+                        <th key={field.value} className="px-4 py-3 text-left font-semibold text-gray-700">
+                          <div className="flex items-center gap-2">
+                            {icons[field.value] || <FiFileText className="w-4 h-4" />}
+                            <span>{field.label}</span>
+                          </div>
+                        </th>
+                      );
+                    })}
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                      <div className="flex items-center gap-2">
+                        <FiClock className="w-4 h-4" />
+                        <span>When</span>
+                      </div>
+                    </th>
+                    <th className="px-4 py-3 text-center w-24 font-semibold text-gray-700">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {prescriptions.map((row, idx) => (
-                    <tr key={idx} className="border-t hover:bg-gray-50">
-                      <td className="px-3 py-2 text-gray-600">{idx + 1}</td>
-                      <td className="px-3 py-2" style={{ position: 'relative', overflow: 'visible', zIndex: showSuggestions[idx] ? 1000 : 'auto' }}>
+                    <tr key={idx} className="border-t border-gray-100 hover:bg-gradient-to-r hover:from-green-50/50 hover:to-emerald-50/50 transition-colors duration-150">
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 text-green-700 font-semibold text-sm">
+                          {idx + 1}
+                        </div>
+                      </td>
+                      {/* Medicine Field - Special handling with autocomplete */}
+                      <td className="px-4 py-3" style={{ position: 'relative', overflow: 'visible', zIndex: showSuggestions[idx] ? 1000 : 'auto' }}>
                         <div style={{ position: 'relative', overflow: 'visible' }}>
-                          <input
-                            ref={(el) => { inputRefs.current[`medicine-${idx}`] = el; }}
-                            value={row.medicine}
-                            onChange={(e) => updatePrescriptionCell(idx, 'medicine', e.target.value)}
-                            onKeyDown={(e) => handleMedicineKeyDown(e, idx)}
-                            onFocus={() => {
-                              if (row.medicine && row.medicine.trim().length > 0) {
-                                const searchTerm = row.medicine.toLowerCase().trim();
-                                const filtered = allMedicines.filter(med => 
-                                  med.name.toLowerCase().includes(searchTerm) ||
-                                  med.displayName.toLowerCase().includes(searchTerm) ||
-                                  (med.genericName && med.genericName.toLowerCase().includes(searchTerm))
-                                ).slice(0, 10);
-                                setMedicineSuggestions(prev => ({ ...prev, [idx]: filtered }));
-                                setShowSuggestions(prev => ({ ...prev, [idx]: true }));
-                                
-                                // Calculate position
+                          <div className="relative">
+                            <FiDroplet className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                            <input
+                              ref={(el) => { inputRefs.current[`medicine-${idx}`] = el; }}
+                              value={row.medicine}
+                              onChange={(e) => updatePrescriptionCell(idx, 'medicine', e.target.value)}
+                              onKeyDown={(e) => handleMedicineKeyDown(e, idx)}
+                              onFocus={() => {
+                                if (row.medicine && row.medicine.trim().length > 0) {
+                                  const filtered = filterMedicines(row.medicine);
+                                  setMedicineSuggestions(prev => ({ ...prev, [idx]: filtered }));
+                                  setFilteredSuggestions(prev => ({ ...prev, [idx]: filtered }));
+                                  setDropdownSearchTerm(prev => ({ ...prev, [idx]: row.medicine }));
+                                  setShowSuggestions(prev => ({ ...prev, [idx]: true }));
+                                  
+                                  // Calculate position
+                                  setTimeout(() => {
+                                    const input = inputRefs.current[`medicine-${idx}`];
+                                    if (input) {
+                                      const rect = input.getBoundingClientRect();
+                                      const dropdownHeight = 280;
+                                      const spaceAbove = rect.top;
+                                      const spaceBelow = window.innerHeight - rect.bottom;
+                                      const positionAbove = spaceAbove > dropdownHeight || spaceAbove > spaceBelow;
+                                      
+                                      setSuggestionPositions(prev => ({
+                                        ...prev,
+                                        [idx]: {
+                                          top: positionAbove ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
+                                          left: rect.left,
+                                          width: Math.max(rect.width, 400)
+                                        }
+                                      }));
+                                      // Focus dropdown search after a brief delay
+                                      setTimeout(() => {
+                                        const searchInput = dropdownSearchRefs.current[`search-${idx}`];
+                                        if (searchInput) {
+                                          searchInput.focus();
+                                          searchInput.select();
+                                        }
+                                      }, 100);
+                                    }
+                                  }, 0);
+                                }
+                              }}
+                              onBlur={() => {
                                 setTimeout(() => {
-                                  const input = inputRefs.current[`medicine-${idx}`];
-                                  if (input) {
-                                    const rect = input.getBoundingClientRect();
-                                    const dropdownHeight = 240;
-                                    const spaceAbove = rect.top;
-                                    const spaceBelow = window.innerHeight - rect.bottom;
-                                    const positionAbove = spaceAbove > dropdownHeight || spaceAbove > spaceBelow;
-                                    
-                                    setSuggestionPositions(prev => ({
-                                      ...prev,
-                                      [idx]: {
-                                        top: positionAbove ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
-                                        left: rect.left,
-                                        width: rect.width
-                                      }
-                                    }));
-                                  }
-                                }, 0);
-                              }
-                            }}
-                            onBlur={() => {
-                              setTimeout(() => {
-                                setShowSuggestions(prev => ({ ...prev, [idx]: false }));
-                              }, 200);
-                            }}
-                            className="w-full border rounded px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            placeholder="Type to search medicine..."
-                            autoComplete="off"
-                          />
-                          {showSuggestions[idx] && medicineSuggestions[idx] && medicineSuggestions[idx].length > 0 && (
+                                  setShowSuggestions(prev => ({ ...prev, [idx]: false }));
+                                }, 200);
+                              }}
+                              className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 pl-10 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white hover:border-green-300"
+                              placeholder="Type to search medicine..."
+                              autoComplete="off"
+                            />
+                          </div>
+                          {showSuggestions[idx] && (filteredSuggestions[idx] || medicineSuggestions[idx]) && (filteredSuggestions[idx] || medicineSuggestions[idx]).length > 0 && (
                             <div 
-                              className="fixed bg-white border border-gray-300 rounded-lg shadow-2xl max-h-60 overflow-y-auto"
+                              className="fixed bg-white border-2 border-green-200 rounded-xl shadow-2xl overflow-hidden"
                               style={{ 
                                 zIndex: 10000,
                                 top: suggestionPositions[idx]?.top ? `${suggestionPositions[idx].top}px` : 'auto',
                                 left: suggestionPositions[idx]?.left ? `${suggestionPositions[idx].left}px` : 'auto',
-                                width: suggestionPositions[idx]?.width ? `${suggestionPositions[idx].width}px` : '300px',
-                                minWidth: '300px',
-                                maxWidth: '400px'
+                                width: suggestionPositions[idx]?.width ? `${suggestionPositions[idx].width}px` : '400px',
+                                minWidth: '400px',
+                                maxWidth: '500px'
                               }}
                             >
-                              {medicineSuggestions[idx].map((med, medIdx) => (
-                                <div
-                                  key={`${med.name}-${medIdx}`}
-                                  onClick={() => selectMedicine(idx, med)}
-                                  onMouseDown={(e) => e.preventDefault()}
-                                  className={`px-3 py-2 cursor-pointer hover:bg-green-50 transition-colors ${
-                                    activeSuggestionIndex[idx] === medIdx ? 'bg-green-100' : ''
-                                  } ${medIdx === 0 ? 'rounded-t-lg' : ''} ${
-                                    medIdx === medicineSuggestions[idx].length - 1 ? 'rounded-b-lg' : ''
-                                  }`}
-                                >
-                                  <div className="font-medium text-gray-900">{med.name}</div>
-                                  {med.displayName !== med.name && (
-                                    <div className="text-xs text-gray-500">{med.displayName}</div>
-                                  )}
-                                  {med.strengths && med.strengths.length > 0 && (
-                                    <div className="text-xs text-gray-400 mt-1">
-                                      Available: {med.strengths.join(', ')}
-                                    </div>
-                                  )}
+                              {/* Search box inside dropdown */}
+                              <div className="p-2 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200">
+                                <div className="relative">
+                                  <input
+                                    ref={(el) => { dropdownSearchRefs.current[`search-${idx}`] = el; }}
+                                    type="text"
+                                    value={dropdownSearchTerm[idx] || ''}
+                                    onChange={(e) => handleDropdownSearch(idx, e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Escape') {
+                                        setShowSuggestions(prev => ({ ...prev, [idx]: false }));
+                                      } else if (e.key === 'ArrowDown') {
+                                        e.preventDefault();
+                                        setActiveSuggestionIndex(prev => ({ ...prev, [idx]: 0 }));
+                                        // Focus first item for keyboard navigation
+                                        setTimeout(() => {
+                                          const firstItem = document.querySelector(`[data-medicine-item="${idx}-0"]`);
+                                          if (firstItem) {
+                                            firstItem.scrollIntoView({ block: 'nearest' });
+                                          }
+                                        }, 0);
+                                      } else if (e.key === 'Enter') {
+                                        // If there's an active suggestion, select it
+                                        const activeIdx = activeSuggestionIndex[idx];
+                                        const suggestions = filteredSuggestions[idx] || medicineSuggestions[idx] || [];
+                                        if (activeIdx >= 0 && suggestions[activeIdx]) {
+                                          e.preventDefault();
+                                          selectMedicine(idx, suggestions[activeIdx]);
+                                        }
+                                      }
+                                    }}
+                                    className="w-full px-3 py-2 pl-9 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                                    placeholder="🔍 Search medicines..."
+                                    autoComplete="off"
+                                  />
+                                  <svg 
+                                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-green-600" 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                  </svg>
                                 </div>
-                              ))}
+                                {(filteredSuggestions[idx] || medicineSuggestions[idx])?.length > 0 && (
+                                  <p className="text-xs text-gray-600 mt-1 px-1">
+                                    {(filteredSuggestions[idx] || medicineSuggestions[idx]).length} result{(filteredSuggestions[idx] || medicineSuggestions[idx]).length !== 1 ? 's' : ''}
+                                  </p>
+                                )}
+                              </div>
+                              
+                              {/* Medicine list - Show max 4 items initially (~200px), scroll if more */}
+                              <div 
+                                className="max-h-[200px] overflow-y-auto custom-scrollbar" 
+                                style={{ maxHeight: '200px' }}
+                                data-dropdown-row={idx}
+                              >
+                                {(filteredSuggestions[idx] || medicineSuggestions[idx]).map((med, medIdx) => (
+                                  <div
+                                    key={`${med.name}-${medIdx}`}
+                                    data-medicine-item={`${idx}-${medIdx}`}
+                                    onClick={() => selectMedicine(idx, med)}
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onMouseEnter={() => setActiveSuggestionIndex(prev => ({ ...prev, [idx]: medIdx }))}
+                                    className={`px-4 py-3 cursor-pointer transition-all duration-150 border-b border-gray-100 last:border-b-0 ${
+                                      activeSuggestionIndex[idx] === medIdx 
+                                        ? 'bg-gradient-to-r from-green-100 to-emerald-50 border-l-4 border-l-green-500 shadow-sm' 
+                                        : 'hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-semibold text-gray-900 text-sm">{med.name}</span>
+                                          {med.type === 'brand' && (
+                                            <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded font-medium">
+                                              Brand
+                                            </span>
+                                          )}
+                                          {med.type === 'generic' && (
+                                            <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs rounded font-medium">
+                                              Generic
+                                            </span>
+                                          )}
+                                        </div>
+                                        {med.displayName !== med.name && (
+                                          <div className="text-xs text-gray-600 mt-0.5 truncate">
+                                            {med.displayName}
+                                          </div>
+                                        )}
+                                        {med.strengths && med.strengths.length > 0 && (
+                                          <div className="text-xs text-gray-500 mt-1 flex items-center gap-1 flex-wrap">
+                                            <span className="font-medium">Strengths:</span>
+                                            <span className="text-green-600">{med.strengths.slice(0, 3).join(', ')}</span>
+                                            {med.strengths.length > 3 && (
+                                              <span className="text-gray-400">+{med.strengths.length - 3} more</span>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                      {activeSuggestionIndex[idx] === medIdx && (
+                                        <svg 
+                                          className="w-5 h-5 text-green-600 flex-shrink-0" 
+                                          fill="none" 
+                                          stroke="currentColor" 
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                                {(filteredSuggestions[idx] || medicineSuggestions[idx]).length === 0 && (
+                                  <div className="px-4 py-6 text-center text-gray-500 text-sm">
+                                    <p>No medicines found</p>
+                                    <p className="text-xs mt-1">Try a different search term</p>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Scroll indicator */}
+                              {(filteredSuggestions[idx] || medicineSuggestions[idx]).length > 4 && (
+                                <div className="px-4 py-2 bg-gradient-to-r from-gray-50 to-slate-50 border-t border-gray-200 text-center">
+                                  <p className="text-xs text-gray-600 font-medium">
+                                    <span className="text-green-600">{(filteredSuggestions[idx] || medicineSuggestions[idx]).length}</span> results • Scroll to see more
+                                  </p>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
                       </td>
-                      <td className="px-3 py-2">
-                        <input
-                          value={row.dosage}
-                          onChange={(e) => updatePrescriptionCell(idx, 'dosage', e.target.value)}
-                          className="w-full border rounded px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                          placeholder="e.g., 1-0-1"
-                          list={`dosageOptions`}
-                        />
+                      {/* Dynamic fields from PRESCRIPTION_FORM (excluding medicine which is handled above) */}
+                      {PRESCRIPTION_FORM.filter(field => field.value !== 'medicine').map((field) => {
+                        const fieldIcons = {
+                          dosage: <FiActivity className="w-4 h-4 text-gray-400" />,
+                          frequency: <FiClock className="w-4 h-4 text-gray-400" />,
+                          duration: <FiCalendar className="w-4 h-4 text-gray-400" />,
+                          qty: <FiPackage className="w-4 h-4 text-gray-400" />,
+                          details: <FiFileText className="w-4 h-4 text-gray-400" />,
+                          notes: <FiFileText className="w-4 h-4 text-gray-400" />
+                        };
+                        const placeholders = {
+                          dosage: 'e.g., 1-0-1',
+                          frequency: 'e.g., daily',
+                          duration: 'e.g., 5 days',
+                          qty: 'Quantity',
+                          details: 'Additional details',
+                          notes: 'Notes'
+                        };
+                        const datalistIds = {
+                          dosage: 'dosageOptions',
+                          frequency: 'frequencyOptions',
+                          duration: 'durationOptions',
+                          qty: 'quantityOptions'
+                        };
+                        return (
+                          <td key={field.value} className="px-4 py-3">
+                            <div className="relative">
+                              {fieldIcons[field.value] && (
+                                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                                  {fieldIcons[field.value]}
+                                </div>
+                              )}
+                              <input
+                                value={row[field.value] || ''}
+                                onChange={(e) => updatePrescriptionCell(idx, field.value, e.target.value)}
+                                className={`w-full border-2 border-gray-200 rounded-lg px-3 py-2 ${fieldIcons[field.value] ? 'pl-10' : 'pl-3'} focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white hover:border-green-300`}
+                                placeholder={placeholders[field.value] || field.label}
+                                list={datalistIds[field.value]}
+                              />
+                            </div>
+                          </td>
+                        );
+                      })}
+                      {/* When field - not in PRESCRIPTION_FORM but needed */}
+                      <td className="px-4 py-3">
+                        <div className="relative">
+                          <FiClock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                          <input
+                            value={row.when || ''}
+                            onChange={(e) => updatePrescriptionCell(idx, 'when', e.target.value)}
+                            className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 pl-10 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white hover:border-green-300"
+                            placeholder="before/after food"
+                            list="whenOptions"
+                          />
+                        </div>
                       </td>
-                      <td className="px-3 py-2">
-                        <input
-                          value={row.when}
-                          onChange={(e) => updatePrescriptionCell(idx, 'when', e.target.value)}
-                          className="w-full border rounded px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                          placeholder="before/after food"
-                          list={`whenOptions`}
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          value={row.frequency}
-                          onChange={(e) => updatePrescriptionCell(idx, 'frequency', e.target.value)}
-                          className="w-full border rounded px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                          placeholder="daily"
-                          list={`frequencyOptions`}
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          value={row.duration}
-                          onChange={(e) => updatePrescriptionCell(idx, 'duration', e.target.value)}
-                          className="w-full border rounded px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                          placeholder="5 days"
-                          list={`durationOptions`}
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          value={row.qty}
-                          onChange={(e) => updatePrescriptionCell(idx, 'qty', e.target.value)}
-                          className="w-full border rounded px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                          placeholder="Qty"
-                          list={`quantityOptions`}
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          value={row.details}
-                          onChange={(e) => updatePrescriptionCell(idx, 'details', e.target.value)}
-                          className="w-full border rounded px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                          placeholder="Details"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          value={row.notes}
-                          onChange={(e) => updatePrescriptionCell(idx, 'notes', e.target.value)}
-                          className="w-full border rounded px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                          placeholder="Notes"
-                        />
-                      </td>
-                      <td className="px-3 py-2 text-right">
+                      <td className="px-4 py-3 text-center">
                         <button 
                           type="button" 
                           onClick={() => removePrescriptionRow(idx)} 
-                          className="text-red-600 hover:text-red-800 hover:underline text-xs flex items-center gap-1"
+                          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors duration-200 border border-red-200 hover:border-red-300"
                         >
-                          <FiTrash2 className="w-3 h-3" />
+                          <FiTrash2 className="w-4 h-4" />
                           Remove
                         </button>
                       </td>
@@ -999,121 +1090,56 @@ const CreatePrescription = () => {
                   ))}
                 </tbody>
               </table>
-              </div>
             </div>
 
-            {/* Datalist suggestions for prescription fields */}
+            {/* Datalist suggestions for prescription fields - Using constants */}
             <datalist id="dosageOptions">
-              <option value="1-0-1" />
-              <option value="1-1-1" />
-              <option value="1-0-0" />
-              <option value="0-1-0" />
-              <option value="0-0-1" />
-              <option value="1-1-0" />
-              <option value="0-1-1" />
-              <option value="1-0-1½" />
-              <option value="½-0-½" />
-              <option value="SOS" />
-              <option value="STAT" />
-              <option value="PRN" />
-              <option value="OD" />
-              <option value="BD" />
-              <option value="TDS" />
-              <option value="QID" />
-              <option value="HS" />
-              <option value="Q4H" />
-              <option value="Q6H" />
-              <option value="Q8H" />
+              {DOSAGE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value} />
+              ))}
             </datalist>
             <datalist id="whenOptions">
-              <option value="Before Food" />
-              <option value="After Food" />
-              <option value="With Food" />
-              <option value="Empty Stomach" />
-              <option value="Bedtime" />
-              <option value="Morning" />
-              <option value="Afternoon" />
-              <option value="Evening" />
-              <option value="Night" />
-              <option value="Any Time" />
-              <option value="Before Breakfast" />
-              <option value="After Breakfast" />
-              <option value="Before Lunch" />
-              <option value="After Lunch" />
-              <option value="Before Dinner" />
-              <option value="After Dinner" />
+              {WHEN_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value} />
+              ))}
             </datalist>
             <datalist id="frequencyOptions">
-              <option value="Once Daily" />
-              <option value="Twice Daily" />
-              <option value="Thrice Daily" />
-              <option value="Four Times Daily" />
-              <option value="Every Hour" />
-              <option value="Every 2 Hours" />
-              <option value="Every 4 Hours" />
-              <option value="Every 6 Hours" />
-              <option value="Every 8 Hours" />
-              <option value="Every 12 Hours" />
-              <option value="Alternate Day" />
-              <option value="Weekly" />
-              <option value="Monthly" />
-              <option value="SOS" />
-              <option value="Continuous" />
-              <option value="Once" />
-              <option value="Tapering Dose" />
+              {FREQUENCY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value} />
+              ))}
             </datalist>
             <datalist id="durationOptions">
-              <option value="3 Days" />
-              <option value="5 Days" />
-              <option value="7 Days" />
-              <option value="10 Days" />
-              <option value="14 Days" />
-              <option value="21 Days" />
-              <option value="1 Month" />
-              <option value="2 Months" />
-              <option value="3 Months" />
-              <option value="6 Months" />
-              <option value="Until Symptoms Subside" />
-              <option value="Continuous" />
-              <option value="As Directed" />
+              {DURATION_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value} />
+              ))}
             </datalist>
             <datalist id="quantityOptions">
-              <option value="1" />
-              <option value="2" />
-              <option value="3" />
-              <option value="5" />
-              <option value="7" />
-              <option value="10" />
-              <option value="15" />
-              <option value="20" />
-              <option value="30" />
-              <option value="60" />
-              <option value="90" />
-              <option value="100" />
-              <option value="Custom" />
+              {QUANTITY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value} />
+              ))}
             </datalist>
 
-            <div className="flex items-center gap-3 pt-3 border-t border-gray-200">
+            {/* Action Buttons */}
+            <div className="flex items-center justify-between pt-4 pb-2 px-6 bg-gradient-to-r from-gray-50 to-slate-50 border-t-2 border-gray-200">
               <Button
                 type="button"
                 onClick={addPrescriptionRow}
                 variant="outline"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 bg-white hover:bg-green-50 border-2 border-green-300 hover:border-green-500 text-green-700 hover:text-green-800 font-medium shadow-sm transition-all duration-200"
               >
-                <FiPlus className="w-4 h-4" />
+                <FiPlus className="w-5 h-5" />
                 Add Medicine
               </Button>
               <button 
                 type="button" 
                 onClick={clearAllPrescriptions} 
-                className="text-sm text-gray-600 hover:text-gray-800 hover:underline flex items-center gap-1"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-red-50 border-2 border-gray-300 hover:border-red-300 rounded-lg transition-all duration-200 shadow-sm"
               >
                 <FiTrash2 className="w-4 h-4" />
                 Clear All
               </button>
             </div>
-          </div>
-        </Card>
+          </Card>
 
         {/* Action Buttons */}
         <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl no-print">
@@ -1155,7 +1181,7 @@ const CreatePrescription = () => {
           </div>
         </Card>
       </div>
-    </div>
+ 
     </>
   );
 };

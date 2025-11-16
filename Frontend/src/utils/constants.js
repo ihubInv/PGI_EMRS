@@ -612,3 +612,81 @@ export const ADL_FILE_FORM = [
 
 
 
+export const PRESCRIPTION_FORM = [
+  { value: 'medicine', label: 'Medicine' },
+  { value: 'dosage', label: 'Dosage' },
+  { value: 'frequency', label: 'Frequency' },
+  { value: 'duration', label: 'Duration' },
+  { value: 'qty', label: 'Quantity' },
+  { value: 'details', label: 'Details' },
+  { value: 'notes', label: 'Notes' },
+];
+
+
+
+export const DOSAGE_OPTIONS = [
+  { value: '1-0-1', label: '1-0-1' },
+  { value: '1-1-1', label: '1-1-1' },
+  { value: '1-0-0', label: '1-0-0' },
+  { value: '0-1-0', label: '0-1-0' },
+  { value: '0-0-1', label: '0-0-1' },
+  { value: '1-1-0', label: '1-1-0' },
+  { value: '0-1-1', label: '0-1-1' },
+  { value: '1-0-1½', label: '1-0-1½' },
+  { value: '½-0-½', label: '½-0-½' },
+  { value: 'SOS', label: 'SOS' },
+  { value: 'STAT', label: 'STAT' }, 
+]
+
+export const WHEN_OPTIONS = [
+  { value: 'Before Food', label: 'Before Food' },
+  { value: 'After Food', label: 'After Food' },
+  { value: 'With Food', label: 'With Food' },
+  { value: 'Empty Stomach', label: 'Empty Stomach' },
+  { value: 'Bedtime', label: 'Bedtime' },
+  { value: 'Morning', label: 'Morning' },
+  { value: 'Afternoon', label: 'Afternoon' },
+  { value: 'Evening', label: 'Evening' },
+  { value: 'Night', label: 'Night' },
+]
+
+export const FREQUENCY_OPTIONS = [
+  { value: 'Once Daily', label: 'Once Daily' },
+  { value: 'Twice Daily', label: 'Twice Daily' },
+  { value: 'Thrice Daily', label: 'Thrice Daily' },
+  { value: 'Four Times Daily', label: 'Four Times Daily' },
+  { value: 'Every Hour', label: 'Every Hour' },
+  { value: 'Every 2 Hours', label: 'Every 2 Hours' },
+  { value: 'Every 4 Hours', label: 'Every 4 Hours' },
+  { value: 'Every 6 Hours', label: 'Every 6 Hours' },
+  { value: 'Every 8 Hours', label: 'Every 8 Hours' },
+]
+
+export const DURATION_OPTIONS = [
+  { value: '3 Days', label: '3 Days' },
+  { value: '5 Days', label: '5 Days' },
+  { value: '7 Days', label: '7 Days' },
+  { value: '10 Days', label: '10 Days' },
+  { value: '14 Days', label: '14 Days' },
+  { value: '21 Days', label: '21 Days' },
+  { value: '1 Month', label: '1 Month' },
+  { value: '2 Months', label: '2 Months' },
+  { value: '3 Months', label: '3 Months' },
+  { value: '6 Months', label: '6 Months' },
+]
+
+export const QUANTITY_OPTIONS = [
+  { value: '1', label: '1' },
+  { value: '2', label: '2' },
+  { value: '3', label: '3' },
+  { value: '5', label: '5' },
+  { value: '7', label: '7' },
+  { value: '10', label: '10' },
+  { value: '15', label: '15' },
+  { value: '20', label: '20' },
+  { value: '30', label: '30' },
+  { value: '60', label: '60' },
+  { value: '90', label: '90' },
+  { value: '100', label: '100' }
+]
+
