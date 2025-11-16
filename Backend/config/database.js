@@ -254,36 +254,36 @@ async function executeJoinQuery(text, params, startTime) {
   const offset = offsetMatch ? parseInt(offsetMatch[1]) : 0;
   
   // For outpatient_record joins
-  if (mainTable === 'outpatient_record') {
-    const { data, error } = await supabaseAdmin
-      .from('outpatient_record')
-      .select(`
-        *,
-        patients:patient_id(id, name, cr_no, psy_no),
-        users:filled_by(id, name)
-      `)
-      .range(offset, offset + limit - 1)
-      .order('created_at', { ascending: false });
+  // if (mainTable === 'outpatient_record') {
+  //   const { data, error } = await supabaseAdmin
+  //     .from('outpatient_record')
+  //     .select(`
+  //       *,
+  //       patients:patient_id(id, name, cr_no, psy_no),
+  //       users:filled_by(id, name)
+  //     `)
+  //     .range(offset, offset + limit - 1)
+  //     .order('created_at', { ascending: false });
     
-    if (error) throw error;
+  //   if (error) throw error;
     
-    const transformedData = data.map(item => ({
-      ...item,
-      patient_name: item.patients?.name,
-      cr_no: item.patients?.cr_no,
-      psy_no: item.patients?.psy_no,
-      filled_by_name: item.users?.name
-    }));
+  //   const transformedData = data.map(item => ({
+  //     ...item,
+  //     patient_name: item.patients?.name,
+  //     cr_no: item.patients?.cr_no,
+  //     psy_no: item.patients?.psy_no,
+  //     filled_by_name: item.users?.name
+  //   }));
     
-    const duration = Date.now() - startTime;
-    console.log('Join query executed successfully', { duration, rows: transformedData.length });
+  //   const duration = Date.now() - startTime;
+  //   console.log('Join query executed successfully', { duration, rows: transformedData.length });
     
-    return {
-      rows: transformedData,
-      rowCount: transformedData.length,
-      command: 'SELECT'
-    };
-  }
+  //   return {
+  //     rows: transformedData,
+  //     rowCount: transformedData.length,
+  //     command: 'SELECT'
+  //   };
+  // }
   
   // For adl_files joins
   if (mainTable === 'adl_files') {

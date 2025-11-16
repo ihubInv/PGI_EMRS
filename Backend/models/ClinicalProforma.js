@@ -1625,6 +1625,12 @@ class ClinicalProforma {
   static async findAll(page = 1, limit = 10, filters = {}) {
     try {
       const offset = (page - 1) * limit;
+      // Check if we need to filter by filled_by with UUID - if so, we'll need to join users in count query too
+      const needsUserJoinForFilter = filters.filled_by && 
+        typeof filters.filled_by === 'string' && 
+        filters.filled_by.includes('-') && 
+        filters.filled_by.length === 36;
+      
       let query = `
         SELECT cp.*, p.name as patient_name, p.cr_no, p.psy_no, 
                u.name as doctor_name, u.role as doctor_role
@@ -1633,7 +1639,9 @@ class ClinicalProforma {
         LEFT JOIN users u ON cp.filled_by = u.id
         WHERE 1=1
       `;
-      let countQuery = 'SELECT COUNT(*) FROM clinical_proforma WHERE 1=1';
+      let countQuery = needsUserJoinForFilter 
+        ? 'SELECT COUNT(*) FROM clinical_proforma cp LEFT JOIN users u ON cp.filled_by = u.id WHERE 1=1'
+        : 'SELECT COUNT(*) FROM clinical_proforma WHERE 1=1';
       const params = [];
       let paramCount = 0;
 
@@ -1668,8 +1676,21 @@ class ClinicalProforma {
 
       if (filters.filled_by) {
         paramCount++;
-        query += ` AND cp.filled_by = $${paramCount}`;
-        countQuery += ` AND filled_by = $${paramCount}`;
+        // Handle UUID user IDs - check if filled_by is a UUID string
+        const isUUID = typeof filters.filled_by === 'string' && 
+                      filters.filled_by.includes('-') && 
+                      filters.filled_by.length === 36;
+        
+        if (isUUID) {
+          // If it's a UUID, match using the users table join (u.id) instead of cp.filled_by directly
+          // This avoids type conversion issues between UUID and integer
+          query += ` AND u.id::text = $${paramCount}::text`;
+          countQuery += ` AND u.id::text = $${paramCount}::text`;
+        } else {
+          // If it's an integer, use direct comparison with cp.filled_by
+          query += ` AND cp.filled_by = $${paramCount}`;
+          countQuery += ` AND filled_by = $${paramCount}`;
+        }
         params.push(filters.filled_by);
       }
 
@@ -1697,9 +1718,12 @@ class ClinicalProforma {
       query += ` ORDER BY cp.visit_date DESC LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`;
       params.push(limit, offset);
 
+      // Count query uses the same params array but without limit/offset (slice to exclude last 2)
+      const countParams = params.slice(0, -2);
+
       const [proformaResult, countResult] = await Promise.all([
         db.query(query, params),
-        db.query(countQuery, Object.values(filters))
+        db.query(countQuery, countParams)
       ]);
 
       const proformas = proformaResult.rows.map(row => new ClinicalProforma(row));

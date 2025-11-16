@@ -287,10 +287,10 @@ const CreatePatient = () => {
       const assignedDoctor = usersData?.data?.users?.find(
         user => user.id === formData.assigned_doctor_id
       );
-      
+     
+      const currentUser = JSON.parse(localStorage.getItem("user"));
       const assignedDoctorName = assignedDoctor ? assignedDoctor.name : 'Unknown Doctor';
-      
-      console.log('Assigned Doctor Name:', assignedDoctorName);
+    
       
       const completePatientData = {
         // Required basic fields
@@ -299,7 +299,10 @@ const CreatePatient = () => {
         sex: patientSex,
         father_name: formData.father_name || null,
         age: parseIntSafe(patientAge),
-        date: formData.date || null,
+        date: formData.date || null,  
+        filled_by: currentUser.id,
+        filled_by_name: currentUser.name,
+        filled_by_role: currentUser.role,
         assigned_room: formData.assigned_room || null,
         assigned_doctor_id: formData.assigned_doctor_id || null,
         assigned_doctor_name: assignedDoctorName || null,

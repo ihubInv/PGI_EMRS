@@ -42,45 +42,6 @@ const PatientsPage = () => {
   const [deletePatient] = useDeletePatientMutation();
  
 
-  // Helper function to extract a single patient ID from row data
-  // const getPatientId = (row) => {
-  //   if (!row) {
-  //     console.warn('[getPatientId] Row is null or undefined');
-  //     return null;
-  //   }
-    
-  //   let extractedId = null;
-    
-  //   // Check if id is an array (handle edge case)
-  //   if (Array.isArray(row.id)) {
-  //     console.warn('[getPatientId] row.id is an array, taking first element:', row.id);
-  //     extractedId = row.id.length > 0 ? row.id[0] : null;
-  //   }
-  //   // Direct access to id field (should be a single value)
-  //   else if (row.id !== null && row.id !== undefined && row.id !== '') {
-  //     extractedId = row.id;
-  //   }
-  //   // Fallback: try to get id from other possible fields
-  //   else {
-  //     extractedId = row.patient_id || row.patientId || null;
-  //   }
-    
-  //   // Ensure the ID is a valid number or can be converted to one
-  //   if (extractedId !== null && extractedId !== undefined && extractedId !== '') {
-  //     // Convert to number to ensure it's valid
-  //     const numericId = Number(extractedId);
-  //     if (!isNaN(numericId) && numericId > 0) {
-  //       return numericId; // Return as number for consistency
-  //     } else {
-  //       console.warn('[getPatientId] Invalid numeric ID:', extractedId);
-  //       return null;
-  //     }
-  //   }
-    
-  //   console.warn('[getPatientId] No valid ID found in row:', row);
-  //   return null;
-  // };
-
   // Handle view patient details
   const handleView = (row) => {
    
