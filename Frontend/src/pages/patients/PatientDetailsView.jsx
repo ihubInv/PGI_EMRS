@@ -7,15 +7,17 @@ import {
   getFileStatusLabel, getCaseSeverityLabel,
   formatAddress, formatCurrency, formatDateTime
 } from '../../utils/enumMappings';
-import { isAdmin, isJrSr } from '../../utils/constants';
+import { isAdmin, isJrSr, isMWO, PATIENT_REGISTRATION_FORM } from '../../utils/constants';
 import {
   FiUser, FiUsers, FiBriefcase, FiDollarSign, FiHome, FiMapPin, FiPhone,
   FiCalendar, FiGlobe, FiFileText, FiHash, FiClock,
   FiHeart, FiBookOpen, FiTrendingUp, FiShield,
   FiNavigation, FiTruck, FiEdit3, FiSave, FiX, FiLayers, FiLoader,
-  FiFolder, FiChevronDown, FiChevronUp, FiPackage, FiEdit, FiPlus, FiTrash2, FiCheck
+  FiFolder, FiChevronDown, FiChevronUp, FiPackage, FiEdit, FiPlus, FiTrash2, FiCheck, FiDownload
 } from 'react-icons/fi';
 import Button from '../../components/Button';
+import { toast } from 'react-toastify';
+import * as XLSX from 'xlsx-js-style';
 
 import { useGetPrescriptionsByProformaIdQuery } from '../../features/prescriptions/prescriptionApiSlice';
 const IconInput = ({ icon, label, loading = false, error, defaultValue, ...props }) => {
@@ -254,16 +256,242 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
     return grouped;
   }, [allPrescriptions]);
 
+  // Helper function to apply header styles with different colors
+  const applyHeaderStyles = (ws, colorRanges) => {
+    if (!ws['!ref']) return;
+    
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    const numCols = range.e.c + 1;
+    
+    // Apply styles to each header cell
+    for (let col = 0; col < numCols; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+      
+      if (!ws[cellAddress]) continue;
+      
+      // Find which color range this column belongs to
+      let headerColor = '2E86AB'; // Default blue
+      for (const range of colorRanges) {
+        if (col >= range.start && col <= range.end) {
+          headerColor = range.color;
+          break;
+        }
+      }
+      
+      // Apply header styling with bold, colored background, and white text
+      ws[cellAddress].s = {
+        font: {
+          bold: true,
+          color: { rgb: "FFFFFF" },
+          size: 12
+        },
+        fill: {
+          fgColor: { rgb: headerColor }
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "center",
+          wrapText: true
+        },
+        border: {
+          top: { style: "thin", color: { rgb: "000000" } },
+          bottom: { style: "thin", color: { rgb: "000000" } },
+          left: { style: "thin", color: { rgb: "000000" } },
+          right: { style: "thin", color: { rgb: "000000" } }
+        }
+      };
+    }
+    
+    // Set column widths for better readability
+    const colWidths = [];
+    for (let col = 0; col < numCols; col++) {
+      const header = ws[XLSX.utils.encode_cell({ r: 0, c: col })]?.v || '';
+      let width = Math.max(String(header).length * 1.2, 12);
+      if (String(header).includes('Address') || String(header).includes('Description')) {
+        width = Math.max(width, 25);
+      } else if (String(header).includes('Date') || String(header).includes('Time')) {
+        width = Math.max(width, 18);
+      } else if (String(header).includes('Income') || String(header).includes('Amount')) {
+        width = Math.max(width, 15);
+      }
+      colWidths.push({ wch: Math.min(width, 50) });
+    }
+    ws['!cols'] = colWidths;
+  };
+
+  // Export patient details to Excel
+  // Psychiatric Welfare Officer (MWO) can only export patient details, not clinical proformas, ADL files, or prescriptions
+  const handleExportPatient = () => {
+    try {
+      if (!patient && !displayData) {
+        toast.error('No patient data available to export');
+        return;
+      }
+
+      // Check if user is MWO (Psychiatric Welfare Officer)
+      const isMWOUser = userRole && isMWO(userRole);
+
+      // Create a new workbook
+      const wb = XLSX.utils.book_new();
+
+      // Sheet 1: Patient Basic Details (always included)
+      // Use PATIENT_REGISTRATION_FORM labels as Excel headers
+      const patientExportData = {};
+      
+      PATIENT_REGISTRATION_FORM.forEach(field => {
+        const value = displayData[field.value];
+        
+        // Handle special cases
+        if (field.value === 'mobile_no') {
+          // Use contact_number if mobile_no is not available
+          patientExportData[field.label] = displayData.contact_number || displayData.mobile_no || 'N/A';
+        } else if (field.value === 'date') {
+          // Format date if available
+          patientExportData[field.label] = value ? formatDate(value) : 'N/A';
+        } else if (field.value === 'seen_in_walk_in_on' || field.value === 'worked_up_on') {
+          // Format date fields
+          patientExportData[field.label] = value ? formatDate(value) : 'N/A';
+        } else if (field.value === 'income') {
+          // Use patient_income if income is not available
+          const incomeValue = value || displayData.patient_income || '';
+          patientExportData[field.label] = incomeValue ? (typeof incomeValue === 'number' ? `₹${incomeValue}` : incomeValue) : 'N/A';
+        } else if (field.value === 'education') {
+          // Use education_level if education is not available
+          patientExportData[field.label] = value || displayData.education_level || 'N/A';
+        } else if (field.value === 'assigned_doctor_name') {
+          // Format assigned doctor with role if available
+          const doctorName = value || displayData.assigned_doctor_name || '';
+          const doctorRole = displayData.assigned_doctor_role || '';
+          patientExportData[field.label] = doctorName 
+            ? (doctorRole ? `${doctorName} (${doctorRole})` : doctorName) 
+            : 'Not assigned';
+        } else {
+          // Default: use value or 'N/A'
+          patientExportData[field.label] = (value !== null && value !== undefined && value !== '') ? value : 'N/A';
+        }
+      });
+      
+      const ws1 = XLSX.utils.json_to_sheet([patientExportData]);
+      
+      // Apply header styling with different colors for different sections
+      // Color ranges based on PATIENT_REGISTRATION_FORM structure
+      const totalFields = PATIENT_REGISTRATION_FORM.length;
+      applyHeaderStyles(ws1, [
+        { start: 0, end: 13, color: '2E86AB' }, // Quick Entry & Registration (Blue) - CR No to Contact Number
+        // { start: 14, end: 18, color: '28A745' }, // Personal Info (Green) - Seen in Walk-in to Age Group
+        // { start: 19, end: 22, color: '6F42C1' }, // Personal Information (Purple) - Marital Status to No of Children Female
+        // { start: 23, end: 27, color: 'FD7E14' }, // Occupation & Education (Orange) - Occupation to Family Type
+        // { start: 28, end: 33, color: 'DC3545' }, // Head of Family (Red) - Family Head Name to Family Head Income
+        // { start: 34, end: 36, color: '20C997' }, // Distance, Mobility, Referred (Teal)
+        // { start: 37, end: 42, color: '6610F2' }, // Address Details (Indigo) - Address Line to Pin Code
+        // { start: 43, end: totalFields - 1, color: 'E83E8C' }, // Additional Fields (Pink) - Assigned Doctor fields
+      ]);
+      
+      XLSX.utils.book_append_sheet(wb, ws1, 'Patient Details');
+
+      // Sheet 2: Clinical Proformas (only if user has permission and is not MWO)
+      if (!isMWOUser && canViewClinicalProforma && patientProformas.length > 0) {
+        const proformaData = patientProformas.map((proforma, index) => ({
+          'Visit #': index + 1,
+          'Visit Date': proforma.visit_date ? formatDate(proforma.visit_date) : 'N/A',
+          'Visit Type': proforma.visit_type === 'first_visit' ? 'First Visit' : 'Follow-up',
+          'Room Number': proforma.room_no || 'N/A',
+          'Doctor Name': proforma.doctor_name || 'N/A',
+          'Doctor Role': proforma.doctor_role || 'N/A',
+          'Case Severity': getCaseSeverityLabel(proforma.case_severity) || 'N/A',
+          'Decision': proforma.decision || 'N/A',
+          'Doctor Decision': proforma.doctor_decision === 'complex_case' ? 'Complex Case' : (proforma.doctor_decision === 'simple_case' ? 'Simple Case' : 'N/A'),
+          'Requires ADL File': proforma.requires_adl_file ? 'Yes' : 'No',
+          'Informant Present': proforma.informant_present ? 'Yes' : 'No',
+          'Diagnosis': proforma.diagnosis || 'N/A',
+          'ICD Code': proforma.icd_code || 'N/A',
+          'Disposal': proforma.disposal || 'N/A',
+          'Workup Appointment': proforma.workup_appointment ? formatDate(proforma.workup_appointment) : 'N/A',
+          'Referred To': proforma.referred_to || 'N/A',
+          'Treatment Prescribed': proforma.treatment_prescribed || 'N/A',
+          'ADL Reasoning': proforma.adl_reasoning || 'N/A',
+          'Created At': proforma.created_at ? formatDateTime(proforma.created_at) : 'N/A',
+        }));
+        const ws2 = XLSX.utils.json_to_sheet(proformaData);
+        applyHeaderStyles(ws2, [{ start: 0, end: 17, color: '2E86AB' }]); // Blue for all columns
+        XLSX.utils.book_append_sheet(wb, ws2, 'Clinical Proformas');
+      }
+
+      // Sheet 3: ADL Files (only if user has permission and is not MWO)
+      if (!isMWOUser && canViewADLFile && patientAdlFiles.length > 0) {
+        const adlData = patientAdlFiles.map((file, index) => ({
+          'ADL File #': index + 1,
+          'ADL Number': file.adl_no || 'N/A',
+          'File Status': getFileStatusLabel(file.file_status) || 'N/A',
+          'Patient Name': file.patient_name || 'N/A',
+          'CR Number': file.cr_no || 'N/A',
+          'PSY Number': file.psy_no || 'N/A',
+          'Assigned Doctor': file.assigned_doctor_name ? `${file.assigned_doctor_name}${file.assigned_doctor_role ? ` (${file.assigned_doctor_role})` : ''}` : 'N/A',
+          'Visit Date': file.proforma_visit_date ? formatDate(file.proforma_visit_date) : 'N/A',
+          'Created By': file.created_by_name ? `${file.created_by_name}${file.created_by_role ? ` (${file.created_by_role})` : ''}` : 'N/A',
+          'Physical File Location': file.physical_file_location || 'N/A',
+          'Total Visits': file.total_visits || 'N/A',
+          'File Created Date': file.file_created_date ? formatDate(file.file_created_date) : 'N/A',
+          'Last Updated': file.updated_at ? formatDateTime(file.updated_at) : 'N/A',
+        }));
+        const ws3 = XLSX.utils.json_to_sheet(adlData);
+        applyHeaderStyles(ws3, [{ start: 0, end: 11, color: '6F42C1' }]); // Purple for all columns
+        XLSX.utils.book_append_sheet(wb, ws3, 'ADL Files');
+      }
+
+      // Sheet 4: Prescriptions (only if user has permission and is not MWO)
+      if (!isMWOUser && canViewPrescriptions && allPrescriptions.length > 0) {
+        const prescriptionData = allPrescriptions.map((prescription, index) => ({
+          'Prescription #': index + 1,
+          'Visit Date': prescription.visit_date ? formatDate(prescription.visit_date) : 'N/A',
+          'Visit Type': prescription.visit_type === 'first_visit' ? 'First Visit' : 'Follow-up',
+          'Medicine': prescription.medicine || 'N/A',
+          'Dosage': prescription.dosage || 'N/A',
+          'When to Take': prescription.when_to_take || 'N/A',
+          'Frequency': prescription.frequency || 'N/A',
+          'Duration': prescription.duration || 'N/A',
+          'Quantity': prescription.quantity || 'N/A',
+          'Details': prescription.details || 'N/A',
+          'Notes': prescription.notes || 'N/A',
+          'Prescribed At': prescription.created_at ? formatDateTime(prescription.created_at) : 'N/A',
+        }));
+        const ws4 = XLSX.utils.json_to_sheet(prescriptionData);
+        applyHeaderStyles(ws4, [{ start: 0, end: 10, color: '28A745' }]); // Green for all columns
+        XLSX.utils.book_append_sheet(wb, ws4, 'Prescriptions');
+      }
+
+      // Generate filename with patient name and date
+      const patientName = displayData.name || displayData.cr_no || 'Patient';
+      const sanitizedName = patientName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const filename = `patient_${sanitizedName}_${new Date().toISOString().split('T')[0]}`;
+
+      // Write the file
+      XLSX.writeFile(wb, `${filename}.xlsx`);
+      
+      // Show appropriate success message based on role
+      if (isMWOUser) {
+        toast.success('Patient details exported to Excel successfully (Patient Details only)');
+      } else {
+        toast.success('Patient details exported to Excel successfully');
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export patient details');
+    }
+  };
+
   // Note: canViewPrescriptions is now determined by filled_by_role above
 
   return (
     <div className="space-y-6">
       {/* Card 1: Patient Details */}
       <Card className="shadow-lg border-0 bg-white">
+        
         <div
           className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
           onClick={() => toggleCard('patient')}
         >
+        
           <div className="flex items-center gap-4">
             <div className="p-3 bg-blue-100 rounded-lg">
               <FiUser className="h-6 w-6 text-blue-600" />
@@ -272,6 +500,7 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
               <h3 className="text-xl font-bold text-gray-900">Patient Details</h3>
               <p className="text-sm text-gray-500 mt-1">{patient.name} - {patient.cr_no || 'N/A'}</p>
             </div>
+            
           </div>
           {expandedCards.patient ? (
             <FiChevronUp className="h-6 w-6 text-gray-500" />
@@ -286,14 +515,27 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
               {/* Quick Entry Section with Glassmorphism */}
               <div className="relative mb-8">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-3xl blur-xl"></div>
+                
                 <Card
                   title={
                     <div className="flex items-center gap-3">
                       <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
+                        
                         <FiEdit3 className="w-6 h-6 text-indigo-600" />
                       </div>
                       <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">OUT PATIENT CARD</span>
                     </div>
+                  }
+                  actions={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleExportPatient}
+                      className="px-6 lg:px-8 py-3 bg-green-50 backdrop-blur-md border border-green-200 hover:bg-green-100 hover:border-green-300 text-green-700 font-semibold shadow-sm hover:shadow-md transition-all duration-200"
+                    >
+                      <FiDownload className="mr-2" />
+                      Export to Excel
+                    </Button>
                   }
                   className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl overflow-hidden">
                   <div className="space-y-8">
@@ -903,7 +1145,8 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
 
           </div>
         )}
-        <div className="flex flex-col sm:flex-row justify-end gap-4">
+        <div className="flex mt-4 flex-col sm:flex-row justify-end gap-4">
+          
           <Button
             type="button"
             variant="outline"
@@ -925,9 +1168,6 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
             className="px-6 lg:px-8 py-3 bg-gradient-to-r from-primary-600 via-indigo-600 to-blue-600 hover:from-primary-700 hover:via-indigo-700 hover:to-blue-700 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
           >
             <FiSave className="mr-2" />
-            {/* {isLoading || isAssigning ? 'Updating Record...' : 'Update Patient'}
-                         */}
-
             View All Patient
           </Button>
         </div>
