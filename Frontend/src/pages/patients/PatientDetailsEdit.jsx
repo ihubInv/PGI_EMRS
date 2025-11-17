@@ -1578,7 +1578,7 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       }).unwrap();
 
       toast.success('Patient updated successfully!');
-
+      navigate('/patients');
       // Call onSave callback if provided
       if (onSave) {
         onSave();

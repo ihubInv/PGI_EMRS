@@ -295,6 +295,8 @@ const PatientDetails = () => {
         age: patient.age ?? '',
         assigned_room: patient.assigned_room ?? '',
         assigned_doctor_id: patient.assigned_doctor_id ? String(patient.assigned_doctor_id) : '',
+        assigned_doctor_name: patient.assigned_doctor_name ?? '',
+        assigned_doctor_role: patient.assigned_doctor_role ?? '',
         contact_number: patient.contact_number ?? '',
 
         // Personal information
@@ -549,7 +551,7 @@ const PatientDetails = () => {
           />
 
           {/* Action buttons below the view content */}
-          <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+          {/* <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
             <Button
               variant="outline"
               onClick={() => {
@@ -565,7 +567,7 @@ const PatientDetails = () => {
             <Button onClick={() => setIsEditing(true)}>
               <FiEdit className="mr-2" /> Edit
             </Button>
-          </div>
+          </div> */}
         </>
       ) : (
         <PatientDetailsEdit

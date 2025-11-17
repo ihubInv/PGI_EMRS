@@ -1,27 +1,142 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import {
-  FiUser, FiFileText, FiFolder, FiChevronDown, FiChevronUp, FiPackage, FiEdit
-} from 'react-icons/fi';
 import Card from '../../components/Card';
 import Badge from '../../components/Badge';
 import { formatDate } from '../../utils/formatters';
 import {
-  getSexLabel, getMaritalStatusLabel, getFamilyTypeLabel, getLocalityLabel,
-  getReligionLabel, getAgeGroupLabel, getOccupationLabel, getEducationLabel,
-  getMobilityLabel, getReferredByLabel, getFileStatusLabel, getCaseSeverityLabel,
+  getFileStatusLabel, getCaseSeverityLabel,
   formatAddress, formatCurrency, formatDateTime
 } from '../../utils/enumMappings';
-import { isMWO, isAdmin, isJrSr } from '../../utils/constants';
+import { isAdmin, isJrSr } from '../../utils/constants';
+import {
+  FiUser, FiUsers, FiBriefcase, FiDollarSign, FiHome, FiMapPin, FiPhone,
+  FiCalendar, FiGlobe, FiFileText, FiHash, FiClock,
+  FiHeart, FiBookOpen, FiTrendingUp, FiShield,
+  FiNavigation, FiTruck, FiEdit3, FiSave, FiX, FiLayers, FiLoader,
+  FiFolder, FiChevronDown, FiChevronUp, FiPackage, FiEdit, FiPlus, FiTrash2, FiCheck
+} from 'react-icons/fi';
+import Button from '../../components/Button';
+
 import { useGetPrescriptionsByProformaIdQuery } from '../../features/prescriptions/prescriptionApiSlice';
+const IconInput = ({ icon, label, loading = false, error, defaultValue, ...props }) => {
+  // Filter out non-DOM props that shouldn't be passed to the input element
+  const {
+    defaultToday,
+    searchable,
+    formData,
+    customFieldName,
+    inputLabel,
+    options,
+    customValue,
+    setCustomValue,
+    showCustomInput,
+    containerClassName,
+    dropdownZIndex,
+    ...domProps
+  } = props;
+
+  // Remove defaultValue if value is provided to avoid controlled/uncontrolled warning
+  const inputProps = domProps.value !== undefined ? { ...domProps } : { ...domProps, defaultValue };
+
+  return (
+    <div className="space-y-2">
+      <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+        {icon && <span className="text-primary-600">{icon}</span>}
+        {label}
+        {loading && (
+          <FiLoader className="w-4 h-4 text-blue-500 animate-spin" />
+        )}
+      </label>
+      <div className="relative">
+        {icon && (
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+            <span className="text-gray-500">{icon}</span>
+          </div>
+        )}
+        <input
+          {...inputProps}
+          className={`w-full px-4 py-3 ${icon ? 'pl-11' : 'pl-4'} bg-white/60 backdrop-blur-md border-2 border-gray-300/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 focus:bg-white/80 transition-all duration-300 hover:bg-white/70 hover:border-primary-400/70 placeholder:text-gray-400 text-gray-900 font-medium ${inputProps.className || ''}`}
+        />
+      </div>
+      {error && (
+        <p className="text-red-500 text-xs mt-1 flex items-center gap-1 font-medium">
+          <FiX className="w-3 h-3" />
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
+
+
 
 const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatientData, userRole }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const returnTab = searchParams.get('returnTab');
 
+  // Merge patient and formData to ensure all fields are available with proper fallbacks
+  // This ensures data is available immediately even if formData hasn't loaded yet
+  // Priority: formData > patient > empty string
+  const displayData = useMemo(() => {
+    return {
+      ...patient,
+      ...formData,
+      // Use formData first, then fallback to patient for critical fields
+      cr_no: formData?.cr_no || patient?.cr_no || '',
+      psy_no: formData?.psy_no || patient?.psy_no || '',
+      name: formData?.name || patient?.name || '',
+      sex: formData?.sex || patient?.sex || '',
+      age: formData?.age || patient?.age || '',
+      contact_number: formData?.contact_number || patient?.contact_number || '',
+      assigned_room: formData?.assigned_room || patient?.assigned_room || '',
+      assigned_doctor_id: formData?.assigned_doctor_id || patient?.assigned_doctor_id || '',
+      assigned_doctor_name: formData?.assigned_doctor_name || patient?.assigned_doctor_name || '',
+      assigned_doctor_role: formData?.assigned_doctor_role || patient?.assigned_doctor_role || '',
+      date: formData?.date || patient?.date || '',
+      father_name: formData?.father_name || patient?.father_name || '',
+      category: formData?.category || patient?.category || '',
+      department: formData?.department || patient?.department || '',
+      unit_consit: formData?.unit_consit || patient?.unit_consit || '',
+      room_no: formData?.room_no || patient?.room_no || '',
+      serial_no: formData?.serial_no || patient?.serial_no || '',
+      file_no: formData?.file_no || patient?.file_no || '',
+      unit_days: formData?.unit_days || patient?.unit_days || '',
+      address_line: formData?.address_line || patient?.address_line || '',
+      country: formData?.country || patient?.country || '',
+      state: formData?.state || patient?.state || '',
+      district: formData?.district || patient?.district || '',
+      city: formData?.city || patient?.city || '',
+      pin_code: formData?.pin_code || patient?.pin_code || '',
+      special_clinic_no: formData?.special_clinic_no || patient?.special_clinic_no || '',
+      seen_in_walk_in_on: formData?.seen_in_walk_in_on || patient?.seen_in_walk_in_on || '',
+      worked_up_on: formData?.worked_up_on || patient?.worked_up_on || '',
+      // Additional fields that might be in either source
+      age_group: formData?.age_group || patient?.age_group || '',
+      marital_status: formData?.marital_status || patient?.marital_status || '',
+      year_of_marriage: formData?.year_of_marriage || patient?.year_of_marriage || '',
+      no_of_children_male: formData?.no_of_children_male || patient?.no_of_children_male || '',
+      no_of_children_female: formData?.no_of_children_female || patient?.no_of_children_female || '',
+      occupation: formData?.occupation || patient?.occupation || '',
+      education: formData?.education || formData?.education_level || patient?.education || patient?.education_level || '',
+      income: formData?.income || formData?.patient_income || patient?.income || patient?.patient_income || '',
+      religion: formData?.religion || patient?.religion || '',
+      family_type: formData?.family_type || patient?.family_type || '',
+      locality: formData?.locality || patient?.locality || '',
+      head_name: formData?.head_name || patient?.head_name || '',
+      head_age: formData?.head_age || patient?.head_age || '',
+      head_relationship: formData?.head_relationship || patient?.head_relationship || '',
+      head_education: formData?.head_education || patient?.head_education || '',
+      head_occupation: formData?.head_occupation || patient?.head_occupation || '',
+      head_income: formData?.head_income || patient?.head_income || '',
+      distance_from_hospital: formData?.distance_from_hospital || patient?.distance_from_hospital || '',
+      mobility: formData?.mobility || patient?.mobility || '',
+      referred_by: formData?.referred_by || patient?.referred_by || '',
+    };
+  }, [patient, formData]);
+
   const [expandedCards, setExpandedCards] = useState({
-    patient: false,
+    patient: true,
     clinical: false,
     adl: false,
     prescriptions: false
@@ -38,10 +153,11 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
   // If current user is System Administrator, JR, or SR → Show all 4 sections
   // If current user is Psychiatric Welfare Officer (MWO) → Show only Patient Details
   const canViewAllSections = userRole && (
-    isAdmin(userRole) || 
+    isAdmin(userRole) ||
     isJrSr(userRole)
   );
   const canViewClinicalProforma = canViewAllSections;
+  console.log('canViewAllSections', userRole);
   const canViewADLFile = canViewAllSections;
   const canViewPrescriptions = canViewAllSections;
 
@@ -50,8 +166,8 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
 
 
   // Get clinical proformas for this patient - ensure it's always an array
-  const patientProformas = Array.isArray(clinicalData?.data?.proformas) 
-    ? clinicalData.data.proformas 
+  const patientProformas = Array.isArray(clinicalData?.data?.proformas)
+    ? clinicalData.data.proformas
     : [];
 
   // Fetch prescriptions for all proformas
@@ -166,474 +282,655 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
 
         {expandedCards.patient && (
           <div className="p-6">
-            <div className="space-y-8">
-              {/* Basic Information Section */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Basic Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Name</label>
-                    <p className="text-base font-semibold text-gray-900 mt-1">{patient.name || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">CR Number</label>
-                    <p className="text-base font-semibold text-gray-900 mt-1">{patient.cr_no || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">PSY Number</label>
-                    <p className="text-base font-semibold text-gray-900 mt-1">{patient.psy_no || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Sex</label>
-                    <p className="text-base font-semibold text-gray-900 mt-1">{getSexLabel(patient.sex) || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Age</label>
-                    <p className="text-base font-semibold text-gray-900 mt-1">{patient.age ? `${patient.age} years` : 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Age Group</label>
-                    <p className="text-base font-semibold text-gray-900 mt-1">{getAgeGroupLabel(patient.age_group) || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Room</label>
-                    <p className="text-base font-semibold text-gray-900 mt-1">{patient.assigned_room || 'Not assigned'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Contact Number</label>
-                    <p className="text-base font-semibold text-gray-900 mt-1">{patient.contact_number || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600"> Registration Date</label>
-                    <p className="text-base font-semibold text-gray-900 mt-1">{formatDate(patient.created_at) || 'N/A'}</p>
-                  </div>
-                  {/* <div>
-                    <label className="text-sm font-medium text-gray-600">Status</label>
-                    <div className="mt-1">
-                      <Badge
-                        className={`${patient.is_active
-                            ? 'bg-green-100 text-green-800 border-green-200'
-                            : 'bg-gray-100 text-gray-800 border-gray-200'
-                          } text-sm font-medium`}
-                      >
-                        {patient.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
+            <form>
+              {/* Quick Entry Section with Glassmorphism */}
+              <div className="relative mb-8">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-3xl blur-xl"></div>
+                <Card
+                  title={
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
+                        <FiEdit3 className="w-6 h-6 text-indigo-600" />
+                      </div>
+                      <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">OUT PATIENT CARD</span>
                     </div>
-                  </div> */}
-                </div>
+                  }
+                  className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl overflow-hidden">
+                  <div className="space-y-8">
+                    {/* First Row - Basic Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                      <IconInput
+                        icon={<FiHash className="w-4 h-4" />}
+                        label="CR No."
+                        name="cr_no"
+                        value={displayData.cr_no || ''}
+                        placeholder="Enter CR number"
+                        // loading={isCheckingCR && formData.cr_no && formData.cr_no.length >= 3}
+                        disabled={true}
+                        className="disabled:bg-gray-200 disabled:cursor-not-allowed disabled:text-gray-900"
+                      />
+                      <IconInput
+                        icon={<FiCalendar className="w-4 h-4" />}
+                        label="Date"
+                        name="date"
+                        value={displayData.date || ''}
+                        defaultToday={false}
+                        // loading={isCheckingCR && formData.cr_no && formData.cr_no.length >= 3}
+                        disabled={true}
+                        className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                      />
+
+
+                      <IconInput
+                        icon={<FiUser className="w-4 h-4" />}
+                        label="Name"
+                        name="name"
+                        value={displayData.name || ''}
+                        placeholder="Enter patient name"
+                        disabled={true}
+                        className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                      />
+                      <IconInput
+                        icon={<FiPhone className="w-4 h-4" />}
+                        label="Mobile No."
+                        name="contact_number"
+                        value={displayData.contact_number || ''}
+                        placeholder="Enter mobile number"
+                        disabled={true}
+                        className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                      />
+                    </div>
+
+                    {/* Second Row - Age, Sex, Category, Father's Name */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                      <IconInput
+                        icon={<FiClock className="w-4 h-4" />}
+                        label="Age"
+                        name="age"
+                        value={displayData.age || ''}
+                        type="number"
+                        placeholder="Enter age"
+                        disabled={true}
+                        className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                      />
+                      <div className="space-y-2">
+                        <IconInput
+                          label="Sex"
+                          name="sex"
+                          value={displayData.sex || ''}
+                          placeholder="Select sex"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                          <FiShield className="w-4 h-4 text-primary-600" />
+                          Category
+                        </label>
+                        <IconInput
+                          name="category"
+                          value={displayData.category || ''}
+                          placeholder="Select category"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+                      </div>
+                      <IconInput
+                        icon={<FiUsers className="w-4 h-4" />}
+                        label="Father's Name"
+                        name="father_name"
+                        value={displayData.father_name || ''}
+                        placeholder="Enter father's name"
+                        disabled={true}
+                        className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                    {/* Fourth Row - Department, Unit/Consit, Room No., Serial No. */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                      <IconInput
+                        icon={<FiLayers className="w-4 h-4" />}
+                        label="Department"
+                        name="department"
+                        value={displayData.department || ''}
+                        placeholder="Enter department"
+                        disabled={true}
+                        className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                      />
+                      <IconInput
+                        icon={<FiUsers className="w-4 h-4" />}
+                        label="Unit/Consit"
+                        name="unit_consit"
+                        value={displayData.unit_consit || ''}
+                        placeholder="Enter unit/consit"
+                        disabled={true}
+                        className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                      />
+                      <IconInput
+                        icon={<FiHome className="w-4 h-4" />}
+                        label="Room No."
+                        name="room_no"
+                        value={displayData.room_no || ''}
+                        placeholder="Enter room number"
+                        disabled={true}
+                        className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                      />
+                      <IconInput
+                        icon={<FiHash className="w-4 h-4" />}
+                        label="Serial No."
+                        name="serial_no"
+                        value={displayData.serial_no || ''}
+                        placeholder="Enter serial number"
+                        disabled={true}
+                        className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                      />
+                    </div>
+
+                    {/* Fifth Row - File No., Unit Days */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <IconInput
+                        icon={<FiFileText className="w-4 h-4" />}
+                        label="File No."
+                        name="file_no"
+                        value={displayData.file_no || ''}
+                        placeholder="Enter file number"
+                        disabled={true}
+                        className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                      />
+                      <div className="space-y-2">
+                        <IconInput
+                          label="Unit Days"
+                          name="unit_days"
+                          value={displayData.unit_days || ''}
+                          placeholder="Select unit days"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Address Details */}
+                    <div className="space-y-6 pt-6 border-t border-white/30">
+                      <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                        <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-md">
+                          <FiMapPin className="w-5 h-5 text-blue-600" />
+                        </div>
+                        Address Details
+                      </h4>
+
+                      <div className="space-y-6">
+                        {/* Address Line */}
+                        <IconInput
+                          icon={<FiHome className="w-4 h-4" />}
+                          label="Address Line (House No., Street, Locality)"
+                          name="address_line"
+                          value={displayData.address_line || ''}
+
+                          placeholder="Enter house number, street, locality"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+
+                        {/* Location Fields */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <IconInput
+                            icon={<FiGlobe className="w-4 h-4" />}
+                            label="Country"
+                            name="country"
+                            value={displayData.country || ''}
+
+                            disabled={true}
+                            className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                          />
+                          <IconInput
+                            icon={<FiMapPin className="w-4 h-4" />}
+                            label="State"
+                            name="state"
+                            value={displayData.state || ''}
+
+                            placeholder="Enter state"
+                            disabled={true}
+                            className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                          />
+                          <IconInput
+                            icon={<FiLayers className="w-4 h-4" />}
+                            label="District"
+                            name="district"
+                            value={displayData.district || ''}
+
+                            placeholder="Enter district"
+                            disabled={true}
+                            className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                          />
+                          <IconInput
+                            icon={<FiHome className="w-4 h-4" />}
+                            label="City/Town/Village"
+                            name="city"
+                            value={displayData.city || ''}
+
+                            placeholder="Enter city, town or village"
+                            disabled={true}
+                            className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                          />
+                        </div>
+
+                        {/* Pin Code Row */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <IconInput
+                            icon={<FiHash className="w-4 h-4" />}
+                            label="Pin Code"
+                            name="pin_code"
+                            value={displayData.pin_code || ''}
+
+                            placeholder="Enter pin code"
+                            type="number"
+                            disabled={true}
+                            className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
               </div>
 
-              {/* Status Information Section */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Status Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Assigned Doctor</label>
-                    <div className="mt-1">
-                      {patient.assigned_doctor_name ? (
-                        <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-sm font-medium">
-                          {patient.assigned_doctor_name} {patient.assigned_doctor_role ? `(${patient.assigned_doctor_role})` : ''}
-                        </Badge>
-                      ) : (
-                        <span className="text-gray-500 text-sm">Not assigned</span>
-                      )}
+              {/* Basic Information with Glassmorphism */}
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 rounded-3xl blur-xl"></div>
+                <Card
+                  title={
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
+                        <FiUser className="w-6 h-6 text-emerald-600" />
+                      </div>
+                      <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">OUT-PATIENT RECORD</span>
                     </div>
+                  }
+                  className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl overflow-visible"
+                >
+                  <div className="space-y-8">
+                    {/* Patient Identification */}
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+
+                        <IconInput
+                          icon={<FiCalendar className="w-4 h-4" />}
+                          label="Seen in Walk-in-on"
+                          name="seen_in_walk_in_on"
+                          value={displayData.seen_in_walk_in_on ? formatDate(displayData.seen_in_walk_in_on) : ''}
+                          placeholder="Date"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+
+                        <IconInput
+                          icon={<FiCalendar className="w-4 h-4" />}
+                          label="Worked up on"
+                          name="worked_up_on"
+                          value={displayData.worked_up_on ? formatDate(displayData.worked_up_on) : ''}
+                          placeholder="Date"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+
+
+                        <IconInput
+                          icon={<FiHash className="w-4 h-4" />}
+                          label="CR No."
+                          name="cr_no"
+                          value={displayData.cr_no || ''}
+                          placeholder="Enter CR number"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+
+                        <IconInput
+                          icon={<FiFileText className="w-4 h-4" />}
+                          label="Psy. No."
+                          name="psy_no"
+                          value={displayData.psy_no || ''}
+                          placeholder="Enter PSY number"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+
+                        />
+                        <IconInput
+                          icon={<FiHeart className="w-4 h-4" />}
+                          label="Special Clinic No."
+                          name="special_clinic_no"
+                          value={displayData.special_clinic_no || ''}
+
+                          placeholder="Enter special clinic number"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+
+                        <IconInput
+                          icon={<FiUser className="w-4 h-4" />}
+                          label="Name"
+                          name="name"
+                          value={displayData.name || ''}
+
+                          placeholder="Enter patient name"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+
+                        <div className="space-y-2">
+                          <IconInput
+                            label="Sex"
+                            name="sex"
+                            value={displayData.sex || ''}
+                            placeholder="Select sex"
+                            searchable={true}
+                            disabled={true}
+                            className="disabled:bg-gray-200 disabled:cursor-not-allowed disabled:text-gray-900"
+                          />
+                        </div>
+
+                        <IconInput
+                          label="Age Group"
+                          name="age_group"
+                          value={displayData.age_group || ''}
+
+                          // options={AGE_GROUP_OPTIONS}
+                          placeholder="Select age group"
+                          searchable={true}
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+                        <IconInput
+                          label="Marital Status"
+                          name="marital_status"
+                          value={displayData.marital_status || ''}
+                          placeholder="Select marital status"
+                          searchable={true}
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+
+                        />
+                        <IconInput
+                          icon={<FiCalendar className="w-4 h-4" />}
+                          label="Year of marriage"
+                          name="year_of_marriage"
+                          value={displayData.year_of_marriage || ''}
+
+                          type="number"
+                          placeholder="Enter year of marriage"
+                          min="1900"
+                          max={new Date().getFullYear()}
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+
+
+                        <IconInput
+                          icon={<FiUsers className="w-4 h-4" />}
+                          label="No. of Children: M"
+                          name="no_of_children_male"
+                          value={displayData.no_of_children_male || ''}
+
+                          type="number"
+                          placeholder="Male"
+                          min="0"
+                          max="20"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+                        <IconInput
+                          icon={<FiUsers className="w-4 h-4" />}
+                          label="No. of Children: F"
+                          name="no_of_children_female"
+                          value={displayData.no_of_children_female || ''}
+
+                          type="number"
+                          placeholder="Female"
+                          min="0"
+                          max="20"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+
+                        <IconInput
+                          icon={<FiBriefcase className="w-4 h-4" />}
+                          label=" Occupation"
+                          name="occupation"
+                          value={displayData.occupation || ''}
+                          placeholder="Select Occupation"
+                          searchable={true}
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                          formData={formData}
+                          customFieldName="occupation_other"
+                          inputLabel="Specify Occupation"
+                        />
+
+                        <IconInput
+                          icon={<FiBookOpen className="w-4 h-4" />}
+                          label="Education"
+                          name="education"
+                          value={displayData.education || displayData.education_level || ''}
+                          placeholder="Select education"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+
+                        <IconInput
+                          icon={<FiTrendingUp className="w-4 h-4" />}
+                          label="Income (₹)"
+                          name="income"
+                          value={displayData.income || displayData.patient_income || ''}
+
+                          type="number"
+                          placeholder="Monthly income"
+                          min="0"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+
+                        <IconInput
+                          label="Religion"
+                          name="religion"
+                          value={displayData.religion || ''}
+                          placeholder="Select religion"
+
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                          customFieldName="religion_other"
+                          inputLabel="Specify Religion"
+                        />
+                        <IconInput
+                          label="Family Type"
+                          name="family_type"
+                          value={displayData.family_type || ''}
+                          placeholder="Select family type"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                          customFieldName="family_type_other"
+                          inputLabel="Specify Family Type"
+                        />
+                        <IconInput
+                          label="Locality"
+                          name="locality"
+                          value={displayData.locality || ''}
+                          placeholder="Select locality"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                          customFieldName="locality_other"
+                          inputLabel="Specify Locality"
+                        />
+
+                        <IconInput
+                          name="assigned_doctor_id"
+                          label="Assigned Doctor"
+                          value={displayData.assigned_doctor_name ? `${displayData.assigned_doctor_name}${displayData.assigned_doctor_role ? ` (${displayData.assigned_doctor_role})` : ''}` : 'Not assigned'}
+                          placeholder="Select doctor"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+
+                        />
+                        <IconInput
+                          icon={<FiHome className="w-4 h-4" />}
+                          label="Assigned Room"
+                          name="assigned_room"
+                          value={displayData.assigned_room || ''}
+
+                          placeholder="Enter assigned room"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+
+                        <IconInput
+                          icon={<FiUser className="w-4 h-4" />}
+                          label="Family Head Name"
+                          name="head_name"
+                          value={displayData.head_name || ''}
+                          placeholder="Enter head of family name"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+                        <IconInput
+                          icon={<FiClock className="w-4 h-4" />}
+                          label=" Family Head  Age"
+                          name="head_age"
+                          value={displayData.head_age || ''}
+
+                          type="number"
+                          placeholder="Enter age"
+                          min="0"
+                          max="150"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+
+                        <IconInput
+                          label="Relationship With Family Head"
+                          name="head_relationship"
+                          value={displayData.head_relationship || ''}
+
+
+                          placeholder="Select relationship"
+
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+
+                          customFieldName="head_relationship_other"
+                          inputLabel="Specify Relationship"
+                        />
+
+
+                        <IconInput
+                          icon={<FiBookOpen className="w-4 h-4" />}
+                          label="Family Head Education"
+                          name="head_education"
+                          value={displayData.head_education || ''}
+                          disabled={true}
+                          placeholder="Select education"
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+
+                        <IconInput
+                          icon={<FiBriefcase className="w-4 h-4" />}
+                          label=" Family Head Occupation"
+                          name="head_occupation"
+                          value={displayData.head_occupation || ''}
+
+
+                          placeholder="Select education"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+                        <IconInput
+                          icon={<FiTrendingUp className="w-4 h-4" />}
+                          label="Family Head Income (₹)"
+                          name="head_income"
+                          value={displayData.head_income || ''}
+
+                          type="number"
+                          placeholder="Monthly income"
+                          min="0"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+
+                        <IconInput
+                          icon={<FiNavigation className="w-4 h-4" />}
+                          label="Exact distance from hospital"
+                          name="distance_from_hospital"
+                          value={displayData.distance_from_hospital || ''}
+
+                          placeholder="Enter distance from hospital"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+
+                        <IconInput
+                          label="Mobility of the patient"
+                          name="mobility"
+                          value={displayData.mobility || ''}
+                          placeholder="Select mobility"
+
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                          customFieldName="mobility_other"
+                          inputLabel="Specify Mobility"
+                        />
+
+                        <IconInput
+                          label="Referred by"
+                          name="referred_by"
+                          value={displayData.referred_by || ''}
+                          placeholder="Select referred by"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+
+                          customFieldName="referred_by_other"
+                          inputLabel="Specify Referred By"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="border-t border-white/30 my-6"></div>
+
+
                   </div>
-                  {/* <div>
-                    <label className="text-sm font-medium text-gray-600">Case Complexity</label>
-                    <div className="mt-1">
-                      <Badge
-                        className={`${patient.case_complexity === 'complex'
-                            ? 'bg-orange-100 text-orange-800 border-orange-200'
-                            : 'bg-green-100 text-green-800 border-green-200'
-                          } text-sm font-medium`}
-                      >
-                        {patient.case_complexity === 'complex' ? 'Complex' : 'Simple'}
-                      </Badge>
-                    </div>
-                  </div> */}
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">ADL File</label>
-                    <div className="mt-1">
-                      <Badge
-                        className={`${patient.has_adl_file
-                            ? 'bg-green-100 text-green-800 border-green-200'
-                            : 'bg-gray-100 text-gray-800 border-gray-200'
-                          } text-sm font-medium`}
-                      >
-                        {patient.has_adl_file ? 'Available' : 'Not Available'}
-                      </Badge>
-                    </div>
-                  </div>
-                  {patient.adl_no && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">ADL Number</label>
-                      <p className="text-base font-semibold text-gray-900 mt-1">{patient.adl_no}</p>
-                    </div>
-                  )}
-                  {patient.special_clinic_no && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Special Clinic Number</label>
-                      <p className="text-base font-semibold text-gray-900 mt-1">{patient.special_clinic_no}</p>
-                    </div>
-                  )}
-                  {/* <div>
-                    <label className="text-sm font-medium text-gray-600">Registration Date</label>
-                    <p className="text-base font-semibold text-gray-900 mt-1">{formatDate(patient.created_at)}</p>
-                  </div> */}
-                </div>
+                </Card>
               </div>
+            </form>
 
-              {/* Personal Information Section - if available */}
-              {(formData.age_group || formData.marital_status || formData.occupation || formData.education_level) && (
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Personal Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {formData.marital_status && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Marital Status</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{getMaritalStatusLabel(formData.marital_status)}</p>
-                      </div>
-                    )}
-                    {formData.year_of_marriage && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Year of Marriage</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formData.year_of_marriage}</p>
-                      </div>
-                    )}
-                    {formData.no_of_children !== '' && formData.no_of_children !== null && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Number of Children</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formData.no_of_children}</p>
-                      </div>
-                    )}
-                    {formData.no_of_children_male !== '' && formData.no_of_children_male !== null && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Number of Children (Male)</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formData.no_of_children_male}</p>
-                      </div>
-                    )}
-                    {formData.no_of_children_female !== '' && formData.no_of_children_female !== null && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Number of Children (Female)</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formData.no_of_children_female}</p>
-                      </div>
-                    )}
-                    {patient.dob && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Date of Birth</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formatDate(patient.dob)}</p>
-                      </div>
-                    )}
-                    {formData.occupation && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Occupation</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{getOccupationLabel(formData.occupation)}</p>
-                      </div>
-                    )}
-                    {formData.actual_occupation && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Actual Occupation</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formData.actual_occupation}</p>
-                      </div>
-                    )}
-                    {formData.education_level && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Education Level</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{getEducationLabel(formData.education_level)}</p>
-                      </div>
-                    )}
-                    {formData.completed_years_of_education && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Years of Education</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formData.completed_years_of_education}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
 
-              {/* Financial Information - if available */}
-              {(formData.patient_income || formData.family_income) && (
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Financial Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {formData.patient_income && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Patient Income</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formatCurrency(formData.patient_income)}</p>
-                      </div>
-                    )}
-                    {formData.family_income && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Family Income</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formatCurrency(formData.family_income)}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Family Information - if available */}
-              {(formData.religion || formData.family_type || formData.locality || formData.head_name) && (
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Family Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {formData.religion && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Religion</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{getReligionLabel(formData.religion)}</p>
-                      </div>
-                    )}
-                    {formData.family_type && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Family Type</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{getFamilyTypeLabel(formData.family_type)}</p>
-                      </div>
-                    )}
-                    {formData.locality && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Locality</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{getLocalityLabel(formData.locality)}</p>
-                      </div>
-                    )}
-                    {formData.head_name && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Head of Family</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formData.head_name}</p>
-                      </div>
-                    )}
-                    {formData.head_age && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Head Age</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formData.head_age}</p>
-                      </div>
-                    )}
-                    {formData.head_occupation && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Head Occupation</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formData.head_occupation}</p>
-                      </div>
-                    )}
-                    {formData.head_relationship && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Head Relationship</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formData.head_relationship}</p>
-                      </div>
-                    )}
-                    {formData.head_education && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Head Education</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formData.head_education}</p>
-                      </div>
-                    )}
-                    {formData.head_income && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Head Income</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formatCurrency(formData.head_income)}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Referral & Mobility Information - if available */}
-              {(formData.distance_from_hospital || formData.mobility || formData.referred_by || formData.exact_source || formData.seen_in_walk_in_on || formData.worked_up_on || formData.school_college_office) && (
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Referral & Mobility Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {formData.distance_from_hospital && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Distance from Hospital</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formData.distance_from_hospital}</p>
-                      </div>
-                    )}
-                    {formData.mobility && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Mobility</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{getMobilityLabel(formData.mobility)}</p>
-                      </div>
-                    )}
-                    {formData.referred_by && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Referred By</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{getReferredByLabel(formData.referred_by)}</p>
-                      </div>
-                    )}
-                    {formData.exact_source && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Exact Source</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formData.exact_source}</p>
-                      </div>
-                    )}
-                    {formData.seen_in_walk_in_on && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Seen in Walk-in On</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formatDate(formData.seen_in_walk_in_on)}</p>
-                      </div>
-                    )}
-                    {formData.worked_up_on && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Worked Up On</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formatDate(formData.worked_up_on)}</p>
-                      </div>
-                    )}
-                    {formData.school_college_office && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">School/College/Office</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{formData.school_college_office}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Registration Details - if available */}
-              {(patient.department || patient.unit_consit || patient.room_no || patient.serial_no || patient.file_no || patient.unit_days || patient.category) && (
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Registration Details</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {patient.department && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Department</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{patient.department}</p>
-                      </div>
-                    )}
-                    {patient.unit_consit && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Unit/Constituent</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{patient.unit_consit}</p>
-                      </div>
-                    )}
-                    {patient.room_no && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Room Number</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{patient.room_no}</p>
-                      </div>
-                    )}
-                    {patient.serial_no && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Serial Number</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{patient.serial_no}</p>
-                      </div>
-                    )}
-                    {patient.file_no && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">File Number</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{patient.file_no}</p>
-                      </div>
-                    )}
-                    {patient.unit_days && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Unit Days</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{patient.unit_days}</p>
-                      </div>
-                    )}
-                    {patient.category && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Category</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{patient.category}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Quick Entry Address - if available */}
-              {(patient.address_line || patient.city || patient.district || patient.state || patient.pin_code || patient.country) && (
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Quick Entry Address</h4>
-                  <div>
-                    <p className="text-sm text-gray-900 mt-1">{formatAddress({
-                      address_line: patient.address_line,
-                      address_line_2: patient.address_line_2,
-                      city: patient.city,
-                      district: patient.district,
-                      state: patient.state,
-                      pin_code: patient.pin_code,
-                      country: patient.country
-                    })}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Additional Information */}
-              {(patient.filled_by_name || formData.local_address) && (
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Additional Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {patient.filled_by_name && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Registered By</label>
-                        <p className="text-base font-semibold text-gray-900 mt-1">{patient.filled_by_name}</p>
-                      </div>
-                    )}
-                    {formData.local_address && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Local Address</label>
-                        <p className="text-sm text-gray-900 mt-1">{formData.local_address}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Address Information - if available */}
-              {(patient.present_address_line_1 || patient.permanent_address_line_1 || formData.present_address || formData.permanent_address) && (
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Address Information</h4>
-                  <div className="space-y-4">
-                    {patient.present_address_line_1 && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Present Address</label>
-                        <p className="text-sm text-gray-900 mt-1">{formatAddress({
-                          address_line: patient.present_address_line_1,
-                          address_line_2: patient.present_address_line_2,
-                          city: patient.present_city_town_village,
-                          district: patient.present_district,
-                          state: patient.present_state,
-                          pin_code: patient.present_pin_code,
-                          country: patient.present_country
-                        })}</p>
-                      </div>
-                    )}
-                    {patient.permanent_address_line_1 && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Permanent Address</label>
-                        <p className="text-sm text-gray-900 mt-1">{formatAddress({
-                          address_line: patient.permanent_address_line_1,
-                          address_line_2: patient.permanent_address_line_2,
-                          city: patient.permanent_city_town_village,
-                          district: patient.permanent_district,
-                          state: patient.permanent_state,
-                          pin_code: patient.permanent_pin_code,
-                          country: patient.permanent_country
-                        })}</p>
-                      </div>
-                    )}
-                    {formData.present_address && !patient.present_address_line_1 && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Present Address</label>
-                        <p className="text-sm text-gray-900 mt-1">{formData.present_address}</p>
-                      </div>
-                    )}
-                    {formData.permanent_address && !patient.permanent_address_line_1 && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Permanent Address</label>
-                        <p className="text-sm text-gray-900 mt-1">{formData.permanent_address}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Last Updated */}
-              <div className="pt-4 border-t border-gray-200">
-                <p className="text-xs text-gray-500">Last Updated: {formatDateTime(patient.updated_at)}</p>
-              </div>
-            </div>
           </div>
         )}
+        <div className="flex flex-col sm:flex-row justify-end gap-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={(() => navigate('/patients'))}
+            className="px-6 lg:px-8 py-3 bg-white/60 backdrop-blur-md border border-white/30 hover:bg-white/80 hover:border-gray-300/50 text-gray-800 font-semibold shadow-sm hover:shadow-md transition-all duration-200"
+          >
+            <FiX className="mr-2" />
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            onClick={() => {
+              if (returnTab) {
+                navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
+              } else {
+                navigate("/patients");
+              }
+            }}
+            className="px-6 lg:px-8 py-3 bg-gradient-to-r from-primary-600 via-indigo-600 to-blue-600 hover:from-primary-700 hover:via-indigo-700 hover:to-blue-700 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+          >
+            <FiSave className="mr-2" />
+            {/* {isLoading || isAssigning ? 'Updating Record...' : 'Update Patient'}
+                         */}
+
+            View All Patient
+          </Button>
+        </div>
       </Card>
 
       {/* Card 2: Clinical Proforma - Show only if filled_by_role is Admin, JR, or SR */}
@@ -674,11 +971,11 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
                           <h4 className="text-lg font-semibold text-gray-900">Visit #{index + 1}</h4>
                           <span className="text-sm text-gray-500">{proforma.visit_date ? formatDate(proforma.visit_date) : 'N/A'}</span>
                         </div>
-                        {proforma.id && (
+                        {proforma.id &&  (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              const returnPath = returnTab 
+                              const returnPath = returnTab
                                 ? `/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`
                                 : `/patients/${patient?.id}`;
                               navigate(`/clinical-proforma/edit/${proforma.id}?returnTab=${returnTab || ''}&returnPath=${encodeURIComponent(returnPath)}`);
@@ -719,10 +1016,10 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
                             <div className="mt-1">
                               <Badge
                                 className={`${proforma.case_severity === 'severe'
-                                    ? 'bg-red-100 text-red-800 border-red-200'
-                                    : proforma.case_severity === 'moderate'
-                                      ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                                      : 'bg-green-100 text-green-800 border-green-200'
+                                  ? 'bg-red-100 text-red-800 border-red-200'
+                                  : proforma.case_severity === 'moderate'
+                                    ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                                    : 'bg-green-100 text-green-800 border-green-200'
                                   } text-sm font-medium`}
                               >
                                 {getCaseSeverityLabel(proforma.case_severity)}
@@ -1073,31 +1370,31 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
               {patientAdlFiles.length > 0 ? (
                 <div className="space-y-6">
                   {patientAdlFiles.map((file, index) => {
-                  // Parse JSON fields if they're strings
-                  const complaintsPatient = Array.isArray(file.complaints_patient) ? file.complaints_patient : (file.complaints_patient ? JSON.parse(file.complaints_patient) : []);
-                  const complaintsInformant = Array.isArray(file.complaints_informant) ? file.complaints_informant : (file.complaints_informant ? JSON.parse(file.complaints_informant) : []);
-                  const informants = Array.isArray(file.informants) ? file.informants : (file.informants ? JSON.parse(file.informants) : []);
-                  const familyHistorySiblings = Array.isArray(file.family_history_siblings) ? file.family_history_siblings : (file.family_history_siblings ? JSON.parse(file.family_history_siblings) : []);
-                  const occupationJobs = Array.isArray(file.occupation_jobs) ? file.occupation_jobs : (file.occupation_jobs ? JSON.parse(file.occupation_jobs) : []);
-                  const sexualChildren = Array.isArray(file.sexual_children) ? file.sexual_children : (file.sexual_children ? JSON.parse(file.sexual_children) : []);
-                  const livingResidents = Array.isArray(file.living_residents) ? file.living_residents : (file.living_residents ? JSON.parse(file.living_residents) : []);
-                  const livingInlaws = Array.isArray(file.living_inlaws) ? file.living_inlaws : (file.living_inlaws ? JSON.parse(file.living_inlaws) : []);
-                  const premorbidPersonalityTraits = Array.isArray(file.premorbid_personality_traits) ? file.premorbid_personality_traits : (file.premorbid_personality_traits ? JSON.parse(file.premorbid_personality_traits) : []);
+                    // Parse JSON fields if they're strings
+                    const complaintsPatient = Array.isArray(file.complaints_patient) ? file.complaints_patient : (file.complaints_patient ? JSON.parse(file.complaints_patient) : []);
+                    const complaintsInformant = Array.isArray(file.complaints_informant) ? file.complaints_informant : (file.complaints_informant ? JSON.parse(file.complaints_informant) : []);
+                    const informants = Array.isArray(file.informants) ? file.informants : (file.informants ? JSON.parse(file.informants) : []);
+                    const familyHistorySiblings = Array.isArray(file.family_history_siblings) ? file.family_history_siblings : (file.family_history_siblings ? JSON.parse(file.family_history_siblings) : []);
+                    const occupationJobs = Array.isArray(file.occupation_jobs) ? file.occupation_jobs : (file.occupation_jobs ? JSON.parse(file.occupation_jobs) : []);
+                    const sexualChildren = Array.isArray(file.sexual_children) ? file.sexual_children : (file.sexual_children ? JSON.parse(file.sexual_children) : []);
+                    const livingResidents = Array.isArray(file.living_residents) ? file.living_residents : (file.living_residents ? JSON.parse(file.living_residents) : []);
+                    const livingInlaws = Array.isArray(file.living_inlaws) ? file.living_inlaws : (file.living_inlaws ? JSON.parse(file.living_inlaws) : []);
+                    const premorbidPersonalityTraits = Array.isArray(file.premorbid_personality_traits) ? file.premorbid_personality_traits : (file.premorbid_personality_traits ? JSON.parse(file.premorbid_personality_traits) : []);
 
-                  return (
-                    <div key={file.id || index} className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
-                      {/* ADL File Header */}
-                      <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-gray-300">
-                        <div>
-                          <h4 className="text-xl font-bold text-gray-900">ADL File #{index + 1}</h4>
-                          {file.adl_no && (
-                            <p className="text-sm text-gray-600 mt-1">ADL Number: {file.adl_no}</p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          {file.file_status && (
-                            <Badge
-                              className={`${file.file_status === 'active'
+                    return (
+                      <div key={file.id || index} className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+                        {/* ADL File Header */}
+                        <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-gray-300">
+                          <div>
+                            <h4 className="text-xl font-bold text-gray-900">ADL File #{index + 1}</h4>
+                            {file.adl_no && (
+                              <p className="text-sm text-gray-600 mt-1">ADL Number: {file.adl_no}</p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            {file.file_status && (
+                              <Badge
+                                className={`${file.file_status === 'active'
                                   ? 'bg-green-100 text-green-800 border-green-200'
                                   : file.file_status === 'retrieved'
                                     ? 'bg-blue-100 text-blue-800 border-blue-200'
@@ -1106,635 +1403,635 @@ const PatientDetailsView = ({ patient, formData, clinicalData, adlData, outpatie
                                       : file.file_status === 'archived'
                                         ? 'bg-amber-100 text-amber-800 border-amber-200'
                                         : 'bg-gray-100 text-gray-800 border-gray-200'
-                                } text-sm font-medium mb-2`}
-                            >
-                              {getFileStatusLabel(file.file_status)}
-                            </Badge>
-                          )}
-                          {file.file_created_date && (
-                            <p className="text-xs text-gray-500">{formatDate(file.file_created_date)}</p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="space-y-8">
-                        {/* Basic Information */}
-                        <div>
-                          <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Basic Information</h5>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {file.patient_name && (
-                              <div>
-                                <label className="text-sm font-medium text-gray-600">Patient Name</label>
-                                <p className="text-base font-semibold text-gray-900 mt-1">{file.patient_name}</p>
-                              </div>
+                                  } text-sm font-medium mb-2`}
+                              >
+                                {getFileStatusLabel(file.file_status)}
+                              </Badge>
                             )}
-                            {file.cr_no && (
-                              <div>
-                                <label className="text-sm font-medium text-gray-600">CR Number</label>
-                                <p className="text-base font-semibold text-gray-900 mt-1">{file.cr_no}</p>
-                              </div>
-                            )}
-                            {file.psy_no && (
-                              <div>
-                                <label className="text-sm font-medium text-gray-600">PSY Number</label>
-                                <p className="text-base font-semibold text-gray-900 mt-1">{file.psy_no}</p>
-                              </div>
-                            )}
-                            {file.assigned_doctor_name && (
-                              <div>
-                                <label className="text-sm font-medium text-gray-600">Assigned Doctor</label>
-                                <p className="text-base font-semibold text-gray-900 mt-1">
-                                  {file.assigned_doctor_name} {file.assigned_doctor_role ? `(${file.assigned_doctor_role})` : ''}
-                                </p>
-                              </div>
-                            )}
-                            {file.proforma_visit_date && (
-                              <div>
-                                <label className="text-sm font-medium text-gray-600">Visit Date</label>
-                                <p className="text-base font-semibold text-gray-900 mt-1">{formatDate(file.proforma_visit_date)}</p>
-                              </div>
-                            )}
-                            {file.created_by_name && (
-                              <div>
-                                <label className="text-sm font-medium text-gray-600">Created By</label>
-                                <p className="text-base font-semibold text-gray-900 mt-1">
-                                  {file.created_by_name} {file.created_by_role ? `(${file.created_by_role})` : ''}
-                                </p>
-                              </div>
-                            )}
-                            {file.physical_file_location && (
-                              <div>
-                                <label className="text-sm font-medium text-gray-600">Physical Location</label>
-                                <p className="text-base font-semibold text-gray-900 mt-1">{file.physical_file_location}</p>
-                              </div>
-                            )}
-                            {file.total_visits && (
-                              <div>
-                                <label className="text-sm font-medium text-gray-600">Total Visits</label>
-                                <p className="text-base font-semibold text-gray-900 mt-1">{file.total_visits}</p>
-                              </div>
+                            {file.file_created_date && (
+                              <p className="text-xs text-gray-500">{formatDate(file.file_created_date)}</p>
                             )}
                           </div>
                         </div>
 
-                        {/* Complaints */}
-                        {(complaintsPatient.length > 0 && complaintsPatient.some(c => c.complaint)) ||
-                          (complaintsInformant.length > 0 && complaintsInformant.some(c => c.complaint)) ? (
+                        <div className="space-y-8">
+                          {/* Basic Information */}
                           <div>
-                            <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Complaints</h5>
-                            {complaintsPatient.length > 0 && complaintsPatient.some(c => c.complaint) && (
-                              <div className="mb-4">
-                                <label className="text-sm font-medium text-gray-600 mb-2 block">Patient Complaints</label>
-                                <div className="space-y-2">
-                                  {complaintsPatient.filter(c => c.complaint).map((complaint, idx) => (
-                                    <div key={idx} className="bg-blue-50 p-3 rounded border border-blue-200">
-                                      <p className="text-sm font-semibold text-gray-900">{complaint.complaint}</p>
-                                      {complaint.duration && (
-                                        <p className="text-xs text-gray-600 mt-1">Duration: {complaint.duration}</p>
-                                      )}
-                                    </div>
-                                  ))}
+                            <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Basic Information</h5>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {file.patient_name && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-600">Patient Name</label>
+                                  <p className="text-base font-semibold text-gray-900 mt-1">{file.patient_name}</p>
                                 </div>
-                              </div>
-                            )}
-                            {complaintsInformant.length > 0 && complaintsInformant.some(c => c.complaint) && (
-                              <div>
-                                <label className="text-sm font-medium text-gray-600 mb-2 block">Informant Complaints</label>
-                                <div className="space-y-2">
-                                  {complaintsInformant.filter(c => c.complaint).map((complaint, idx) => (
-                                    <div key={idx} className="bg-purple-50 p-3 rounded border border-purple-200">
-                                      <p className="text-sm font-semibold text-gray-900">{complaint.complaint}</p>
-                                      {complaint.duration && (
-                                        <p className="text-xs text-gray-600 mt-1">Duration: {complaint.duration}</p>
-                                      )}
-                                    </div>
-                                  ))}
+                              )}
+                              {file.cr_no && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-600">CR Number</label>
+                                  <p className="text-base font-semibold text-gray-900 mt-1">{file.cr_no}</p>
                                 </div>
-                              </div>
-                            )}
+                              )}
+                              {file.psy_no && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-600">PSY Number</label>
+                                  <p className="text-base font-semibold text-gray-900 mt-1">{file.psy_no}</p>
+                                </div>
+                              )}
+                              {file.assigned_doctor_name && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-600">Assigned Doctor</label>
+                                  <p className="text-base font-semibold text-gray-900 mt-1">
+                                    {file.assigned_doctor_name} {file.assigned_doctor_role ? `(${file.assigned_doctor_role})` : ''}
+                                  </p>
+                                </div>
+                              )}
+                              {file.proforma_visit_date && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-600">Visit Date</label>
+                                  <p className="text-base font-semibold text-gray-900 mt-1">{formatDate(file.proforma_visit_date)}</p>
+                                </div>
+                              )}
+                              {file.created_by_name && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-600">Created By</label>
+                                  <p className="text-base font-semibold text-gray-900 mt-1">
+                                    {file.created_by_name} {file.created_by_role ? `(${file.created_by_role})` : ''}
+                                  </p>
+                                </div>
+                              )}
+                              {file.physical_file_location && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-600">Physical Location</label>
+                                  <p className="text-base font-semibold text-gray-900 mt-1">{file.physical_file_location}</p>
+                                </div>
+                              )}
+                              {file.total_visits && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-600">Total Visits</label>
+                                  <p className="text-base font-semibold text-gray-900 mt-1">{file.total_visits}</p>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        ) : null}
 
-                        {/* Informants */}
-                        {informants.length > 0 && informants.some(i => i.name) && (
-                          <div>
-                            <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Informants</h5>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {informants.filter(i => i.name).map((informant, idx) => (
-                                <div key={idx} className="bg-gray-50 p-4 rounded border border-gray-200">
-                                  <p className="text-sm font-semibold text-gray-900">{informant.name}</p>
-                                  {informant.relationship && (
-                                    <p className="text-xs text-gray-600 mt-1">Relationship: {informant.relationship}</p>
-                                  )}
-                                  {informant.reliability && (
-                                    <p className="text-xs text-gray-600">Reliability: {informant.reliability}</p>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* History of Present Illness */}
-                        {(file.history_narrative || file.history_specific_enquiry || file.history_drug_intake ||
-                          file.history_treatment_place || file.history_treatment_drugs || file.history_treatment_response) && (
+                          {/* Complaints */}
+                          {(complaintsPatient.length > 0 && complaintsPatient.some(c => c.complaint)) ||
+                            (complaintsInformant.length > 0 && complaintsInformant.some(c => c.complaint)) ? (
                             <div>
-                              <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">History of Present Illness</h5>
-                              <div className="space-y-4">
-                                {file.history_narrative && (
-                                  <div>
-                                    <label className="text-sm font-medium text-gray-600">Narrative History</label>
-                                    <p className="text-sm text-gray-900 mt-1 leading-relaxed">{file.history_narrative}</p>
-                                  </div>
-                                )}
-                                {file.history_specific_enquiry && (
-                                  <div>
-                                    <label className="text-sm font-medium text-gray-600">Specific Enquiry</label>
-                                    <p className="text-sm text-gray-900 mt-1 leading-relaxed">{file.history_specific_enquiry}</p>
-                                  </div>
-                                )}
-                                {file.history_drug_intake && (
-                                  <div>
-                                    <label className="text-sm font-medium text-gray-600">Drug Intake</label>
-                                    <p className="text-sm text-gray-900 mt-1">{file.history_drug_intake}</p>
-                                  </div>
-                                )}
-                                {(file.history_treatment_place || file.history_treatment_drugs || file.history_treatment_response) && (
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    {file.history_treatment_place && (
-                                      <div>
-                                        <label className="text-sm font-medium text-gray-600">Treatment Place</label>
-                                        <p className="text-sm text-gray-900 mt-1">{file.history_treatment_place}</p>
-                                      </div>
-                                    )}
-                                    {file.history_treatment_drugs && (
-                                      <div>
-                                        <label className="text-sm font-medium text-gray-600">Treatment Drugs</label>
-                                        <p className="text-sm text-gray-900 mt-1">{file.history_treatment_drugs}</p>
-                                      </div>
-                                    )}
-                                    {file.history_treatment_response && (
-                                      <div>
-                                        <label className="text-sm font-medium text-gray-600">Treatment Response</label>
-                                        <p className="text-sm text-gray-900 mt-1">{file.history_treatment_response}</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                        {/* Past History */}
-                        {(file.past_history_medical || file.past_history_psychiatric_diagnosis ||
-                          file.past_history_psychiatric_treatment || file.past_history_psychiatric_interim) && (
-                            <div>
-                              <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Past History</h5>
-                              <div className="space-y-4">
-                                {file.past_history_medical && (
-                                  <div>
-                                    <label className="text-sm font-medium text-gray-600">Medical History</label>
-                                    <p className="text-sm text-gray-900 mt-1">{file.past_history_medical}</p>
-                                  </div>
-                                )}
-                                {file.past_history_psychiatric_diagnosis && (
-                                  <div>
-                                    <label className="text-sm font-medium text-gray-600">Psychiatric Diagnosis</label>
-                                    <p className="text-sm text-gray-900 mt-1">{file.past_history_psychiatric_diagnosis}</p>
-                                  </div>
-                                )}
-                                {file.past_history_psychiatric_treatment && (
-                                  <div>
-                                    <label className="text-sm font-medium text-gray-600">Psychiatric Treatment</label>
-                                    <p className="text-sm text-gray-900 mt-1">{file.past_history_psychiatric_treatment}</p>
-                                  </div>
-                                )}
-                                {file.past_history_psychiatric_interim && (
-                                  <div>
-                                    <label className="text-sm font-medium text-gray-600">Interim Period</label>
-                                    <p className="text-sm text-gray-900 mt-1">{file.past_history_psychiatric_interim}</p>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                        {/* Family History */}
-                        {(file.family_history_father_age || file.family_history_mother_age ||
-                          familyHistorySiblings.length > 0) && (
-                            <div>
-                              <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Family History</h5>
-                              <div className="space-y-4">
-                                {(file.family_history_father_age || file.family_history_father_education ||
-                                  file.family_history_father_occupation || file.family_history_father_personality) && (
-                                    <div className="bg-blue-50 p-4 rounded border border-blue-200">
-                                      <h6 className="text-sm font-semibold text-gray-900 mb-2">Father</h6>
-                                      <div className="grid grid-cols-2 gap-2 text-sm">
-                                        {file.family_history_father_age && (
-                                          <div><span className="text-gray-600">Age:</span> <span className="font-medium">{file.family_history_father_age}</span></div>
-                                        )}
-                                        {file.family_history_father_education && (
-                                          <div><span className="text-gray-600">Education:</span> <span className="font-medium">{file.family_history_father_education}</span></div>
-                                        )}
-                                        {file.family_history_father_occupation && (
-                                          <div><span className="text-gray-600">Occupation:</span> <span className="font-medium">{file.family_history_father_occupation}</span></div>
-                                        )}
-                                        {file.family_history_father_personality && (
-                                          <div><span className="text-gray-600">Personality:</span> <span className="font-medium">{file.family_history_father_personality}</span></div>
-                                        )}
-                                        {file.family_history_father_deceased && (
-                                          <div><span className="text-gray-600">Deceased:</span> <span className="font-medium">Yes</span></div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-                                {(file.family_history_mother_age || file.family_history_mother_education ||
-                                  file.family_history_mother_occupation || file.family_history_mother_personality) && (
-                                    <div className="bg-pink-50 p-4 rounded border border-pink-200">
-                                      <h6 className="text-sm font-semibold text-gray-900 mb-2">Mother</h6>
-                                      <div className="grid grid-cols-2 gap-2 text-sm">
-                                        {file.family_history_mother_age && (
-                                          <div><span className="text-gray-600">Age:</span> <span className="font-medium">{file.family_history_mother_age}</span></div>
-                                        )}
-                                        {file.family_history_mother_education && (
-                                          <div><span className="text-gray-600">Education:</span> <span className="font-medium">{file.family_history_mother_education}</span></div>
-                                        )}
-                                        {file.family_history_mother_occupation && (
-                                          <div><span className="text-gray-600">Occupation:</span> <span className="font-medium">{file.family_history_mother_occupation}</span></div>
-                                        )}
-                                        {file.family_history_mother_personality && (
-                                          <div><span className="text-gray-600">Personality:</span> <span className="font-medium">{file.family_history_mother_personality}</span></div>
-                                        )}
-                                        {file.family_history_mother_deceased && (
-                                          <div><span className="text-gray-600">Deceased:</span> <span className="font-medium">Yes</span></div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-                                {familyHistorySiblings.length > 0 && familyHistorySiblings.some(s => s.age || s.sex) && (
-                                  <div>
-                                    <h6 className="text-sm font-semibold text-gray-900 mb-2">Siblings</h6>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                      {familyHistorySiblings.filter(s => s.age || s.sex).map((sibling, idx) => (
-                                        <div key={idx} className="bg-gray-50 p-3 rounded border border-gray-200 text-sm">
-                                          {sibling.age && <span className="text-gray-600">Age: </span>}
-                                          {sibling.age && <span className="font-medium">{sibling.age}</span>}
-                                          {sibling.sex && <span className="text-gray-600 ml-2">Sex: </span>}
-                                          {sibling.sex && <span className="font-medium">{sibling.sex}</span>}
-                                          {sibling.education && <span className="text-gray-600 ml-2">Education: </span>}
-                                          {sibling.education && <span className="font-medium">{sibling.education}</span>}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                        {/* Mental Status Examination */}
-                        {(file.mse_general_demeanour || file.mse_general_tidy || file.mse_general_awareness || file.mse_general_cooperation ||
-                          file.mse_psychomotor_verbalization || file.mse_psychomotor_pressure || file.mse_psychomotor_tension ||
-                          file.mse_psychomotor_posture || file.mse_psychomotor_mannerism || file.mse_psychomotor_catatonic ||
-                          file.mse_affect_subjective || file.mse_affect_tone || file.mse_affect_resting || file.mse_affect_fluctuation ||
-                          file.mse_thought_flow || file.mse_thought_form || file.mse_thought_content ||
-                          file.mse_cognitive_consciousness || file.mse_cognitive_orientation_time || file.mse_cognitive_orientation_place ||
-                          file.mse_cognitive_orientation_person || file.mse_cognitive_memory_immediate || file.mse_cognitive_memory_recent ||
-                          file.mse_cognitive_memory_remote || file.mse_cognitive_subtraction || file.mse_cognitive_digit_span ||
-                          file.mse_cognitive_counting || file.mse_cognitive_general_knowledge || file.mse_cognitive_calculation ||
-                          file.mse_cognitive_similarities || file.mse_cognitive_proverbs || file.mse_insight_understanding || file.mse_insight_judgement) && (
-                            <div>
-                              <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Mental Status Examination (MSE)</h5>
-
-                              {/* General MSE */}
-                              {(file.mse_general_demeanour || file.mse_general_tidy || file.mse_general_awareness || file.mse_general_cooperation) && (
+                              <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Complaints</h5>
+                              {complaintsPatient.length > 0 && complaintsPatient.some(c => c.complaint) && (
                                 <div className="mb-4">
-                                  <h6 className="text-md font-semibold text-gray-800 mb-2">General</h6>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {file.mse_general_demeanour && (
-                                      <div>
-                                        <label className="text-sm font-medium text-gray-600">Demeanour</label>
-                                        <p className="text-sm text-gray-900 mt-1">{file.mse_general_demeanour}</p>
+                                  <label className="text-sm font-medium text-gray-600 mb-2 block">Patient Complaints</label>
+                                  <div className="space-y-2">
+                                    {complaintsPatient.filter(c => c.complaint).map((complaint, idx) => (
+                                      <div key={idx} className="bg-blue-50 p-3 rounded border border-blue-200">
+                                        <p className="text-sm font-semibold text-gray-900">{complaint.complaint}</p>
+                                        {complaint.duration && (
+                                          <p className="text-xs text-gray-600 mt-1">Duration: {complaint.duration}</p>
+                                        )}
                                       </div>
-                                    )}
-                                    {file.mse_general_tidy && (
-                                      <div>
-                                        <label className="text-sm font-medium text-gray-600">Tidy</label>
-                                        <p className="text-sm text-gray-900 mt-1">{file.mse_general_tidy}</p>
-                                      </div>
-                                    )}
-                                    {file.mse_general_awareness && (
-                                      <div>
-                                        <label className="text-sm font-medium text-gray-600">Awareness</label>
-                                        <p className="text-sm text-gray-900 mt-1">{file.mse_general_awareness}</p>
-                                      </div>
-                                    )}
-                                    {file.mse_general_cooperation && (
-                                      <div>
-                                        <label className="text-sm font-medium text-gray-600">Cooperation</label>
-                                        <p className="text-sm text-gray-900 mt-1">{file.mse_general_cooperation}</p>
-                                      </div>
-                                    )}
+                                    ))}
                                   </div>
                                 </div>
                               )}
+                              {complaintsInformant.length > 0 && complaintsInformant.some(c => c.complaint) && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-600 mb-2 block">Informant Complaints</label>
+                                  <div className="space-y-2">
+                                    {complaintsInformant.filter(c => c.complaint).map((complaint, idx) => (
+                                      <div key={idx} className="bg-purple-50 p-3 rounded border border-purple-200">
+                                        <p className="text-sm font-semibold text-gray-900">{complaint.complaint}</p>
+                                        {complaint.duration && (
+                                          <p className="text-xs text-gray-600 mt-1">Duration: {complaint.duration}</p>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : null}
 
-                              {/* Psychomotor */}
-                              {(file.mse_psychomotor_verbalization || file.mse_psychomotor_pressure || file.mse_psychomotor_tension ||
-                                file.mse_psychomotor_posture || file.mse_psychomotor_mannerism || file.mse_psychomotor_catatonic) && (
+                          {/* Informants */}
+                          {informants.length > 0 && informants.some(i => i.name) && (
+                            <div>
+                              <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Informants</h5>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {informants.filter(i => i.name).map((informant, idx) => (
+                                  <div key={idx} className="bg-gray-50 p-4 rounded border border-gray-200">
+                                    <p className="text-sm font-semibold text-gray-900">{informant.name}</p>
+                                    {informant.relationship && (
+                                      <p className="text-xs text-gray-600 mt-1">Relationship: {informant.relationship}</p>
+                                    )}
+                                    {informant.reliability && (
+                                      <p className="text-xs text-gray-600">Reliability: {informant.reliability}</p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* History of Present Illness */}
+                          {(file.history_narrative || file.history_specific_enquiry || file.history_drug_intake ||
+                            file.history_treatment_place || file.history_treatment_drugs || file.history_treatment_response) && (
+                              <div>
+                                <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">History of Present Illness</h5>
+                                <div className="space-y-4">
+                                  {file.history_narrative && (
+                                    <div>
+                                      <label className="text-sm font-medium text-gray-600">Narrative History</label>
+                                      <p className="text-sm text-gray-900 mt-1 leading-relaxed">{file.history_narrative}</p>
+                                    </div>
+                                  )}
+                                  {file.history_specific_enquiry && (
+                                    <div>
+                                      <label className="text-sm font-medium text-gray-600">Specific Enquiry</label>
+                                      <p className="text-sm text-gray-900 mt-1 leading-relaxed">{file.history_specific_enquiry}</p>
+                                    </div>
+                                  )}
+                                  {file.history_drug_intake && (
+                                    <div>
+                                      <label className="text-sm font-medium text-gray-600">Drug Intake</label>
+                                      <p className="text-sm text-gray-900 mt-1">{file.history_drug_intake}</p>
+                                    </div>
+                                  )}
+                                  {(file.history_treatment_place || file.history_treatment_drugs || file.history_treatment_response) && (
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                      {file.history_treatment_place && (
+                                        <div>
+                                          <label className="text-sm font-medium text-gray-600">Treatment Place</label>
+                                          <p className="text-sm text-gray-900 mt-1">{file.history_treatment_place}</p>
+                                        </div>
+                                      )}
+                                      {file.history_treatment_drugs && (
+                                        <div>
+                                          <label className="text-sm font-medium text-gray-600">Treatment Drugs</label>
+                                          <p className="text-sm text-gray-900 mt-1">{file.history_treatment_drugs}</p>
+                                        </div>
+                                      )}
+                                      {file.history_treatment_response && (
+                                        <div>
+                                          <label className="text-sm font-medium text-gray-600">Treatment Response</label>
+                                          <p className="text-sm text-gray-900 mt-1">{file.history_treatment_response}</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                          {/* Past History */}
+                          {(file.past_history_medical || file.past_history_psychiatric_diagnosis ||
+                            file.past_history_psychiatric_treatment || file.past_history_psychiatric_interim) && (
+                              <div>
+                                <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Past History</h5>
+                                <div className="space-y-4">
+                                  {file.past_history_medical && (
+                                    <div>
+                                      <label className="text-sm font-medium text-gray-600">Medical History</label>
+                                      <p className="text-sm text-gray-900 mt-1">{file.past_history_medical}</p>
+                                    </div>
+                                  )}
+                                  {file.past_history_psychiatric_diagnosis && (
+                                    <div>
+                                      <label className="text-sm font-medium text-gray-600">Psychiatric Diagnosis</label>
+                                      <p className="text-sm text-gray-900 mt-1">{file.past_history_psychiatric_diagnosis}</p>
+                                    </div>
+                                  )}
+                                  {file.past_history_psychiatric_treatment && (
+                                    <div>
+                                      <label className="text-sm font-medium text-gray-600">Psychiatric Treatment</label>
+                                      <p className="text-sm text-gray-900 mt-1">{file.past_history_psychiatric_treatment}</p>
+                                    </div>
+                                  )}
+                                  {file.past_history_psychiatric_interim && (
+                                    <div>
+                                      <label className="text-sm font-medium text-gray-600">Interim Period</label>
+                                      <p className="text-sm text-gray-900 mt-1">{file.past_history_psychiatric_interim}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                          {/* Family History */}
+                          {(file.family_history_father_age || file.family_history_mother_age ||
+                            familyHistorySiblings.length > 0) && (
+                              <div>
+                                <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Family History</h5>
+                                <div className="space-y-4">
+                                  {(file.family_history_father_age || file.family_history_father_education ||
+                                    file.family_history_father_occupation || file.family_history_father_personality) && (
+                                      <div className="bg-blue-50 p-4 rounded border border-blue-200">
+                                        <h6 className="text-sm font-semibold text-gray-900 mb-2">Father</h6>
+                                        <div className="grid grid-cols-2 gap-2 text-sm">
+                                          {file.family_history_father_age && (
+                                            <div><span className="text-gray-600">Age:</span> <span className="font-medium">{file.family_history_father_age}</span></div>
+                                          )}
+                                          {file.family_history_father_education && (
+                                            <div><span className="text-gray-600">Education:</span> <span className="font-medium">{file.family_history_father_education}</span></div>
+                                          )}
+                                          {file.family_history_father_occupation && (
+                                            <div><span className="text-gray-600">Occupation:</span> <span className="font-medium">{file.family_history_father_occupation}</span></div>
+                                          )}
+                                          {file.family_history_father_personality && (
+                                            <div><span className="text-gray-600">Personality:</span> <span className="font-medium">{file.family_history_father_personality}</span></div>
+                                          )}
+                                          {file.family_history_father_deceased && (
+                                            <div><span className="text-gray-600">Deceased:</span> <span className="font-medium">Yes</span></div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  {(file.family_history_mother_age || file.family_history_mother_education ||
+                                    file.family_history_mother_occupation || file.family_history_mother_personality) && (
+                                      <div className="bg-pink-50 p-4 rounded border border-pink-200">
+                                        <h6 className="text-sm font-semibold text-gray-900 mb-2">Mother</h6>
+                                        <div className="grid grid-cols-2 gap-2 text-sm">
+                                          {file.family_history_mother_age && (
+                                            <div><span className="text-gray-600">Age:</span> <span className="font-medium">{file.family_history_mother_age}</span></div>
+                                          )}
+                                          {file.family_history_mother_education && (
+                                            <div><span className="text-gray-600">Education:</span> <span className="font-medium">{file.family_history_mother_education}</span></div>
+                                          )}
+                                          {file.family_history_mother_occupation && (
+                                            <div><span className="text-gray-600">Occupation:</span> <span className="font-medium">{file.family_history_mother_occupation}</span></div>
+                                          )}
+                                          {file.family_history_mother_personality && (
+                                            <div><span className="text-gray-600">Personality:</span> <span className="font-medium">{file.family_history_mother_personality}</span></div>
+                                          )}
+                                          {file.family_history_mother_deceased && (
+                                            <div><span className="text-gray-600">Deceased:</span> <span className="font-medium">Yes</span></div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  {familyHistorySiblings.length > 0 && familyHistorySiblings.some(s => s.age || s.sex) && (
+                                    <div>
+                                      <h6 className="text-sm font-semibold text-gray-900 mb-2">Siblings</h6>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {familyHistorySiblings.filter(s => s.age || s.sex).map((sibling, idx) => (
+                                          <div key={idx} className="bg-gray-50 p-3 rounded border border-gray-200 text-sm">
+                                            {sibling.age && <span className="text-gray-600">Age: </span>}
+                                            {sibling.age && <span className="font-medium">{sibling.age}</span>}
+                                            {sibling.sex && <span className="text-gray-600 ml-2">Sex: </span>}
+                                            {sibling.sex && <span className="font-medium">{sibling.sex}</span>}
+                                            {sibling.education && <span className="text-gray-600 ml-2">Education: </span>}
+                                            {sibling.education && <span className="font-medium">{sibling.education}</span>}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                          {/* Mental Status Examination */}
+                          {(file.mse_general_demeanour || file.mse_general_tidy || file.mse_general_awareness || file.mse_general_cooperation ||
+                            file.mse_psychomotor_verbalization || file.mse_psychomotor_pressure || file.mse_psychomotor_tension ||
+                            file.mse_psychomotor_posture || file.mse_psychomotor_mannerism || file.mse_psychomotor_catatonic ||
+                            file.mse_affect_subjective || file.mse_affect_tone || file.mse_affect_resting || file.mse_affect_fluctuation ||
+                            file.mse_thought_flow || file.mse_thought_form || file.mse_thought_content ||
+                            file.mse_cognitive_consciousness || file.mse_cognitive_orientation_time || file.mse_cognitive_orientation_place ||
+                            file.mse_cognitive_orientation_person || file.mse_cognitive_memory_immediate || file.mse_cognitive_memory_recent ||
+                            file.mse_cognitive_memory_remote || file.mse_cognitive_subtraction || file.mse_cognitive_digit_span ||
+                            file.mse_cognitive_counting || file.mse_cognitive_general_knowledge || file.mse_cognitive_calculation ||
+                            file.mse_cognitive_similarities || file.mse_cognitive_proverbs || file.mse_insight_understanding || file.mse_insight_judgement) && (
+                              <div>
+                                <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Mental Status Examination (MSE)</h5>
+
+                                {/* General MSE */}
+                                {(file.mse_general_demeanour || file.mse_general_tidy || file.mse_general_awareness || file.mse_general_cooperation) && (
                                   <div className="mb-4">
-                                    <h6 className="text-md font-semibold text-gray-800 mb-2">Psychomotor</h6>
+                                    <h6 className="text-md font-semibold text-gray-800 mb-2">General</h6>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                      {file.mse_psychomotor_verbalization && (
+                                      {file.mse_general_demeanour && (
                                         <div>
-                                          <label className="text-sm font-medium text-gray-600">Verbalization</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_psychomotor_verbalization}</p>
+                                          <label className="text-sm font-medium text-gray-600">Demeanour</label>
+                                          <p className="text-sm text-gray-900 mt-1">{file.mse_general_demeanour}</p>
                                         </div>
                                       )}
-                                      {file.mse_psychomotor_pressure && (
+                                      {file.mse_general_tidy && (
                                         <div>
-                                          <label className="text-sm font-medium text-gray-600">Pressure</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_psychomotor_pressure}</p>
+                                          <label className="text-sm font-medium text-gray-600">Tidy</label>
+                                          <p className="text-sm text-gray-900 mt-1">{file.mse_general_tidy}</p>
                                         </div>
                                       )}
-                                      {file.mse_psychomotor_tension && (
+                                      {file.mse_general_awareness && (
                                         <div>
-                                          <label className="text-sm font-medium text-gray-600">Tension</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_psychomotor_tension}</p>
+                                          <label className="text-sm font-medium text-gray-600">Awareness</label>
+                                          <p className="text-sm text-gray-900 mt-1">{file.mse_general_awareness}</p>
                                         </div>
                                       )}
-                                      {file.mse_psychomotor_posture && (
+                                      {file.mse_general_cooperation && (
                                         <div>
-                                          <label className="text-sm font-medium text-gray-600">Posture</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_psychomotor_posture}</p>
-                                        </div>
-                                      )}
-                                      {file.mse_psychomotor_mannerism && (
-                                        <div>
-                                          <label className="text-sm font-medium text-gray-600">Mannerism</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_psychomotor_mannerism}</p>
-                                        </div>
-                                      )}
-                                      {file.mse_psychomotor_catatonic && (
-                                        <div>
-                                          <label className="text-sm font-medium text-gray-600">Catatonic</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_psychomotor_catatonic}</p>
+                                          <label className="text-sm font-medium text-gray-600">Cooperation</label>
+                                          <p className="text-sm text-gray-900 mt-1">{file.mse_general_cooperation}</p>
                                         </div>
                                       )}
                                     </div>
                                   </div>
                                 )}
 
-                              {/* Affect */}
-                              {(file.mse_affect_subjective || file.mse_affect_tone || file.mse_affect_resting || file.mse_affect_fluctuation) && (
-                                <div className="mb-4">
-                                  <h6 className="text-md font-semibold text-gray-800 mb-2">Affect</h6>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {file.mse_affect_subjective && (
-                                      <div>
-                                        <label className="text-sm font-medium text-gray-600">Subjective</label>
-                                        <p className="text-sm text-gray-900 mt-1">{file.mse_affect_subjective}</p>
+                                {/* Psychomotor */}
+                                {(file.mse_psychomotor_verbalization || file.mse_psychomotor_pressure || file.mse_psychomotor_tension ||
+                                  file.mse_psychomotor_posture || file.mse_psychomotor_mannerism || file.mse_psychomotor_catatonic) && (
+                                    <div className="mb-4">
+                                      <h6 className="text-md font-semibold text-gray-800 mb-2">Psychomotor</h6>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {file.mse_psychomotor_verbalization && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">Verbalization</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_psychomotor_verbalization}</p>
+                                          </div>
+                                        )}
+                                        {file.mse_psychomotor_pressure && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">Pressure</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_psychomotor_pressure}</p>
+                                          </div>
+                                        )}
+                                        {file.mse_psychomotor_tension && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">Tension</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_psychomotor_tension}</p>
+                                          </div>
+                                        )}
+                                        {file.mse_psychomotor_posture && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">Posture</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_psychomotor_posture}</p>
+                                          </div>
+                                        )}
+                                        {file.mse_psychomotor_mannerism && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">Mannerism</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_psychomotor_mannerism}</p>
+                                          </div>
+                                        )}
+                                        {file.mse_psychomotor_catatonic && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">Catatonic</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_psychomotor_catatonic}</p>
+                                          </div>
+                                        )}
                                       </div>
-                                    )}
-                                    {file.mse_affect_tone && (
-                                      <div>
-                                        <label className="text-sm font-medium text-gray-600">Tone</label>
-                                        <p className="text-sm text-gray-900 mt-1">{file.mse_affect_tone}</p>
-                                      </div>
-                                    )}
-                                    {file.mse_affect_resting && (
-                                      <div>
-                                        <label className="text-sm font-medium text-gray-600">Resting</label>
-                                        <p className="text-sm text-gray-900 mt-1">{file.mse_affect_resting}</p>
-                                      </div>
-                                    )}
-                                    {file.mse_affect_fluctuation && (
-                                      <div>
-                                        <label className="text-sm font-medium text-gray-600">Fluctuation</label>
-                                        <p className="text-sm text-gray-900 mt-1">{file.mse_affect_fluctuation}</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
+                                    </div>
+                                  )}
 
-                              {/* Thought */}
-                              {(file.mse_thought_flow || file.mse_thought_form || file.mse_thought_content) && (
-                                <div className="mb-4">
-                                  <h6 className="text-md font-semibold text-gray-800 mb-2">Thought</h6>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {file.mse_thought_flow && (
-                                      <div>
-                                        <label className="text-sm font-medium text-gray-600">Flow</label>
-                                        <p className="text-sm text-gray-900 mt-1">{file.mse_thought_flow}</p>
-                                      </div>
-                                    )}
-                                    {file.mse_thought_form && (
-                                      <div>
-                                        <label className="text-sm font-medium text-gray-600">Form</label>
-                                        <p className="text-sm text-gray-900 mt-1">{file.mse_thought_form}</p>
-                                      </div>
-                                    )}
-                                    {file.mse_thought_content && (
-                                      <div>
-                                        <label className="text-sm font-medium text-gray-600">Content</label>
-                                        <p className="text-sm text-gray-900 mt-1">{file.mse_thought_content}</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Cognitive */}
-                              {(file.mse_cognitive_consciousness || file.mse_cognitive_orientation_time || file.mse_cognitive_orientation_place ||
-                                file.mse_cognitive_orientation_person || file.mse_cognitive_memory_immediate || file.mse_cognitive_memory_recent ||
-                                file.mse_cognitive_memory_remote || file.mse_cognitive_subtraction || file.mse_cognitive_digit_span ||
-                                file.mse_cognitive_counting || file.mse_cognitive_general_knowledge || file.mse_cognitive_calculation ||
-                                file.mse_cognitive_similarities || file.mse_cognitive_proverbs) && (
+                                {/* Affect */}
+                                {(file.mse_affect_subjective || file.mse_affect_tone || file.mse_affect_resting || file.mse_affect_fluctuation) && (
                                   <div className="mb-4">
-                                    <h6 className="text-md font-semibold text-gray-800 mb-2">Cognitive</h6>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                      {file.mse_cognitive_consciousness && (
+                                    <h6 className="text-md font-semibold text-gray-800 mb-2">Affect</h6>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {file.mse_affect_subjective && (
                                         <div>
-                                          <label className="text-sm font-medium text-gray-600">Consciousness</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_consciousness}</p>
+                                          <label className="text-sm font-medium text-gray-600">Subjective</label>
+                                          <p className="text-sm text-gray-900 mt-1">{file.mse_affect_subjective}</p>
                                         </div>
                                       )}
-                                      {file.mse_cognitive_orientation_time && (
+                                      {file.mse_affect_tone && (
                                         <div>
-                                          <label className="text-sm font-medium text-gray-600">Orientation (Time)</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_orientation_time}</p>
+                                          <label className="text-sm font-medium text-gray-600">Tone</label>
+                                          <p className="text-sm text-gray-900 mt-1">{file.mse_affect_tone}</p>
                                         </div>
                                       )}
-                                      {file.mse_cognitive_orientation_place && (
+                                      {file.mse_affect_resting && (
                                         <div>
-                                          <label className="text-sm font-medium text-gray-600">Orientation (Place)</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_orientation_place}</p>
+                                          <label className="text-sm font-medium text-gray-600">Resting</label>
+                                          <p className="text-sm text-gray-900 mt-1">{file.mse_affect_resting}</p>
                                         </div>
                                       )}
-                                      {file.mse_cognitive_orientation_person && (
+                                      {file.mse_affect_fluctuation && (
                                         <div>
-                                          <label className="text-sm font-medium text-gray-600">Orientation (Person)</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_orientation_person}</p>
-                                        </div>
-                                      )}
-                                      {file.mse_cognitive_memory_immediate && (
-                                        <div>
-                                          <label className="text-sm font-medium text-gray-600">Memory (Immediate)</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_memory_immediate}</p>
-                                        </div>
-                                      )}
-                                      {file.mse_cognitive_memory_recent && (
-                                        <div>
-                                          <label className="text-sm font-medium text-gray-600">Memory (Recent)</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_memory_recent}</p>
-                                        </div>
-                                      )}
-                                      {file.mse_cognitive_memory_remote && (
-                                        <div>
-                                          <label className="text-sm font-medium text-gray-600">Memory (Remote)</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_memory_remote}</p>
-                                        </div>
-                                      )}
-                                      {file.mse_cognitive_subtraction && (
-                                        <div>
-                                          <label className="text-sm font-medium text-gray-600">Subtraction</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_subtraction}</p>
-                                        </div>
-                                      )}
-                                      {file.mse_cognitive_digit_span && (
-                                        <div>
-                                          <label className="text-sm font-medium text-gray-600">Digit Span</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_digit_span}</p>
-                                        </div>
-                                      )}
-                                      {file.mse_cognitive_counting && (
-                                        <div>
-                                          <label className="text-sm font-medium text-gray-600">Counting</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_counting}</p>
-                                        </div>
-                                      )}
-                                      {file.mse_cognitive_general_knowledge && (
-                                        <div>
-                                          <label className="text-sm font-medium text-gray-600">General Knowledge</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_general_knowledge}</p>
-                                        </div>
-                                      )}
-                                      {file.mse_cognitive_calculation && (
-                                        <div>
-                                          <label className="text-sm font-medium text-gray-600">Calculation</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_calculation}</p>
-                                        </div>
-                                      )}
-                                      {file.mse_cognitive_similarities && (
-                                        <div>
-                                          <label className="text-sm font-medium text-gray-600">Similarities</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_similarities}</p>
-                                        </div>
-                                      )}
-                                      {file.mse_cognitive_proverbs && (
-                                        <div>
-                                          <label className="text-sm font-medium text-gray-600">Proverbs</label>
-                                          <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_proverbs}</p>
+                                          <label className="text-sm font-medium text-gray-600">Fluctuation</label>
+                                          <p className="text-sm text-gray-900 mt-1">{file.mse_affect_fluctuation}</p>
                                         </div>
                                       )}
                                     </div>
                                   </div>
                                 )}
 
-                              {/* Insight */}
-                              {(file.mse_insight_understanding || file.mse_insight_judgement) && (
-                                <div className="mb-4">
-                                  <h6 className="text-md font-semibold text-gray-800 mb-2">Insight</h6>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {file.mse_insight_understanding && (
-                                      <div>
-                                        <label className="text-sm font-medium text-gray-600">Understanding</label>
-                                        <p className="text-sm text-gray-900 mt-1">{file.mse_insight_understanding}</p>
-                                      </div>
-                                    )}
-                                    {file.mse_insight_judgement && (
-                                      <div>
-                                        <label className="text-sm font-medium text-gray-600">Judgement</label>
-                                        <p className="text-sm text-gray-900 mt-1">{file.mse_insight_judgement}</p>
-                                      </div>
-                                    )}
+                                {/* Thought */}
+                                {(file.mse_thought_flow || file.mse_thought_form || file.mse_thought_content) && (
+                                  <div className="mb-4">
+                                    <h6 className="text-md font-semibold text-gray-800 mb-2">Thought</h6>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {file.mse_thought_flow && (
+                                        <div>
+                                          <label className="text-sm font-medium text-gray-600">Flow</label>
+                                          <p className="text-sm text-gray-900 mt-1">{file.mse_thought_flow}</p>
+                                        </div>
+                                      )}
+                                      {file.mse_thought_form && (
+                                        <div>
+                                          <label className="text-sm font-medium text-gray-600">Form</label>
+                                          <p className="text-sm text-gray-900 mt-1">{file.mse_thought_form}</p>
+                                        </div>
+                                      )}
+                                      {file.mse_thought_content && (
+                                        <div>
+                                          <label className="text-sm font-medium text-gray-600">Content</label>
+                                          <p className="text-sm text-gray-900 mt-1">{file.mse_thought_content}</p>
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
+                                )}
 
-                        {/* Diagnostic Formulation */}
-                        {(file.diagnostic_formulation_summary || file.diagnostic_formulation_features ||
-                          file.diagnostic_formulation_psychodynamic) && (
-                            <div>
-                              <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Diagnostic Formulation</h5>
-                              <div className="space-y-4">
-                                {file.diagnostic_formulation_summary && (
-                                  <div>
-                                    <label className="text-sm font-medium text-gray-600">Summary</label>
-                                    <p className="text-sm text-gray-900 mt-1 leading-relaxed">{file.diagnostic_formulation_summary}</p>
-                                  </div>
-                                )}
-                                {file.diagnostic_formulation_features && (
-                                  <div>
-                                    <label className="text-sm font-medium text-gray-600">Features</label>
-                                    <p className="text-sm text-gray-900 mt-1 leading-relaxed">{file.diagnostic_formulation_features}</p>
-                                  </div>
-                                )}
-                                {file.diagnostic_formulation_psychodynamic && (
-                                  <div>
-                                    <label className="text-sm font-medium text-gray-600">Psychodynamic</label>
-                                    <p className="text-sm text-gray-900 mt-1 leading-relaxed">{file.diagnostic_formulation_psychodynamic}</p>
+                                {/* Cognitive */}
+                                {(file.mse_cognitive_consciousness || file.mse_cognitive_orientation_time || file.mse_cognitive_orientation_place ||
+                                  file.mse_cognitive_orientation_person || file.mse_cognitive_memory_immediate || file.mse_cognitive_memory_recent ||
+                                  file.mse_cognitive_memory_remote || file.mse_cognitive_subtraction || file.mse_cognitive_digit_span ||
+                                  file.mse_cognitive_counting || file.mse_cognitive_general_knowledge || file.mse_cognitive_calculation ||
+                                  file.mse_cognitive_similarities || file.mse_cognitive_proverbs) && (
+                                    <div className="mb-4">
+                                      <h6 className="text-md font-semibold text-gray-800 mb-2">Cognitive</h6>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {file.mse_cognitive_consciousness && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">Consciousness</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_consciousness}</p>
+                                          </div>
+                                        )}
+                                        {file.mse_cognitive_orientation_time && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">Orientation (Time)</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_orientation_time}</p>
+                                          </div>
+                                        )}
+                                        {file.mse_cognitive_orientation_place && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">Orientation (Place)</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_orientation_place}</p>
+                                          </div>
+                                        )}
+                                        {file.mse_cognitive_orientation_person && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">Orientation (Person)</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_orientation_person}</p>
+                                          </div>
+                                        )}
+                                        {file.mse_cognitive_memory_immediate && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">Memory (Immediate)</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_memory_immediate}</p>
+                                          </div>
+                                        )}
+                                        {file.mse_cognitive_memory_recent && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">Memory (Recent)</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_memory_recent}</p>
+                                          </div>
+                                        )}
+                                        {file.mse_cognitive_memory_remote && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">Memory (Remote)</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_memory_remote}</p>
+                                          </div>
+                                        )}
+                                        {file.mse_cognitive_subtraction && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">Subtraction</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_subtraction}</p>
+                                          </div>
+                                        )}
+                                        {file.mse_cognitive_digit_span && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">Digit Span</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_digit_span}</p>
+                                          </div>
+                                        )}
+                                        {file.mse_cognitive_counting && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">Counting</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_counting}</p>
+                                          </div>
+                                        )}
+                                        {file.mse_cognitive_general_knowledge && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">General Knowledge</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_general_knowledge}</p>
+                                          </div>
+                                        )}
+                                        {file.mse_cognitive_calculation && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">Calculation</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_calculation}</p>
+                                          </div>
+                                        )}
+                                        {file.mse_cognitive_similarities && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">Similarities</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_similarities}</p>
+                                          </div>
+                                        )}
+                                        {file.mse_cognitive_proverbs && (
+                                          <div>
+                                            <label className="text-sm font-medium text-gray-600">Proverbs</label>
+                                            <p className="text-sm text-gray-900 mt-1">{file.mse_cognitive_proverbs}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                {/* Insight */}
+                                {(file.mse_insight_understanding || file.mse_insight_judgement) && (
+                                  <div className="mb-4">
+                                    <h6 className="text-md font-semibold text-gray-800 mb-2">Insight</h6>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {file.mse_insight_understanding && (
+                                        <div>
+                                          <label className="text-sm font-medium text-gray-600">Understanding</label>
+                                          <p className="text-sm text-gray-900 mt-1">{file.mse_insight_understanding}</p>
+                                        </div>
+                                      )}
+                                      {file.mse_insight_judgement && (
+                                        <div>
+                                          <label className="text-sm font-medium text-gray-600">Judgement</label>
+                                          <p className="text-sm text-gray-900 mt-1">{file.mse_insight_judgement}</p>
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 )}
                               </div>
+                            )}
+
+                          {/* Diagnostic Formulation */}
+                          {(file.diagnostic_formulation_summary || file.diagnostic_formulation_features ||
+                            file.diagnostic_formulation_psychodynamic) && (
+                              <div>
+                                <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Diagnostic Formulation</h5>
+                                <div className="space-y-4">
+                                  {file.diagnostic_formulation_summary && (
+                                    <div>
+                                      <label className="text-sm font-medium text-gray-600">Summary</label>
+                                      <p className="text-sm text-gray-900 mt-1 leading-relaxed">{file.diagnostic_formulation_summary}</p>
+                                    </div>
+                                  )}
+                                  {file.diagnostic_formulation_features && (
+                                    <div>
+                                      <label className="text-sm font-medium text-gray-600">Features</label>
+                                      <p className="text-sm text-gray-900 mt-1 leading-relaxed">{file.diagnostic_formulation_features}</p>
+                                    </div>
+                                  )}
+                                  {file.diagnostic_formulation_psychodynamic && (
+                                    <div>
+                                      <label className="text-sm font-medium text-gray-600">Psychodynamic</label>
+                                      <p className="text-sm text-gray-900 mt-1 leading-relaxed">{file.diagnostic_formulation_psychodynamic}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                          {/* Provisional Diagnosis */}
+                          {file.provisional_diagnosis && (
+                            <div>
+                              <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Provisional Diagnosis</h5>
+                              <p className="text-sm text-gray-900 leading-relaxed">{file.provisional_diagnosis}</p>
                             </div>
                           )}
 
-                        {/* Provisional Diagnosis */}
-                        {file.provisional_diagnosis && (
-                          <div>
-                            <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Provisional Diagnosis</h5>
-                            <p className="text-sm text-gray-900 leading-relaxed">{file.provisional_diagnosis}</p>
-                          </div>
-                        )}
+                          {/* Treatment Plan */}
+                          {file.treatment_plan && (
+                            <div>
+                              <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Treatment Plan</h5>
+                              <p className="text-sm text-gray-900 leading-relaxed">{file.treatment_plan}</p>
+                            </div>
+                          )}
 
-                        {/* Treatment Plan */}
-                        {file.treatment_plan && (
-                          <div>
-                            <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Treatment Plan</h5>
-                            <p className="text-sm text-gray-900 leading-relaxed">{file.treatment_plan}</p>
-                          </div>
-                        )}
+                          {/* Consultant Comments */}
+                          {file.consultant_comments && (
+                            <div>
+                              <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Consultant Comments</h5>
+                              <p className="text-sm text-gray-900 leading-relaxed">{file.consultant_comments}</p>
+                            </div>
+                          )}
 
-                        {/* Consultant Comments */}
-                        {file.consultant_comments && (
-                          <div>
-                            <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Consultant Comments</h5>
-                            <p className="text-sm text-gray-900 leading-relaxed">{file.consultant_comments}</p>
-                          </div>
-                        )}
+                          {/* Notes */}
+                          {file.notes && (
+                            <div>
+                              <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Additional Notes</h5>
+                              <p className="text-sm text-gray-900 leading-relaxed">{file.notes}</p>
+                            </div>
+                          )}
 
-                        {/* Notes */}
-                        {file.notes && (
-                          <div>
-                            <h5 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Additional Notes</h5>
-                            <p className="text-sm text-gray-900 leading-relaxed">{file.notes}</p>
-                          </div>
-                        )}
-
-                        {/* Last Updated */}
-                        {file.updated_at && (
-                          <div className="pt-4 border-t border-gray-200">
-                            <p className="text-xs text-gray-500">Last Updated: {formatDateTime(file.updated_at)}</p>
-                          </div>
-                        )}
+                          {/* Last Updated */}
+                          {file.updated_at && (
+                            <div className="pt-4 border-t border-gray-200">
+                              <p className="text-xs text-gray-500">Last Updated: {formatDateTime(file.updated_at)}</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-12 text-gray-500">
