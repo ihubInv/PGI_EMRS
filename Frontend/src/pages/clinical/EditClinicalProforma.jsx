@@ -18,9 +18,49 @@ import Input from '../../components/Input';
 import Select from '../../components/Select';
 import Textarea from '../../components/Textarea';
 import Button from '../../components/Button';
-import { FiArrowLeft, FiAlertCircle, FiSave, FiHeart, FiActivity, FiUser, FiClipboard, FiList, FiCheckSquare, FiFileText, FiX, FiPlus, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiArrowLeft, FiAlertCircle, FiSave, FiHeart, FiActivity, FiUser, FiClipboard, FiList, FiCheckSquare, FiFileText, FiX, FiPlus, FiChevronDown, FiChevronUp, FiLoader } from 'react-icons/fi';
 import icd11Codes from '../../assets/ICD11_Codes.json';
+import CustomDatePicker from '../../components/CustomDatePicker';
+import {
+  MARITAL_STATUS, FAMILY_TYPE_OPTIONS, LOCALITY_OPTIONS, RELIGION_OPTIONS, SEX_OPTIONS,
+  AGE_GROUP_OPTIONS, OCCUPATION_OPTIONS, EDUCATION_OPTIONS,
+  MOBILITY_OPTIONS, REFERRED_BY_OPTIONS, INDIAN_STATES, UNIT_DAYS_OPTIONS,
+  isJR, isSR, HEAD_RELATIONSHIP_OPTIONS, CATEGORY_OPTIONS, isAdmin, isJrSr
+} from '../../utils/constants';
 
+const IconInput = ({ icon, label, loading = false, error, defaultValue, ...props }) => {
+  // Remove defaultValue if value is provided to avoid controlled/uncontrolled warning
+  const inputProps = props.value !== undefined ? { ...props } : { ...props, defaultValue };
+
+  return (
+    <div className="space-y-2">
+      <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+        {icon && <span className="text-primary-600">{icon}</span>}
+        {label}
+        {loading && (
+          <FiLoader className="w-4 h-4 text-blue-500 animate-spin" />
+        )}
+      </label>
+      <div className="relative">
+        {icon && (
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+            <span className="text-gray-500">{icon}</span>
+          </div>
+        )}
+        <input
+          {...inputProps}
+          className={`w-full px-4 py-3 ${icon ? 'pl-11' : 'pl-4'} bg-white/60 backdrop-blur-md border-2 border-gray-300/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 focus:bg-white/80 transition-all duration-300 hover:bg-white/70 hover:border-primary-400/70 placeholder:text-gray-400 text-gray-900 font-medium ${inputProps.className || ''}`}
+        />
+      </div>
+      {error && (
+        <p className="text-red-500 text-xs mt-1 flex items-center gap-1 font-medium">
+          <FiX className="w-3 h-3" />
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
 // CheckboxGroup Component
 const CheckboxGroup = ({ label, name, value = [], onChange, options = [], rightInlineExtra = null }) => {
   const [localOptions, setLocalOptions] = useState(options);
@@ -846,7 +886,7 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
               <FiClipboard className="h-6 w-6 text-green-600" />
           </div>
             <div>
-              <h3 className="text-xl font-bold text-gray-900">Clinical Proforma</h3>
+              <h3 className="text-xl font-bold text-gray-900"> Walk-in Clinical Proforma</h3>
               {patient && (
                 <p className="text-sm text-gray-500 mt-1">
                   {patient.name || 'N/A'} - {patient.cr_no || 'N/A'}
@@ -863,7 +903,7 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
 
         {expandedCards.clinicalProforma && (
           <div className="p-6 space-y-6">
-            {!isEmbedded && <h1 className="text-3xl font-bold text-gray-900 mb-6">Edit Clinical Proforma</h1>}
+            {/* {!isEmbedded && <h1 className="text-3xl font-bold text-gray-900 mb-6">Edit Walk-in Clinical Proforma</h1>} */}
               
               {/* Basic Information Section */}
               {/* <div className="space-y-4">
@@ -940,7 +980,9 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
               </div> */}
 
               {/* Informant Section */}
+              
               <div className="space-y-4">
+                
                 <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Informant</h2>
                 <div className="space-y-4">
                   <div className="flex flex-wrap gap-3">

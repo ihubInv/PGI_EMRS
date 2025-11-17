@@ -159,7 +159,7 @@ const PatientRow = ({ patient, activeTab, navigate }) => {
             </Button>
             
             {/* Clinical Proforma Button */}
-            {hasExistingProforma ? (
+            {/* {hasExistingProforma ? (
               <Button
                 variant="outline"
                 size="sm"
@@ -179,7 +179,16 @@ const PatientRow = ({ patient, activeTab, navigate }) => {
                 <FiPlusCircle className="w-4 h-4 flex-shrink-0" />
                 <span className="whitespace-nowrap">Clinical Proforma</span>
               </Button>
-            )}
+            )} */}
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/clinical/new?patient_id=${patient.id}&returnTab=${activeTab}`)}
+                className="flex items-center justify-center gap-2 w-full lg:w-full px-4 py-2.5 text-sm font-medium transition-all hover:shadow-md"
+              >
+                <FiPlusCircle className="w-4 h-4 flex-shrink-0" />
+                <span className="whitespace-nowrap">Walk-in Clinical Proforma</span>
+              </Button>
             
             {/* Prescribe Medication Button */}
             <Button

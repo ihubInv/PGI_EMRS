@@ -115,7 +115,7 @@ const ClinicalProformaDetails = () => {
             <FiArrowLeft className="mr-2" /> Back
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Clinical Proforma</h1>
+            <h1 className="text-3xl font-bold text-gray-900"> Walk-in Clinical Proforma</h1>
             <p className="text-gray-600 mt-1">View clinical assessment details</p>
           </div>
         </div>
