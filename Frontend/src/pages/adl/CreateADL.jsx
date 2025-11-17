@@ -12,11 +12,9 @@ import Button from '../../components/Button';
 import { FiSave, FiPlus, FiX, FiChevronDown, FiChevronUp, FiFileText } from 'react-icons/fi';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
-const CreateADL = () => {
+const CreateADL = ({ patientId, clinicalProformaId, returnTab, currentUser, adls, setAdls, addAdlRow, updateAdlCell, removeAdlRow, clearAllAdls, handleSave, handlePrint, formatDateFull, formatDate }  ) => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const patientId = searchParams.get('patient_id');
-  const clinicalProformaId = searchParams.get('clinical_proforma_id');
+  // const [searchParams] = useSearchParams();
 
   const [createADLFile, { isLoading: isCreating }] = useCreateADLFileMutation();
   const { data: patientData, isLoading: isLoadingPatient } = useGetPatientByIdQuery(patientId, { skip: !patientId });
@@ -269,21 +267,21 @@ const CreateADL = () => {
       <div className="w-full px-6 py-8 space-y-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Create ADL File</h1>
+            {/* <h1 className="text-3xl font-bold text-gray-900">Create ADL File</h1> */}
             {patient && (
               <p className="text-gray-600 mt-1">
                 {patient.name} - {patient.cr_no || 'N/A'}
               </p>
             )}
           </div>
-          <Button
+          {/* <Button
             onClick={() => navigate(-1)}
             variant="outline"
             className="flex items-center gap-2"
           >
             <FiChevronDown className="w-4 h-4 rotate-90" />
             Back
-          </Button>
+          </Button> */}
         </div>
 
         <form onSubmit={handleSubmit}>
