@@ -10,6 +10,7 @@ import Input from '../../components/Input';
 import Select from '../../components/Select';
 import Textarea from '../../components/Textarea';
 import Button from '../../components/Button';
+import DatePicker from '../../components/CustomDatePicker';
 import { FiEdit3, FiClipboard, FiCheckSquare, FiList, FiActivity, FiHeart, FiUser, FiFileText, FiPlus, FiX, FiSave, FiClock, FiChevronDown, FiChevronUp, FiArrowRight, FiArrowLeft, FiCheck, FiTrash2, FiFolder } from 'react-icons/fi';
 import { VISIT_TYPES, CASE_SEVERITY, DOCTOR_DECISION, isJR, isSR } from '../../utils/constants';
 import { useGetClinicalOptionsQuery, useAddClinicalOptionMutation, useDeleteClinicalOptionMutation } from '../../features/clinical/clinicalApiSlice';
@@ -64,7 +65,7 @@ const CheckboxGroup = ({ label, name, value = [], onChange, options = [], rightI
       const next = value.filter((v) => v !== opt);
       onChange({ target: { name, value: next } });
     }
-    deleteOption({ group: name, label: opt }).catch(() => {});
+    deleteOption({ group: name, label: opt }).catch(() => { });
   };
 
   const handleAddClick = () => {
@@ -87,105 +88,103 @@ const CheckboxGroup = ({ label, name, value = [], onChange, options = [], rightI
     onChange({ target: { name, value: next } });
     setCustomOption('');
     setShowAdd(false);
-    addOption({ group: name, label: opt }).catch(() => {});
+    addOption({ group: name, label: opt }).catch(() => { });
   };
 
   return (
 
 
-<div className="space-y-2">
-{label && (
-  <div className="flex items-center gap-3 text-base font-semibold text-gray-800">
-    <span>{iconByGroup[name] || <FiList className="w-6 h-6 text-gray-500" />}</span>
-    <span>{label}</span>
-  </div>
-)}
+    <div className="space-y-2">
+      {label && (
+        <div className="flex items-center gap-3 text-base font-semibold text-gray-800">
+          <span>{iconByGroup[name] || <FiList className="w-6 h-6 text-gray-500" />}</span>
+          <span>{label}</span>
+        </div>
+      )}
 
-{/* Options + Add button inline */}
-<div className="flex flex-wrap items-center gap-3">
-  {/* Options */}
-  {localOptions?.map((opt) => (
-    <div key={opt} className="relative inline-flex items-center group">
-      <button
-        type="button"
-        onClick={() => handleDelete(opt)}
-        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md opacity-0 pointer-events-none transition-opacity duration-150 group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-red-600"
-        aria-label={`Remove ${opt}`}
-      >
-        <FiX className="w-3 h-3" />
-      </button>
+      {/* Options + Add button inline */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Options */}
+        {localOptions?.map((opt) => (
+          <div key={opt} className="relative inline-flex items-center group">
+            <button
+              type="button"
+              onClick={() => handleDelete(opt)}
+              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md opacity-0 pointer-events-none transition-opacity duration-150 group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-red-600"
+              aria-label={`Remove ${opt}`}
+            >
+              <FiX className="w-3 h-3" />
+            </button>
 
-      <label
-        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm transition-colors duration-150 cursor-pointer
-          ${
-            value.includes(opt)
-              ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-              : "border-gray-200 bg-white hover:bg-gray-50 text-gray-800"
-          }`}
-      >
-            <input
-              type="checkbox"
-          checked={value.includes(opt)}
-              onChange={() => toggle(opt)}
-          className="h-4 w-4 text-primary-600 rounded"
-            />
-        <span>{opt}</span>
-          </label>
-    </div>
+            <label
+              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm transition-colors duration-150 cursor-pointer
+          ${value.includes(opt)
+                  ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                  : "border-gray-200 bg-white hover:bg-gray-50 text-gray-800"
+                }`}
+            >
+              <input
+                type="checkbox"
+                checked={value.includes(opt)}
+                onChange={() => toggle(opt)}
+                className="h-4 w-4 text-primary-600 rounded"
+              />
+              <span>{opt}</span>
+            </label>
+          </div>
         ))}
-  {rightInlineExtra && (
-    <div className="inline-flex items-center">
-      {rightInlineExtra}
+        {rightInlineExtra && (
+          <div className="inline-flex items-center">
+            {rightInlineExtra}
+          </div>
+        )}
+
+        {/* Add Section */}
+        <div className="flex items-center gap-2">
+          {showAdd && (
+            <Input
+              placeholder="Enter option name"
+              value={customOption}
+              onChange={(e) => setCustomOption(e.target.value)}
+              className="max-w-xs"
+            />
+          )}
+
+          {showAdd ? (
+            <>
+              {/* Cancel Button */}
+              <Button
+                type="button"
+                onClick={handleCancelAdd}
+                className="bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30 px-3 py-1.5 rounded-md flex items-center gap-2 text-sm"
+              >
+                <FiX className="w-4 h-4" /> Cancel
+              </Button>
+
+              {/* Save Button */}
+              <Button
+                type="button"
+                onClick={handleSaveAdd}
+                className="bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30 px-3 py-1.5 rounded-md flex items-center gap-2 text-sm"
+              >
+                <FiSave className="w-4 h-4" /> Save
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="button"
+              onClick={handleAddClick}
+              className="bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30 px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-200 hover:from-green-600 hover:to-green-700 hover:shadow-xl hover:shadow-green-500/40"
+            >
+              <FiPlus className="w-4 h-4" /> Add
+            </Button>
+          )}
+        </div>
       </div>
-  )}
-
-  {/* Add Section */}
-  <div className="flex items-center gap-2">
-    {showAdd && (
-      <Input
-        placeholder="Enter option name"
-        value={customOption}
-        onChange={(e) => setCustomOption(e.target.value)}
-        className="max-w-xs"
-      />
-    )}
-
-    {showAdd ? (
-      <>
-        {/* Cancel Button */}
-        <Button
-          type="button"
-          onClick={handleCancelAdd}
-          className="bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30 px-3 py-1.5 rounded-md flex items-center gap-2 text-sm"
-        >
-          <FiX className="w-4 h-4" /> Cancel
-        </Button>
-
-        {/* Save Button */}
-        <Button
-          type="button"
-          onClick={handleSaveAdd}
-          className="bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30 px-3 py-1.5 rounded-md flex items-center gap-2 text-sm"
-        >
-          <FiSave className="w-4 h-4" /> Save
-        </Button>
-      </>
-    ) : (
-      <Button
-        type="button"
-        onClick={handleAddClick}
-          className="bg-white text-black border border-gray-300 px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-200 hover:bg-gradient-to-r hover:from-green-500 hover:to-green-600 hover:text-white hover:shadow-lg hover:shadow-green-500/30"
-
-      >
-        <FiPlus className="w-4 h-4" /> Add
-      </Button>
-    )}
-      </div>
-</div>
     </div>
   );
 };
- 
+
 // Hierarchical ICD-11 Code Selector Component
 const ICD11CodeSelector = ({ value, onChange, error }) => {
   const [selectedPath, setSelectedPath] = useState([]); // Array of selected items at each level
@@ -197,15 +196,15 @@ const ICD11CodeSelector = ({ value, onChange, error }) => {
       // Level 0: top-level items (level === 0)
       return icd11Codes.filter(item => item.level === 0);
     }
-    
+
     if (!parentItem && levelIndex > 0) return [];
-    
+
     const level = levelIndex;
-    
+
     // Find children based on hierarchy
     return icd11Codes.filter(item => {
       if (item.level !== level) return false;
-      
+
       if (level === 1) {
         // Level 1 children have parent_code matching level 0 code
         const level0Code = selectedPath[0]?.code || '';
@@ -218,13 +217,13 @@ const ICD11CodeSelector = ({ value, onChange, error }) => {
         const level0Code = selectedPath[0]?.code || '';
         const level1Item = selectedPath[1];
         const level1Code = level1Item?.code || '';
-        
+
         // If we have a level 1 selection with a code, match by that
         if (level1Code && item.parent_code === level1Code) return true;
-        
+
         // Match by level 0 code
         if (item.parent_code === level0Code) return true;
-        
+
         // If level 2 has empty parent_code, show it within level 0 context
         // Use code pattern matching to filter relevant items
         if (item.parent_code === '' && level0Code && item.code) {
@@ -238,7 +237,7 @@ const ICD11CodeSelector = ({ value, onChange, error }) => {
         // Level 3+: match by parent_code to previous level's code
         const prevLevelItem = selectedPath[levelIndex - 1];
         if (!prevLevelItem) return false;
-        
+
         const prevLevelCode = prevLevelItem.code || '';
         return item.parent_code === prevLevelCode;
       }
@@ -253,24 +252,24 @@ const ICD11CodeSelector = ({ value, onChange, error }) => {
       if (codeItem) {
         const path = [];
         let current = codeItem;
-        
+
         // Build path backwards by finding parents
         while (current) {
           path.unshift(current);
-          
+
           // Find parent
           let parent = null;
           if (current.parent_code) {
             // Try to find parent by code match
             parent = icd11Codes.find(item => item.code === current.parent_code);
-            
+
             // If not found, try to find by level (e.g., level 0 item with code matching parent_code)
             if (!parent && current.level > 0) {
               if (current.level === 1) {
                 parent = icd11Codes.find(item => item.level === 0 && item.code === current.parent_code);
               } else if (current.level === 2) {
                 // Level 2 might have empty parent_code, check level 1 or 0
-                parent = icd11Codes.find(item => 
+                parent = icd11Codes.find(item =>
                   (item.level === 1 && item.parent_code === current.parent_code) ||
                   (item.level === 0 && item.code === current.parent_code)
                 );
@@ -279,10 +278,10 @@ const ICD11CodeSelector = ({ value, onChange, error }) => {
               }
             }
           }
-          
+
           current = parent;
         }
-        
+
         if (path.length > 0) {
           setSelectedPath(path);
           setSelectedCode(value);
@@ -325,11 +324,11 @@ const ICD11CodeSelector = ({ value, onChange, error }) => {
     if (children.length === 0 && levelIndex > 0) return null;
 
     const selectedItem = selectedPath[levelIndex];
-    
-    const labelText = levelIndex === 0 ? 'Category' : 
-                     levelIndex === 1 ? 'Subcategory' :
-                     levelIndex === 2 ? 'Code Group' : 'Specific Code';
-    
+
+    const labelText = levelIndex === 0 ? 'Category' :
+      levelIndex === 1 ? 'Subcategory' :
+        levelIndex === 2 ? 'Code Group' : 'Specific Code';
+
     return (
       <div key={levelIndex} className="flex-shrink-0 min-w-[200px]">
         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -359,26 +358,26 @@ const ICD11CodeSelector = ({ value, onChange, error }) => {
       <label className="block text-sm font-medium text-gray-700 mb-1">
         ICD Code
       </label>
-      
+
       {/* Horizontal flex container for dropdowns */}
       <div className="flex flex-wrap items-end gap-4">
         {/* Render level 0 dropdown */}
         {renderDropdown(0)}
-        
+
         {/* Render level 1 dropdown if level 0 is selected */}
         {selectedPath[0] && renderDropdown(1)}
-        
+
         {/* Render level 2 dropdown if level 1 is selected */}
         {selectedPath[1] && renderDropdown(2)}
-        
+
         {/* Render level 3 dropdown if level 2 is selected and has children */}
         {selectedPath[2] && selectedPath[2].has_children && renderDropdown(3)}
-        
+
         {/* Render level 4+ dropdowns if needed */}
         {selectedPath[3] && selectedPath[3].has_children && renderDropdown(4)}
         {selectedPath[4] && selectedPath[4].has_children && renderDropdown(5)}
       </div>
-      
+
       {/* Display selected code */}
       {selectedCode && (
         <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
@@ -409,7 +408,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
   const returnTab = searchParams.get('returnTab'); // Get returnTab from URL
 
   const [createProforma, { isLoading: isCreating }] = useCreateClinicalProformaMutation();
-  
+
   // Track created proforma ID for step-wise saving
   // If proformaId is provided (edit mode), use it
   const [savedProformaId, setSavedProformaId] = useState(proformaId || null);
@@ -418,7 +417,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
     { search: patientSearch, limit: 10 },
     { skip: !patientSearch }
   );
-  
+
   // Fetch doctors list for assignment by MWO
   const { data: doctorsData } = useGetDoctorsQuery({ page: 1, limit: 100 });
   // Initialize form data with initialData if provided (for edit mode)
@@ -428,7 +427,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
       const normalizedData = { ...initialData };
       // Normalize informants array
       if (!normalizedData.informants || !Array.isArray(normalizedData.informants)) {
-        normalizedData.informants = normalizedData.informants 
+        normalizedData.informants = normalizedData.informants
           ? (Array.isArray(normalizedData.informants) ? normalizedData.informants : [normalizedData.informants])
           : [{ relationship: '', name: '', reliability: '' }];
         if (normalizedData.informants.length === 0) {
@@ -437,7 +436,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
       }
       // Normalize complaints arrays
       if (!normalizedData.complaints_patient || !Array.isArray(normalizedData.complaints_patient)) {
-        normalizedData.complaints_patient = normalizedData.complaints_patient 
+        normalizedData.complaints_patient = normalizedData.complaints_patient
           ? (Array.isArray(normalizedData.complaints_patient) ? normalizedData.complaints_patient : [normalizedData.complaints_patient])
           : [{ complaint: '', duration: '' }];
         if (normalizedData.complaints_patient.length === 0) {
@@ -445,7 +444,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
         }
       }
       if (!normalizedData.complaints_informant || !Array.isArray(normalizedData.complaints_informant)) {
-        normalizedData.complaints_informant = normalizedData.complaints_informant 
+        normalizedData.complaints_informant = normalizedData.complaints_informant
           ? (Array.isArray(normalizedData.complaints_informant) ? normalizedData.complaints_informant : [normalizedData.complaints_informant])
           : [{ complaint: '', duration: '' }];
         if (normalizedData.complaints_informant.length === 0) {
@@ -454,7 +453,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
       }
       // Normalize family_history_siblings array
       if (!normalizedData.family_history_siblings || !Array.isArray(normalizedData.family_history_siblings)) {
-        normalizedData.family_history_siblings = normalizedData.family_history_siblings 
+        normalizedData.family_history_siblings = normalizedData.family_history_siblings
           ? (Array.isArray(normalizedData.family_history_siblings) ? normalizedData.family_history_siblings : [normalizedData.family_history_siblings])
           : [{ age: '', sex: '', education: '', occupation: '', marital_status: '' }];
         if (normalizedData.family_history_siblings.length === 0) {
@@ -463,7 +462,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
       }
       // Normalize occupation_jobs array
       if (!normalizedData.occupation_jobs || !Array.isArray(normalizedData.occupation_jobs)) {
-        normalizedData.occupation_jobs = normalizedData.occupation_jobs 
+        normalizedData.occupation_jobs = normalizedData.occupation_jobs
           ? (Array.isArray(normalizedData.occupation_jobs) ? normalizedData.occupation_jobs : [normalizedData.occupation_jobs])
           : [{ job: '', dates: '', adjustment: '', difficulties: '', promotions: '', change_reason: '' }];
         if (normalizedData.occupation_jobs.length === 0) {
@@ -472,7 +471,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
       }
       // Normalize sexual_children array
       if (!normalizedData.sexual_children || !Array.isArray(normalizedData.sexual_children)) {
-        normalizedData.sexual_children = normalizedData.sexual_children 
+        normalizedData.sexual_children = normalizedData.sexual_children
           ? (Array.isArray(normalizedData.sexual_children) ? normalizedData.sexual_children : [normalizedData.sexual_children])
           : [{ age: '', sex: '' }];
         if (normalizedData.sexual_children.length === 0) {
@@ -485,235 +484,235 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
       patient_id: patientIdFromQuery || '',
       visit_date: new Date().toISOString().split('T')[0],
       visit_type: 'first_visit',
-    room_no: '',
-    assigned_doctor: '',
-    informant_present: true,
-    nature_of_information: '',
-    onset_duration: '',
-    course: '',
-    precipitating_factor: '',
-    illness_duration: '',
-    current_episode_since: '',
-    mood: [],
-    behaviour: [],
-    speech: [],
-    thought: [],
-    perception: [],
-    somatic: [],
-    bio_functions: [],
-    adjustment: [],
-    cognitive_function: [],
-    fits: [],
-    sexual_problem: [],
-    substance_use: [],
-    past_history: '',
-    family_history: '',
-    associated_medical_surgical: [],
-    mse_behaviour: [],
-    mse_affect: [],
-    mse_thought: [],
-    mse_delusions: '',
-    mse_perception: [],
-    mse_cognitive_function: [],
-    gpe: '',
-    diagnosis: '',
-    icd_code: '',
-    disposal: '',
-    workup_appointment: '',
-    referred_to: '',
-    treatment_prescribed: '',
-    doctor_decision: 'simple_case',
-    case_severity: 'mild',
-    requires_adl_file: false,
-    adl_reasoning: '',
-    // History of Present Illness - Expanded
-    history_narrative: '',
-    history_specific_enquiry: '',
-    history_drug_intake: '',
-    history_treatment_place: '',
-    history_treatment_dates: '',
-    history_treatment_drugs: '',
-    history_treatment_response: '',
-    // Multiple Informants
-    informants: [{ relationship: '', name: '', reliability: '' }],
-    // Complaints and Duration
-    complaints_patient: [{ complaint: '', duration: '' }],
-    complaints_informant: [{ complaint: '', duration: '' }],
-    // Past History - Detailed
-    past_history_medical: '',
-    past_history_psychiatric_dates: '',
-    past_history_psychiatric_diagnosis: '',
-    past_history_psychiatric_treatment: '',
-    past_history_psychiatric_interim: '',
-    past_history_psychiatric_recovery: '',
-    // Family History - Detailed
-    family_history_father_age: '',
-    family_history_father_education: '',
-    family_history_father_occupation: '',
-    family_history_father_personality: '',
-    family_history_father_deceased: false,
-    family_history_father_death_age: '',
-    family_history_father_death_date: '',
-    family_history_father_death_cause: '',
-    family_history_mother_age: '',
-    family_history_mother_education: '',
-    family_history_mother_occupation: '',
-    family_history_mother_personality: '',
-    family_history_mother_deceased: false,
-    family_history_mother_death_age: '',
-    family_history_mother_death_date: '',
-    family_history_mother_death_cause: '',
-    family_history_siblings: [{ age: '', sex: '', education: '', occupation: '', marital_status: '' }],
-    // Diagnostic Formulation
-    diagnostic_formulation_summary: '',
-    diagnostic_formulation_features: '',
-    diagnostic_formulation_psychodynamic: '',
-    // Premorbid Personality
-    premorbid_personality_passive_active: '',
-    premorbid_personality_assertive: '',
-    premorbid_personality_introvert_extrovert: '',
-    premorbid_personality_traits: [],
-    premorbid_personality_hobbies: '',
-    premorbid_personality_habits: '',
-    premorbid_personality_alcohol_drugs: '',
-    // Physical Examination - Comprehensive
-    physical_appearance: '',
-    physical_body_build: '',
-    physical_pallor: false,
-    physical_icterus: false,
-    physical_oedema: false,
-    physical_lymphadenopathy: false,
-    physical_pulse: '',
-    physical_bp: '',
-    physical_height: '',
-    physical_weight: '',
-    physical_waist: '',
-    physical_fundus: '',
-    physical_cvs_apex: '',
-    physical_cvs_regularity: '',
-    physical_cvs_heart_sounds: '',
-    physical_cvs_murmurs: '',
-    physical_chest_expansion: '',
-    physical_chest_percussion: '',
-    physical_chest_adventitious: '',
-    physical_abdomen_tenderness: '',
-    physical_abdomen_mass: '',
-    physical_abdomen_bowel_sounds: '',
-    physical_cns_cranial: '',
-    physical_cns_motor_sensory: '',
-    physical_cns_rigidity: '',
-    physical_cns_involuntary: '',
-    physical_cns_superficial_reflexes: '',
-    physical_cns_dtrs: '',
-    physical_cns_plantar: '',
-    physical_cns_cerebellar: '',
-    // Mental Status Examination - Expanded
-    mse_general_demeanour: '',
-    mse_general_tidy: '',
-    mse_general_awareness: '',
-    mse_general_cooperation: '',
-    mse_psychomotor_verbalization: '',
-    mse_psychomotor_pressure: '',
-    mse_psychomotor_tension: '',
-    mse_psychomotor_posture: '',
-    mse_psychomotor_mannerism: '',
-    mse_psychomotor_catatonic: '',
-    mse_affect_subjective: '',
-    mse_affect_tone: '',
-    mse_affect_resting: '',
-    mse_affect_fluctuation: '',
-    mse_thought_flow: '',
-    mse_thought_form: '',
-    mse_thought_content: '',
-    mse_cognitive_consciousness: '',
-    mse_cognitive_orientation_time: '',
-    mse_cognitive_orientation_place: '',
-    mse_cognitive_orientation_person: '',
-    mse_cognitive_memory_immediate: '',
-    mse_cognitive_memory_recent: '',
-    mse_cognitive_memory_remote: '',
-    mse_cognitive_subtraction: '',
-    mse_cognitive_digit_span: '',
-    mse_cognitive_counting: '',
-    mse_cognitive_general_knowledge: '',
-    mse_cognitive_calculation: '',
-    mse_cognitive_similarities: '',
-    mse_cognitive_proverbs: '',
-    mse_insight_understanding: '',
-    mse_insight_judgement: '',
-    // Educational History
-    education_start_age: '',
-    education_highest_class: '',
-    education_performance: '',
-    education_disciplinary: '',
-    education_peer_relationship: '',
-    education_hobbies: '',
-    education_special_abilities: '',
-    education_discontinue_reason: '',
-    // Occupational History
-    occupation_jobs: [{ job: '', dates: '', adjustment: '', difficulties: '', promotions: '', change_reason: '' }],
-    // Sexual and Marital History
-    sexual_menarche_age: '',
-    sexual_menarche_reaction: '',
-    sexual_education: '',
-    sexual_masturbation: '',
-    sexual_contact: '',
-    sexual_premarital_extramarital: '',
-    sexual_marriage_arranged: '',
-    sexual_marriage_date: '',
-    sexual_spouse_age: '',
-    sexual_spouse_occupation: '',
-    sexual_adjustment_general: '',
-    sexual_adjustment_sexual: '',
-    sexual_children: [{ age: '', sex: '' }],
-    sexual_problems: '',
-    // Religion
-    religion_type: '',
-    religion_participation: '',
-    religion_changes: '',
-    // Present Living Situation
-    living_residents: [{ name: '', relationship: '', age: '' }],
-    living_income_sharing: '',
-    living_expenses: '',
-    living_kitchen: '',
-    living_domestic_conflicts: '',
-    living_social_class: '',
-    living_inlaws: [{ name: '', relationship: '', age: '' }],
-    // General Home Situation and Early Development
-    home_situation_childhood: '',
-    home_situation_parents_relationship: '',
-    home_situation_socioeconomic: '',
-    home_situation_interpersonal: '',
-    personal_birth_date: '',
-    personal_birth_place: '',
-    personal_delivery_type: '',
-    personal_complications_prenatal: '',
-    personal_complications_natal: '',
-    personal_complications_postnatal: '',
-    development_weaning_age: '',
-    development_first_words: '',
-    development_three_words: '',
-    development_walking: '',
-    development_neurotic_traits: '',
-    development_nail_biting: '',
-    development_bedwetting: '',
-    development_phobias: '',
-    development_childhood_illness: '',
-    // Provisional Diagnosis and Treatment Plan
-    provisional_diagnosis: '',
-    treatment_plan: '',
-    // Comments of the Consultant
-    consultant_comments: '',
+      room_no: '',
+      assigned_doctor: '',
+      informant_present: true,
+      nature_of_information: '',
+      onset_duration: '',
+      course: '',
+      precipitating_factor: '',
+      illness_duration: '',
+      current_episode_since: '',
+      mood: [],
+      behaviour: [],
+      speech: [],
+      thought: [],
+      perception: [],
+      somatic: [],
+      bio_functions: [],
+      adjustment: [],
+      cognitive_function: [],
+      fits: [],
+      sexual_problem: [],
+      substance_use: [],
+      past_history: '',
+      family_history: '',
+      associated_medical_surgical: [],
+      mse_behaviour: [],
+      mse_affect: [],
+      mse_thought: [],
+      mse_delusions: '',
+      mse_perception: [],
+      mse_cognitive_function: [],
+      gpe: '',
+      diagnosis: '',
+      icd_code: '',
+      disposal: '',
+      workup_appointment: '',
+      referred_to: '',
+      treatment_prescribed: '',
+      doctor_decision: 'simple_case',
+      case_severity: 'mild',
+      requires_adl_file: false,
+      adl_reasoning: '',
+      // History of Present Illness - Expanded
+      history_narrative: '',
+      history_specific_enquiry: '',
+      history_drug_intake: '',
+      history_treatment_place: '',
+      history_treatment_dates: '',
+      history_treatment_drugs: '',
+      history_treatment_response: '',
+      // Multiple Informants
+      informants: [{ relationship: '', name: '', reliability: '' }],
+      // Complaints and Duration
+      complaints_patient: [{ complaint: '', duration: '' }],
+      complaints_informant: [{ complaint: '', duration: '' }],
+      // Past History - Detailed
+      past_history_medical: '',
+      past_history_psychiatric_dates: '',
+      past_history_psychiatric_diagnosis: '',
+      past_history_psychiatric_treatment: '',
+      past_history_psychiatric_interim: '',
+      past_history_psychiatric_recovery: '',
+      // Family History - Detailed
+      family_history_father_age: '',
+      family_history_father_education: '',
+      family_history_father_occupation: '',
+      family_history_father_personality: '',
+      family_history_father_deceased: false,
+      family_history_father_death_age: '',
+      family_history_father_death_date: '',
+      family_history_father_death_cause: '',
+      family_history_mother_age: '',
+      family_history_mother_education: '',
+      family_history_mother_occupation: '',
+      family_history_mother_personality: '',
+      family_history_mother_deceased: false,
+      family_history_mother_death_age: '',
+      family_history_mother_death_date: '',
+      family_history_mother_death_cause: '',
+      family_history_siblings: [{ age: '', sex: '', education: '', occupation: '', marital_status: '' }],
+      // Diagnostic Formulation
+      diagnostic_formulation_summary: '',
+      diagnostic_formulation_features: '',
+      diagnostic_formulation_psychodynamic: '',
+      // Premorbid Personality
+      premorbid_personality_passive_active: '',
+      premorbid_personality_assertive: '',
+      premorbid_personality_introvert_extrovert: '',
+      premorbid_personality_traits: [],
+      premorbid_personality_hobbies: '',
+      premorbid_personality_habits: '',
+      premorbid_personality_alcohol_drugs: '',
+      // Physical Examination - Comprehensive
+      physical_appearance: '',
+      physical_body_build: '',
+      physical_pallor: false,
+      physical_icterus: false,
+      physical_oedema: false,
+      physical_lymphadenopathy: false,
+      physical_pulse: '',
+      physical_bp: '',
+      physical_height: '',
+      physical_weight: '',
+      physical_waist: '',
+      physical_fundus: '',
+      physical_cvs_apex: '',
+      physical_cvs_regularity: '',
+      physical_cvs_heart_sounds: '',
+      physical_cvs_murmurs: '',
+      physical_chest_expansion: '',
+      physical_chest_percussion: '',
+      physical_chest_adventitious: '',
+      physical_abdomen_tenderness: '',
+      physical_abdomen_mass: '',
+      physical_abdomen_bowel_sounds: '',
+      physical_cns_cranial: '',
+      physical_cns_motor_sensory: '',
+      physical_cns_rigidity: '',
+      physical_cns_involuntary: '',
+      physical_cns_superficial_reflexes: '',
+      physical_cns_dtrs: '',
+      physical_cns_plantar: '',
+      physical_cns_cerebellar: '',
+      // Mental Status Examination - Expanded
+      mse_general_demeanour: '',
+      mse_general_tidy: '',
+      mse_general_awareness: '',
+      mse_general_cooperation: '',
+      mse_psychomotor_verbalization: '',
+      mse_psychomotor_pressure: '',
+      mse_psychomotor_tension: '',
+      mse_psychomotor_posture: '',
+      mse_psychomotor_mannerism: '',
+      mse_psychomotor_catatonic: '',
+      mse_affect_subjective: '',
+      mse_affect_tone: '',
+      mse_affect_resting: '',
+      mse_affect_fluctuation: '',
+      mse_thought_flow: '',
+      mse_thought_form: '',
+      mse_thought_content: '',
+      mse_cognitive_consciousness: '',
+      mse_cognitive_orientation_time: '',
+      mse_cognitive_orientation_place: '',
+      mse_cognitive_orientation_person: '',
+      mse_cognitive_memory_immediate: '',
+      mse_cognitive_memory_recent: '',
+      mse_cognitive_memory_remote: '',
+      mse_cognitive_subtraction: '',
+      mse_cognitive_digit_span: '',
+      mse_cognitive_counting: '',
+      mse_cognitive_general_knowledge: '',
+      mse_cognitive_calculation: '',
+      mse_cognitive_similarities: '',
+      mse_cognitive_proverbs: '',
+      mse_insight_understanding: '',
+      mse_insight_judgement: '',
+      // Educational History
+      education_start_age: '',
+      education_highest_class: '',
+      education_performance: '',
+      education_disciplinary: '',
+      education_peer_relationship: '',
+      education_hobbies: '',
+      education_special_abilities: '',
+      education_discontinue_reason: '',
+      // Occupational History
+      occupation_jobs: [{ job: '', dates: '', adjustment: '', difficulties: '', promotions: '', change_reason: '' }],
+      // Sexual and Marital History
+      sexual_menarche_age: '',
+      sexual_menarche_reaction: '',
+      sexual_education: '',
+      sexual_masturbation: '',
+      sexual_contact: '',
+      sexual_premarital_extramarital: '',
+      sexual_marriage_arranged: '',
+      sexual_marriage_date: '',
+      sexual_spouse_age: '',
+      sexual_spouse_occupation: '',
+      sexual_adjustment_general: '',
+      sexual_adjustment_sexual: '',
+      sexual_children: [{ age: '', sex: '' }],
+      sexual_problems: '',
+      // Religion
+      religion_type: '',
+      religion_participation: '',
+      religion_changes: '',
+      // Present Living Situation
+      living_residents: [{ name: '', relationship: '', age: '' }],
+      living_income_sharing: '',
+      living_expenses: '',
+      living_kitchen: '',
+      living_domestic_conflicts: '',
+      living_social_class: '',
+      living_inlaws: [{ name: '', relationship: '', age: '' }],
+      // General Home Situation and Early Development
+      home_situation_childhood: '',
+      home_situation_parents_relationship: '',
+      home_situation_socioeconomic: '',
+      home_situation_interpersonal: '',
+      personal_birth_date: '',
+      personal_birth_place: '',
+      personal_delivery_type: '',
+      personal_complications_prenatal: '',
+      personal_complications_natal: '',
+      personal_complications_postnatal: '',
+      development_weaning_age: '',
+      development_first_words: '',
+      development_three_words: '',
+      development_walking: '',
+      development_neurotic_traits: '',
+      development_nail_biting: '',
+      development_bedwetting: '',
+      development_phobias: '',
+      development_childhood_illness: '',
+      // Provisional Diagnosis and Treatment Plan
+      provisional_diagnosis: '',
+      treatment_plan: '',
+      // Comments of the Consultant
+      consultant_comments: '',
     };
   };
 
   const [formData, setFormData] = useState(getInitialFormData());
-  
+
   // Initialize prescriptions from initialData if provided
   useEffect(() => {
     if (initialData?.prescriptions) {
-      const normalizedPrescriptions = Array.isArray(initialData.prescriptions) 
-        ? initialData.prescriptions 
+      const normalizedPrescriptions = Array.isArray(initialData.prescriptions)
+        ? initialData.prescriptions
         : [initialData.prescriptions];
       if (normalizedPrescriptions.length > 0) {
         setPrescriptions(normalizedPrescriptions);
@@ -731,20 +730,20 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
 
   // Step management
   const [currentStep, setCurrentStep] = useState(1);
-  
+
   // Prescription state management
   const [prescriptions, setPrescriptions] = useState([
     { medicine: '', dosage: '', when: '', frequency: '', duration: '', qty: '', details: '', notes: '' }
   ]);
 
-  
-  
+
+
   // Always 3 steps: Basic Info, Clinical Proforma, Additional Detail (conditional)
   const totalSteps = 3;
-  
+
   // Determine if step 3 (ADL) should be shown
   const showADLStep = formData.doctor_decision === 'complex_case';
-  
+
   // Card expand/collapse states (all start minimized/closed)
   const [expandedCards, setExpandedCards] = useState({
     clinicalProforma: false, // Main Clinical Proforma card
@@ -763,7 +762,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
     adl: false,
     prescription: false, // Prescription card
   });
-  
+
   const toggleCard = (cardName) => {
     setExpandedCards(prev => ({ ...prev, [cardName]: !prev[cardName] }));
   };
@@ -774,8 +773,8 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
       setFormData(prev => ({ ...prev, requires_adl_file: true }));
     } else {
       // If changed from complex to simple, reset ADL fields
-      setFormData(prev => ({ 
-        ...prev, 
+      setFormData(prev => ({
+        ...prev,
         requires_adl_file: false,
         adl_reasoning: ''
       }));
@@ -788,11 +787,11 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
 
   // Track ADL file ID for fetching ADL data when Step 3 loads
   const [adlFileId, setAdlFileId] = useState(null);
-  
+
   // Fetch ADL file data when Step 3 loads and adl_file_id exists
   const { data: adlFileData } = useGetADLFileByIdQuery(adlFileId, { skip: !adlFileId || currentStep !== 3 });
   const [updateADLFile] = useUpdateADLFileMutation();
-  
+
   // Helper function to normalize array fields (handles JSONB fields that might be strings or arrays)
   const normalizeArrayField = (value) => {
     if (Array.isArray(value)) return value;
@@ -859,12 +858,12 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
     const newErrors = {};
 
     if (step === 1) {
-    if (!formData.patient_id) {
-      newErrors.patient_id = 'Patient is required';
-    }
-    if (!formData.visit_date) {
-      newErrors.visit_date = 'Visit date is required';
-    }
+      if (!formData.patient_id) {
+        newErrors.patient_id = 'Patient is required';
+      }
+      if (!formData.visit_date) {
+        newErrors.visit_date = 'Visit date is required';
+      }
     }
 
     if (step === 3 && formData.doctor_decision === 'complex_case') {
@@ -897,7 +896,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
   // Helper function to prepare form data for API
   const prepareFormData = (step) => {
     const join = (arr) => Array.isArray(arr) ? arr.join(', ') : arr;
-    
+
     const baseData = {
       patient_id: parseInt(formData.patient_id),
       visit_date: formData.visit_date,
@@ -1171,7 +1170,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
   const saveCurrentStep = async (step) => {
     try {
       const stepData = prepareFormData(step);
-      
+
       // ✅ Step 3: Update ADL file directly if it exists
       if (step === 3 && adlFileId) {
         try {
@@ -1221,14 +1220,14 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
             'development_neurotic_traits', 'development_nail_biting', 'development_bedwetting', 'development_phobias',
             'development_childhood_illness', 'provisional_diagnosis', 'treatment_plan', 'consultant_comments'
           ];
-          
+
           const adlUpdateData = {};
           complexCaseFields.forEach(field => {
             if (stepData[field] !== undefined && stepData[field] !== null) {
               adlUpdateData[field] = stepData[field];
             }
           });
-          
+
           if (Object.keys(adlUpdateData).length > 0) {
             await updateADLFile({ id: adlFileId, ...adlUpdateData }).unwrap();
           }
@@ -1237,55 +1236,55 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
           // Continue with clinical_proforma update even if ADL update fails
         }
       }
-      
+
       // If onUpdate callback is provided (edit mode), use it instead of create
       if (onUpdate && savedProformaId) {
         await onUpdate({ id: savedProformaId, ...stepData });
         toast.success(`${getStepLabel(step)} saved successfully!`);
         return;
       }
-      
+
       // Always create new proforma (create mode only)
       // Create new proforma (for step 1)
       const result = await createProforma(stepData).unwrap();
       const proforma = result.data?.clinical_proforma || result.data?.proforma || result.data?.clinical;
       setSavedProformaId(proforma?.id);
       toast.success(`${getStepLabel(step)} saved successfully!`);
-      
+
       // ✅ Handle ADL file creation response - auto-open Step 3 and prefill
       const adlFile = result.data?.adl_file || result.data?.adl;
       if (adlFile && step === 2 && proforma?.doctor_decision === 'complex_case') {
-          // Set ADL file ID for fetching later if needed
-          if (adlFile.id) {
-            setAdlFileId(adlFile.id);
-          }
-          
-          // Prefill ADL form fields with adl_file data
-          Object.keys(adlFile).forEach(key => {
-            if (key !== 'id' && key !== 'created_at' && key !== 'updated_at' && 
-                key !== 'patient_id' && key !== 'adl_no' && key !== 'created_by' &&
-                key !== 'clinical_proforma_id' && key !== 'file_status' && 
-                key !== 'file_created_date' && key !== 'total_visits' && key !== 'is_active') {
-              // Only set if formData doesn't already have a value
-              if (formData[key] === undefined || formData[key] === null || formData[key] === '') {
-                setFormData(prev => ({ ...prev, [key]: adlFile[key] }));
-              }
-            }
-          });
-          
-          // Auto-open Step 3
-          setTimeout(() => {
-            setCurrentStep(3);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            toast.info(`ADL File created: ${adlFile.adl_no || 'ADL-XXXXXX'}. Please complete the additional details.`);
-          }, 500);
-        } else if (adlFile && (step === 2 || step === 3)) {
-          // Set ADL file ID for future fetches
-          if (adlFile.id) {
-            setAdlFileId(adlFile.id);
-          }
-          toast.info(`ADL File created: ${adlFile.adl_no || 'ADL-XXXXXX'} - Data saved to adl_files table`);
+        // Set ADL file ID for fetching later if needed
+        if (adlFile.id) {
+          setAdlFileId(adlFile.id);
         }
+
+        // Prefill ADL form fields with adl_file data
+        Object.keys(adlFile).forEach(key => {
+          if (key !== 'id' && key !== 'created_at' && key !== 'updated_at' &&
+            key !== 'patient_id' && key !== 'adl_no' && key !== 'created_by' &&
+            key !== 'clinical_proforma_id' && key !== 'file_status' &&
+            key !== 'file_created_date' && key !== 'total_visits' && key !== 'is_active') {
+            // Only set if formData doesn't already have a value
+            if (formData[key] === undefined || formData[key] === null || formData[key] === '') {
+              setFormData(prev => ({ ...prev, [key]: adlFile[key] }));
+            }
+          }
+        });
+
+        // Auto-open Step 3
+        setTimeout(() => {
+          setCurrentStep(3);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          toast.info(`ADL File created: ${adlFile.adl_no || 'ADL-XXXXXX'}. Please complete the additional details.`);
+        }, 500);
+      } else if (adlFile && (step === 2 || step === 3)) {
+        // Set ADL file ID for future fetches
+        if (adlFile.id) {
+          setAdlFileId(adlFile.id);
+        }
+        toast.info(`ADL File created: ${adlFile.adl_no || 'ADL-XXXXXX'} - Data saved to adl_files table`);
+      }
       return proforma;
     } catch (err) {
       toast.error(err?.data?.message || `Failed to save ${getStepLabel(step)}`);
@@ -1302,18 +1301,18 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
     try {
       // Save current step data before moving to next
       await saveCurrentStep(currentStep);
-      
+
       let nextStep = currentStep + 1;
-      
+
       // Skip step 3 if it's not needed (simple case)
       if (nextStep === 3 && !showADLStep) {
         // For simple cases, we're done after Step 2 - submit the form
         // Create a synthetic event for form submission
-        const syntheticEvent = { preventDefault: () => {} };
+        const syntheticEvent = { preventDefault: () => { } };
         handleSubmit(syntheticEvent);
         return;
       }
-      
+
       if (nextStep <= totalSteps) {
         setCurrentStep(nextStep);
         // Scroll to top on step change
@@ -1338,17 +1337,17 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
     if (step === 3 && !showADLStep) {
       return; // Don't allow navigation to step 3 if it's hidden
     }
-    
+
     // Only allow going to valid steps
     if (step >= 1 && step <= totalSteps) {
       setCurrentStep(step);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
-  
+
   // Get step labels
   const getStepLabel = (step) => {
-    switch(step) {
+    switch (step) {
       case 1: return 'Basic Information';
       case 2: return 'Clinical Proforma';
       case 3: return 'Additional Detail (ADL)';
@@ -1365,19 +1364,19 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
     }
 
     try {
-      
+
       // Format prescriptions: filter out empty rows and create formatted text
-      const validPrescriptions = prescriptions.filter(p => 
+      const validPrescriptions = prescriptions.filter(p =>
         p.medicine || p.dosage || p.frequency || p.details || p.when || p.duration || p.qty || p.notes
       );
-      
+
       // Create prescription text from valid prescriptions
       const prescriptionText = validPrescriptions.length > 0
         ? validPrescriptions
-            ?.map((p, idx) => 
-              `${idx + 1}. ${p.medicine || ''} | ${p.dosage || ''} | ${p.when || ''} | ${p.frequency || ''} | ${p.duration || ''} | ${p.qty || ''} | ${p.details || ''} | ${p.notes || ''}`
-            )
-            .join('\n')
+          ?.map((p, idx) =>
+            `${idx + 1}. ${p.medicine || ''} | ${p.dosage || ''} | ${p.when || ''} | ${p.frequency || ''} | ${p.duration || ''} | ${p.qty || ''} | ${p.details || ''} | ${p.notes || ''}`
+          )
+          .join('\n')
         : (formData.treatment_prescribed || '');
 
       // Prepare final data with all fields including prescription
@@ -1393,10 +1392,10 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
         await onUpdate({ id: proformaId, ...submitData });
         return;
       }
-      
+
       // Create new proforma (this shouldn't happen if step-wise saving works, but handle it as fallback)
       const result = await createProforma(submitData).unwrap();
-      
+
       // Clear saved prescription from localStorage after successful submission
       try {
         const storedPrescriptions = JSON.parse(localStorage.getItem('patient_prescriptions') || '{}');
@@ -1407,16 +1406,16 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
       } catch (e) {
         // Ignore localStorage errors
       }
-      
+
       toast.success('Clinical proforma created successfully!');
-      
+
       // Handle ADL file creation in final submit
       const proforma = result.data?.proforma || result.data?.clinical;
       const adlFile = result.data?.adl_file || result.data?.adl;
       if (adlFile && (adlFile.adl_no || adlFile.created)) {
         toast.info(`ADL File created: ${adlFile.adl_no || 'ADL-XXXXXX'}`);
       }
-      
+
       // Navigate to proforma details, or back to Today Patients if returnTab exists
       if (returnTab) {
         navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
@@ -1431,18 +1430,18 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
   // Auto-select patient when exact CR match found
   useEffect(() => {
     if (!patientsData?.data?.patients || formData.patient_id) return;
-    
+
     const patients = patientsData.data.patients;
-    
+
     // If searching for a CR number, auto-select exact match
     if (patientSearch && patientSearch.startsWith('CR')) {
-      const exactMatch = patients.find(p => 
+      const exactMatch = patients.find(p =>
         p.cr_no === patientSearch || p.cr_no === patientSearch.toUpperCase()
       );
-      
+
       if (exactMatch) {
-        setFormData(prev => ({ 
-          ...prev, 
+        setFormData(prev => ({
+          ...prev,
           patient_id: exactMatch.id.toString(),
           visit_type: 'follow_up' // Previous patient, so follow-up visit
         }));
@@ -1450,8 +1449,8 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
       }
     } else if (patients.length === 1) {
       // Auto-select if only one result found
-      setFormData(prev => ({ 
-        ...prev, 
+      setFormData(prev => ({
+        ...prev,
         patient_id: patients[0].id.toString(),
         visit_type: 'follow_up'
       }));
@@ -1461,15 +1460,15 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
   // Create patient options (prioritize exact CR matches)
   const patientOptions = (() => {
     if (!patientsData?.data?.patients) return [];
-    
+
     const patients = patientsData.data.patients;
-    
+
     // If searching for CR number, prioritize exact match
     if (patientSearch && patientSearch.startsWith('CR')) {
-      const exactMatch = patients.find(p => 
+      const exactMatch = patients.find(p =>
         p.cr_no === patientSearch || p.cr_no === patientSearch.toUpperCase()
       );
-      
+
       if (exactMatch) {
         return [{
           value: exactMatch.id,
@@ -1477,7 +1476,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
         }];
       }
     }
-    
+
     // Default: return all patients with CR numbers
     return patients.slice(0, 5)?.map(p => ({
       value: p.id,
@@ -1490,2634 +1489,2474 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
       <div className="w-full px-6 py-8 space-y-8">
         {/* Header */}
         <div className="relative">
-        
-      </div>
 
-      <form onSubmit={handleSubmit}>
-        <div className="space-y-6">
-          {/* Main Card: Clinical Proforma - Contains all sections */}
-          <Card
-            title={
-              <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => toggleCard('clinicalProforma')}>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <FiClipboard className="w-6 h-6 text-green-600" />
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-6">
+            {/* Main Card: Clinical Proforma - Contains all sections */}
+            <Card className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              <div
+                className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                onClick={() => toggleCard('clinicalProforma')}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-green-100 rounded-lg">
+                    <FiClipboard className="h-6 w-6 text-green-600" />
                   </div>
-                  <span className="text-xl font-bold text-gray-900">Clinical Proformas</span>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900"> Walk-in Clinical Proforma</h3>
+                  </div>
                 </div>
                 {expandedCards.clinicalProforma ? (
-                  <FiChevronUp className="w-5 h-5 text-gray-600" />
+                  <FiChevronUp className="h-6 w-6 text-gray-500 " />
                 ) : (
-                  <FiChevronDown className="w-5 h-5 text-gray-600" />
+                  <FiChevronDown className="h-6 w-6 text-gray-500" />
                 )}
               </div>
-            }
-            className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-          >
-            {expandedCards.clinicalProforma && (
-              <div className="space-y-6">
-                {/* Sub-card: Patient Details - Show patient information when patient is selected */}
-                {formData.patient_id && fullPatientData?.data?.patient && (
-                  <Card
-                    title={
-                      <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => toggleCard('patientInfo')}>
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-blue-100 rounded-lg">
-                            <FiUser className="w-5 h-5 text-blue-600" />
-                          </div>
-                          <span className="text-lg font-bold text-gray-900">Patient Details</span>
-                        </div>
-                        {expandedCards.patientInfo ? (
-                          <FiChevronUp className="w-4 h-4 text-gray-600" />
-                        ) : (
-                          <FiChevronDown className="w-4 h-4 text-gray-600" />
-                        )}
-                      </div>
-                    }
-                    className="mb-6 shadow-lg border border-gray-200 bg-gray-50"
-                  >
-                    {expandedCards.patientInfo && (
-                      <div className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                          <Input
-                            label="Patient ID"
-                            name="patient_id"
-                            value={formData.patient_id}
-                            disabled
-                          />
-                          <Input
-                            label="Patient Name"
-                            value={fullPatientData.data.patient.name || ''}
-                            disabled
-                          />
-                          <Input
-                            label="CR Number"
-                            value={fullPatientData.data.patient.cr_no || ''}
-                            disabled
-                          />
-                          <Input
-                            label="Age / Sex"
-                            value={`${fullPatientData.data.patient.age || ''} / ${fullPatientData.data.patient.sex || ''}`}
-                            disabled
-                          />
-                          {fullPatientData.data.patient.psy_no && (
-                            <Input
-                              label="PSY Number"
-                              value={fullPatientData.data.patient.psy_no}
-                              disabled
-                            />
-                          )}
-                          {fullPatientData.data.patient.special_clinic_no && (
-                            <Input
-                              label="Special Clinic No."
-                              value={fullPatientData.data.patient.special_clinic_no}
-                              disabled
-                            />
-                          )}
-                          {fullPatientData.data.patient.category && (
-                            <Input
-                              label="Category"
-                              value={fullPatientData.data.patient.category}
-                              disabled
-                            />
-                          )}
-                          {fullPatientData.data.patient.department && (
-                            <Input
-                              label="Department"
-                              value={fullPatientData.data.patient.department}
-                              disabled
-                            />
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </Card>
-                )}
-
-                {/* Clinical Proforma Sections - All visible */}
-                <div className="space-y-6">
-                  {/* Present Illness Card */}
-
-            <Card
-              title={
-                <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => toggleCard('informant')}>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-sky-100 rounded-lg">
-                      <FiUser className="w-6 h-6 text-sky-600" />
-                    </div>
-                    <span className="text-xl font-bold text-gray-900">Informant</span>
-                  </div>
-                  {expandedCards.informant ? (
-                    <FiChevronUp className="w-5 h-5 text-gray-600" />
-                  ) : (
-                    <FiChevronDown className="w-5 h-5 text-gray-600" />
-                  )}
-                </div>
-              }
-              className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-            >
-              {expandedCards.informant && (
-                <div className="space-y-6">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 text-lg font-semibold text-gray-800">
-                <FiUser className="w-5 h-5 text-sky-600" />
-                      <span>Informant Present/Absent</span>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                {[
-                  { v: true, t: 'Present' },
-                  { v: false, t: 'Absent' },
-                ]?.map(({ v, t }) => (
-                  <label key={t} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
-                    formData.informant_present === v ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
-                  }`}>
-              <input
-                      type="radio"
-                name="informant_present"
-                      checked={formData.informant_present === v}
-                      onChange={() => handleChange({ target: { name: 'informant_present', value: v } })}
-                      className="h-4 w-4 text-primary-600"
-                    />
-                    <span className="font-medium">{t}</span>
-              </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Nature of Information (Radio) */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 text-lg font-semibold text-gray-800">
-                <FiClipboard className="w-5 h-5 text-indigo-600" />
-                <span>Nature of information</span>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                {['Reliable','Unreliable','Adequate','Inadequate']?.map((opt) => (
-                  <label key={opt} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
-                    formData.nature_of_information === opt ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
-                  }`}>
-                    <input
-                      type="radio"
-              name="nature_of_information"
-                      value={opt}
-                      checked={formData.nature_of_information === opt}
-              onChange={handleChange}
-                      className="h-4 w-4 text-primary-600"
-            />
-                    <span className="font-medium">{opt}</span>
-                  </label>
-                ))}
-          </div>
-            </div>
-                </div>
-              )}
-            </Card>
-
-            <Card
-              title={
-                <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => toggleCard('presentIllness')}>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-100 rounded-lg">
-                      <FiActivity className="w-6 h-6 text-amber-600" />
-                    </div>
-                    <span className="text-xl font-bold text-gray-900">Present Illness</span>
-                  </div>
-                  {expandedCards.presentIllness ? (
-                    <FiChevronUp className="w-5 h-5 text-gray-600" />
-                  ) : (
-                    <FiChevronDown className="w-5 h-5 text-gray-600" />
-                  )}
-                </div>
-              }
-              className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-            >
-              {expandedCards.presentIllness && (
-                <div className="space-y-6">
-            {/* Onset and Course */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Onset (Radio) */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-3 text-lg font-semibold text-gray-800">
-                  <FiActivity className="w-5 h-5 text-violet-600" />
-                  <span>Onset</span>
-                </div>
-                <div className="flex flex-col md:flex-row md:flex-wrap gap-3">
-                  {[{v:'<1_week',t:'1. < 1 week'}, {v:'1w_1m',t:'2. 1 week – 1 month'}, {v:'>1_month',t:'3. > 1 month'}, {v:'not_known',t:'4. Not known'}]?.map(({v,t}) => (
-                    <label key={v} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
-                      formData.onset_duration === v ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
-                    }`}>
-                      <input
-                        type="radio"
-                name="onset_duration"
-                        value={v}
-                        checked={formData.onset_duration === v}
-                onChange={handleChange}
-                        className="h-4 w-4 text-primary-600"
-                      />
-                      <span className="font-medium">{t}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Course (Radio) */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-3 text-lg font-semibold text-gray-800">
-                  <FiList className="w-5 h-5 text-amber-600" />
-                  <span>Course</span>
-                </div>
-                <div className="flex flex-col md:flex-row md:flex-wrap gap-3">
-                  {['Continuous','Episodic','Fluctuating','Deteriorating','Improving']?.map((opt) => (
-                    <label key={opt} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
-                      formData.course === opt ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
-                    }`}>
-                      <input
-                        type="radio"
-                name="course"
-                        value={opt}
-                        checked={formData.course === opt}
-                onChange={handleChange}
-                        className="h-4 w-4 text-primary-600"
-              />
-                      <span className="font-medium">{opt}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Precipitating factor and Total duration */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3 text-lg font-semibold text-gray-800">
-                  <FiEdit3 className="w-5 h-5 text-rose-600" />
-                  <span>Precipitating factor</span>4
-                </div>
-            <Textarea
-              name="precipitating_factor"
-              value={formData.precipitating_factor}
-              onChange={handleChange}
-              rows={3}
-                  placeholder="Describe key precipitating factors"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-3 text-lg font-semibold text-gray-800">
-                  <FiClock className="w-5 h-5 text-amber-600" />
-                  <span>Total duration of illness</span>
-                </div>
-              <Input
-                name="illness_duration"
-                value={formData.illness_duration}
-                onChange={handleChange}
-                placeholder="e.g., 6 months"
-              />
-              </div>
-            </div>
-
-            {/* Current episode duration / Worsening since (free text) */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 text-lg font-semibold text-gray-800">
-                <FiClock className="w-5 h-5 text-indigo-600" />
-                <span>Current episode duration / Worsening since</span>
-              </div>
-              <Input
-                name="current_episode_since"
-                value={formData.current_episode_since}
-                onChange={handleChange}
-                placeholder="e.g., 2 weeks, since last month, progressively worsening"
-                type="text"
-              />
-            </div>
-          </div>
-              )}
-        </Card>
-
-          {/* Complaints / History of Presenting Illness (All checkboxes with Add option) */}
-          <Card
-            title={
-              <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => toggleCard('complaints')}>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-100 rounded-lg">
-                  <FiList className="w-6 h-6 text-amber-600" />
-            </div>
-                <span className="text-xl font-bold text-gray-900">Complaints / History of Presenting Illness</span>
-                </div>
-                {expandedCards.complaints ? (
-                  <FiChevronUp className="w-5 h-5 text-gray-600" />
-                ) : (
-                  <FiChevronDown className="w-5 h-5 text-gray-600" />
-                )}
-            </div>
-            }
-            className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-          >
-          {expandedCards.complaints && (
-          <div className="space-y-6">
-            <CheckboxGroup label="Mood" name="mood" value={formData.mood} onChange={handleChange} options={[ 'Anxious','Sad','Cheerful','Agitated','Fearful','Irritable' ]} />
-            <CheckboxGroup label="Behaviour" name="behaviour" value={formData.behaviour} onChange={handleChange} options={[ 'Suspiciousness','Talking/Smiling to self','Hallucinatory behaviour','Increased goal-directed activity','Compulsions','Apathy','Anhedonia','Avolution','Stupor','Posturing','Stereotypy','Ambitendency','Disinhibition','Impulsivity','Anger outbursts','Suicide/self-harm attempts' ]} />
-            <CheckboxGroup label="Speech" name="speech" value={formData.speech} onChange={handleChange} options={[ 'Irrelevant','Incoherent','Pressure','Alogia','Mutism' ]} />
-            <CheckboxGroup label="Thought" name="thought" value={formData.thought} onChange={handleChange} options={[ 'Reference','Persecution','Grandiose','Love Infidelity','Bizarre','Pessimism','Worthlessness','Guilt','Poverty','Nihilism','Hypochondriasis','Wish to die','Active suicidal ideation','Plans','Worries','Obsessions','Phobias','Panic attacks' ]} />
-            <CheckboxGroup label="Perception" name="perception" value={formData.perception} onChange={handleChange} options={[ 'Hallucination - Auditory','Hallucination - Visual','Hallucination - Tactile','Hallucination - Olfactory','Passivity','Depersonalization','Derealization' ]} />
-            <CheckboxGroup label="Somatic" name="somatic" value={formData.somatic} onChange={handleChange} options={[ 'Pains','Numbness','Weakness','Fatigue','Tremors','Palpitations','Dyspnoea','Dizziness' ]} />
-            <CheckboxGroup label="Bio-functions" name="bio_functions" value={formData.bio_functions} onChange={handleChange} options={[ 'Sleep','Appetite','Bowel/Bladder','Self-care' ]} />
-            <CheckboxGroup label="Adjustment" name="adjustment" value={formData.adjustment} onChange={handleChange} options={[ 'Work output','Socialization' ]} />
-            <CheckboxGroup label="Cognitive function" name="cognitive_function" value={formData.cognitive_function} onChange={handleChange} options={[ 'Disorientation','Inattention','Impaired Memory','Intelligence' ]} />
-            <CheckboxGroup label="Fits" name="fits" value={formData.fits} onChange={handleChange} options={[ 'Epileptic','Dissociative','Mixed','Not clear' ]} />
-            <CheckboxGroup label="Sexual problem" name="sexual_problem" value={formData.sexual_problem} onChange={handleChange} options={[ 'Dhat','Poor erection','Early ejaculation','Decreased desire','Perversion','Homosexuality','Gender dysphoria' ]} />
-            <CheckboxGroup label="Substance Use" name="substance_use" value={formData.substance_use} onChange={handleChange} options={[ 'Alcohol','Opioid','Cannabis','Benzodiazepines','Tobacco' ]} />
-          </div>
-          )}
-        </Card>
-
-        {/* Mental State Examination */}
-          <Card
-            title={
-              <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => toggleCard('mse')}>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-violet-100 rounded-lg">
-                  <FiActivity className="w-6 h-6 text-violet-600" />
-                </div>
-                <span className="text-xl font-bold text-gray-900">Mental State Examination (MSE)</span>
-                </div>
-                {expandedCards.mse ? (
-                  <FiChevronUp className="w-5 h-5 text-gray-600" />
-                ) : (
-                  <FiChevronDown className="w-5 h-5 text-gray-600" />
-                )}
-              </div>
-            }
-            className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-          >
-          {expandedCards.mse && (
-          <div className="space-y-6">
-            <CheckboxGroup label="Behaviour" name="mse_behaviour" value={formData.mse_behaviour} onChange={handleChange} options={[ 'Uncooperative','Unkempt','Fearful','Odd','Suspicious','Retarded','Excited','Aggressive','Apathetic','Catatonic','Demonstrative' ]} />
-            <CheckboxGroup label="Affect & Mood" name="mse_affect" value={formData.mse_affect} onChange={handleChange} options={[ 'Sad','Anxious','Elated','Inappropriate','Blunted','Labile' ]} />
-            <CheckboxGroup
-              label="Thought (Flow, Form, Content)"
-              name="mse_thought"
-              value={formData.mse_thought}
-              onChange={handleChange}
-              options={[ 'Depressive','Suicidal','Obsessions','Hypochondriacal','Preoccupations','Worries' ]}
-              rightInlineExtra={
-                <Input
-              name="mse_delusions"
-                  value={formData.mse_delusions}
-                  onChange={handleChange}
-                  placeholder="Delusions / Ideas of (optional)"
-                  className="max-w-xs"
-                />
-              }
-            />
-            <CheckboxGroup label="Perception" name="mse_perception" value={formData.mse_perception} onChange={handleChange} options={[ 'Hallucinations - Auditory','Hallucinations - Visual','Hallucinations - Tactile','Hallucinations - Olfactory','Illusions','Depersonalization','Derealization' ]} />
-            <CheckboxGroup label="Cognitive functions" name="mse_cognitive_function" value={formData.mse_cognitive_function} onChange={handleChange} options={[ 'Impaired','Not impaired' ]} />
-          </div>
-          )}
-        </Card>
-
-          {/* Additional History (checkbox-based) */}
-          <Card
-            title={
-              <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => toggleCard('additionalHistory')}>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-100 rounded-lg">
-                  <FiCheckSquare className="w-6 h-6 text-emerald-600" />
-                </div>
-                <span className="text-xl font-bold text-gray-900">Additional History</span>
-                </div>
-                {expandedCards.additionalHistory ? (
-                  <FiChevronUp className="w-5 h-5 text-gray-600" />
-                ) : (
-                  <FiChevronDown className="w-5 h-5 text-gray-600" />
-                )}
-              </div>
-            }
-            className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-          >
-          {expandedCards.additionalHistory && (
-          <div className="space-y-6">
-            <CheckboxGroup label="Bio-Functions (Sleep, Appetite, etc.)" name="bio_functions" value={formData.bio_functions} onChange={handleChange} options={[ 'Sleep','Appetite','Bowel/Bladder','Self-care' ]} />
-            <CheckboxGroup label="Substance Use" name="substance_use" value={formData.substance_use} onChange={handleChange} options={[ 'Alcohol','Opioid','Cannabis','Benzodiazepines','Tobacco' ]} />
-            <CheckboxGroup label="Past Psychiatric History" name="past_history" value={Array.isArray(formData.past_history) ? formData.past_history : []} onChange={handleChange} options={[]} />
-            <CheckboxGroup label="Family History" name="family_history" value={Array.isArray(formData.family_history) ? formData.family_history : []} onChange={handleChange} options={[]} />
-            <CheckboxGroup label="Associated Medical/Surgical Illness" name="associated_medical_surgical" value={formData.associated_medical_surgical} onChange={handleChange} options={[ 'Hypertension','Diabetes','Dyslipidemia','Thyroid dysfunction' ]} />
-          </div>
-          )}
-        </Card>
-
-        {/* General Physical Examination */}
-          <Card
-            title={
-              <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => toggleCard('gpe')}>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-rose-100 rounded-lg">
-                  <FiHeart className="w-6 h-6 text-rose-600" />
-                </div>
-                <span className="text-xl font-bold text-gray-900">General Physical Examination</span>
-                </div>
-                {expandedCards.gpe ? (
-                  <FiChevronUp className="w-5 h-5 text-gray-600" />
-                ) : (
-                  <FiChevronDown className="w-5 h-5 text-gray-600" />
-                )}
-              </div>
-            }
-            className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-          >
-          {expandedCards.gpe && (
-          <div className="space-y-6">
-          <Textarea
-            label="GPE Findings"
-            name="gpe"
-            value={formData.gpe}
-            onChange={handleChange}
-            placeholder="BP, Pulse, Weight, BMI, General appearance, Systemic examination..."
-            rows={4}
-          />
-          </div>
-          )}
-        </Card>
-
-        {/* Diagnosis & Management */}
-          <Card
-            title={
-              <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => toggleCard('diagnosis')}>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-cyan-100 rounded-lg">
-                  <FiFileText className="w-6 h-6 text-cyan-600" />
-                </div>
-                <span className="text-xl font-bold text-gray-900">Diagnosis & Management</span>
-                </div>
-                {expandedCards.diagnosis ? (
-                  <FiChevronUp className="w-5 h-5 text-gray-600" />
-                ) : (
-                  <FiChevronDown className="w-5 h-5 text-gray-600" />
-                )}
-              </div>
-            }
-            className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-          >
-          {expandedCards.diagnosis && (
-          <div className="space-y-6">
-            <Textarea
-              label="Diagnosis"
-              name="diagnosis"
-              value={formData.diagnosis}
-              onChange={handleChange}
-              placeholder="Primary and secondary diagnoses..."
-              rows={3}
-              required
-            />
-
-            <ICD11CodeSelector
-              value={formData.icd_code}
-              onChange={handleChange}
-              error={errors.icd_code}
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Select
-                label="Case Severity"
-                name="case_severity"
-                value={formData.case_severity}
-                onChange={handleChange}
-                options={CASE_SEVERITY}
-                required
-              />
-
-              <Select
-                label="Doctor Decision"
-                name="doctor_decision"
-                value={formData.doctor_decision}
-                onChange={handleChange}
-                options={DOCTOR_DECISION}
-                required
-              />
-            </div>
-
-            <Textarea
-              label="Disposal & Referral"
-              name="disposal"
-              value={formData.disposal}
-              onChange={handleChange}
-              placeholder="Admission, discharge, follow-up..."
-              rows={2}
-            />
-
-            <Input
-              label="Workup Appointment"
-              type="date"
-              name="workup_appointment"
-              value={formData.workup_appointment}
-              onChange={handleChange}
-            />
-
-            <Textarea
-              label="Referred To"
-              name="referred_to"
-              value={formData.referred_to}
-              onChange={handleChange}
-              placeholder="Other departments or specialists..."
-              rows={2}
-            />
-          </div>
-          )}
-        </Card>
-                </div>
-              </div>
-            )}
-          </Card>
-
-          {/* Card 2: ADL File - Only shown when complex case is selected */}
-          {showADLStep && (
-            <Card
-              title={
-                <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => toggleCard('adl')}>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-100 rounded-lg">
-                      <FiFolder className="w-6 h-6 text-purple-600" />
-                    </div>
-                    <span className="text-xl font-bold text-gray-900">ADL File</span>
-                  </div>
-                  {expandedCards.adl ? (
-                    <FiChevronUp className="w-5 h-5 text-gray-600" />
-                  ) : (
-                    <FiChevronDown className="w-5 h-5 text-gray-600" />
-                  )}
-                </div>
-              }
-              className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-            >
-              {expandedCards.adl && (
-                <div className="space-y-6">
-                  {/* Multiple Informants */}
-                  <Card title="Informants" className="mb-8 shadow-lg border border-gray-200 bg-gray-50">
-              <div className="space-y-4">
-                {(formData.informants || [{ relationship: '', name: '', reliability: '' }])?.map((informant, index) => (
-                  <div key={index} className="border-b pb-4 last:border-b-0 space-y-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-gray-700">Informant {index + 1}</h4>
-                      {(formData.informants || []).length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const newInformants = (formData.informants || []).filter((_, i) => i !== index);
-                            setFormData(prev => ({ ...prev, informants: newInformants.length > 0 ? newInformants : [{ relationship: '', name: '', reliability: '' }] }));
-                          }}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <FiX className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Input
-                        label="Relationship"
-                        value={informant.relationship}
-                        onChange={(e) => {
-                          const newInformants = [...formData.informants];
-                          newInformants[index].relationship = e.target.value;
-                          setFormData(prev => ({ ...prev, informants: newInformants }));
-                        }}
-                        placeholder="e.g., Father, Mother, Spouse"
-                      />
-                      <Input
-                        label="Name"
-                        value={informant.name}
-                        onChange={(e) => {
-                          const newInformants = [...formData.informants];
-                          newInformants[index].name = e.target.value;
-                          setFormData(prev => ({ ...prev, informants: newInformants }));
-                        }}
-                        placeholder="Full name"
-                      />
-                      <Input
-                        label="Reliability / Ability to report, familiarity with patient"
-                        value={informant.reliability}
-                        onChange={(e) => {
-                          const newInformants = [...formData.informants];
-                          newInformants[index].reliability = e.target.value;
-                          setFormData(prev => ({ ...prev, informants: newInformants }));
-                        }}
-                        placeholder="Assessment of reliability"
-                      />
-                    </div>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setFormData(prev => ({
-                      ...prev,
-                      informants: [...prev.informants, { relationship: '', name: '', reliability: '' }]
-                    }));
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <FiPlus className="w-4 h-4" />
-                  Add Informant
-                </Button>
-                </div>
-            </Card>
-
-            {/* Complaints and Duration */}
-            <Card title="Complaints and Duration" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <div className="space-y-6">
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">Chief Complaints as per patient</h4>
-                  {(formData.complaints_patient || [{ complaint: '', duration: '' }])?.map((complaint, index) => (
-                    <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-3">
-                      <div className="md:col-span-2">
-                        <Input
-                          label={`Complaint ${index + 1}`}
-                          value={complaint.complaint}
-                          onChange={(e) => {
-                            const newComplaints = [...formData.complaints_patient];
-                            newComplaints[index].complaint = e.target.value;
-                            setFormData(prev => ({ ...prev, complaints_patient: newComplaints }));
-                          }}
-                          placeholder="Enter complaint"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <Input
-                          label="Duration"
-                          value={complaint.duration}
-                          onChange={(e) => {
-                            const newComplaints = [...formData.complaints_patient];
-                            newComplaints[index].duration = e.target.value;
-                            setFormData(prev => ({ ...prev, complaints_patient: newComplaints }));
-                          }}
-                          placeholder="e.g., 6 months"
-                        />
-                      </div>
-                      <div className="flex items-end">
-                        {(formData.complaints_patient || []).length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              const newComplaints = (formData.complaints_patient || []).filter((_, i) => i !== index);
-                              setFormData(prev => ({ ...prev, complaints_patient: newComplaints.length > 0 ? newComplaints : [{ complaint: '', duration: '' }] }));
-                            }}
-                            className="text-red-600"
-                          >
-                            <FiX />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setFormData(prev => ({
-                        ...prev,
-                        complaints_patient: [...prev.complaints_patient, { complaint: '', duration: '' }]
-                      }));
-                    }}
-                    className="flex items-center gap-2 mb-6"
-                  >
-                    <FiPlus className="w-4 h-4" />
-                    Add Complaint
-                  </Button>
-                </div>
-
-                <div className="border-t pt-6">
-                  <h4 className="font-semibold text-gray-800 mb-3">Chief Complaints as per informant</h4>
-                  {(formData.complaints_informant || [{ complaint: '', duration: '' }])?.map((complaint, index) => (
-                    <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-3">
-                      <div className="md:col-span-2">
-                        <Input
-                          label={`Complaint ${index + 1}`}
-                          value={complaint.complaint}
-                          onChange={(e) => {
-                            const newComplaints = [...formData.complaints_informant];
-                            newComplaints[index].complaint = e.target.value;
-                            setFormData(prev => ({ ...prev, complaints_informant: newComplaints }));
-                          }}
-                          placeholder="Enter complaint"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <Input
-                          label="Duration"
-                          value={complaint.duration}
-                          onChange={(e) => {
-                            const newComplaints = [...formData.complaints_informant];
-                            newComplaints[index].duration = e.target.value;
-                            setFormData(prev => ({ ...prev, complaints_informant: newComplaints }));
-                          }}
-                          placeholder="e.g., 6 months"
-                        />
-                      </div>
-                      <div className="flex items-end">
-                        {(formData.complaints_informant || []).length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              const newComplaints = (formData.complaints_informant || []).filter((_, i) => i !== index);
-                              setFormData(prev => ({ ...prev, complaints_informant: newComplaints.length > 0 ? newComplaints : [{ complaint: '', duration: '' }] }));
-                            }}
-                            className="text-red-600"
-                          >
-                            <FiX />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setFormData(prev => ({
-                        ...prev,
-                        complaints_informant: [...prev.complaints_informant, { complaint: '', duration: '' }]
-                      }));
-                    }}
-                    className="flex items-center gap-2"
-                  >
-                    <FiPlus className="w-4 h-4" />
-                    Add Complaint
-                  </Button>
-                </div>
-              </div>
-            </Card>
-
-            {/* History of Present Illness - Expanded */}
-            <Card title="History of Present Illness" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Should Include:</h3>
+              {expandedCards.clinicalProforma && (
+                <div className="space-y-8">
+                  {/* Informant Section */}
                   <div className="space-y-4">
-                    <Textarea
-                      label="A. Spontaneous narrative account"
-                      name="history_narrative"
-                      value={formData.history_narrative}
-                      onChange={handleChange}
-                      placeholder="Patient's spontaneous account of the illness..."
-                      rows={4}
-                    />
-                    
-                    <Textarea
-                      label="B. Specific enquiry about mood, sleep, appetite, anxiety symptoms, suicidal risk, social interaction, job efficiency, personal hygiene, memory, etc. Enquiry from informants regarding delusions, hallucinations in psychotic patients"
-                      name="history_specific_enquiry"
-                      value={formData.history_specific_enquiry}
-                      onChange={handleChange}
-                      placeholder="Detailed specific enquiries..."
-                      rows={5}
-                    />
-                    
-                    <Textarea
-                      label="C. Intake of dependence producing and prescription drugs"
-                      name="history_drug_intake"
-                      value={formData.history_drug_intake}
-                      onChange={handleChange}
-                      placeholder="List all dependence producing substances and prescription drugs..."
-                      rows={3}
-                    />
-                    
-                    <div className="border-t pt-4">
-                      <h4 className="font-semibold text-gray-800 mb-3">D. Treatment received so far in this illness</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input
-                          label="Place"
-                          name="history_treatment_place"
-                          value={formData.history_treatment_place}
-                          onChange={handleChange}
-                          placeholder="Location of treatment"
-                        />
-                        <Input
-                          label="Dates"
-                          name="history_treatment_dates"
-                          value={formData.history_treatment_dates}
-                          onChange={handleChange}
-                          placeholder="Treatment dates"
-                        />
-                        <Textarea
-                          label="Drugs"
-                          name="history_treatment_drugs"
-                          value={formData.history_treatment_drugs}
-                          onChange={handleChange}
-                          placeholder="Medications administered"
-                          rows={2}
-                          className="md:col-span-2"
-                        />
-                        <Textarea
-                          label="Response"
-                          name="history_treatment_response"
-                          value={formData.history_treatment_response}
-                          onChange={handleChange}
-                          placeholder="Patient's response to treatment"
-                          rows={2}
-                          className="md:col-span-2"
-                        />
+                    <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+                      <div className="p-2 bg-sky-100 rounded-lg">
+                        <FiUser className="w-6 h-6 text-sky-600" />
                       </div>
+                      <span className="text-xl font-bold text-gray-900">Informant</span>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            {/* Past History - Detailed */}
-            <Card title="Past History" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <div className="space-y-6">
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">A. Medical</h4>
-            <Textarea
-                    label="Including injuries and operations"
-                    name="past_history_medical"
-                    value={formData.past_history_medical}
-              onChange={handleChange}
-                    placeholder="Past medical history, injuries, operations..."
-                    rows={3}
-                  />
-                </div>
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-800 mb-3">B. Psychiatric</h4>
-                  <div className="space-y-4">
-                    <Input
-                      label="Dates"
-                      name="past_history_psychiatric_dates"
-                      value={formData.past_history_psychiatric_dates}
-                      onChange={handleChange}
-                      placeholder="Dates of previous psychiatric illness/treatment"
-                    />
-                    <Textarea
-                      label="Diagnosis or salient features"
-                      name="past_history_psychiatric_diagnosis"
-                      value={formData.past_history_psychiatric_diagnosis}
-                      onChange={handleChange}
-                      placeholder="Previous psychiatric diagnoses or key features"
-              rows={2}
-            />
-                    <Textarea
-                      label="Treatment"
-                      name="past_history_psychiatric_treatment"
-                      value={formData.past_history_psychiatric_treatment}
-                      onChange={handleChange}
-                      placeholder="Treatment received"
-                      rows={2}
-                    />
-                    <Textarea
-                      label="Interim history of previous psychiatric illness"
-                      name="past_history_psychiatric_interim"
-                      value={formData.past_history_psychiatric_interim}
-                      onChange={handleChange}
-                      placeholder="History between episodes"
-                      rows={2}
-                    />
-                    <Textarea
-                      label="Specific enquiry into completeness of recovery and socialization/personal care in the interim period"
-                      name="past_history_psychiatric_recovery"
-                      value={formData.past_history_psychiatric_recovery}
-                      onChange={handleChange}
-                      placeholder="Recovery assessment, socialization, personal care during interim"
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            {/* Family History - Detailed */}
-            <Card title="Family History" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <div className="space-y-6">
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-4">Father</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-                      label="Age"
-                      value={formData.family_history_father_age}
-                      onChange={(e) => setFormData(prev => ({ ...prev, family_history_father_age: e.target.value }))}
-                      placeholder="Age"
-                    />
-                    <Input
-                      label="Education"
-                      value={formData.family_history_father_education}
-                      onChange={(e) => setFormData(prev => ({ ...prev, family_history_father_education: e.target.value }))}
-                      placeholder="Education level"
-                    />
-                    <Input
-                      label="Occupation"
-                      value={formData.family_history_father_occupation}
-                      onChange={(e) => setFormData(prev => ({ ...prev, family_history_father_occupation: e.target.value }))}
-                      placeholder="Occupation"
-                    />
-                    <Textarea
-                      label="General personality and relationship with patient"
-                      value={formData.family_history_father_personality}
-                      onChange={(e) => setFormData(prev => ({ ...prev, family_history_father_personality: e.target.value }))}
-                      placeholder="Personality and relationship details"
-                      rows={2}
-                      className="md:col-span-2"
-                    />
-                    <div className="flex items-center gap-2 md:col-span-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.family_history_father_deceased}
-                        onChange={(e) => setFormData(prev => ({ ...prev, family_history_father_deceased: e.target.checked }))}
-                        className="h-4 w-4 text-primary-600 rounded"
-                      />
-                      <label className="text-sm text-gray-700">Deceased</label>
-                    </div>
-                    {formData.family_history_father_deceased && (
-                      <>
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <Input
-                          label="Age at death"
-                          value={formData.family_history_father_death_age}
-                          onChange={(e) => setFormData(prev => ({ ...prev, family_history_father_death_age: e.target.value }))}
-                          placeholder="Age"
+                          label="Date"
+                          name="date"
+                          value={fullPatientData?.data?.patient?.date || ''}
+                          onChange={handleChange}
+                          defaultToday={true}
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
                         />
                         <Input
-                          label="Date of death"
-              type="date"
-                          value={formData.family_history_father_death_date}
-                          onChange={(e) => setFormData(prev => ({ ...prev, family_history_father_death_date: e.target.value }))}
+                          label="Patient Name"
+                          value={fullPatientData?.data?.patient?.name || ''}
+                          onChange={handleChange}
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
                         />
-                        <Textarea
-                          label="Cause of death"
-                          value={formData.family_history_father_death_cause}
-                          onChange={(e) => setFormData(prev => ({ ...prev, family_history_father_death_cause: e.target.value }))}
-                          placeholder="Cause of death"
-                          rows={2}
-                          className="md:col-span-2"
-                        />
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="border-t pt-6">
-                  <h4 className="font-semibold text-gray-800 mb-4">Mother</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input
-                      label="Age"
-                      value={formData.family_history_mother_age}
-                      onChange={(e) => setFormData(prev => ({ ...prev, family_history_mother_age: e.target.value }))}
-                      placeholder="Age"
-                    />
-                    <Input
-                      label="Education"
-                      value={formData.family_history_mother_education}
-                      onChange={(e) => setFormData(prev => ({ ...prev, family_history_mother_education: e.target.value }))}
-                      placeholder="Education level"
-                    />
-                    <Input
-                      label="Occupation"
-                      value={formData.family_history_mother_occupation}
-                      onChange={(e) => setFormData(prev => ({ ...prev, family_history_mother_occupation: e.target.value }))}
-                      placeholder="Occupation"
-                    />
-                    <Textarea
-                      label="General personality and relationship with patient"
-                      value={formData.family_history_mother_personality}
-                      onChange={(e) => setFormData(prev => ({ ...prev, family_history_mother_personality: e.target.value }))}
-                      placeholder="Personality and relationship details"
-                      rows={2}
-                      className="md:col-span-2"
-                    />
-                    <div className="flex items-center gap-2 md:col-span-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.family_history_mother_deceased}
-                        onChange={(e) => setFormData(prev => ({ ...prev, family_history_mother_deceased: e.target.checked }))}
-                        className="h-4 w-4 text-primary-600 rounded"
-                      />
-                      <label className="text-sm text-gray-700">Deceased</label>
-                    </div>
-                    {formData.family_history_mother_deceased && (
-                      <>
-                        <Input
-                          label="Age at death"
-                          value={formData.family_history_mother_death_age}
-                          onChange={(e) => setFormData(prev => ({ ...prev, family_history_mother_death_age: e.target.value }))}
-                          placeholder="Age"
-                        />
-                        <Input
-                          label="Date of death"
-                          type="date"
-                          value={formData.family_history_mother_death_date}
-                          onChange={(e) => setFormData(prev => ({ ...prev, family_history_mother_death_date: e.target.value }))}
-                        />
-                        <Textarea
-                          label="Cause of death"
-                          value={formData.family_history_mother_death_cause}
-                          onChange={(e) => setFormData(prev => ({ ...prev, family_history_mother_death_cause: e.target.value }))}
-                          placeholder="Cause of death"
-                          rows={2}
-                          className="md:col-span-2"
-                        />
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="border-t pt-6">
-                  <h4 className="font-semibold text-gray-800 mb-4">Siblings</h4>
-                  {(formData.family_history_siblings || [{ age: '', sex: '', education: '', occupation: '', marital_status: '' }])?.map((sibling, index) => (
-                    <div key={index} className="border-b pb-4 mb-4 last:border-b-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <h5 className="font-medium text-gray-700">Sibling {index + 1}</h5>
-                        {(formData.family_history_siblings || []).length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              const newSiblings = (formData.family_history_siblings || []).filter((_, i) => i !== index);
-                              setFormData(prev => ({ ...prev, family_history_siblings: newSiblings.length > 0 ? newSiblings : [{ age: '', sex: '', education: '', occupation: '', marital_status: '' }] }));
-                            }}
-                            className="text-red-600"
-                          >
-                            <FiX className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                         <Input
                           label="Age"
-                          value={sibling.age}
-                          onChange={(e) => {
-                            const newSiblings = [...formData.family_history_siblings];
-                            newSiblings[index].age = e.target.value;
-                            setFormData(prev => ({ ...prev, family_history_siblings: newSiblings }));
-                          }}
-                          placeholder="Age"
+                          value={fullPatientData?.data?.patient?.age || ''}
+                          onChange={handleChange}
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
                         />
-                        <Select
+                        <Input
                           label="Sex"
-                          value={sibling.sex}
-                          onChange={(e) => {
-                            const newSiblings = [...formData.family_history_siblings];
-                            newSiblings[index].sex = e.target.value;
-                            setFormData(prev => ({ ...prev, family_history_siblings: newSiblings }));
-                          }}
-                          options={[{ value: 'M', label: 'Male' }, { value: 'F', label: 'Female' }, { value: '', label: 'Select' }]}
+                          value={fullPatientData?.data?.patient?.sex || ''}
+                          onChange={handleChange}
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
                         />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3 text-lg font-semibold text-gray-800">
+                          <FiUser className="w-5 h-5 text-sky-600" />
+                          <span>Informant Present/Absent</span>
+                        </div>
+                        <div className="flex flex-wrap gap-3">
+                          {[
+                            { v: true, t: 'Present' },
+                            { v: false, t: 'Absent' },
+                          ]?.map(({ v, t }) => (
+                            <label key={t} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${formData.informant_present === v ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
+                              }`}>
+                              <input
+                                type="radio"
+                                name="informant_present"
+                                checked={formData.informant_present === v}
+                                onChange={() => handleChange({ target: { name: 'informant_present', value: v } })}
+                                className="h-4 w-4 text-primary-600"
+                              />
+                              <span className="font-medium">{t}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3 text-lg font-semibold text-gray-800">
+                          <FiClipboard className="w-5 h-5 text-indigo-600" />
+                          <span>Nature of information</span>
+                        </div>
+                        <div className="flex flex-wrap gap-3">
+                          {['Reliable', 'Unreliable', 'Adequate', 'Inadequate']?.map((opt) => (
+                            <label key={opt} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${formData.nature_of_information === opt ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
+                              }`}>
+                              <input
+                                type="radio"
+                                name="nature_of_information"
+                                value={opt}
+                                checked={formData.nature_of_information === opt}
+                                onChange={handleChange}
+                                className="h-4 w-4 text-primary-600"
+                              />
+                              <span className="font-medium">{opt}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Present Illness Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+                      <div className="p-2 bg-amber-100 rounded-lg">
+                        <FiActivity className="w-6 h-6 text-amber-600" />
+                      </div>
+                      <span className="text-xl font-bold text-gray-900">Present Illness</span>
+                    </div>
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3 text-lg font-semibold text-gray-800">
+                            <FiActivity className="w-5 h-5 text-violet-600" />
+                            <span>Onset</span>
+                          </div>
+                          <div className="flex flex-col md:flex-row md:flex-wrap gap-3">
+                            {[{ v: '<1_week', t: '1. < 1 week' }, { v: '1w_1m', t: '2. 1 week – 1 month' }, { v: '>1_month', t: '3. > 1 month' }, { v: 'not_known', t: '4. Not known' }]?.map(({ v, t }) => (
+                              <label key={v} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${formData.onset_duration === v ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
+                                }`}>
+                                <input
+                                  type="radio"
+                                  name="onset_duration"
+                                  value={v}
+                                  checked={formData.onset_duration === v}
+                                  onChange={handleChange}
+                                  className="h-4 w-4 text-primary-600"
+                                />
+                                <span className="font-medium">{t}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3 text-lg font-semibold text-gray-800">
+                            <FiList className="w-5 h-5 text-amber-600" />
+                            <span>Course</span>
+                          </div>
+                          <div className="flex flex-col md:flex-row md:flex-wrap gap-3">
+                            {['Continuous', 'Episodic', 'Fluctuating', 'Deteriorating', 'Improving']?.map((opt) => (
+                              <label key={opt} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${formData.course === opt ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
+                                }`}>
+                                <input
+                                  type="radio"
+                                  name="course"
+                                  value={opt}
+                                  checked={formData.course === opt}
+                                  onChange={handleChange}
+                                  className="h-4 w-4 text-primary-600"
+                                />
+                                <span className="font-medium">{opt}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3 text-lg font-semibold text-gray-800">
+                            <FiEdit3 className="w-5 h-5 text-rose-600" />
+                            <span>Precipitating factor</span>
+                          </div>
+                          <Textarea
+                            name="precipitating_factor"
+                            value={formData.precipitating_factor}
+                            onChange={handleChange}
+                            rows={3}
+                            placeholder="Describe key precipitating factors"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3 text-lg font-semibold text-gray-800">
+                            <FiClock className="w-5 h-5 text-amber-600" />
+                            <span>Total duration of illness</span>
+                          </div>
+                          <Input
+                            name="illness_duration"
+                            value={formData.illness_duration}
+                            onChange={handleChange}
+                            placeholder="e.g., 6 months"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3 text-lg font-semibold text-gray-800">
+                          <FiClock className="w-5 h-5 text-indigo-600" />
+                          <span>Current episode duration / Worsening since</span>
+                        </div>
                         <Input
-                          label="Education"
-                          value={sibling.education}
-                          onChange={(e) => {
-                            const newSiblings = [...formData.family_history_siblings];
-                            newSiblings[index].education = e.target.value;
-                            setFormData(prev => ({ ...prev, family_history_siblings: newSiblings }));
-                          }}
-                          placeholder="Education"
+                          name="current_episode_since"
+                          value={formData.current_episode_since}
+                          onChange={handleChange}
+                          placeholder="e.g., 2 weeks, since last month, progressively worsening"
+                          type="text"
                         />
-                        <Input
-                          label="Occupation"
-                          value={sibling.occupation}
-                          onChange={(e) => {
-                            const newSiblings = [...formData.family_history_siblings];
-                            newSiblings[index].occupation = e.target.value;
-                            setFormData(prev => ({ ...prev, family_history_siblings: newSiblings }));
-                          }}
-                          placeholder="Occupation"
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Complaints / History of Presenting Illness Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+                      <div className="p-2 bg-amber-100 rounded-lg">
+                        <FiList className="w-6 h-6 text-amber-600" />
+                      </div>
+                      <span className="text-xl font-bold text-gray-900">Complaints / History of Presenting Illness</span>
+                    </div>
+                    <div className="space-y-6">
+                      <CheckboxGroup label="Mood" name="mood" value={formData.mood} onChange={handleChange} options={['Anxious', 'Sad', 'Cheerful', 'Agitated', 'Fearful', 'Irritable']} />
+                      <CheckboxGroup label="Behaviour" name="behaviour" value={formData.behaviour} onChange={handleChange} options={['Suspiciousness', 'Talking/Smiling to self', 'Hallucinatory behaviour', 'Increased goal-directed activity', 'Compulsions', 'Apathy', 'Anhedonia', 'Avolution', 'Stupor', 'Posturing', 'Stereotypy', 'Ambitendency', 'Disinhibition', 'Impulsivity', 'Anger outbursts', 'Suicide/self-harm attempts']} />
+                      <CheckboxGroup label="Speech" name="speech" value={formData.speech} onChange={handleChange} options={['Irrelevant', 'Incoherent', 'Pressure', 'Alogia', 'Mutism']} />
+                      <CheckboxGroup label="Thought" name="thought" value={formData.thought} onChange={handleChange} options={['Reference', 'Persecution', 'Grandiose', 'Love Infidelity', 'Bizarre', 'Pessimism', 'Worthlessness', 'Guilt', 'Poverty', 'Nihilism', 'Hypochondriasis', 'Wish to die', 'Active suicidal ideation', 'Plans', 'Worries', 'Obsessions', 'Phobias', 'Panic attacks']} />
+                      <CheckboxGroup label="Perception" name="perception" value={formData.perception} onChange={handleChange} options={['Hallucination - Auditory', 'Hallucination - Visual', 'Hallucination - Tactile', 'Hallucination - Olfactory', 'Passivity', 'Depersonalization', 'Derealization']} />
+                      <CheckboxGroup label="Somatic" name="somatic" value={formData.somatic} onChange={handleChange} options={['Pains', 'Numbness', 'Weakness', 'Fatigue', 'Tremors', 'Palpitations', 'Dyspnoea', 'Dizziness']} />
+                      <CheckboxGroup label="Bio-functions" name="bio_functions" value={formData.bio_functions} onChange={handleChange} options={['Sleep', 'Appetite', 'Bowel/Bladder', 'Self-care']} />
+                      <CheckboxGroup label="Adjustment" name="adjustment" value={formData.adjustment} onChange={handleChange} options={['Work output', 'Socialization']} />
+                      <CheckboxGroup label="Cognitive function" name="cognitive_function" value={formData.cognitive_function} onChange={handleChange} options={['Disorientation', 'Inattention', 'Impaired Memory', 'Intelligence']} />
+                      <CheckboxGroup label="Fits" name="fits" value={formData.fits} onChange={handleChange} options={['Epileptic', 'Dissociative', 'Mixed', 'Not clear']} />
+                      <CheckboxGroup label="Sexual problem" name="sexual_problem" value={formData.sexual_problem} onChange={handleChange} options={['Dhat', 'Poor erection', 'Early ejaculation', 'Decreased desire', 'Perversion', 'Homosexuality', 'Gender dysphoria']} />
+                      <CheckboxGroup label="Substance Use" name="substance_use" value={formData.substance_use} onChange={handleChange} options={['Alcohol', 'Opioid', 'Cannabis', 'Benzodiazepines', 'Tobacco']} />
+                    </div>
+                  </div>
+
+                  {/* Mental State Examination Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+                      <div className="p-2 bg-violet-100 rounded-lg">
+                        <FiActivity className="w-6 h-6 text-violet-600" />
+                      </div>
+                      <span className="text-xl font-bold text-gray-900">Mental State Examination (MSE)</span>
+                    </div>
+                    <div className="space-y-6">
+                      <CheckboxGroup label="Behaviour" name="mse_behaviour" value={formData.mse_behaviour} onChange={handleChange} options={['Uncooperative', 'Unkempt', 'Fearful', 'Odd', 'Suspicious', 'Retarded', 'Excited', 'Aggressive', 'Apathetic', 'Catatonic', 'Demonstrative']} />
+                      <CheckboxGroup label="Affect & Mood" name="mse_affect" value={formData.mse_affect} onChange={handleChange} options={['Sad', 'Anxious', 'Elated', 'Inappropriate', 'Blunted', 'Labile']} />
+                      <CheckboxGroup
+                        label="Thought (Flow, Form, Content)"
+                        name="mse_thought"
+                        value={formData.mse_thought}
+                        onChange={handleChange}
+                        options={['Depressive', 'Suicidal', 'Obsessions', 'Hypochondriacal', 'Preoccupations', 'Worries']}
+                        rightInlineExtra={
+                          <Input
+                            name="mse_delusions"
+                            value={formData.mse_delusions}
+                            onChange={handleChange}
+                            placeholder="Delusions / Ideas of (optional)"
+                            className="max-w-xs"
+                          />
+                        }
+                      />
+                      <CheckboxGroup label="Perception" name="mse_perception" value={formData.mse_perception} onChange={handleChange} options={['Hallucinations - Auditory', 'Hallucinations - Visual', 'Hallucinations - Tactile', 'Hallucinations - Olfactory', 'Illusions', 'Depersonalization', 'Derealization']} />
+                      <CheckboxGroup label="Cognitive functions" name="mse_cognitive_function" value={formData.mse_cognitive_function} onChange={handleChange} options={['Impaired', 'Not impaired']} />
+                    </div>
+                  </div>
+
+                  {/* Additional History Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+                      <div className="p-2 bg-emerald-100 rounded-lg">
+                        <FiCheckSquare className="w-6 h-6 text-emerald-600" />
+                      </div>
+                      <span className="text-xl font-bold text-gray-900">Additional History</span>
+                    </div>
+                    <div className="space-y-6">
+                      <CheckboxGroup label="Bio-Functions (Sleep, Appetite, etc.)" name="bio_functions" value={formData.bio_functions} onChange={handleChange} options={['Sleep', 'Appetite', 'Bowel/Bladder', 'Self-care']} />
+                      <CheckboxGroup label="Substance Use" name="substance_use" value={formData.substance_use} onChange={handleChange} options={['Alcohol', 'Opioid', 'Cannabis', 'Benzodiazepines', 'Tobacco']} />
+                      <CheckboxGroup label="Past Psychiatric History" name="past_history" value={Array.isArray(formData.past_history) ? formData.past_history : []} onChange={handleChange} options={[]} />
+                      <CheckboxGroup label="Family History" name="family_history" value={Array.isArray(formData.family_history) ? formData.family_history : []} onChange={handleChange} options={[]} />
+                      <CheckboxGroup label="Associated Medical/Surgical Illness" name="associated_medical_surgical" value={formData.associated_medical_surgical} onChange={handleChange} options={['Hypertension', 'Diabetes', 'Dyslipidemia', 'Thyroid dysfunction']} />
+                    </div>
+                  </div>
+
+                  {/* General Physical Examination Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+                      <div className="p-2 bg-rose-100 rounded-lg">
+                        <FiHeart className="w-6 h-6 text-rose-600" />
+                      </div>
+                      <span className="text-xl font-bold text-gray-900">General Physical Examination</span>
+                    </div>
+                    <div className="space-y-6">
+                      <Textarea
+                        label="GPE Findings"
+                        name="gpe"
+                        value={formData.gpe}
+                        onChange={handleChange}
+                        placeholder="BP, Pulse, Weight, BMI, General appearance, Systemic examination..."
+                        rows={4}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Diagnosis & Management Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+                      <div className="p-2 bg-cyan-100 rounded-lg">
+                        <FiFileText className="w-6 h-6 text-cyan-600" />
+                      </div>
+                      <span className="text-xl font-bold text-gray-900">Diagnosis & Management</span>
+                    </div>
+                    <div className="space-y-6">
+                      <Textarea
+                        label="Diagnosis"
+                        name="diagnosis"
+                        value={formData.diagnosis}
+                        onChange={handleChange}
+                        placeholder="Primary and secondary diagnoses..."
+                        rows={3}
+                        required
+                      />
+                      <ICD11CodeSelector
+                        value={formData.icd_code}
+                        onChange={handleChange}
+                        error={errors.icd_code}
+                      />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Select
+                          label="Case Severity"
+                          name="case_severity"
+                          value={formData.case_severity}
+                          onChange={handleChange}
+                          options={CASE_SEVERITY}
+                          required
                         />
                         <Select
-                          label="Marital Status"
-                          value={sibling.marital_status}
-                          onChange={(e) => {
-                            const newSiblings = [...formData.family_history_siblings];
-                            newSiblings[index].marital_status = e.target.value;
-                            setFormData(prev => ({ ...prev, family_history_siblings: newSiblings }));
-                          }}
-                          options={[{ value: 'Single', label: 'Single' }, { value: 'Married', label: 'Married' }, { value: 'Divorced', label: 'Divorced' }, { value: 'Widowed', label: 'Widowed' }, { value: '', label: 'Select' }]}
+                          label="Doctor Decision"
+                          name="doctor_decision"
+                          value={formData.doctor_decision}
+                          onChange={handleChange}
+                          options={DOCTOR_DECISION}
+                          required
                         />
                       </div>
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setFormData(prev => ({
-                        ...prev,
-                        family_history_siblings: [...prev.family_history_siblings, { age: '', sex: '', education: '', occupation: '', marital_status: '' }]
-                      }));
-                    }}
-                    className="flex items-center gap-2"
-                  >
-                    <FiPlus className="w-4 h-4" />
-                    Add Sibling
-                  </Button>
-                </div>
-              </div>
-            </Card>
-
-            {/* General Home Situation and Early Development */}
-            <Card title="General Home Situation and Early Development" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <div className="space-y-6">
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">General home situation</h4>
-                  <div className="space-y-4">
-                    <Textarea
-                      label="Patient's childhood"
-                      name="home_situation_childhood"
-                      value={formData.home_situation_childhood}
-                      onChange={handleChange}
-                      placeholder="Childhood environment and experiences..."
-                      rows={3}
-                    />
-                    <Textarea
-                      label="Relationship between parents"
-                      name="home_situation_parents_relationship"
-                      value={formData.home_situation_parents_relationship}
-                      onChange={handleChange}
-                      placeholder="Parental relationship..."
-                      rows={2}
-                    />
-                    <Textarea
-                      label="Socio-economic status"
-                      name="home_situation_socioeconomic"
-                      value={formData.home_situation_socioeconomic}
-                      onChange={handleChange}
-                      placeholder="Socio-economic background..."
-                      rows={2}
-                    />
-                    <Textarea
-                      label="Inter-personal relationship"
-                      name="home_situation_interpersonal"
-                      value={formData.home_situation_interpersonal}
-                      onChange={handleChange}
-                      placeholder="Interpersonal dynamics in the family..."
-                      rows={2}
-                    />
-                  </div>
-                </div>
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-800 mb-3">Personal history</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input
-                      label="Date and place of birth"
-                      name="personal_birth_date"
-                      value={formData.personal_birth_date}
-                      onChange={handleChange}
-                      placeholder="Birth date"
-                    />
-                    <Input
-                      name="personal_birth_place"
-                      value={formData.personal_birth_place}
-                      onChange={handleChange}
-                      placeholder="Birth place"
-                    />
-                    <Select
-                      label="Home or hospital delivery"
-                      name="personal_delivery_type"
-                      value={formData.personal_delivery_type}
-                      onChange={handleChange}
-                      options={[{ value: '', label: 'Select' }, { value: 'Home', label: 'Home' }, { value: 'Hospital', label: 'Hospital' }]}
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                    <Textarea
-                      label="Prenatal complications, if any"
-                      name="personal_complications_prenatal"
-                      value={formData.personal_complications_prenatal}
-                      onChange={handleChange}
-                      placeholder="Prenatal complications..."
-                      rows={2}
-                    />
-                    <Textarea
-                      label="Natal complications, if any"
-                      name="personal_complications_natal"
-                      value={formData.personal_complications_natal}
-                      onChange={handleChange}
-                      placeholder="Natal complications..."
-                      rows={2}
-                    />
-                    <Textarea
-                      label="Postnatal complications, if any"
-                      name="personal_complications_postnatal"
-                      value={formData.personal_complications_postnatal}
-                      onChange={handleChange}
-                      placeholder="Postnatal complications..."
-                      rows={2}
-                    />
-                  </div>
-                </div>
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-800 mb-3">Early development</h4>
-                  <div className="space-y-4">
-                    <Input
-                      label="Age at weaning"
-                      name="development_weaning_age"
-                      value={formData.development_weaning_age}
-                      onChange={handleChange}
-                      placeholder="Age"
-                    />
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Input
-                        label="Age at first words"
-                        name="development_first_words"
-                        value={formData.development_first_words}
+                      <Textarea
+                        label="Disposal & Referral"
+                        name="disposal"
+                        value={formData.disposal}
                         onChange={handleChange}
-                        placeholder="Age"
+                        placeholder="Admission, discharge, follow-up..."
+                        rows={2}
                       />
                       <Input
-                        label="Age at three-word sentences"
-                        name="development_three_words"
-                        value={formData.development_three_words}
+                        label="Workup Appointment"
+                        type="date"
+                        name="workup_appointment"
+                        value={formData.workup_appointment}
                         onChange={handleChange}
-                        placeholder="Age"
                       />
-                      <Input
-                        label="Age at walking"
-                        name="development_walking"
-                        value={formData.development_walking}
+                      <Textarea
+                        label="Referred To"
+                        name="referred_to"
+                        value={formData.referred_to}
                         onChange={handleChange}
-                        placeholder="Age"
-                      />
-                    </div>
-                    <Textarea
-                      label="Neurotic traits"
-                      name="development_neurotic_traits"
-                      value={formData.development_neurotic_traits}
-                      onChange={handleChange}
-                      placeholder="Neurotic traits observed..."
-                      rows={2}
-                    />
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Textarea
-                        label="Nail-biting"
-                        name="development_nail_biting"
-                        value={formData.development_nail_biting}
-                        onChange={handleChange}
-                        placeholder="History..."
-                        rows={2}
-                      />
-                      <Textarea
-                        label="Bedwetting"
-                        name="development_bedwetting"
-                        value={formData.development_bedwetting}
-                        onChange={handleChange}
-                        placeholder="History..."
-                        rows={2}
-                      />
-                      <Textarea
-                        label="Phobias"
-                        name="development_phobias"
-                        value={formData.development_phobias}
-                        onChange={handleChange}
-                        placeholder="Phobias..."
-                        rows={2}
-                      />
-                    </div>
-                    <Textarea
-                      label="Illness and injuries in childhood"
-                      name="development_childhood_illness"
-                      value={formData.development_childhood_illness}
-                      onChange={handleChange}
-                      placeholder="Childhood illnesses and injuries..."
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            {/* Educational History */}
-            <Card title="Educational History" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <div className="space-y-4">
-                <Input
-                  label="Age at starting schooling"
-                  name="education_start_age"
-                  value={formData.education_start_age}
-                  onChange={handleChange}
-                  placeholder="Age"
-                />
-                <Input
-                  label="Highest class completed"
-                  name="education_highest_class"
-                  value={formData.education_highest_class}
-                  onChange={handleChange}
-                  placeholder="Class/grade"
-                />
-                <Textarea
-                  label="Performance in school (give chronologically for each important exam)"
-                  name="education_performance"
-                  value={formData.education_performance}
-                  onChange={handleChange}
-                  placeholder="Performance details..."
-                  rows={4}
-                />
-                <Textarea
-                  label="Disciplinary problems"
-                  name="education_disciplinary"
-                  value={formData.education_disciplinary}
-                  onChange={handleChange}
-                  placeholder="Any disciplinary issues..."
-                  rows={2}
-                />
-                <Textarea
-                  label="Peer relationship and group participation"
-                  name="education_peer_relationship"
-                  value={formData.education_peer_relationship}
-                  onChange={handleChange}
-                  placeholder="Relationships and participation..."
-                  rows={2}
-                />
-                <Input
-                  label="Hobbies"
-                  name="education_hobbies"
-                  value={formData.education_hobbies}
-                  onChange={handleChange}
-                  placeholder="Hobbies during school"
-                />
-                <Input
-                  label="Special abilities"
-                  name="education_special_abilities"
-                  value={formData.education_special_abilities}
-                  onChange={handleChange}
-                  placeholder="Special talents/abilities"
-                />
-                <Textarea
-                  label="Reasons for discontinuing"
-                  name="education_discontinue_reason"
-                  value={formData.education_discontinue_reason}
-                  onChange={handleChange}
-                  placeholder="If education was discontinued, reasons..."
-                  rows={2}
-                />
-              </div>
-            </Card>
-
-            {/* Occupational History */}
-            <Card title="Occupational History" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-800 mb-3">Jobs held in chronological order</h4>
-                {(formData.occupation_jobs || [{ job: '', dates: '', adjustment: '', difficulties: '', promotions: '', change_reason: '' }])?.map((job, index) => (
-                  <div key={index} className="border-b pb-4 mb-4 last:border-b-0 space-y-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="font-medium text-gray-700">Job {index + 1}</h5>
-                      {(formData.occupation_jobs || []).length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const newJobs = (formData.occupation_jobs || []).filter((_, i) => i !== index);
-                            setFormData(prev => ({ ...prev, occupation_jobs: newJobs.length > 0 ? newJobs : [{ job: '', dates: '', adjustment: '', difficulties: '', promotions: '', change_reason: '' }] }));
-                          }}
-                          className="text-red-600"
-                        >
-                          <FiX className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input
-                        label="Job"
-                        value={job.job}
-                        onChange={(e) => {
-                          const newJobs = [...formData.occupation_jobs];
-                          newJobs[index].job = e.target.value;
-                          setFormData(prev => ({ ...prev, occupation_jobs: newJobs }));
-                        }}
-                        placeholder="Job title/description"
-                      />
-                      <Input
-                        label="Dates"
-                        value={job.dates}
-                        onChange={(e) => {
-                          const newJobs = [...formData.occupation_jobs];
-                          newJobs[index].dates = e.target.value;
-                          setFormData(prev => ({ ...prev, occupation_jobs: newJobs }));
-                        }}
-                        placeholder="Start - End dates"
-                      />
-                      <Textarea
-                        label="Adjustment with peers and superiors"
-                        value={job.adjustment}
-                        onChange={(e) => {
-                          const newJobs = [...formData.occupation_jobs];
-                          newJobs[index].adjustment = e.target.value;
-                          setFormData(prev => ({ ...prev, occupation_jobs: newJobs }));
-                        }}
-                        placeholder="Work relationships..."
-                        rows={2}
-                      />
-                      <Textarea
-                        label="Specific difficulties"
-                        value={job.difficulties}
-                        onChange={(e) => {
-                          const newJobs = [...formData.occupation_jobs];
-                          newJobs[index].difficulties = e.target.value;
-                          setFormData(prev => ({ ...prev, occupation_jobs: newJobs }));
-                        }}
-                        placeholder="Work-related difficulties..."
-                        rows={2}
-                      />
-                      <Textarea
-                        label="Promotions"
-                        value={job.promotions}
-                        onChange={(e) => {
-                          const newJobs = [...formData.occupation_jobs];
-                          newJobs[index].promotions = e.target.value;
-                          setFormData(prev => ({ ...prev, occupation_jobs: newJobs }));
-                        }}
-                        placeholder="Promotions received..."
-                        rows={2}
-                      />
-                      <Textarea
-                        label="Reasons for change of jobs"
-                        value={job.change_reason}
-                        onChange={(e) => {
-                          const newJobs = [...formData.occupation_jobs];
-                          newJobs[index].change_reason = e.target.value;
-                          setFormData(prev => ({ ...prev, occupation_jobs: newJobs }));
-                        }}
-                        placeholder="Reason for leaving..."
+                        placeholder="Other departments or specialists..."
                         rows={2}
                       />
                     </div>
                   </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setFormData(prev => ({
-                      ...prev,
-                      occupation_jobs: [...prev.occupation_jobs, { job: '', dates: '', adjustment: '', difficulties: '', promotions: '', change_reason: '' }]
-                    }));
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <FiPlus className="w-4 h-4" />
-                  Add Job
-                </Button>
-              </div>
-            </Card>
-
-            {/* Sexual and Marital History */}
-            <Card title="Sexual and Marital History" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <div className="space-y-4">
-                <Input
-                  label="Age at menarche"
-                  name="sexual_menarche_age"
-                  value={formData.sexual_menarche_age}
-                  onChange={handleChange}
-                  placeholder="Age"
-                />
-                <Textarea
-                  label="Reaction to it and menstrual cycles"
-                  name="sexual_menarche_reaction"
-                  value={formData.sexual_menarche_reaction}
-                  onChange={handleChange}
-                  placeholder="Reaction and menstrual history..."
-                  rows={2}
-                />
-                <Textarea
-                  label="Sex education"
-                  name="sexual_education"
-                  value={formData.sexual_education}
-                  onChange={handleChange}
-                  placeholder="Sex education received..."
-                  rows={2}
-                />
-                <Textarea
-                  label="Masturbation"
-                  name="sexual_masturbation"
-                  value={formData.sexual_masturbation}
-                  onChange={handleChange}
-                  placeholder="History..."
-                  rows={2}
-                />
-                <Textarea
-                  label="Early childhood and later sexual contact"
-                  name="sexual_contact"
-                  value={formData.sexual_contact}
-                  onChange={handleChange}
-                  placeholder="History of sexual contact..."
-                  rows={2}
-                />
-                <Textarea
-                  label="Premarital and extramarital relationship"
-                  name="sexual_premarital_extramarital"
-                  value={formData.sexual_premarital_extramarital}
-                  onChange={handleChange}
-                  placeholder="Relationship history..."
-                  rows={2}
-                />
-                <Input
-                  label="Marriage how arranged"
-                  name="sexual_marriage_arranged"
-                  value={formData.sexual_marriage_arranged}
-                  onChange={handleChange}
-                  placeholder="Arranged/Love marriage"
-                />
-                <Input
-                  label="Date of marriage"
-                  type="date"
-                  name="sexual_marriage_date"
-                  value={formData.sexual_marriage_date}
-                  onChange={handleChange}
-                />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    label="Age and occupation of the spouse"
-                    name="sexual_spouse_age"
-                    value={formData.sexual_spouse_age}
-                    onChange={handleChange}
-                    placeholder="Spouse age"
-                  />
-                  <Input
-                    name="sexual_spouse_occupation"
-                    value={formData.sexual_spouse_occupation}
-                    onChange={handleChange}
-                    placeholder="Spouse occupation"
-                  />
-                </div>
-                <Textarea
-                  label="General and sexual adjustment"
-                  name="sexual_adjustment_general"
-                  value={formData.sexual_adjustment_general}
-                  onChange={handleChange}
-                  placeholder="General adjustment..."
-                  rows={2}
-                />
-                <Textarea
-                  label="Sexual adjustment"
-                  name="sexual_adjustment_sexual"
-                  value={formData.sexual_adjustment_sexual}
-                  onChange={handleChange}
-                  placeholder="Sexual adjustment..."
-                  rows={2}
-                />
-                <div>
-                  <h5 className="font-medium text-gray-700 mb-2">Ages and sex of children</h5>
-                  {(formData.sexual_children || [{ age: '', sex: '' }])?.map((child, index) => (
-                    <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
-                      <Input
-                        label={`Child ${index + 1} - Age`}
-                        value={child.age}
-                        onChange={(e) => {
-                          const newChildren = [...(formData.sexual_children || [{ age: '', sex: '' }])];
-                          newChildren[index].age = e.target.value;
-                          setFormData(prev => ({ ...prev, sexual_children: newChildren }));
-                        }}
-                        placeholder="Age"
-                      />
-                      <Select
-                        label="Sex"
-                        value={child.sex}
-                        onChange={(e) => {
-                          const newChildren = [...(formData.sexual_children || [{ age: '', sex: '' }])];
-                          newChildren[index].sex = e.target.value;
-                          setFormData(prev => ({ ...prev, sexual_children: newChildren }));
-                        }}
-                        options={[{ value: '', label: 'Select' }, { value: 'M', label: 'Male' }, { value: 'F', label: 'Female' }]}
-                      />
-                      <div className="flex items-end">
-                        {(formData.sexual_children || []).length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              const newChildren = (formData.sexual_children || []).filter((_, i) => i !== index);
-                              setFormData(prev => ({ ...prev, sexual_children: newChildren.length > 0 ? newChildren : [{ age: '', sex: '' }] }));
-                            }}
-                            className="text-red-600"
-                          >
-                            <FiX />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setFormData(prev => ({
-                        ...prev,
-                        sexual_children: [...(prev.sexual_children || [{ age: '', sex: '' }]), { age: '', sex: '' }]
-                      }));
-                    }}
-                    className="flex items-center gap-2 mt-2"
-                  >
-                    <FiPlus className="w-4 h-4" />
-                    Add Child
-                  </Button>
-                </div>
-                <Textarea
-                  label="Sexual problems"
-                  name="sexual_problems"
-                  value={formData.sexual_problems}
-                  onChange={handleChange}
-                  placeholder="Any sexual problems..."
-                  rows={2}
-                />
-              </div>
-            </Card>
-
-            {/* Religion */}
-            <Card title="Religion" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <div className="space-y-4">
-                <Input
-                  label="Religion and sex"
-                  name="religion_type"
-                  value={formData.religion_type}
-                  onChange={handleChange}
-                  placeholder="Religion"
-                />
-                <Input
-                  label="Level of participation"
-                  name="religion_participation"
-                  value={formData.religion_participation}
-                  onChange={handleChange}
-                  placeholder="Active/Moderate/Nominal/Non-practicing"
-                />
-                <Textarea
-                  label="Any sudden changes in religion"
-                  name="religion_changes"
-                  value={formData.religion_changes}
-                  onChange={handleChange}
-                  placeholder="Any changes in religious practices..."
-                  rows={2}
-                />
-              </div>
-            </Card>
-
-            {/* Present Living Situation */}
-            <Card title="Present Living Situation" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <div className="space-y-4">
-                <div>
-                  <h5 className="font-medium text-gray-700 mb-2">The residents, who all live with the patient</h5>
-                  {formData.living_residents?.map((resident, index) => (
-                    <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
-                      <Input
-                        label={`Resident ${index + 1} - Name`}
-                        value={resident.name}
-                        onChange={(e) => {
-                          const newResidents = [...formData.living_residents];
-                          newResidents[index].name = e.target.value;
-                          setFormData(prev => ({ ...prev, living_residents: newResidents }));
-                        }}
-                        placeholder="Name"
-                      />
-                      <Input
-                        label="Relationship"
-                        value={resident.relationship}
-                        onChange={(e) => {
-                          const newResidents = [...formData.living_residents];
-                          newResidents[index].relationship = e.target.value;
-                          setFormData(prev => ({ ...prev, living_residents: newResidents }));
-                        }}
-                        placeholder="Relationship"
-                      />
-                      <Input
-                        label="Age"
-                        value={resident.age}
-                        onChange={(e) => {
-                          const newResidents = [...formData.living_residents];
-                          newResidents[index].age = e.target.value;
-                          setFormData(prev => ({ ...prev, living_residents: newResidents }));
-                        }}
-                        placeholder="Age"
-                      />
-                      <div className="flex items-end">
-                        {formData.living_residents.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              const newResidents = formData.living_residents.filter((_, i) => i !== index);
-                              setFormData(prev => ({ ...prev, living_residents: newResidents }));
-                            }}
-                            className="text-red-600"
-                          >
-                            <FiX />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setFormData(prev => ({
-                        ...prev,
-                        living_residents: [...prev.living_residents, { name: '', relationship: '', age: '' }]
-                      }));
-                    }}
-                    className="flex items-center gap-2 mt-2"
-                  >
-                    <FiPlus className="w-4 h-4" />
-                    Add Resident
-                  </Button>
-                </div>
-                <Textarea
-                  label="Sharing of income"
-                  name="living_income_sharing"
-                  value={formData.living_income_sharing}
-                  onChange={handleChange}
-                  placeholder="How income is shared..."
-                  rows={2}
-                />
-                <Textarea
-                  label="Expenses"
-                  name="living_expenses"
-                  value={formData.living_expenses}
-                  onChange={handleChange}
-                  placeholder="Expense management..."
-                  rows={2}
-                />
-                <Textarea
-                  label="Kitchen"
-                  name="living_kitchen"
-                  value={formData.living_kitchen}
-                  onChange={handleChange}
-                  placeholder="Kitchen arrangements (shared/separate)..."
-                  rows={2}
-                />
-                <Textarea
-                  label="Domestic conflicts"
-                  name="living_domestic_conflicts"
-                  value={formData.living_domestic_conflicts}
-                  onChange={handleChange}
-                  placeholder="Any domestic conflicts..."
-                  rows={2}
-                />
-                <Input
-                  label="Overall social class"
-                  name="living_social_class"
-                  value={formData.living_social_class}
-                  onChange={handleChange}
-                  placeholder="Upper/Middle/Lower"
-                />
-                <div className="border-t pt-4">
-                  <h5 className="font-medium text-gray-700 mb-2">In case of married women: details of the members in the in-law family</h5>
-                  {formData.living_inlaws?.map((inlaw, index) => (
-                    <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
-                      <Input
-                        label={`In-law ${index + 1} - Name`}
-                        value={inlaw.name}
-                        onChange={(e) => {
-                          const newInlaws = [...formData.living_inlaws];
-                          newInlaws[index].name = e.target.value;
-                          setFormData(prev => ({ ...prev, living_inlaws: newInlaws }));
-                        }}
-                        placeholder="Name"
-                      />
-                      <Input
-                        label="Relationship"
-                        value={inlaw.relationship}
-                        onChange={(e) => {
-                          const newInlaws = [...formData.living_inlaws];
-                          newInlaws[index].relationship = e.target.value;
-                          setFormData(prev => ({ ...prev, living_inlaws: newInlaws }));
-                        }}
-                        placeholder="Relationship"
-                      />
-                      <Input
-                        label="Age"
-                        value={inlaw.age}
-                        onChange={(e) => {
-                          const newInlaws = [...formData.living_inlaws];
-                          newInlaws[index].age = e.target.value;
-                          setFormData(prev => ({ ...prev, living_inlaws: newInlaws }));
-                        }}
-                        placeholder="Age"
-                      />
-                      <div className="flex items-end">
-                        {formData.living_inlaws.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              const newInlaws = formData.living_inlaws.filter((_, i) => i !== index);
-                              setFormData(prev => ({ ...prev, living_inlaws: newInlaws }));
-                            }}
-                            className="text-red-600"
-                          >
-                            <FiX />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setFormData(prev => ({
-                        ...prev,
-                        living_inlaws: [...prev.living_inlaws, { name: '', relationship: '', age: '' }]
-                      }));
-                    }}
-                    className="flex items-center gap-2 mt-2"
-                  >
-                    <FiPlus className="w-4 h-4" />
-                    Add In-law Member
-                  </Button>
-                </div>
-              </div>
-            </Card>
-
-            {/* Premorbid Personality */}
-            <Card title="Premorbid Personality" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <div className="space-y-6">
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">A. Personality traits, habits and hobbies</h4>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Select
-                        label="Passive vs Active"
-                        name="premorbid_personality_passive_active"
-                        value={formData.premorbid_personality_passive_active}
-                        onChange={handleChange}
-                        options={[{ value: '', label: 'Select' }, { value: 'Passive', label: 'Passive' }, { value: 'Active', label: 'Active' }]}
-                      />
-                      <Input
-                        label="Assertive"
-                        name="premorbid_personality_assertive"
-                        value={formData.premorbid_personality_assertive}
-                        onChange={handleChange}
-                        placeholder="Assertiveness level"
-                      />
-                      <Select
-                        label="Introvert vs Extrovert"
-                        name="premorbid_personality_introvert_extrovert"
-                        value={formData.premorbid_personality_introvert_extrovert}
-                        onChange={handleChange}
-                        options={[{ value: '', label: 'Select' }, { value: 'Introvert', label: 'Introvert' }, { value: 'Extrovert', label: 'Extrovert' }]}
-                      />
-                    </div>
-                    <CheckboxGroup
-                      label="If sociable, anxious and worrisome, complacent, suspicious"
-                      name="premorbid_personality_traits"
-                      value={formData.premorbid_personality_traits}
-                      onChange={handleChange}
-                      options={['Sociable', 'Anxious', 'Worrisome', 'Complacent', 'Suspicious']}
-                    />
-            <Textarea
-                      label="Hobbies and interests"
-                      name="premorbid_personality_hobbies"
-                      value={formData.premorbid_personality_hobbies}
-              onChange={handleChange}
-                      placeholder="Hobbies and interests..."
-              rows={2}
-            />
-                    <Textarea
-                      label="Eating, sleep and excretory habits, anything remarkable?"
-                      name="premorbid_personality_habits"
-                      value={formData.premorbid_personality_habits}
-                      onChange={handleChange}
-                      placeholder="Habits details..."
-                      rows={3}
-                    />
-                  </div>
-                </div>
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-800 mb-3">B. Alcohol and drug abuse</h4>
-                  <Textarea
-                    name="premorbid_personality_alcohol_drugs"
-                    value={formData.premorbid_personality_alcohol_drugs}
-                    onChange={handleChange}
-                    placeholder="History of alcohol and drug abuse..."
-                    rows={3}
-                  />
-                </div>
-          </div>
-        </Card>
-
-            {/* Physical Examination - Comprehensive */}
-            <Card title="Physical Examination" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <div className="space-y-6">
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">General</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input
-                      label="Appearance"
-                      name="physical_appearance"
-                      value={formData.physical_appearance}
-                      onChange={handleChange}
-                      placeholder="General appearance"
-                    />
-                    <Input
-                      label="Body build and nutrition"
-                      name="physical_body_build"
-                      value={formData.physical_body_build}
-                      onChange={handleChange}
-                      placeholder="Body build and nutrition status"
-                    />
-                    <div className="flex flex-wrap gap-4 md:col-span-2">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={formData.physical_pallor}
-                          onChange={(e) => setFormData(prev => ({ ...prev, physical_pallor: e.target.checked }))}
-                          className="h-4 w-4 text-primary-600 rounded"
-                        />
-                        <span className="text-sm text-gray-700">Pallor</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={formData.physical_icterus}
-                          onChange={(e) => setFormData(prev => ({ ...prev, physical_icterus: e.target.checked }))}
-                          className="h-4 w-4 text-primary-600 rounded"
-                        />
-                        <span className="text-sm text-gray-700">Icterus</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={formData.physical_oedema}
-                          onChange={(e) => setFormData(prev => ({ ...prev, physical_oedema: e.target.checked }))}
-                          className="h-4 w-4 text-primary-600 rounded"
-                        />
-                        <span className="text-sm text-gray-700">Oedema</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={formData.physical_lymphadenopathy}
-                          onChange={(e) => setFormData(prev => ({ ...prev, physical_lymphadenopathy: e.target.checked }))}
-                          className="h-4 w-4 text-primary-600 rounded"
-                        />
-                        <span className="text-sm text-gray-700">Lymphadenopathy</span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-                <div className="border-t pt-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Input
-                      label="Pulse"
-                      name="physical_pulse"
-                      value={formData.physical_pulse}
-                      onChange={handleChange}
-                      placeholder="e.g., 72 bpm"
-                    />
-                    <Input
-                      label="B.P."
-                      name="physical_bp"
-                      value={formData.physical_bp}
-                      onChange={handleChange}
-                      placeholder="e.g., 120/80"
-                    />
-                    <Input
-                      label="Height"
-                      name="physical_height"
-                      value={formData.physical_height}
-                      onChange={handleChange}
-                      placeholder="cm"
-                    />
-                    <Input
-                      label="Weight"
-                      name="physical_weight"
-                      value={formData.physical_weight}
-                      onChange={handleChange}
-                      placeholder="kg"
-                    />
-                    <Input
-                      label="Waist circumference"
-                      name="physical_waist"
-                      value={formData.physical_waist}
-                      onChange={handleChange}
-                      placeholder="cm"
-                    />
-                  </div>
-                </div>
-                <div className="border-t pt-4">
-                  <Textarea
-                    label="Fundus"
-                    name="physical_fundus"
-                    value={formData.physical_fundus}
-                    onChange={handleChange}
-                    placeholder="Fundus examination findings..."
-                    rows={2}
-                  />
-                </div>
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-800 mb-3">CVS (Cardiovascular System)</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input
-                      label="Apex beat"
-                      name="physical_cvs_apex"
-                      value={formData.physical_cvs_apex}
-                      onChange={handleChange}
-                      placeholder="Apex beat location"
-                    />
-                    <Input
-                      label="Regularity"
-                      name="physical_cvs_regularity"
-                      value={formData.physical_cvs_regularity}
-                      onChange={handleChange}
-                      placeholder="Regular/Irregular"
-                    />
-                    <Input
-                      label="Heart sounds"
-                      name="physical_cvs_heart_sounds"
-                      value={formData.physical_cvs_heart_sounds}
-                      onChange={handleChange}
-                      placeholder="Heart sounds assessment"
-                    />
-                    <Input
-                      label="Murmurs"
-                      name="physical_cvs_murmurs"
-                      value={formData.physical_cvs_murmurs}
-                      onChange={handleChange}
-                      placeholder="Murmurs (if present)"
-                    />
-                  </div>
-                </div>
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-800 mb-3">Chest</h4>
-                  <div className="space-y-4">
-                    <Input
-                      label="Expansion on the two sides"
-                      name="physical_chest_expansion"
-                      value={formData.physical_chest_expansion}
-                      onChange={handleChange}
-                      placeholder="Chest expansion assessment"
-                    />
-                    <Input
-                      label="Percussion"
-                      name="physical_chest_percussion"
-                      value={formData.physical_chest_percussion}
-                      onChange={handleChange}
-                      placeholder="Percussion findings"
-                    />
-                    <Input
-                      label="Adventitious sounds"
-                      name="physical_chest_adventitious"
-                      value={formData.physical_chest_adventitious}
-                      onChange={handleChange}
-                      placeholder="Adventitious sounds (if present)"
-                    />
-                  </div>
-                </div>
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-800 mb-3">Abdomen</h4>
-                  <div className="space-y-4">
-                    <Input
-                      label="Tenderness"
-                      name="physical_abdomen_tenderness"
-                      value={formData.physical_abdomen_tenderness}
-                      onChange={handleChange}
-                      placeholder="Tenderness location/assessment"
-                    />
-                    <Input
-                      label="Mass"
-                      name="physical_abdomen_mass"
-                      value={formData.physical_abdomen_mass}
-                      onChange={handleChange}
-                      placeholder="Palpable mass (if present)"
-                    />
-                    <Input
-                      label="Bowel sounds"
-                      name="physical_abdomen_bowel_sounds"
-                      value={formData.physical_abdomen_bowel_sounds}
-                      onChange={handleChange}
-                      placeholder="Normal/Hypoactive/Hyperactive"
-                    />
-                  </div>
-                </div>
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-800 mb-3">CNS (Central Nervous System)</h4>
-                  <div className="space-y-4">
-                    <Textarea
-                      label="Cranial nerves"
-                      name="physical_cns_cranial"
-                      value={formData.physical_cns_cranial}
-                      onChange={handleChange}
-                      placeholder="Cranial nerves examination..."
-                      rows={2}
-                    />
-                    <Textarea
-                      label="Motor and sensory system"
-                      name="physical_cns_motor_sensory"
-                      value={formData.physical_cns_motor_sensory}
-                      onChange={handleChange}
-                      placeholder="Motor and sensory examination..."
-                      rows={2}
-                    />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input
-                        label="Rigidity"
-                        name="physical_cns_rigidity"
-                        value={formData.physical_cns_rigidity}
-                        onChange={handleChange}
-                        placeholder="Rigidity assessment"
-                      />
-                      <Input
-                        label="Involuntary movements"
-                        name="physical_cns_involuntary"
-                        value={formData.physical_cns_involuntary}
-                        onChange={handleChange}
-                        placeholder="Involuntary movements (if present)"
-                      />
-                    </div>
-                    <Textarea
-                      label="Superficial reflexes"
-                      name="physical_cns_superficial_reflexes"
-                      value={formData.physical_cns_superficial_reflexes}
-                      onChange={handleChange}
-                      placeholder="Superficial reflexes findings..."
-                      rows={2}
-                    />
-                    <Textarea
-                      label="DTRs (Deep Tendon Reflexes)"
-                      name="physical_cns_dtrs"
-                      value={formData.physical_cns_dtrs}
-                      onChange={handleChange}
-                      placeholder="Deep tendon reflexes..."
-                      rows={2}
-                    />
-                    <Input
-                      label="Plantar"
-                      name="physical_cns_plantar"
-                      value={formData.physical_cns_plantar}
-                      onChange={handleChange}
-                      placeholder="Flexor/Extensor"
-                    />
-                    <Textarea
-                      label="Cerebellar Functions"
-                      name="physical_cns_cerebellar"
-                      value={formData.physical_cns_cerebellar}
-                      onChange={handleChange}
-                      placeholder="Cerebellar functions assessment..."
-                      rows={2}
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            {/* Mental Status Examination - Expanded */}
-            <Card title="Mental Status Examination (Expanded)" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <div className="space-y-6">
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">1. General Appearance, attitude and behaviour</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Textarea
-                      label="General demeanour"
-                      name="mse_general_demeanour"
-                      value={formData.mse_general_demeanour}
-                      onChange={handleChange}
-                      placeholder="General demeanour..."
-                      rows={2}
-                    />
-                    <Input
-                      label="Tidy/Well-kempt"
-                      name="mse_general_tidy"
-                      value={formData.mse_general_tidy}
-                      onChange={handleChange}
-                      placeholder="Assessment"
-                    />
-                    <Input
-                      label="Awareness of surroundings"
-                      name="mse_general_awareness"
-                      value={formData.mse_general_awareness}
-                      onChange={handleChange}
-                      placeholder="Level of awareness"
-                    />
-                    <Input
-                      label="Co-operation in the examination"
-                      name="mse_general_cooperation"
-                      value={formData.mse_general_cooperation}
-                      onChange={handleChange}
-                      placeholder="Co-operation level"
-                    />
-                  </div>
-                </div>
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-800 mb-3">2. Psychomotor Activity</h4>
-                  <div className="space-y-4">
-                    <Input
-                      label="Speed and amount of verbalization"
-                      name="mse_psychomotor_verbalization"
-                      value={formData.mse_psychomotor_verbalization}
-                      onChange={handleChange}
-                      placeholder="Assessment"
-                    />
-                    <Input
-                      label="Pressure of thought and flight of ideas"
-                      name="mse_psychomotor_pressure"
-                      value={formData.mse_psychomotor_pressure}
-                      onChange={handleChange}
-                      placeholder="Assessment"
-                    />
-                    <Input
-                      label="Motoric tension"
-                      name="mse_psychomotor_tension"
-                      value={formData.mse_psychomotor_tension}
-                      onChange={handleChange}
-                      placeholder="Assessment"
-                    />
-                    <Input
-                      label="Posture and movement"
-                      name="mse_psychomotor_posture"
-                      value={formData.mse_psychomotor_posture}
-                      onChange={handleChange}
-                      placeholder="Assessment"
-                    />
-                    <Input
-                      label="Mannerism, Grimacing, Posturing, Catatonic features"
-                      name="mse_psychomotor_catatonic"
-                      value={formData.mse_psychomotor_catatonic}
-                      onChange={handleChange}
-                      placeholder="Assessment"
-                    />
-                  </div>
-                </div>
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-800 mb-3">3. Affect</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input
-                      label="Subjective feeling"
-                      name="mse_affect_subjective"
-                      value={formData.mse_affect_subjective}
-                      onChange={handleChange}
-                      placeholder="Patient's subjective feeling"
-                    />
-                    <Input
-                      label="Tone"
-                      name="mse_affect_tone"
-                      value={formData.mse_affect_tone}
-                      onChange={handleChange}
-                      placeholder="Affective tone"
-                    />
-                    <Textarea
-                      label="Objective assessment of resting affect, and its fluctuation in the context of topics being discussed"
-                      name="mse_affect_resting"
-                      value={formData.mse_affect_resting}
-                      onChange={handleChange}
-                      placeholder="Assessment (Flat, Anxious, Depressed, Elated, Inappropriate and labile affect)"
-                      rows={3}
-                      className="md:col-span-2"
-                    />
-                    <Input
-                      label="Fluctuation"
-                      name="mse_affect_fluctuation"
-                      value={formData.mse_affect_fluctuation}
-                      onChange={handleChange}
-                      placeholder="Affect fluctuation assessment"
-                      className="md:col-span-2"
-                    />
-                  </div>
-                </div>
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-800 mb-3">4. Thought</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Input
-                      label="Flow"
-                      name="mse_thought_flow"
-                      value={formData.mse_thought_flow}
-                      onChange={handleChange}
-                      placeholder="Thought flow"
-                    />
-                    <Input
-                      label="Form"
-                      name="mse_thought_form"
-                      value={formData.mse_thought_form}
-                      onChange={handleChange}
-                      placeholder="Thought form"
-                    />
-                    <Input
-                      label="Content"
-                      name="mse_thought_content"
-                      value={formData.mse_thought_content}
-                      onChange={handleChange}
-                      placeholder="Thought content"
-                    />
-                  </div>
-                </div>
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-800 mb-3">5. Perception</h4>
-                  <p className="text-sm text-gray-600 mb-3">(Covered in main MSE section above)</p>
-                </div>
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-800 mb-3">6. Cognitive functions</h4>
-                  <div className="space-y-4">
-                    <Input
-                      label="Level of consciousness"
-                      name="mse_cognitive_consciousness"
-                      value={formData.mse_cognitive_consciousness}
-                      onChange={handleChange}
-                      placeholder="Assessment"
-                    />
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Input
-                        label="Orientation - Time"
-                        name="mse_cognitive_orientation_time"
-                        value={formData.mse_cognitive_orientation_time}
-                        onChange={handleChange}
-                        placeholder="Time orientation"
-                      />
-                      <Input
-                        label="Orientation - Place"
-                        name="mse_cognitive_orientation_place"
-                        value={formData.mse_cognitive_orientation_place}
-                        onChange={handleChange}
-                        placeholder="Place orientation"
-                      />
-                      <Input
-                        label="Orientation - Person"
-                        name="mse_cognitive_orientation_person"
-                        value={formData.mse_cognitive_orientation_person}
-                        onChange={handleChange}
-                        placeholder="Person orientation"
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Input
-                        label="Memory - Immediate"
-                        name="mse_cognitive_memory_immediate"
-                        value={formData.mse_cognitive_memory_immediate}
-                        onChange={handleChange}
-                        placeholder="Immediate memory"
-                      />
-                      <Input
-                        label="Memory - Recent"
-                        name="mse_cognitive_memory_recent"
-                        value={formData.mse_cognitive_memory_recent}
-                        onChange={handleChange}
-                        placeholder="Recent memory"
-                      />
-                      <Input
-                        label="Memory - Remote"
-                        name="mse_cognitive_memory_remote"
-                        value={formData.mse_cognitive_memory_remote}
-                        onChange={handleChange}
-                        placeholder="Remote memory"
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input
-                        label="Subtraction"
-                        name="mse_cognitive_subtraction"
-                        value={formData.mse_cognitive_subtraction}
-                        onChange={handleChange}
-                        placeholder="Assessment"
-                      />
-                      <Input
-                        label="Digit-span"
-                        name="mse_cognitive_digit_span"
-                        value={formData.mse_cognitive_digit_span}
-                        onChange={handleChange}
-                        placeholder="Assessment"
-                      />
-                      <Input
-                        label="Counting forwards and backwards"
-                        name="mse_cognitive_counting"
-                        value={formData.mse_cognitive_counting}
-                        onChange={handleChange}
-                        placeholder="Assessment"
-                      />
-                      <Input
-                        label="General Knowledge"
-                        name="mse_cognitive_general_knowledge"
-                        value={formData.mse_cognitive_general_knowledge}
-                        onChange={handleChange}
-                        placeholder="Assessment"
-                      />
-                      <Input
-                        label="Calculation"
-                        name="mse_cognitive_calculation"
-                        value={formData.mse_cognitive_calculation}
-                        onChange={handleChange}
-                        placeholder="Assessment"
-                      />
-                      <Input
-                        label="Similarities"
-                        name="mse_cognitive_similarities"
-                        value={formData.mse_cognitive_similarities}
-                        onChange={handleChange}
-                        placeholder="Assessment"
-                      />
-                    </div>
-                    <Textarea
-                      label="Proverb interpretation"
-                      name="mse_cognitive_proverbs"
-                      value={formData.mse_cognitive_proverbs}
-                      onChange={handleChange}
-                      placeholder="Proverb interpretation assessment..."
-                      rows={2}
-                    />
-                  </div>
-                </div>
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-800 mb-3">7. Insight and judgement</h4>
-                  <div className="space-y-4">
-                    <Textarea
-                      label="Patient's understanding and assessment of the illness (nature, course, treatment, outcome)"
-                      name="mse_insight_understanding"
-                      value={formData.mse_insight_understanding}
-                      onChange={handleChange}
-                      placeholder="Insight assessment..."
-                      rows={3}
-                    />
-                    <Textarea
-                      label="Appropriateness of judgement in face of realistic problems"
-                      name="mse_insight_judgement"
-                      value={formData.mse_insight_judgement}
-                      onChange={handleChange}
-                      placeholder="Judgement assessment..."
-                      rows={2}
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            {/* Diagnostic Formulation */}
-            <Card title="Diagnostic Formulation" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <div className="space-y-4">
-                <Textarea
-                  label="1. Summary of patient's problems"
-                  name="diagnostic_formulation_summary"
-                  value={formData.diagnostic_formulation_summary}
-              onChange={handleChange}
-                  placeholder="Concise summary of patient's problems..."
-                  rows={4}
-                />
-                <Textarea
-                  label="2. Salient features of genetic, constitutional, familial and environmental influences"
-                  name="diagnostic_formulation_features"
-                  value={formData.diagnostic_formulation_features}
-                  onChange={handleChange}
-                  placeholder="Genetic, constitutional, familial and environmental factors..."
-                  rows={4}
-                />
-                <Textarea
-                  label="3. Psychodynamic formulation"
-                  name="diagnostic_formulation_psychodynamic"
-                  value={formData.diagnostic_formulation_psychodynamic}
-                  onChange={handleChange}
-                  placeholder="Psychodynamic assessment and formulation..."
-                  rows={5}
-                />
-              </div>
-            </Card>
-
-            {/* Provisional Diagnosis and Treatment Plan */}
-            <Card title="Provisional Diagnosis and Treatment Plan" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <div className="space-y-4">
-                <Textarea
-                  label="Provisional Diagnosis"
-                  name="provisional_diagnosis"
-                  value={formData.provisional_diagnosis}
-                  onChange={handleChange}
-                  placeholder="Enter provisional diagnosis based on the clinical assessment..."
-                  rows={4}
-                />
-                <Textarea
-                  label="Treatment Plan"
-                  name="treatment_plan"
-                  value={formData.treatment_plan}
-                  onChange={handleChange}
-                  placeholder="Detailed treatment plan including medications, therapy, interventions, and follow-up recommendations..."
-                  rows={5}
-                />
-              </div>
-            </Card>
-
-            {/* Comments of the Consultant */}
-            <Card title="Comments of the Consultant" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <div className="space-y-4">
-                <Textarea
-                  label="Consultant's Comments"
-                  name="consultant_comments"
-                  value={formData.consultant_comments}
-                  onChange={handleChange}
-                  placeholder="Consultant's detailed comments, observations, and recommendations..."
-                  rows={6}
-                />
-              </div>
-            </Card>
-
-            {/* ADL File Requirements */}
-            <Card title="ADL File Requirements" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-            <div className="space-y-6">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="requires_adl_file"
-                  name="requires_adl_file"
-                  checked={formData.requires_adl_file}
-                  onChange={handleChange}
-                  className="h-4 w-4 text-primary-600 rounded"
-                />
-                <label htmlFor="requires_adl_file" className="ml-2 text-sm text-gray-700">
-                  Requires ADL File (Auto-checked for complex cases)
-                </label>
-              </div>
-
-              <Textarea
-                label="ADL Reasoning"
-                name="adl_reasoning"
-                value={formData.adl_reasoning}
-                onChange={handleChange}
-                placeholder="Explain why this case requires an ADL file..."
-                rows={4}
-                required
-                error={errors.adl_reasoning}
-              />
-                </div>
-              </Card>
                 </div>
               )}
             </Card>
-          )}
 
-          {/* Card 3: Prescription */}
-          <Card
-            title={
-              <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => toggleCard('prescription')}>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-amber-100 rounded-lg">
-                    <FiFileText className="w-6 h-6 text-amber-600" />
+            {/* Card 2: ADL File - Only shown when complex case is selected */}
+            {showADLStep && (
+              <Card
+                title={
+                  <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => toggleCard('adl')}>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        <FiFolder className="w-6 h-6 text-purple-600" />
+                      </div>
+                      <span className="text-xl font-bold text-gray-900">ADL File</span>
+                    </div>
+                    {expandedCards.adl ? (
+                      <FiChevronUp className="w-5 h-5 text-gray-600" />
+                    ) : (
+                      <FiChevronDown className="w-5 h-5 text-gray-600" />
+                    )}
                   </div>
-                  <span className="text-xl font-bold text-gray-900">Prescription</span>
-                </div>
-                {expandedCards.prescription ? (
-                  <FiChevronUp className="w-5 h-5 text-gray-600" />
-                ) : (
-                  <FiChevronDown className="w-5 h-5 text-gray-600" />
-                )}
-              </div>
-            }
-            className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
-          >
-            {expandedCards.prescription && (
-              <>
-                <CreatePrescription
-                  patientId={formData.patient_id}
-                  clinicalProformaId={formData.id}
-                  returnTab={formData.returnTab}
-                  currentUser={formData.currentUser}
-                  prescriptions={formData.prescriptions}
-                  setPrescriptions={formData.setPrescriptions}
-                  addPrescriptionRow={formData.addPrescriptionRow}
-                  updatePrescriptionCell={formData.updatePrescriptionCell}
-                  selectMedicine={formData.selectMedicine}
-                  handleMedicineKeyDown={formData.handleMedicineKeyDown}
-                  removePrescriptionRow={formData.removePrescriptionRow}
-                  clearAllPrescriptions={formData.clearAllPrescriptions}
-                  handleSave={formData.handleSave}
-                  handlePrint={formData.handlePrint}
-                  formatDateFull={formData.formatDateFull}
-                  formatDate={formData.formatDate}
-                />
-              </>
-            )}
-          </Card>
+                }
+                className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
+              >
+                {expandedCards.adl && (
+                  <div className="space-y-6">
+                    {/* Multiple Informants */}
+                    <Card title="Informants" className="mb-8 shadow-lg border border-gray-200 bg-gray-50">
+                      <div className="space-y-4">
+                        {(formData.informants || [{ relationship: '', name: '', reliability: '' }])?.map((informant, index) => (
+                          <div key={index} className="border-b pb-4 last:border-b-0 space-y-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-medium text-gray-700">Informant {index + 1}</h4>
+                              {(formData.informants || []).length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const newInformants = (formData.informants || []).filter((_, i) => i !== index);
+                                    setFormData(prev => ({ ...prev, informants: newInformants.length > 0 ? newInformants : [{ relationship: '', name: '', reliability: '' }] }));
+                                  }}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <FiX className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <Input
+                                label="Relationship"
+                                value={informant.relationship}
+                                onChange={(e) => {
+                                  const newInformants = [...formData.informants];
+                                  newInformants[index].relationship = e.target.value;
+                                  setFormData(prev => ({ ...prev, informants: newInformants }));
+                                }}
+                                placeholder="e.g., Father, Mother, Spouse"
+                              />
+                              <Input
+                                label="Name"
+                                value={informant.name}
+                                onChange={(e) => {
+                                  const newInformants = [...formData.informants];
+                                  newInformants[index].name = e.target.value;
+                                  setFormData(prev => ({ ...prev, informants: newInformants }));
+                                }}
+                                placeholder="Full name"
+                              />
+                              <Input
+                                label="Reliability / Ability to report, familiarity with patient"
+                                value={informant.reliability}
+                                onChange={(e) => {
+                                  const newInformants = [...formData.informants];
+                                  newInformants[index].reliability = e.target.value;
+                                  setFormData(prev => ({ ...prev, informants: newInformants }));
+                                }}
+                                placeholder="Assessment of reliability"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setFormData(prev => ({
+                              ...prev,
+                              informants: [...prev.informants, { relationship: '', name: '', reliability: '' }]
+                            }));
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <FiPlus className="w-4 h-4" />
+                          Add Informant
+                        </Button>
+                      </div>
+                    </Card>
 
-          {/* Submit Button */}
-          <Card className="mt-6 bg-white/80 backdrop-blur-sm border-0 shadow-xl">
-            <div className="flex justify-end gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  if (returnTab) {
-                    navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
-                  } else {
-                    navigate('/clinical-today-patients');
-                  }
-                }}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                loading={isCreating}
-                disabled={isCreating}
-                className="flex items-center gap-2 bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700"
-              >
-                <FiSave className="w-4 h-4" />
-                {isCreating ? 'Saving...' : (proformaId ? 'Update Clinical Proforma' : 'Create Clinical Proforma')}
-              </Button>
-            </div>
-          </Card>
-        </div>
-      </form>
+                    {/* Complaints and Duration */}
+                    <Card title="Complaints and Duration" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                      <div className="space-y-6">
+                        <div>
+                          <h4 className="font-semibold text-gray-800 mb-3">Chief Complaints as per patient</h4>
+                          {(formData.complaints_patient || [{ complaint: '', duration: '' }])?.map((complaint, index) => (
+                            <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-3">
+                              <div className="md:col-span-2">
+                                <Input
+                                  label={`Complaint ${index + 1}`}
+                                  value={complaint.complaint}
+                                  onChange={(e) => {
+                                    const newComplaints = [...formData.complaints_patient];
+                                    newComplaints[index].complaint = e.target.value;
+                                    setFormData(prev => ({ ...prev, complaints_patient: newComplaints }));
+                                  }}
+                                  placeholder="Enter complaint"
+                                />
+                              </div>
+                              <div className="md:col-span-2">
+                                <Input
+                                  label="Duration"
+                                  value={complaint.duration}
+                                  onChange={(e) => {
+                                    const newComplaints = [...formData.complaints_patient];
+                                    newComplaints[index].duration = e.target.value;
+                                    setFormData(prev => ({ ...prev, complaints_patient: newComplaints }));
+                                  }}
+                                  placeholder="e.g., 6 months"
+                                />
+                              </div>
+                              <div className="flex items-end">
+                                {(formData.complaints_patient || []).length > 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const newComplaints = (formData.complaints_patient || []).filter((_, i) => i !== index);
+                                      setFormData(prev => ({ ...prev, complaints_patient: newComplaints.length > 0 ? newComplaints : [{ complaint: '', duration: '' }] }));
+                                    }}
+                                    className="text-red-600"
+                                  >
+                                    <FiX />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                complaints_patient: [...prev.complaints_patient, { complaint: '', duration: '' }]
+                              }));
+                            }}
+                            className="flex items-center gap-2 mb-6"
+                          >
+                            <FiPlus className="w-4 h-4" />
+                            Add Complaint
+                          </Button>
+                        </div>
+
+                        <div className="border-t pt-6">
+                          <h4 className="font-semibold text-gray-800 mb-3">Chief Complaints as per informant</h4>
+                          {(formData.complaints_informant || [{ complaint: '', duration: '' }])?.map((complaint, index) => (
+                            <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-3">
+                              <div className="md:col-span-2">
+                                <Input
+                                  label={`Complaint ${index + 1}`}
+                                  value={complaint.complaint}
+                                  onChange={(e) => {
+                                    const newComplaints = [...formData.complaints_informant];
+                                    newComplaints[index].complaint = e.target.value;
+                                    setFormData(prev => ({ ...prev, complaints_informant: newComplaints }));
+                                  }}
+                                  placeholder="Enter complaint"
+                                />
+                              </div>
+                              <div className="md:col-span-2">
+                                <Input
+                                  label="Duration"
+                                  value={complaint.duration}
+                                  onChange={(e) => {
+                                    const newComplaints = [...formData.complaints_informant];
+                                    newComplaints[index].duration = e.target.value;
+                                    setFormData(prev => ({ ...prev, complaints_informant: newComplaints }));
+                                  }}
+                                  placeholder="e.g., 6 months"
+                                />
+                              </div>
+                              <div className="flex items-end">
+                                {(formData.complaints_informant || []).length > 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const newComplaints = (formData.complaints_informant || []).filter((_, i) => i !== index);
+                                      setFormData(prev => ({ ...prev, complaints_informant: newComplaints.length > 0 ? newComplaints : [{ complaint: '', duration: '' }] }));
+                                    }}
+                                    className="text-red-600"
+                                  >
+                                    <FiX />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                complaints_informant: [...prev.complaints_informant, { complaint: '', duration: '' }]
+                              }));
+                            }}
+                            className="flex items-center gap-2"
+                          >
+                            <FiPlus className="w-4 h-4" />
+                            Add Complaint
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {/* History of Present Illness - Expanded */}
+                    <Card title="History of Present Illness" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                      <div className="space-y-6">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Should Include:</h3>
+                          <div className="space-y-4">
+                            <Textarea
+                              label="A. Spontaneous narrative account"
+                              name="history_narrative"
+                              value={formData.history_narrative}
+                              onChange={handleChange}
+                              placeholder="Patient's spontaneous account of the illness..."
+                              rows={4}
+                            />
+
+                            <Textarea
+                              label="B. Specific enquiry about mood, sleep, appetite, anxiety symptoms, suicidal risk, social interaction, job efficiency, personal hygiene, memory, etc. Enquiry from informants regarding delusions, hallucinations in psychotic patients"
+                              name="history_specific_enquiry"
+                              value={formData.history_specific_enquiry}
+                              onChange={handleChange}
+                              placeholder="Detailed specific enquiries..."
+                              rows={5}
+                            />
+
+                            <Textarea
+                              label="C. Intake of dependence producing and prescription drugs"
+                              name="history_drug_intake"
+                              value={formData.history_drug_intake}
+                              onChange={handleChange}
+                              placeholder="List all dependence producing substances and prescription drugs..."
+                              rows={3}
+                            />
+
+                            <div className="border-t pt-4">
+                              <h4 className="font-semibold text-gray-800 mb-3">D. Treatment received so far in this illness</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Input
+                                  label="Place"
+                                  name="history_treatment_place"
+                                  value={formData.history_treatment_place}
+                                  onChange={handleChange}
+                                  placeholder="Location of treatment"
+                                />
+                                <Input
+                                  label="Dates"
+                                  name="history_treatment_dates"
+                                  value={formData.history_treatment_dates}
+                                  onChange={handleChange}
+                                  placeholder="Treatment dates"
+                                />
+                                <Textarea
+                                  label="Drugs"
+                                  name="history_treatment_drugs"
+                                  value={formData.history_treatment_drugs}
+                                  onChange={handleChange}
+                                  placeholder="Medications administered"
+                                  rows={2}
+                                  className="md:col-span-2"
+                                />
+                                <Textarea
+                                  label="Response"
+                                  name="history_treatment_response"
+                                  value={formData.history_treatment_response}
+                                  onChange={handleChange}
+                                  placeholder="Patient's response to treatment"
+                                  rows={2}
+                                  className="md:col-span-2"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {/* Past History - Detailed */}
+                    <Card title="Past History" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                      <div className="space-y-6">
+                        <div>
+                          <h4 className="font-semibold text-gray-800 mb-3">A. Medical</h4>
+                          <Textarea
+                            label="Including injuries and operations"
+                            name="past_history_medical"
+                            value={formData.past_history_medical}
+                            onChange={handleChange}
+                            placeholder="Past medical history, injuries, operations..."
+                            rows={3}
+                          />
+                        </div>
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold text-gray-800 mb-3">B. Psychiatric</h4>
+                          <div className="space-y-4">
+                            <Input
+                              label="Dates"
+                              name="past_history_psychiatric_dates"
+                              value={formData.past_history_psychiatric_dates}
+                              onChange={handleChange}
+                              placeholder="Dates of previous psychiatric illness/treatment"
+                            />
+                            <Textarea
+                              label="Diagnosis or salient features"
+                              name="past_history_psychiatric_diagnosis"
+                              value={formData.past_history_psychiatric_diagnosis}
+                              onChange={handleChange}
+                              placeholder="Previous psychiatric diagnoses or key features"
+                              rows={2}
+                            />
+                            <Textarea
+                              label="Treatment"
+                              name="past_history_psychiatric_treatment"
+                              value={formData.past_history_psychiatric_treatment}
+                              onChange={handleChange}
+                              placeholder="Treatment received"
+                              rows={2}
+                            />
+                            <Textarea
+                              label="Interim history of previous psychiatric illness"
+                              name="past_history_psychiatric_interim"
+                              value={formData.past_history_psychiatric_interim}
+                              onChange={handleChange}
+                              placeholder="History between episodes"
+                              rows={2}
+                            />
+                            <Textarea
+                              label="Specific enquiry into completeness of recovery and socialization/personal care in the interim period"
+                              name="past_history_psychiatric_recovery"
+                              value={formData.past_history_psychiatric_recovery}
+                              onChange={handleChange}
+                              placeholder="Recovery assessment, socialization, personal care during interim"
+                              rows={3}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {/* Family History - Detailed */}
+                    <Card title="Family History" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                      <div className="space-y-6">
+                        <div>
+                          <h4 className="font-semibold text-gray-800 mb-4">Father</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Input
+                              label="Age"
+                              value={formData.family_history_father_age}
+                              onChange={(e) => setFormData(prev => ({ ...prev, family_history_father_age: e.target.value }))}
+                              placeholder="Age"
+                            />
+                            <Input
+                              label="Education"
+                              value={formData.family_history_father_education}
+                              onChange={(e) => setFormData(prev => ({ ...prev, family_history_father_education: e.target.value }))}
+                              placeholder="Education level"
+                            />
+                            <Input
+                              label="Occupation"
+                              value={formData.family_history_father_occupation}
+                              onChange={(e) => setFormData(prev => ({ ...prev, family_history_father_occupation: e.target.value }))}
+                              placeholder="Occupation"
+                            />
+                            <Textarea
+                              label="General personality and relationship with patient"
+                              value={formData.family_history_father_personality}
+                              onChange={(e) => setFormData(prev => ({ ...prev, family_history_father_personality: e.target.value }))}
+                              placeholder="Personality and relationship details"
+                              rows={2}
+                              className="md:col-span-2"
+                            />
+                            <div className="flex items-center gap-2 md:col-span-2">
+                              <input
+                                type="checkbox"
+                                checked={formData.family_history_father_deceased}
+                                onChange={(e) => setFormData(prev => ({ ...prev, family_history_father_deceased: e.target.checked }))}
+                                className="h-4 w-4 text-primary-600 rounded"
+                              />
+                              <label className="text-sm text-gray-700">Deceased</label>
+                            </div>
+                            {formData.family_history_father_deceased && (
+                              <>
+                                <Input
+                                  label="Age at death"
+                                  value={formData.family_history_father_death_age}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, family_history_father_death_age: e.target.value }))}
+                                  placeholder="Age"
+                                />
+                                <Input
+                                  label="Date of death"
+                                  type="date"
+                                  value={formData.family_history_father_death_date}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, family_history_father_death_date: e.target.value }))}
+                                />
+                                <Textarea
+                                  label="Cause of death"
+                                  value={formData.family_history_father_death_cause}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, family_history_father_death_cause: e.target.value }))}
+                                  placeholder="Cause of death"
+                                  rows={2}
+                                  className="md:col-span-2"
+                                />
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="border-t pt-6">
+                          <h4 className="font-semibold text-gray-800 mb-4">Mother</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Input
+                              label="Age"
+                              value={formData.family_history_mother_age}
+                              onChange={(e) => setFormData(prev => ({ ...prev, family_history_mother_age: e.target.value }))}
+                              placeholder="Age"
+                            />
+                            <Input
+                              label="Education"
+                              value={formData.family_history_mother_education}
+                              onChange={(e) => setFormData(prev => ({ ...prev, family_history_mother_education: e.target.value }))}
+                              placeholder="Education level"
+                            />
+                            <Input
+                              label="Occupation"
+                              value={formData.family_history_mother_occupation}
+                              onChange={(e) => setFormData(prev => ({ ...prev, family_history_mother_occupation: e.target.value }))}
+                              placeholder="Occupation"
+                            />
+                            <Textarea
+                              label="General personality and relationship with patient"
+                              value={formData.family_history_mother_personality}
+                              onChange={(e) => setFormData(prev => ({ ...prev, family_history_mother_personality: e.target.value }))}
+                              placeholder="Personality and relationship details"
+                              rows={2}
+                              className="md:col-span-2"
+                            />
+                            <div className="flex items-center gap-2 md:col-span-2">
+                              <input
+                                type="checkbox"
+                                checked={formData.family_history_mother_deceased}
+                                onChange={(e) => setFormData(prev => ({ ...prev, family_history_mother_deceased: e.target.checked }))}
+                                className="h-4 w-4 text-primary-600 rounded"
+                              />
+                              <label className="text-sm text-gray-700">Deceased</label>
+                            </div>
+                            {formData.family_history_mother_deceased && (
+                              <>
+                                <Input
+                                  label="Age at death"
+                                  value={formData.family_history_mother_death_age}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, family_history_mother_death_age: e.target.value }))}
+                                  placeholder="Age"
+                                />
+                                <Input
+                                  label="Date of death"
+                                  type="date"
+                                  value={formData.family_history_mother_death_date}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, family_history_mother_death_date: e.target.value }))}
+                                />
+                                <Textarea
+                                  label="Cause of death"
+                                  value={formData.family_history_mother_death_cause}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, family_history_mother_death_cause: e.target.value }))}
+                                  placeholder="Cause of death"
+                                  rows={2}
+                                  className="md:col-span-2"
+                                />
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="border-t pt-6">
+                          <h4 className="font-semibold text-gray-800 mb-4">Siblings</h4>
+                          {(formData.family_history_siblings || [{ age: '', sex: '', education: '', occupation: '', marital_status: '' }])?.map((sibling, index) => (
+                            <div key={index} className="border-b pb-4 mb-4 last:border-b-0">
+                              <div className="flex items-center justify-between mb-2">
+                                <h5 className="font-medium text-gray-700">Sibling {index + 1}</h5>
+                                {(formData.family_history_siblings || []).length > 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const newSiblings = (formData.family_history_siblings || []).filter((_, i) => i !== index);
+                                      setFormData(prev => ({ ...prev, family_history_siblings: newSiblings.length > 0 ? newSiblings : [{ age: '', sex: '', education: '', occupation: '', marital_status: '' }] }));
+                                    }}
+                                    className="text-red-600"
+                                  >
+                                    <FiX className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                <Input
+                                  label="Age"
+                                  value={sibling.age}
+                                  onChange={(e) => {
+                                    const newSiblings = [...formData.family_history_siblings];
+                                    newSiblings[index].age = e.target.value;
+                                    setFormData(prev => ({ ...prev, family_history_siblings: newSiblings }));
+                                  }}
+                                  placeholder="Age"
+                                />
+                                <Select
+                                  label="Sex"
+                                  value={sibling.sex}
+                                  onChange={(e) => {
+                                    const newSiblings = [...formData.family_history_siblings];
+                                    newSiblings[index].sex = e.target.value;
+                                    setFormData(prev => ({ ...prev, family_history_siblings: newSiblings }));
+                                  }}
+                                  options={[{ value: 'M', label: 'Male' }, { value: 'F', label: 'Female' }, { value: '', label: 'Select' }]}
+                                />
+                                <Input
+                                  label="Education"
+                                  value={sibling.education}
+                                  onChange={(e) => {
+                                    const newSiblings = [...formData.family_history_siblings];
+                                    newSiblings[index].education = e.target.value;
+                                    setFormData(prev => ({ ...prev, family_history_siblings: newSiblings }));
+                                  }}
+                                  placeholder="Education"
+                                />
+                                <Input
+                                  label="Occupation"
+                                  value={sibling.occupation}
+                                  onChange={(e) => {
+                                    const newSiblings = [...formData.family_history_siblings];
+                                    newSiblings[index].occupation = e.target.value;
+                                    setFormData(prev => ({ ...prev, family_history_siblings: newSiblings }));
+                                  }}
+                                  placeholder="Occupation"
+                                />
+                                <Select
+                                  label="Marital Status"
+                                  value={sibling.marital_status}
+                                  onChange={(e) => {
+                                    const newSiblings = [...formData.family_history_siblings];
+                                    newSiblings[index].marital_status = e.target.value;
+                                    setFormData(prev => ({ ...prev, family_history_siblings: newSiblings }));
+                                  }}
+                                  options={[{ value: 'Single', label: 'Single' }, { value: 'Married', label: 'Married' }, { value: 'Divorced', label: 'Divorced' }, { value: 'Widowed', label: 'Widowed' }, { value: '', label: 'Select' }]}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                family_history_siblings: [...prev.family_history_siblings, { age: '', sex: '', education: '', occupation: '', marital_status: '' }]
+                              }));
+                            }}
+                            className="flex items-center gap-2"
+                          >
+                            <FiPlus className="w-4 h-4" />
+                            Add Sibling
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {/* General Home Situation and Early Development */}
+                    <Card title="General Home Situation and Early Development" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                      <div className="space-y-6">
+                        <div>
+                          <h4 className="font-semibold text-gray-800 mb-3">General home situation</h4>
+                          <div className="space-y-4">
+                            <Textarea
+                              label="Patient's childhood"
+                              name="home_situation_childhood"
+                              value={formData.home_situation_childhood}
+                              onChange={handleChange}
+                              placeholder="Childhood environment and experiences..."
+                              rows={3}
+                            />
+                            <Textarea
+                              label="Relationship between parents"
+                              name="home_situation_parents_relationship"
+                              value={formData.home_situation_parents_relationship}
+                              onChange={handleChange}
+                              placeholder="Parental relationship..."
+                              rows={2}
+                            />
+                            <Textarea
+                              label="Socio-economic status"
+                              name="home_situation_socioeconomic"
+                              value={formData.home_situation_socioeconomic}
+                              onChange={handleChange}
+                              placeholder="Socio-economic background..."
+                              rows={2}
+                            />
+                            <Textarea
+                              label="Inter-personal relationship"
+                              name="home_situation_interpersonal"
+                              value={formData.home_situation_interpersonal}
+                              onChange={handleChange}
+                              placeholder="Interpersonal dynamics in the family..."
+                              rows={2}
+                            />
+                          </div>
+                        </div>
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold text-gray-800 mb-3">Personal history</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Input
+                              label="Date and place of birth"
+                              name="personal_birth_date"
+                              value={formData.personal_birth_date}
+                              onChange={handleChange}
+                              placeholder="Birth date"
+                            />
+                            <Input
+                              name="personal_birth_place"
+                              value={formData.personal_birth_place}
+                              onChange={handleChange}
+                              placeholder="Birth place"
+                            />
+                            <Select
+                              label="Home or hospital delivery"
+                              name="personal_delivery_type"
+                              value={formData.personal_delivery_type}
+                              onChange={handleChange}
+                              options={[{ value: '', label: 'Select' }, { value: 'Home', label: 'Home' }, { value: 'Hospital', label: 'Hospital' }]}
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                            <Textarea
+                              label="Prenatal complications, if any"
+                              name="personal_complications_prenatal"
+                              value={formData.personal_complications_prenatal}
+                              onChange={handleChange}
+                              placeholder="Prenatal complications..."
+                              rows={2}
+                            />
+                            <Textarea
+                              label="Natal complications, if any"
+                              name="personal_complications_natal"
+                              value={formData.personal_complications_natal}
+                              onChange={handleChange}
+                              placeholder="Natal complications..."
+                              rows={2}
+                            />
+                            <Textarea
+                              label="Postnatal complications, if any"
+                              name="personal_complications_postnatal"
+                              value={formData.personal_complications_postnatal}
+                              onChange={handleChange}
+                              placeholder="Postnatal complications..."
+                              rows={2}
+                            />
+                          </div>
+                        </div>
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold text-gray-800 mb-3">Early development</h4>
+                          <div className="space-y-4">
+                            <Input
+                              label="Age at weaning"
+                              name="development_weaning_age"
+                              value={formData.development_weaning_age}
+                              onChange={handleChange}
+                              placeholder="Age"
+                            />
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <Input
+                                label="Age at first words"
+                                name="development_first_words"
+                                value={formData.development_first_words}
+                                onChange={handleChange}
+                                placeholder="Age"
+                              />
+                              <Input
+                                label="Age at three-word sentences"
+                                name="development_three_words"
+                                value={formData.development_three_words}
+                                onChange={handleChange}
+                                placeholder="Age"
+                              />
+                              <Input
+                                label="Age at walking"
+                                name="development_walking"
+                                value={formData.development_walking}
+                                onChange={handleChange}
+                                placeholder="Age"
+                              />
+                            </div>
+                            <Textarea
+                              label="Neurotic traits"
+                              name="development_neurotic_traits"
+                              value={formData.development_neurotic_traits}
+                              onChange={handleChange}
+                              placeholder="Neurotic traits observed..."
+                              rows={2}
+                            />
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <Textarea
+                                label="Nail-biting"
+                                name="development_nail_biting"
+                                value={formData.development_nail_biting}
+                                onChange={handleChange}
+                                placeholder="History..."
+                                rows={2}
+                              />
+                              <Textarea
+                                label="Bedwetting"
+                                name="development_bedwetting"
+                                value={formData.development_bedwetting}
+                                onChange={handleChange}
+                                placeholder="History..."
+                                rows={2}
+                              />
+                              <Textarea
+                                label="Phobias"
+                                name="development_phobias"
+                                value={formData.development_phobias}
+                                onChange={handleChange}
+                                placeholder="Phobias..."
+                                rows={2}
+                              />
+                            </div>
+                            <Textarea
+                              label="Illness and injuries in childhood"
+                              name="development_childhood_illness"
+                              value={formData.development_childhood_illness}
+                              onChange={handleChange}
+                              placeholder="Childhood illnesses and injuries..."
+                              rows={3}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {/* Educational History */}
+                    <Card title="Educational History" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                      <div className="space-y-4">
+                        <Input
+                          label="Age at starting schooling"
+                          name="education_start_age"
+                          value={formData.education_start_age}
+                          onChange={handleChange}
+                          placeholder="Age"
+                        />
+                        <Input
+                          label="Highest class completed"
+                          name="education_highest_class"
+                          value={formData.education_highest_class}
+                          onChange={handleChange}
+                          placeholder="Class/grade"
+                        />
+                        <Textarea
+                          label="Performance in school (give chronologically for each important exam)"
+                          name="education_performance"
+                          value={formData.education_performance}
+                          onChange={handleChange}
+                          placeholder="Performance details..."
+                          rows={4}
+                        />
+                        <Textarea
+                          label="Disciplinary problems"
+                          name="education_disciplinary"
+                          value={formData.education_disciplinary}
+                          onChange={handleChange}
+                          placeholder="Any disciplinary issues..."
+                          rows={2}
+                        />
+                        <Textarea
+                          label="Peer relationship and group participation"
+                          name="education_peer_relationship"
+                          value={formData.education_peer_relationship}
+                          onChange={handleChange}
+                          placeholder="Relationships and participation..."
+                          rows={2}
+                        />
+                        <Input
+                          label="Hobbies"
+                          name="education_hobbies"
+                          value={formData.education_hobbies}
+                          onChange={handleChange}
+                          placeholder="Hobbies during school"
+                        />
+                        <Input
+                          label="Special abilities"
+                          name="education_special_abilities"
+                          value={formData.education_special_abilities}
+                          onChange={handleChange}
+                          placeholder="Special talents/abilities"
+                        />
+                        <Textarea
+                          label="Reasons for discontinuing"
+                          name="education_discontinue_reason"
+                          value={formData.education_discontinue_reason}
+                          onChange={handleChange}
+                          placeholder="If education was discontinued, reasons..."
+                          rows={2}
+                        />
+                      </div>
+                    </Card>
+
+                    {/* Occupational History */}
+                    <Card title="Occupational History" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-gray-800 mb-3">Jobs held in chronological order</h4>
+                        {(formData.occupation_jobs || [{ job: '', dates: '', adjustment: '', difficulties: '', promotions: '', change_reason: '' }])?.map((job, index) => (
+                          <div key={index} className="border-b pb-4 mb-4 last:border-b-0 space-y-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <h5 className="font-medium text-gray-700">Job {index + 1}</h5>
+                              {(formData.occupation_jobs || []).length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const newJobs = (formData.occupation_jobs || []).filter((_, i) => i !== index);
+                                    setFormData(prev => ({ ...prev, occupation_jobs: newJobs.length > 0 ? newJobs : [{ job: '', dates: '', adjustment: '', difficulties: '', promotions: '', change_reason: '' }] }));
+                                  }}
+                                  className="text-red-600"
+                                >
+                                  <FiX className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <Input
+                                label="Job"
+                                value={job.job}
+                                onChange={(e) => {
+                                  const newJobs = [...formData.occupation_jobs];
+                                  newJobs[index].job = e.target.value;
+                                  setFormData(prev => ({ ...prev, occupation_jobs: newJobs }));
+                                }}
+                                placeholder="Job title/description"
+                              />
+                              <Input
+                                label="Dates"
+                                value={job.dates}
+                                onChange={(e) => {
+                                  const newJobs = [...formData.occupation_jobs];
+                                  newJobs[index].dates = e.target.value;
+                                  setFormData(prev => ({ ...prev, occupation_jobs: newJobs }));
+                                }}
+                                placeholder="Start - End dates"
+                              />
+                              <Textarea
+                                label="Adjustment with peers and superiors"
+                                value={job.adjustment}
+                                onChange={(e) => {
+                                  const newJobs = [...formData.occupation_jobs];
+                                  newJobs[index].adjustment = e.target.value;
+                                  setFormData(prev => ({ ...prev, occupation_jobs: newJobs }));
+                                }}
+                                placeholder="Work relationships..."
+                                rows={2}
+                              />
+                              <Textarea
+                                label="Specific difficulties"
+                                value={job.difficulties}
+                                onChange={(e) => {
+                                  const newJobs = [...formData.occupation_jobs];
+                                  newJobs[index].difficulties = e.target.value;
+                                  setFormData(prev => ({ ...prev, occupation_jobs: newJobs }));
+                                }}
+                                placeholder="Work-related difficulties..."
+                                rows={2}
+                              />
+                              <Textarea
+                                label="Promotions"
+                                value={job.promotions}
+                                onChange={(e) => {
+                                  const newJobs = [...formData.occupation_jobs];
+                                  newJobs[index].promotions = e.target.value;
+                                  setFormData(prev => ({ ...prev, occupation_jobs: newJobs }));
+                                }}
+                                placeholder="Promotions received..."
+                                rows={2}
+                              />
+                              <Textarea
+                                label="Reasons for change of jobs"
+                                value={job.change_reason}
+                                onChange={(e) => {
+                                  const newJobs = [...formData.occupation_jobs];
+                                  newJobs[index].change_reason = e.target.value;
+                                  setFormData(prev => ({ ...prev, occupation_jobs: newJobs }));
+                                }}
+                                placeholder="Reason for leaving..."
+                                rows={2}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setFormData(prev => ({
+                              ...prev,
+                              occupation_jobs: [...prev.occupation_jobs, { job: '', dates: '', adjustment: '', difficulties: '', promotions: '', change_reason: '' }]
+                            }));
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <FiPlus className="w-4 h-4" />
+                          Add Job
+                        </Button>
+                      </div>
+                    </Card>
+
+                    {/* Sexual and Marital History */}
+                    <Card title="Sexual and Marital History" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                      <div className="space-y-4">
+                        <Input
+                          label="Age at menarche"
+                          name="sexual_menarche_age"
+                          value={formData.sexual_menarche_age}
+                          onChange={handleChange}
+                          placeholder="Age"
+                        />
+                        <Textarea
+                          label="Reaction to it and menstrual cycles"
+                          name="sexual_menarche_reaction"
+                          value={formData.sexual_menarche_reaction}
+                          onChange={handleChange}
+                          placeholder="Reaction and menstrual history..."
+                          rows={2}
+                        />
+                        <Textarea
+                          label="Sex education"
+                          name="sexual_education"
+                          value={formData.sexual_education}
+                          onChange={handleChange}
+                          placeholder="Sex education received..."
+                          rows={2}
+                        />
+                        <Textarea
+                          label="Masturbation"
+                          name="sexual_masturbation"
+                          value={formData.sexual_masturbation}
+                          onChange={handleChange}
+                          placeholder="History..."
+                          rows={2}
+                        />
+                        <Textarea
+                          label="Early childhood and later sexual contact"
+                          name="sexual_contact"
+                          value={formData.sexual_contact}
+                          onChange={handleChange}
+                          placeholder="History of sexual contact..."
+                          rows={2}
+                        />
+                        <Textarea
+                          label="Premarital and extramarital relationship"
+                          name="sexual_premarital_extramarital"
+                          value={formData.sexual_premarital_extramarital}
+                          onChange={handleChange}
+                          placeholder="Relationship history..."
+                          rows={2}
+                        />
+                        <Input
+                          label="Marriage how arranged"
+                          name="sexual_marriage_arranged"
+                          value={formData.sexual_marriage_arranged}
+                          onChange={handleChange}
+                          placeholder="Arranged/Love marriage"
+                        />
+                        <Input
+                          label="Date of marriage"
+                          type="date"
+                          name="sexual_marriage_date"
+                          value={formData.sexual_marriage_date}
+                          onChange={handleChange}
+                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <Input
+                            label="Age and occupation of the spouse"
+                            name="sexual_spouse_age"
+                            value={formData.sexual_spouse_age}
+                            onChange={handleChange}
+                            placeholder="Spouse age"
+                          />
+                          <Input
+                            name="sexual_spouse_occupation"
+                            value={formData.sexual_spouse_occupation}
+                            onChange={handleChange}
+                            placeholder="Spouse occupation"
+                          />
+                        </div>
+                        <Textarea
+                          label="General and sexual adjustment"
+                          name="sexual_adjustment_general"
+                          value={formData.sexual_adjustment_general}
+                          onChange={handleChange}
+                          placeholder="General adjustment..."
+                          rows={2}
+                        />
+                        <Textarea
+                          label="Sexual adjustment"
+                          name="sexual_adjustment_sexual"
+                          value={formData.sexual_adjustment_sexual}
+                          onChange={handleChange}
+                          placeholder="Sexual adjustment..."
+                          rows={2}
+                        />
+                        <div>
+                          <h5 className="font-medium text-gray-700 mb-2">Ages and sex of children</h5>
+                          {(formData.sexual_children || [{ age: '', sex: '' }])?.map((child, index) => (
+                            <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
+                              <Input
+                                label={`Child ${index + 1} - Age`}
+                                value={child.age}
+                                onChange={(e) => {
+                                  const newChildren = [...(formData.sexual_children || [{ age: '', sex: '' }])];
+                                  newChildren[index].age = e.target.value;
+                                  setFormData(prev => ({ ...prev, sexual_children: newChildren }));
+                                }}
+                                placeholder="Age"
+                              />
+                              <Select
+                                label="Sex"
+                                value={child.sex}
+                                onChange={(e) => {
+                                  const newChildren = [...(formData.sexual_children || [{ age: '', sex: '' }])];
+                                  newChildren[index].sex = e.target.value;
+                                  setFormData(prev => ({ ...prev, sexual_children: newChildren }));
+                                }}
+                                options={[{ value: '', label: 'Select' }, { value: 'M', label: 'Male' }, { value: 'F', label: 'Female' }]}
+                              />
+                              <div className="flex items-end">
+                                {(formData.sexual_children || []).length > 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const newChildren = (formData.sexual_children || []).filter((_, i) => i !== index);
+                                      setFormData(prev => ({ ...prev, sexual_children: newChildren.length > 0 ? newChildren : [{ age: '', sex: '' }] }));
+                                    }}
+                                    className="text-red-600"
+                                  >
+                                    <FiX />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                sexual_children: [...(prev.sexual_children || [{ age: '', sex: '' }]), { age: '', sex: '' }]
+                              }));
+                            }}
+                            className="flex items-center gap-2 mt-2"
+                          >
+                            <FiPlus className="w-4 h-4" />
+                            Add Child
+                          </Button>
+                        </div>
+                        <Textarea
+                          label="Sexual problems"
+                          name="sexual_problems"
+                          value={formData.sexual_problems}
+                          onChange={handleChange}
+                          placeholder="Any sexual problems..."
+                          rows={2}
+                        />
+                      </div>
+                    </Card>
+
+                    {/* Religion */}
+                    <Card title="Religion" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                      <div className="space-y-4">
+                        <Input
+                          label="Religion and sex"
+                          name="religion_type"
+                          value={formData.religion_type}
+                          onChange={handleChange}
+                          placeholder="Religion"
+                        />
+                        <Input
+                          label="Level of participation"
+                          name="religion_participation"
+                          value={formData.religion_participation}
+                          onChange={handleChange}
+                          placeholder="Active/Moderate/Nominal/Non-practicing"
+                        />
+                        <Textarea
+                          label="Any sudden changes in religion"
+                          name="religion_changes"
+                          value={formData.religion_changes}
+                          onChange={handleChange}
+                          placeholder="Any changes in religious practices..."
+                          rows={2}
+                        />
+                      </div>
+                    </Card>
+
+                    {/* Present Living Situation */}
+                    <Card title="Present Living Situation" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                      <div className="space-y-4">
+                        <div>
+                          <h5 className="font-medium text-gray-700 mb-2">The residents, who all live with the patient</h5>
+                          {formData.living_residents?.map((resident, index) => (
+                            <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
+                              <Input
+                                label={`Resident ${index + 1} - Name`}
+                                value={resident.name}
+                                onChange={(e) => {
+                                  const newResidents = [...formData.living_residents];
+                                  newResidents[index].name = e.target.value;
+                                  setFormData(prev => ({ ...prev, living_residents: newResidents }));
+                                }}
+                                placeholder="Name"
+                              />
+                              <Input
+                                label="Relationship"
+                                value={resident.relationship}
+                                onChange={(e) => {
+                                  const newResidents = [...formData.living_residents];
+                                  newResidents[index].relationship = e.target.value;
+                                  setFormData(prev => ({ ...prev, living_residents: newResidents }));
+                                }}
+                                placeholder="Relationship"
+                              />
+                              <Input
+                                label="Age"
+                                value={resident.age}
+                                onChange={(e) => {
+                                  const newResidents = [...formData.living_residents];
+                                  newResidents[index].age = e.target.value;
+                                  setFormData(prev => ({ ...prev, living_residents: newResidents }));
+                                }}
+                                placeholder="Age"
+                              />
+                              <div className="flex items-end">
+                                {formData.living_residents.length > 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const newResidents = formData.living_residents.filter((_, i) => i !== index);
+                                      setFormData(prev => ({ ...prev, living_residents: newResidents }));
+                                    }}
+                                    className="text-red-600"
+                                  >
+                                    <FiX />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                living_residents: [...prev.living_residents, { name: '', relationship: '', age: '' }]
+                              }));
+                            }}
+                            className="flex items-center gap-2 mt-2"
+                          >
+                            <FiPlus className="w-4 h-4" />
+                            Add Resident
+                          </Button>
+                        </div>
+                        <Textarea
+                          label="Sharing of income"
+                          name="living_income_sharing"
+                          value={formData.living_income_sharing}
+                          onChange={handleChange}
+                          placeholder="How income is shared..."
+                          rows={2}
+                        />
+                        <Textarea
+                          label="Expenses"
+                          name="living_expenses"
+                          value={formData.living_expenses}
+                          onChange={handleChange}
+                          placeholder="Expense management..."
+                          rows={2}
+                        />
+                        <Textarea
+                          label="Kitchen"
+                          name="living_kitchen"
+                          value={formData.living_kitchen}
+                          onChange={handleChange}
+                          placeholder="Kitchen arrangements (shared/separate)..."
+                          rows={2}
+                        />
+                        <Textarea
+                          label="Domestic conflicts"
+                          name="living_domestic_conflicts"
+                          value={formData.living_domestic_conflicts}
+                          onChange={handleChange}
+                          placeholder="Any domestic conflicts..."
+                          rows={2}
+                        />
+                        <Input
+                          label="Overall social class"
+                          name="living_social_class"
+                          value={formData.living_social_class}
+                          onChange={handleChange}
+                          placeholder="Upper/Middle/Lower"
+                        />
+                        <div className="border-t pt-4">
+                          <h5 className="font-medium text-gray-700 mb-2">In case of married women: details of the members in the in-law family</h5>
+                          {formData.living_inlaws?.map((inlaw, index) => (
+                            <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
+                              <Input
+                                label={`In-law ${index + 1} - Name`}
+                                value={inlaw.name}
+                                onChange={(e) => {
+                                  const newInlaws = [...formData.living_inlaws];
+                                  newInlaws[index].name = e.target.value;
+                                  setFormData(prev => ({ ...prev, living_inlaws: newInlaws }));
+                                }}
+                                placeholder="Name"
+                              />
+                              <Input
+                                label="Relationship"
+                                value={inlaw.relationship}
+                                onChange={(e) => {
+                                  const newInlaws = [...formData.living_inlaws];
+                                  newInlaws[index].relationship = e.target.value;
+                                  setFormData(prev => ({ ...prev, living_inlaws: newInlaws }));
+                                }}
+                                placeholder="Relationship"
+                              />
+                              <Input
+                                label="Age"
+                                value={inlaw.age}
+                                onChange={(e) => {
+                                  const newInlaws = [...formData.living_inlaws];
+                                  newInlaws[index].age = e.target.value;
+                                  setFormData(prev => ({ ...prev, living_inlaws: newInlaws }));
+                                }}
+                                placeholder="Age"
+                              />
+                              <div className="flex items-end">
+                                {formData.living_inlaws.length > 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const newInlaws = formData.living_inlaws.filter((_, i) => i !== index);
+                                      setFormData(prev => ({ ...prev, living_inlaws: newInlaws }));
+                                    }}
+                                    className="text-red-600"
+                                  >
+                                    <FiX />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                living_inlaws: [...prev.living_inlaws, { name: '', relationship: '', age: '' }]
+                              }));
+                            }}
+                            className="flex items-center gap-2 mt-2"
+                          >
+                            <FiPlus className="w-4 h-4" />
+                            Add In-law Member
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {/* Premorbid Personality */}
+                    <Card title="Premorbid Personality" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                      <div className="space-y-6">
+                        <div>
+                          <h4 className="font-semibold text-gray-800 mb-3">A. Personality traits, habits and hobbies</h4>
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <Select
+                                label="Passive vs Active"
+                                name="premorbid_personality_passive_active"
+                                value={formData.premorbid_personality_passive_active}
+                                onChange={handleChange}
+                                options={[{ value: '', label: 'Select' }, { value: 'Passive', label: 'Passive' }, { value: 'Active', label: 'Active' }]}
+                              />
+                              <Input
+                                label="Assertive"
+                                name="premorbid_personality_assertive"
+                                value={formData.premorbid_personality_assertive}
+                                onChange={handleChange}
+                                placeholder="Assertiveness level"
+                              />
+                              <Select
+                                label="Introvert vs Extrovert"
+                                name="premorbid_personality_introvert_extrovert"
+                                value={formData.premorbid_personality_introvert_extrovert}
+                                onChange={handleChange}
+                                options={[{ value: '', label: 'Select' }, { value: 'Introvert', label: 'Introvert' }, { value: 'Extrovert', label: 'Extrovert' }]}
+                              />
+                            </div>
+                            <CheckboxGroup
+                              label="If sociable, anxious and worrisome, complacent, suspicious"
+                              name="premorbid_personality_traits"
+                              value={formData.premorbid_personality_traits}
+                              onChange={handleChange}
+                              options={['Sociable', 'Anxious', 'Worrisome', 'Complacent', 'Suspicious']}
+                            />
+                            <Textarea
+                              label="Hobbies and interests"
+                              name="premorbid_personality_hobbies"
+                              value={formData.premorbid_personality_hobbies}
+                              onChange={handleChange}
+                              placeholder="Hobbies and interests..."
+                              rows={2}
+                            />
+                            <Textarea
+                              label="Eating, sleep and excretory habits, anything remarkable?"
+                              name="premorbid_personality_habits"
+                              value={formData.premorbid_personality_habits}
+                              onChange={handleChange}
+                              placeholder="Habits details..."
+                              rows={3}
+                            />
+                          </div>
+                        </div>
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold text-gray-800 mb-3">B. Alcohol and drug abuse</h4>
+                          <Textarea
+                            name="premorbid_personality_alcohol_drugs"
+                            value={formData.premorbid_personality_alcohol_drugs}
+                            onChange={handleChange}
+                            placeholder="History of alcohol and drug abuse..."
+                            rows={3}
+                          />
+                        </div>
+                      </div>
+                    </Card>
+
+                    {/* Physical Examination - Comprehensive */}
+                    <Card title="Physical Examination" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                      <div className="space-y-6">
+                        <div>
+                          <h4 className="font-semibold text-gray-800 mb-3">General</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Input
+                              label="Appearance"
+                              name="physical_appearance"
+                              value={formData.physical_appearance}
+                              onChange={handleChange}
+                              placeholder="General appearance"
+                            />
+                            <Input
+                              label="Body build and nutrition"
+                              name="physical_body_build"
+                              value={formData.physical_body_build}
+                              onChange={handleChange}
+                              placeholder="Body build and nutrition status"
+                            />
+                            <div className="flex flex-wrap gap-4 md:col-span-2">
+                              <label className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.physical_pallor}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, physical_pallor: e.target.checked }))}
+                                  className="h-4 w-4 text-primary-600 rounded"
+                                />
+                                <span className="text-sm text-gray-700">Pallor</span>
+                              </label>
+                              <label className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.physical_icterus}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, physical_icterus: e.target.checked }))}
+                                  className="h-4 w-4 text-primary-600 rounded"
+                                />
+                                <span className="text-sm text-gray-700">Icterus</span>
+                              </label>
+                              <label className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.physical_oedema}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, physical_oedema: e.target.checked }))}
+                                  className="h-4 w-4 text-primary-600 rounded"
+                                />
+                                <span className="text-sm text-gray-700">Oedema</span>
+                              </label>
+                              <label className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.physical_lymphadenopathy}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, physical_lymphadenopathy: e.target.checked }))}
+                                  className="h-4 w-4 text-primary-600 rounded"
+                                />
+                                <span className="text-sm text-gray-700">Lymphadenopathy</span>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="border-t pt-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <Input
+                              label="Pulse"
+                              name="physical_pulse"
+                              value={formData.physical_pulse}
+                              onChange={handleChange}
+                              placeholder="e.g., 72 bpm"
+                            />
+                            <Input
+                              label="B.P."
+                              name="physical_bp"
+                              value={formData.physical_bp}
+                              onChange={handleChange}
+                              placeholder="e.g., 120/80"
+                            />
+                            <Input
+                              label="Height"
+                              name="physical_height"
+                              value={formData.physical_height}
+                              onChange={handleChange}
+                              placeholder="cm"
+                            />
+                            <Input
+                              label="Weight"
+                              name="physical_weight"
+                              value={formData.physical_weight}
+                              onChange={handleChange}
+                              placeholder="kg"
+                            />
+                            <Input
+                              label="Waist circumference"
+                              name="physical_waist"
+                              value={formData.physical_waist}
+                              onChange={handleChange}
+                              placeholder="cm"
+                            />
+                          </div>
+                        </div>
+                        <div className="border-t pt-4">
+                          <Textarea
+                            label="Fundus"
+                            name="physical_fundus"
+                            value={formData.physical_fundus}
+                            onChange={handleChange}
+                            placeholder="Fundus examination findings..."
+                            rows={2}
+                          />
+                        </div>
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold text-gray-800 mb-3">CVS (Cardiovascular System)</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Input
+                              label="Apex beat"
+                              name="physical_cvs_apex"
+                              value={formData.physical_cvs_apex}
+                              onChange={handleChange}
+                              placeholder="Apex beat location"
+                            />
+                            <Input
+                              label="Regularity"
+                              name="physical_cvs_regularity"
+                              value={formData.physical_cvs_regularity}
+                              onChange={handleChange}
+                              placeholder="Regular/Irregular"
+                            />
+                            <Input
+                              label="Heart sounds"
+                              name="physical_cvs_heart_sounds"
+                              value={formData.physical_cvs_heart_sounds}
+                              onChange={handleChange}
+                              placeholder="Heart sounds assessment"
+                            />
+                            <Input
+                              label="Murmurs"
+                              name="physical_cvs_murmurs"
+                              value={formData.physical_cvs_murmurs}
+                              onChange={handleChange}
+                              placeholder="Murmurs (if present)"
+                            />
+                          </div>
+                        </div>
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold text-gray-800 mb-3">Chest</h4>
+                          <div className="space-y-4">
+                            <Input
+                              label="Expansion on the two sides"
+                              name="physical_chest_expansion"
+                              value={formData.physical_chest_expansion}
+                              onChange={handleChange}
+                              placeholder="Chest expansion assessment"
+                            />
+                            <Input
+                              label="Percussion"
+                              name="physical_chest_percussion"
+                              value={formData.physical_chest_percussion}
+                              onChange={handleChange}
+                              placeholder="Percussion findings"
+                            />
+                            <Input
+                              label="Adventitious sounds"
+                              name="physical_chest_adventitious"
+                              value={formData.physical_chest_adventitious}
+                              onChange={handleChange}
+                              placeholder="Adventitious sounds (if present)"
+                            />
+                          </div>
+                        </div>
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold text-gray-800 mb-3">Abdomen</h4>
+                          <div className="space-y-4">
+                            <Input
+                              label="Tenderness"
+                              name="physical_abdomen_tenderness"
+                              value={formData.physical_abdomen_tenderness}
+                              onChange={handleChange}
+                              placeholder="Tenderness location/assessment"
+                            />
+                            <Input
+                              label="Mass"
+                              name="physical_abdomen_mass"
+                              value={formData.physical_abdomen_mass}
+                              onChange={handleChange}
+                              placeholder="Palpable mass (if present)"
+                            />
+                            <Input
+                              label="Bowel sounds"
+                              name="physical_abdomen_bowel_sounds"
+                              value={formData.physical_abdomen_bowel_sounds}
+                              onChange={handleChange}
+                              placeholder="Normal/Hypoactive/Hyperactive"
+                            />
+                          </div>
+                        </div>
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold text-gray-800 mb-3">CNS (Central Nervous System)</h4>
+                          <div className="space-y-4">
+                            <Textarea
+                              label="Cranial nerves"
+                              name="physical_cns_cranial"
+                              value={formData.physical_cns_cranial}
+                              onChange={handleChange}
+                              placeholder="Cranial nerves examination..."
+                              rows={2}
+                            />
+                            <Textarea
+                              label="Motor and sensory system"
+                              name="physical_cns_motor_sensory"
+                              value={formData.physical_cns_motor_sensory}
+                              onChange={handleChange}
+                              placeholder="Motor and sensory examination..."
+                              rows={2}
+                            />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <Input
+                                label="Rigidity"
+                                name="physical_cns_rigidity"
+                                value={formData.physical_cns_rigidity}
+                                onChange={handleChange}
+                                placeholder="Rigidity assessment"
+                              />
+                              <Input
+                                label="Involuntary movements"
+                                name="physical_cns_involuntary"
+                                value={formData.physical_cns_involuntary}
+                                onChange={handleChange}
+                                placeholder="Involuntary movements (if present)"
+                              />
+                            </div>
+                            <Textarea
+                              label="Superficial reflexes"
+                              name="physical_cns_superficial_reflexes"
+                              value={formData.physical_cns_superficial_reflexes}
+                              onChange={handleChange}
+                              placeholder="Superficial reflexes findings..."
+                              rows={2}
+                            />
+                            <Textarea
+                              label="DTRs (Deep Tendon Reflexes)"
+                              name="physical_cns_dtrs"
+                              value={formData.physical_cns_dtrs}
+                              onChange={handleChange}
+                              placeholder="Deep tendon reflexes..."
+                              rows={2}
+                            />
+                            <Input
+                              label="Plantar"
+                              name="physical_cns_plantar"
+                              value={formData.physical_cns_plantar}
+                              onChange={handleChange}
+                              placeholder="Flexor/Extensor"
+                            />
+                            <Textarea
+                              label="Cerebellar Functions"
+                              name="physical_cns_cerebellar"
+                              value={formData.physical_cns_cerebellar}
+                              onChange={handleChange}
+                              placeholder="Cerebellar functions assessment..."
+                              rows={2}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {/* Mental Status Examination - Expanded */}
+                    <Card title="Mental Status Examination (Expanded)" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                      <div className="space-y-6">
+                        <div>
+                          <h4 className="font-semibold text-gray-800 mb-3">1. General Appearance, attitude and behaviour</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Textarea
+                              label="General demeanour"
+                              name="mse_general_demeanour"
+                              value={formData.mse_general_demeanour}
+                              onChange={handleChange}
+                              placeholder="General demeanour..."
+                              rows={2}
+                            />
+                            <Input
+                              label="Tidy/Well-kempt"
+                              name="mse_general_tidy"
+                              value={formData.mse_general_tidy}
+                              onChange={handleChange}
+                              placeholder="Assessment"
+                            />
+                            <Input
+                              label="Awareness of surroundings"
+                              name="mse_general_awareness"
+                              value={formData.mse_general_awareness}
+                              onChange={handleChange}
+                              placeholder="Level of awareness"
+                            />
+                            <Input
+                              label="Co-operation in the examination"
+                              name="mse_general_cooperation"
+                              value={formData.mse_general_cooperation}
+                              onChange={handleChange}
+                              placeholder="Co-operation level"
+                            />
+                          </div>
+                        </div>
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold text-gray-800 mb-3">2. Psychomotor Activity</h4>
+                          <div className="space-y-4">
+                            <Input
+                              label="Speed and amount of verbalization"
+                              name="mse_psychomotor_verbalization"
+                              value={formData.mse_psychomotor_verbalization}
+                              onChange={handleChange}
+                              placeholder="Assessment"
+                            />
+                            <Input
+                              label="Pressure of thought and flight of ideas"
+                              name="mse_psychomotor_pressure"
+                              value={formData.mse_psychomotor_pressure}
+                              onChange={handleChange}
+                              placeholder="Assessment"
+                            />
+                            <Input
+                              label="Motoric tension"
+                              name="mse_psychomotor_tension"
+                              value={formData.mse_psychomotor_tension}
+                              onChange={handleChange}
+                              placeholder="Assessment"
+                            />
+                            <Input
+                              label="Posture and movement"
+                              name="mse_psychomotor_posture"
+                              value={formData.mse_psychomotor_posture}
+                              onChange={handleChange}
+                              placeholder="Assessment"
+                            />
+                            <Input
+                              label="Mannerism, Grimacing, Posturing, Catatonic features"
+                              name="mse_psychomotor_catatonic"
+                              value={formData.mse_psychomotor_catatonic}
+                              onChange={handleChange}
+                              placeholder="Assessment"
+                            />
+                          </div>
+                        </div>
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold text-gray-800 mb-3">3. Affect</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Input
+                              label="Subjective feeling"
+                              name="mse_affect_subjective"
+                              value={formData.mse_affect_subjective}
+                              onChange={handleChange}
+                              placeholder="Patient's subjective feeling"
+                            />
+                            <Input
+                              label="Tone"
+                              name="mse_affect_tone"
+                              value={formData.mse_affect_tone}
+                              onChange={handleChange}
+                              placeholder="Affective tone"
+                            />
+                            <Textarea
+                              label="Objective assessment of resting affect, and its fluctuation in the context of topics being discussed"
+                              name="mse_affect_resting"
+                              value={formData.mse_affect_resting}
+                              onChange={handleChange}
+                              placeholder="Assessment (Flat, Anxious, Depressed, Elated, Inappropriate and labile affect)"
+                              rows={3}
+                              className="md:col-span-2"
+                            />
+                            <Input
+                              label="Fluctuation"
+                              name="mse_affect_fluctuation"
+                              value={formData.mse_affect_fluctuation}
+                              onChange={handleChange}
+                              placeholder="Affect fluctuation assessment"
+                              className="md:col-span-2"
+                            />
+                          </div>
+                        </div>
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold text-gray-800 mb-3">4. Thought</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <Input
+                              label="Flow"
+                              name="mse_thought_flow"
+                              value={formData.mse_thought_flow}
+                              onChange={handleChange}
+                              placeholder="Thought flow"
+                            />
+                            <Input
+                              label="Form"
+                              name="mse_thought_form"
+                              value={formData.mse_thought_form}
+                              onChange={handleChange}
+                              placeholder="Thought form"
+                            />
+                            <Input
+                              label="Content"
+                              name="mse_thought_content"
+                              value={formData.mse_thought_content}
+                              onChange={handleChange}
+                              placeholder="Thought content"
+                            />
+                          </div>
+                        </div>
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold text-gray-800 mb-3">5. Perception</h4>
+                          <p className="text-sm text-gray-600 mb-3">(Covered in main MSE section above)</p>
+                        </div>
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold text-gray-800 mb-3">6. Cognitive functions</h4>
+                          <div className="space-y-4">
+                            <Input
+                              label="Level of consciousness"
+                              name="mse_cognitive_consciousness"
+                              value={formData.mse_cognitive_consciousness}
+                              onChange={handleChange}
+                              placeholder="Assessment"
+                            />
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <Input
+                                label="Orientation - Time"
+                                name="mse_cognitive_orientation_time"
+                                value={formData.mse_cognitive_orientation_time}
+                                onChange={handleChange}
+                                placeholder="Time orientation"
+                              />
+                              <Input
+                                label="Orientation - Place"
+                                name="mse_cognitive_orientation_place"
+                                value={formData.mse_cognitive_orientation_place}
+                                onChange={handleChange}
+                                placeholder="Place orientation"
+                              />
+                              <Input
+                                label="Orientation - Person"
+                                name="mse_cognitive_orientation_person"
+                                value={formData.mse_cognitive_orientation_person}
+                                onChange={handleChange}
+                                placeholder="Person orientation"
+                              />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <Input
+                                label="Memory - Immediate"
+                                name="mse_cognitive_memory_immediate"
+                                value={formData.mse_cognitive_memory_immediate}
+                                onChange={handleChange}
+                                placeholder="Immediate memory"
+                              />
+                              <Input
+                                label="Memory - Recent"
+                                name="mse_cognitive_memory_recent"
+                                value={formData.mse_cognitive_memory_recent}
+                                onChange={handleChange}
+                                placeholder="Recent memory"
+                              />
+                              <Input
+                                label="Memory - Remote"
+                                name="mse_cognitive_memory_remote"
+                                value={formData.mse_cognitive_memory_remote}
+                                onChange={handleChange}
+                                placeholder="Remote memory"
+                              />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <Input
+                                label="Subtraction"
+                                name="mse_cognitive_subtraction"
+                                value={formData.mse_cognitive_subtraction}
+                                onChange={handleChange}
+                                placeholder="Assessment"
+                              />
+                              <Input
+                                label="Digit-span"
+                                name="mse_cognitive_digit_span"
+                                value={formData.mse_cognitive_digit_span}
+                                onChange={handleChange}
+                                placeholder="Assessment"
+                              />
+                              <Input
+                                label="Counting forwards and backwards"
+                                name="mse_cognitive_counting"
+                                value={formData.mse_cognitive_counting}
+                                onChange={handleChange}
+                                placeholder="Assessment"
+                              />
+                              <Input
+                                label="General Knowledge"
+                                name="mse_cognitive_general_knowledge"
+                                value={formData.mse_cognitive_general_knowledge}
+                                onChange={handleChange}
+                                placeholder="Assessment"
+                              />
+                              <Input
+                                label="Calculation"
+                                name="mse_cognitive_calculation"
+                                value={formData.mse_cognitive_calculation}
+                                onChange={handleChange}
+                                placeholder="Assessment"
+                              />
+                              <Input
+                                label="Similarities"
+                                name="mse_cognitive_similarities"
+                                value={formData.mse_cognitive_similarities}
+                                onChange={handleChange}
+                                placeholder="Assessment"
+                              />
+                            </div>
+                            <Textarea
+                              label="Proverb interpretation"
+                              name="mse_cognitive_proverbs"
+                              value={formData.mse_cognitive_proverbs}
+                              onChange={handleChange}
+                              placeholder="Proverb interpretation assessment..."
+                              rows={2}
+                            />
+                          </div>
+                        </div>
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold text-gray-800 mb-3">7. Insight and judgement</h4>
+                          <div className="space-y-4">
+                            <Textarea
+                              label="Patient's understanding and assessment of the illness (nature, course, treatment, outcome)"
+                              name="mse_insight_understanding"
+                              value={formData.mse_insight_understanding}
+                              onChange={handleChange}
+                              placeholder="Insight assessment..."
+                              rows={3}
+                            />
+                            <Textarea
+                              label="Appropriateness of judgement in face of realistic problems"
+                              name="mse_insight_judgement"
+                              value={formData.mse_insight_judgement}
+                              onChange={handleChange}
+                              placeholder="Judgement assessment..."
+                              rows={2}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {/* Diagnostic Formulation */}
+                    <Card title="Diagnostic Formulation" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                      <div className="space-y-4">
+                        <Textarea
+                          label="1. Summary of patient's problems"
+                          name="diagnostic_formulation_summary"
+                          value={formData.diagnostic_formulation_summary}
+                          onChange={handleChange}
+                          placeholder="Concise summary of patient's problems..."
+                          rows={4}
+                        />
+                        <Textarea
+                          label="2. Salient features of genetic, constitutional, familial and environmental influences"
+                          name="diagnostic_formulation_features"
+                          value={formData.diagnostic_formulation_features}
+                          onChange={handleChange}
+                          placeholder="Genetic, constitutional, familial and environmental factors..."
+                          rows={4}
+                        />
+                        <Textarea
+                          label="3. Psychodynamic formulation"
+                          name="diagnostic_formulation_psychodynamic"
+                          value={formData.diagnostic_formulation_psychodynamic}
+                          onChange={handleChange}
+                          placeholder="Psychodynamic assessment and formulation..."
+                          rows={5}
+                        />
+                      </div>
+                    </Card>
+
+                    {/* Provisional Diagnosis and Treatment Plan */}
+                    <Card title="Provisional Diagnosis and Treatment Plan" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                      <div className="space-y-4">
+                        <Textarea
+                          label="Provisional Diagnosis"
+                          name="provisional_diagnosis"
+                          value={formData.provisional_diagnosis}
+                          onChange={handleChange}
+                          placeholder="Enter provisional diagnosis based on the clinical assessment..."
+                          rows={4}
+                        />
+                        <Textarea
+                          label="Treatment Plan"
+                          name="treatment_plan"
+                          value={formData.treatment_plan}
+                          onChange={handleChange}
+                          placeholder="Detailed treatment plan including medications, therapy, interventions, and follow-up recommendations..."
+                          rows={5}
+                        />
+                      </div>
+                    </Card>
+
+                    {/* Comments of the Consultant */}
+                    <Card title="Comments of the Consultant" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                      <div className="space-y-4">
+                        <Textarea
+                          label="Consultant's Comments"
+                          name="consultant_comments"
+                          value={formData.consultant_comments}
+                          onChange={handleChange}
+                          placeholder="Consultant's detailed comments, observations, and recommendations..."
+                          rows={6}
+                        />
+                      </div>
+                    </Card>
+
+                    {/* ADL File Requirements */}
+                    <Card title="ADL File Requirements" className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                      <div className="space-y-6">
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id="requires_adl_file"
+                            name="requires_adl_file"
+                            checked={formData.requires_adl_file}
+                            onChange={handleChange}
+                            className="h-4 w-4 text-primary-600 rounded"
+                          />
+                          <label htmlFor="requires_adl_file" className="ml-2 text-sm text-gray-700">
+                            Requires ADL File (Auto-checked for complex cases)
+                          </label>
+                        </div>
+
+                        <Textarea
+                          label="ADL Reasoning"
+                          name="adl_reasoning"
+                          value={formData.adl_reasoning}
+                          onChange={handleChange}
+                          placeholder="Explain why this case requires an ADL file..."
+                          rows={4}
+                          required
+                          error={errors.adl_reasoning}
+                        />
+                      </div>
+                    </Card>
+                  </div>
+                )}
+              </Card>
+            )}
+
+            {/* Card 3: Prescription */}
+            <Card
+              title={
+                <div className="flex items-center justify-between w-full cursor-pointer" onClick={() => toggleCard('prescription')}>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-100 rounded-lg">
+                      <FiFileText className="w-6 h-6 text-amber-600" />
+                    </div>
+                    <span className="text-xl font-bold text-gray-900">Prescription</span>
+                  </div>
+                  {expandedCards.prescription ? (
+                    <FiChevronUp className="w-5 h-5 text-gray-600" />
+                  ) : (
+                    <FiChevronDown className="w-5 h-5 text-gray-600" />
+                  )}
+                </div>
+              }
+              className="mb-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm"
+            >
+              {expandedCards.prescription && (
+                <>
+                  <CreatePrescription
+                    patientId={formData.patient_id}
+                    clinicalProformaId={formData.id}
+                    returnTab={formData.returnTab}
+                    currentUser={formData.currentUser}
+                    prescriptions={formData.prescriptions}
+                    setPrescriptions={formData.setPrescriptions}
+                    addPrescriptionRow={formData.addPrescriptionRow}
+                    updatePrescriptionCell={formData.updatePrescriptionCell}
+                    selectMedicine={formData.selectMedicine}
+                    handleMedicineKeyDown={formData.handleMedicineKeyDown}
+                    removePrescriptionRow={formData.removePrescriptionRow}
+                    clearAllPrescriptions={formData.clearAllPrescriptions}
+                    handleSave={formData.handleSave}
+                    handlePrint={formData.handlePrint}
+                    formatDateFull={formData.formatDateFull}
+                    formatDate={formData.formatDate}
+                  />
+                </>
+              )}
+            </Card>
+
+            {/* Submit Button */}
+            <Card className="mt-6 bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+              <div className="flex justify-end gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    if (returnTab) {
+                      navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
+                    } else {
+                      navigate('/clinical-today-patients');
+                    }
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  loading={isCreating}
+                  disabled={isCreating}
+                  className="flex items-center gap-2 bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700"
+                >
+                  <FiSave className="w-4 h-4" />
+                  {isCreating ? 'Saving...' : (proformaId ? 'Update Clinical Proforma' : 'Create Clinical Proforma')}
+                </Button>
+              </div>
+            </Card>
+          </div>
+        </form>
       </div>
     </div>
   );

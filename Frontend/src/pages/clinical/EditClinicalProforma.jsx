@@ -890,7 +890,7 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
             </div>
           </div>
           {expandedCards.clinicalProforma ? (
-            <FiChevronUp className="h-6 w-6 text-gray-500" />
+            <FiChevronUp className="h-6 w-6 text-gray-500 " />
           ) : (
             <FiChevronDown className="h-6 w-6 text-gray-500" />
           )}
