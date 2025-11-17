@@ -1,8 +1,8 @@
 export const USER_ROLES = {
   ADMIN: 'System Administrator',
+  SR: 'Faculty (Consultant)',
+  JR: 'Resident',
   MWO: 'Psychiatric Welfare Officer',
-  JR: 'Faculty Residents (Junior Resident (JR))',
-  SR: 'Faculty Residents (Senior Resident (SR))',
 };
 
 // Helper function to get display name for a role

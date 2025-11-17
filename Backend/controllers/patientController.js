@@ -857,52 +857,417 @@ class PatientController {
   }
 
   // Delete patient and all related records
+  // static async deletePatient(req, res) {
+  //   try {
+  //     const { id } = req.params;
+
+  //     const patientId = id;
+  //     if (isNaN(patientId) || patientId <= 0) {
+  //       return res.status(400).json({
+  //         success: false,
+  //         message: 'Invalid patient ID'
+  //       });
+  //     }
+
+  //     console.log(`[deletePatient] Attempting to delete patient ID: ${patientId}`);
+
+  //     const patient = await Patient.findById(patientId);
+
+  //     if (!patient) {
+  //       console.error(`[deletePatient] Patient with ID ${patientId} not found`);
+  //       return res.status(404).json({
+  //         success: false,
+  //         message: 'Patient not found'
+  //       });
+  //     }
+
+  //     console.log(`[deletePatient] Patient found: ${patient.name} (ID: ${patientId})`);
+
+  //     await patient.delete();
+
+  //     console.log(`[deletePatient] Successfully deleted patient ID: ${patientId}`);
+
+  //     res.json({
+  //       success: true,
+  //       message: 'Patient and all related records deleted successfully',
+  //       deletedPatientId: patientId
+  //     });
+
+  //   } catch (error) {
+  //     console.error('[deletePatient] Error:', error);
+  //     res.status(500).json({
+  //       success: false,
+  //       message: 'Failed to delete patient and related records',
+  //       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+  //     });
+  //   }
+  // }
+  // static async deletePatient(req, res) {
+  //   try {
+  //     const { id } = req.params;
+  
+  //     // UUID validation (string, not number)
+  //     if (!id || typeof id !== "string" || id.length < 36) {
+  //       return res.status(400).json({
+  //         success: false,
+  //         message: 'Invalid patient ID'
+  //       });
+  //     }
+  
+  //     console.log(`[deletePatient] Attempting to delete patient ID: ${id}`);
+  
+  //     const patient = await Patient.findOne({ where: { id } });
+  
+  //     if (!patient) {
+  //       console.error(`[deletePatient] Patient with ID ${id} not found`);
+  //       return res.status(404).json({
+  //         success: false,
+  //         message: 'Patient not found'
+  //       });
+  //     }
+  
+  //     console.log(`[deletePatient] Patient found: ${patient.name} (ID: ${id})`);
+  
+  //     await patient.destroy(); // Sequelize / ORM delete
+  
+  //     console.log(`[deletePatient] Successfully deleted patient ID: ${id}`);
+  
+  //     return res.json({
+  //       success: true,
+  //       message: 'Patient and all related records deleted successfully',
+  //       deletedPatientId: id
+  //     });
+  
+  //   } catch (error) {
+  //     console.error('[deletePatient] Error:', error);
+  //     return res.status(500).json({
+  //       success: false,
+  //       message: 'Failed to delete patient and related records'
+  //     });
+  //   }
+  // }
+
+
+  // static async deletePatient(req, res) {
+  //   try {
+  //     const { id } = req.params;
+  
+  //     // UUID validation
+  //     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  
+  //     if (!uuidRegex.test(id)) {
+  //       return res.status(400).json({
+  //         success: false,
+  //         message: 'Invalid patient ID'
+  //       });
+  //     }
+  
+  //     console.log(`[deletePatient] Attempting to delete patient ID: ${id}`);
+  
+  //     // UUID lookup — correct method
+  //     const patient = await Patient.findOne({ where: { id } });
+  
+  //     if (!patient) {
+  //       return res.status(404).json({
+  //         success: false,
+  //         message: 'Patient not found'
+  //       });
+  //     }
+  
+  //     await patient.destroy();
+  
+  //     return res.status(200).json({
+  //       success: true,
+  //       message: 'Patient and all related records deleted successfully',
+  //       deletedPatientId: id
+  //     });
+  
+  //   } catch (error) {
+  //     console.error('[deletePatient] Error:', error);
+  //     return res.status(500).json({
+  //       success: false,
+  //       message: 'Failed to delete patient and related records'
+  //     });
+  //   }
+  // }
+  
+
   static async deletePatient(req, res) {
     try {
       const { id } = req.params;
-
-      const patientId = parseInt(id, 10);
-      if (isNaN(patientId) || patientId <= 0) {
+  
+      // Validate UUID
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  
+      if (!uuidRegex.test(id)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid patient ID'
+          message: "Invalid patient ID",
         });
       }
-
-      console.log(`[deletePatient] Attempting to delete patient ID: ${patientId}`);
-
-      const patient = await Patient.findById(patientId);
-
-      if (!patient) {
-        console.error(`[deletePatient] Patient with ID ${patientId} not found`);
+  
+      console.log(`[deletePatient] Attempting to delete patient ID: ${id}`);
+  
+      const { supabaseAdmin } = require('../config/database');
+      
+      // 1️⃣ Check if patient exists in registered_patient table
+      const { data: patientData, error: patientCheckError } = await supabaseAdmin
+        .from('registered_patient')
+        .select('id')
+        .eq('id', id)
+        .maybeSingle();
+      
+      if (patientCheckError) {
+        console.error(`[deletePatient] Error checking patient: ${patientCheckError.message}`);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to check patient existence",
+          error: process.env.NODE_ENV === 'development' ? patientCheckError.message : 'Internal server error'
+        });
+      }
+      
+      if (!patientData) {
+        console.log(`[deletePatient] Patient with ID ${id} not found in registered_patient`);
         return res.status(404).json({
           success: false,
-          message: 'Patient not found'
+          message: "Patient not found",
         });
       }
-
-      console.log(`[deletePatient] Patient found: ${patient.name} (ID: ${patientId})`);
-
-      await patient.delete();
-
-      console.log(`[deletePatient] Successfully deleted patient ID: ${patientId}`);
-
-      res.json({
+      
+      console.log(`[deletePatient] Patient found in registered_patient table`);
+      
+      // 2️⃣ Check if patient_id exists in clinical_proforma table
+      // Handle both UUID and INT types by trying UUID first, then text comparison
+      let clinicalProformas = [];
+      let clinicalCheckError = null;
+      
+      // Try direct UUID comparison first
+      const { data: clinicalData1, error: clinicalError1 } = await supabaseAdmin
+        .from('clinical_proforma')
+        .select('id')
+        .eq('patient_id', id);
+      
+      if (!clinicalError1 && clinicalData1) {
+        clinicalProformas = clinicalData1;
+      } else {
+        // If UUID comparison fails, try text comparison (handles INT columns)
+        const { data: clinicalData2, error: clinicalError2 } = await supabaseAdmin
+          .from('clinical_proforma')
+          .select('id, patient_id');
+        
+        if (!clinicalError2 && clinicalData2) {
+          // Filter by comparing as strings
+          clinicalProformas = clinicalData2.filter(cp => String(cp.patient_id) === String(id));
+          clinicalProformas = clinicalProformas.map(cp => ({ id: cp.id }));
+        } else {
+          clinicalCheckError = clinicalError2 || clinicalError1;
+        }
+      }
+      
+      if (clinicalCheckError) {
+        console.warn(`[deletePatient] Error checking clinical_proforma: ${clinicalCheckError.message}`);
+      } else {
+        console.log(`[deletePatient] Found ${clinicalProformas?.length || 0} clinical proforma record(s) for patient ${id}`);
+      }
+      
+      // 3️⃣ Check if patient_id exists in adl_files table
+      // Handle both UUID and INT types
+      let adlFiles = [];
+      let adlCheckError = null;
+      
+      // Try direct UUID comparison first
+      const { data: adlData1, error: adlError1 } = await supabaseAdmin
+        .from('adl_files')
+        .select('id')
+        .eq('patient_id', id);
+      
+      if (!adlError1 && adlData1) {
+        adlFiles = adlData1;
+      } else {
+        // If UUID comparison fails, try text comparison (handles INT columns)
+        const { data: adlData2, error: adlError2 } = await supabaseAdmin
+          .from('adl_files')
+          .select('id, patient_id');
+        
+        if (!adlError2 && adlData2) {
+          // Filter by comparing as strings
+          adlFiles = adlData2.filter(af => String(af.patient_id) === String(id));
+          adlFiles = adlFiles.map(af => ({ id: af.id }));
+        } else {
+          adlCheckError = adlError2 || adlError1;
+        }
+      }
+      
+      if (adlCheckError) {
+        console.warn(`[deletePatient] Error checking adl_files: ${adlCheckError.message}`);
+      } else {
+        console.log(`[deletePatient] Found ${adlFiles?.length || 0} ADL file record(s) for patient ${id}`);
+      }
+      
+      // 4️⃣ Delete related records first (in correct order to avoid foreign key constraints)
+      
+      // Step 4a: Delete prescriptions linked to clinical proformas
+      if (clinicalProformas && clinicalProformas.length > 0) {
+        const clinicalProformaIds = clinicalProformas.map(cp => cp.id);
+        const { error: prescriptionsError } = await supabaseAdmin
+          .from('prescriptions')
+          .delete()
+          .in('clinical_proforma_id', clinicalProformaIds);
+        
+        if (prescriptionsError) {
+          console.warn(`[deletePatient] Error deleting prescriptions: ${prescriptionsError.message}`);
+        } else {
+          console.log(`[deletePatient] Deleted prescriptions for clinical proformas`);
+        }
+      }
+      
+      // Step 4b: Delete file movements linked to ADL files
+      if (adlFiles && adlFiles.length > 0) {
+        const adlFileIds = adlFiles.map(af => af.id);
+        
+        // Delete file movements by adl_file_id
+        const { error: fileMovementsError1 } = await supabaseAdmin
+          .from('file_movements')
+          .delete()
+          .in('adl_file_id', adlFileIds);
+        
+        if (fileMovementsError1) {
+          console.warn(`[deletePatient] Error deleting file movements by adl_file_id: ${fileMovementsError1.message}`);
+        }
+        
+        // Delete file movements by patient_id
+        const { error: fileMovementsError2 } = await supabaseAdmin
+          .from('file_movements')
+          .delete()
+          .eq('patient_id', id);
+        
+        if (fileMovementsError2) {
+          console.warn(`[deletePatient] Error deleting file movements by patient_id: ${fileMovementsError2.message}`);
+        } else {
+          console.log(`[deletePatient] Deleted file movements`);
+        }
+      }
+      
+      // Step 4c: Delete ADL files
+      if (adlFiles && adlFiles.length > 0) {
+        // Delete by IDs if direct patient_id comparison fails
+        const adlFileIds = adlFiles.map(af => af.id);
+        const { error: adlDeleteError } = await supabaseAdmin
+          .from('adl_files')
+          .delete()
+          .in('id', adlFileIds);
+        
+        if (adlDeleteError) {
+          // Fallback: try deleting by patient_id directly
+          const { error: adlDeleteError2 } = await supabaseAdmin
+            .from('adl_files')
+            .delete()
+            .eq('patient_id', id);
+          
+          if (adlDeleteError2) {
+            console.error(`[deletePatient] Error deleting ADL files: ${adlDeleteError2.message}`);
+            return res.status(500).json({
+              success: false,
+              message: "Failed to delete ADL files",
+              error: process.env.NODE_ENV === 'development' ? adlDeleteError2.message : 'Internal server error'
+            });
+          }
+        }
+        console.log(`[deletePatient] Deleted ${adlFiles.length} ADL file(s)`);
+      }
+      
+      // Step 4d: Delete clinical proformas
+      if (clinicalProformas && clinicalProformas.length > 0) {
+        // Delete by IDs if direct patient_id comparison fails
+        const clinicalProformaIds = clinicalProformas.map(cp => cp.id);
+        const { error: clinicalDeleteError } = await supabaseAdmin
+          .from('clinical_proforma')
+          .delete()
+          .in('id', clinicalProformaIds);
+        
+        if (clinicalDeleteError) {
+          // Fallback: try deleting by patient_id directly
+          const { error: clinicalDeleteError2 } = await supabaseAdmin
+            .from('clinical_proforma')
+            .delete()
+            .eq('patient_id', id);
+          
+          if (clinicalDeleteError2) {
+            console.error(`[deletePatient] Error deleting clinical proformas: ${clinicalDeleteError2.message}`);
+            return res.status(500).json({
+              success: false,
+              message: "Failed to delete clinical proformas",
+              error: process.env.NODE_ENV === 'development' ? clinicalDeleteError2.message : 'Internal server error'
+            });
+          }
+        }
+        console.log(`[deletePatient] Deleted ${clinicalProformas.length} clinical proforma(s)`);
+      }
+      
+      // Step 4e: Delete patient visits
+      const { error: visitsError } = await supabaseAdmin
+        .from('patient_visits')
+        .delete()
+        .eq('patient_id', id);
+      
+      if (visitsError) {
+        console.warn(`[deletePatient] Error deleting patient visits: ${visitsError.message}`);
+      } else {
+        console.log(`[deletePatient] Deleted patient visits`);
+      }
+      
+      // Step 4f: Delete outpatient records
+      const { error: outpatientError } = await supabaseAdmin
+        .from('outpatient_record')
+        .delete()
+        .eq('patient_id', id);
+      
+      if (outpatientError) {
+        console.warn(`[deletePatient] Error deleting outpatient records: ${outpatientError.message}`);
+      } else {
+        console.log(`[deletePatient] Deleted outpatient records`);
+      }
+      
+      // Step 5: Finally, delete the patient record itself
+      const { error: patientDeleteError } = await supabaseAdmin
+        .from('registered_patient')
+        .delete()
+        .eq('id', id);
+      
+      if (patientDeleteError) {
+        console.error(`[deletePatient] Error deleting patient: ${patientDeleteError.message}`);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to delete patient record",
+          error: process.env.NODE_ENV === 'development' ? patientDeleteError.message : 'Internal server error'
+        });
+      }
+      
+      console.log(`[deletePatient] Successfully deleted patient ID: ${id}`);
+      
+      return res.status(200).json({
         success: true,
-        message: 'Patient and all related records deleted successfully',
-        deletedPatientId: patientId
+        message: "Patient and all related records deleted successfully",
+        deletedPatientId: id,
+        deleted: {
+          patient: true,
+          clinicalProformas: clinicalProformas?.length || 0,
+          adlFiles: adlFiles?.length || 0
+        }
       });
-
+  
     } catch (error) {
-      console.error('[deletePatient] Error:', error);
-      res.status(500).json({
+      console.error("[deletePatient] Error:", error);
+      return res.status(500).json({
         success: false,
-        message: 'Failed to delete patient and related records',
+        message: "Failed to delete patient and related records",
         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
       });
     }
   }
-
+  
+  
   // Assign patient to a doctor
   static async assignPatient(req, res) {
     try {

@@ -171,6 +171,17 @@ const CreateUser = ({ editMode = false, existingUser = null, userId = null }) =>
                   error={errors.role}
                   required
                 />
+                {/* <Input
+                  label="Mobile Number"
+                  type="number"
+                  name="mobile"
+                  value={formData.mobile}
+                  onChange={handleChange}
+                  placeholder="Enter mobile number"
+                  error={errors.mobile}
+                  required
+                /> */}
+
 
                 {!editMode && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
