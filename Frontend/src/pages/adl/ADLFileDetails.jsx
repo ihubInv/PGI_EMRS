@@ -999,7 +999,7 @@ const ADLFileDetails = () => {
       {file.patient_id && (
         <Card title="Related Records" className="border-2 border-indigo-100">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link to={`/patients/${file.patient_id}`}>
+          <Link to={`/patients/${file.patient_id}?edit=false`}>
               <div className="p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 hover:shadow-md transition-all duration-200 text-center cursor-pointer group">
                 <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary-100 flex items-center justify-center group-hover:bg-primary-500 transition-colors">
                   <FiUser className="w-6 h-6 text-primary-600 group-hover:text-white transition-colors" />

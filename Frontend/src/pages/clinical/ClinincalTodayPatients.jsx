@@ -151,7 +151,7 @@ const PatientRow = ({ patient, activeTab, navigate }) => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`/patients/${patient.id}?returnTab=${activeTab}`)}
+              onClick={() => navigate(`/patients/${patient.id}?edit=false&returnTab=${activeTab}`)}
               className="flex items-center justify-center gap-2 w-full lg:w-full px-4 py-2.5 text-sm font-medium transition-all hover:shadow-md"
             >
               <FiEye className="w-4 h-4 flex-shrink-0" />

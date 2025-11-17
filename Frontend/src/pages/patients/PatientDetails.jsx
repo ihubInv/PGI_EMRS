@@ -69,16 +69,13 @@ const PatientDetails = () => {
       localStorage.setItem(`patient_edit_${patientId}`, 'true');
     } else if (editParam === 'false') {
       setIsEditing(false);
+      // Explicitly clear localStorage when edit=false is set
       localStorage.removeItem(`patient_edit_${patientId}`);
     } else {
-      // Check localStorage for persisted edit state
-      const persistedEdit = localStorage.getItem(`patient_edit_${patientId}`);
-      if (persistedEdit === 'true') {
-        setIsEditing(true);
-        // Restore edit parameter in URL
-        searchParams.set('edit', 'true');
-        setSearchParams(searchParams, { replace: true });
-      }
+      // If no edit parameter is provided, default to view mode (don't restore from localStorage)
+      // This ensures that clicking "View" always shows the view page, not edit
+      setIsEditing(false);
+      localStorage.removeItem(`patient_edit_${patientId}`);
     }
   }, [searchParams, patientId, setSearchParams]);
 

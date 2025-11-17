@@ -53,7 +53,8 @@ const PatientsPage = () => {
       return;
     }
 
-    navigate(`/patients/${patientId}`);
+    // Explicitly set edit=false to ensure view mode and clear any persisted edit state
+    navigate(`/patients/${patientId}?edit=false`);
   };
 
   // Handle edit patient
