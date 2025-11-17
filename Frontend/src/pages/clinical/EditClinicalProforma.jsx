@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { 
+import {
   useGetClinicalProformaByIdQuery,
   useUpdateClinicalProformaMutation,
   useGetClinicalOptionsQuery,
@@ -20,13 +20,9 @@ import Textarea from '../../components/Textarea';
 import Button from '../../components/Button';
 import { FiArrowLeft, FiAlertCircle, FiSave, FiHeart, FiActivity, FiUser, FiClipboard, FiList, FiCheckSquare, FiFileText, FiX, FiPlus, FiChevronDown, FiChevronUp, FiLoader } from 'react-icons/fi';
 import icd11Codes from '../../assets/ICD11_Codes.json';
-import CustomDatePicker from '../../components/CustomDatePicker';
-import {
-  MARITAL_STATUS, FAMILY_TYPE_OPTIONS, LOCALITY_OPTIONS, RELIGION_OPTIONS, SEX_OPTIONS,
-  AGE_GROUP_OPTIONS, OCCUPATION_OPTIONS, EDUCATION_OPTIONS,
-  MOBILITY_OPTIONS, REFERRED_BY_OPTIONS, INDIAN_STATES, UNIT_DAYS_OPTIONS,
-  isJR, isSR, HEAD_RELATIONSHIP_OPTIONS, CATEGORY_OPTIONS, isAdmin, isJrSr
-} from '../../utils/constants';
+
+
+import DatePicker from '../../components/CustomDatePicker';
 
 const IconInput = ({ icon, label, loading = false, error, defaultValue, ...props }) => {
   // Remove defaultValue if value is provided to avoid controlled/uncontrolled warning
@@ -107,7 +103,7 @@ const CheckboxGroup = ({ label, name, value = [], onChange, options = [], rightI
       const next = value.filter((v) => v !== opt);
       onChange({ target: { name, value: next } });
     }
-    deleteOption({ group: name, label: opt }).catch(() => {});
+    deleteOption({ group: name, label: opt }).catch(() => { });
   };
 
   const handleAddClick = () => setShowAdd(true);
@@ -127,7 +123,7 @@ const CheckboxGroup = ({ label, name, value = [], onChange, options = [], rightI
     onChange({ target: { name, value: next } });
     setCustomOption('');
     setShowAdd(false);
-    addOption({ group: name, label: opt }).catch(() => {});
+    addOption({ group: name, label: opt }).catch(() => { });
   };
 
   return (
@@ -185,14 +181,14 @@ const CheckboxGroup = ({ label, name, value = [], onChange, options = [], rightI
               <Button
                 type="button"
                 onClick={handleCancelAdd}
-                className="bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30 px-3 py-1.5 rounded-md flex items-center gap-2 text-sm"
+                className="bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30 px-3 py-1.5 rounded-md flex items-center gap-2 text-sm hover:from-red-600 hover:to-red-700 hover:shadow-xl hover:shadow-red-500/40"
               >
                 <FiX className="w-4 h-4" /> Cancel
               </Button>
               <Button
                 type="button"
                 onClick={handleSaveAdd}
-                className="bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30 px-3 py-1.5 rounded-md flex items-center gap-2 text-sm"
+                className="bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30 px-3 py-1.5 rounded-md flex items-center gap-2 text-sm hover:from-green-600 hover:to-green-700 hover:shadow-xl hover:shadow-green-500/40"
               >
                 <FiSave className="w-4 h-4" /> Save
               </Button>
@@ -201,7 +197,7 @@ const CheckboxGroup = ({ label, name, value = [], onChange, options = [], rightI
             <Button
               type="button"
               onClick={handleAddClick}
-              className="bg-white text-black border border-gray-300 px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-200 hover:bg-gradient-to-r hover:from-green-500 hover:to-green-600 hover:text-white hover:shadow-lg hover:shadow-green-500/30"
+              className="bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30 px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-200 hover:from-green-600 hover:to-green-700 hover:shadow-xl hover:shadow-green-500/40"
             >
               <FiPlus className="w-4 h-4" /> Add
             </Button>
@@ -263,7 +259,7 @@ const ICD11CodeSelector = ({ value, onChange, error }) => {
               if (current.level === 1) {
                 parent = icd11Codes.find(item => item.level === 0 && item.code === current.parent_code);
               } else if (current.level === 2) {
-                parent = icd11Codes.find(item => 
+                parent = icd11Codes.find(item =>
                   (item.level === 1 && item.parent_code === current.parent_code) ||
                   (item.level === 0 && item.code === current.parent_code)
                 );
@@ -310,9 +306,9 @@ const ICD11CodeSelector = ({ value, onChange, error }) => {
     const children = getChildren(levelIndex, parentItem);
     if (children.length === 0 && levelIndex > 0) return null;
     const selectedItem = selectedPath[levelIndex];
-    const labelText = levelIndex === 0 ? 'Category' : 
-                     levelIndex === 1 ? 'Subcategory' :
-                     levelIndex === 2 ? 'Code Group' : 'Specific Code';
+    const labelText = levelIndex === 0 ? 'Category' :
+      levelIndex === 1 ? 'Subcategory' :
+        levelIndex === 2 ? 'Code Group' : 'Specific Code';
     return (
       <div key={levelIndex} className="flex-shrink-0 min-w-[200px]">
         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -374,11 +370,11 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
   const returnPath = searchParams.get('returnPath');
 
   // Fetch clinical proforma data only if id exists and no initialData prop provided
-  const { 
-    data: proformaData, 
-    isLoading: isLoadingProforma, 
+  const {
+    data: proformaData,
+    isLoading: isLoadingProforma,
     isError: isErrorProforma,
-    error: proformaError 
+    error: proformaError
   } = useGetClinicalProformaByIdQuery(id, { skip: !id || !!propInitialData });
 
   // Use propInitialData if provided, otherwise use fetched data
@@ -386,9 +382,9 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
   const isComplexCase = proforma?.doctor_decision === 'complex_case' && proforma?.adl_file_id;
 
   // Fetch ADL file data if this is a complex case
-  const { 
-    data: adlFileData, 
-    isLoading: isLoadingADL 
+  const {
+    data: adlFileData,
+    isLoading: isLoadingADL
   } = useGetADLFileByIdQuery(
     proforma?.adl_file_id,
     { skip: !isComplexCase }
@@ -412,19 +408,19 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
   const [updateProforma, { isLoading: isUpdating }] = useUpdateClinicalProformaMutation();
   const [updateADLFile] = useUpdateADLFileMutation();
 
-    // Helper functions
-    const normalizeArrayField = (value) => {
-      if (Array.isArray(value)) return value;
-      if (typeof value === 'string') {
-        try {
-          const parsed = JSON.parse(value);
-          return Array.isArray(parsed) ? parsed : (parsed ? [parsed] : []);
-        } catch {
-          return value ? [value] : [];
-        }
+  // Helper functions
+  const normalizeArrayField = (value) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : (parsed ? [parsed] : []);
+      } catch {
+        return value ? [value] : [];
       }
-      return value ? [value] : [];
-    };
+    }
+    return value ? [value] : [];
+  };
 
   // Prepare initial form data - return default values if proforma not found
   const initialFormData = useMemo(() => {
@@ -620,7 +616,7 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
 
   const [formData, setFormData] = useState(initialFormData || defaultFormData);
   const [errors, setErrors] = useState({});
-  
+
   // Card expand/collapse state
   const [expandedCards, setExpandedCards] = useState({
     clinicalProforma: true, // Default to expanded
@@ -632,16 +628,16 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
 
   // Track previous initialFormData to avoid unnecessary updates
   const prevInitialDataRef = useRef(null);
-  
+
   // Update formData when initialFormData changes (only on mount or when initialData actually changes)
   useEffect(() => {
     if (initialFormData) {
       const prevData = prevInitialDataRef.current;
       // Only update if this is the first time or if key fields have changed
-      const shouldUpdate = !prevData || 
+      const shouldUpdate = !prevData ||
         prevData.patient_id !== initialFormData.patient_id ||
         (prevData.doctor_decision !== initialFormData.doctor_decision && prevData.patient_id === initialFormData.patient_id);
-      
+
       if (shouldUpdate) {
         setFormData(initialFormData);
         // Notify parent of initial form data
@@ -674,11 +670,11 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const newErrors = {};
     if (!formData.patient_id) newErrors.patient_id = 'Patient is required';
     if (!formData.visit_date) newErrors.visit_date = 'Visit date is required';
-    
+
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
@@ -742,7 +738,7 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
       }
 
       const join = (arr) => Array.isArray(arr) ? arr.join(', ') : arr;
-      
+
       const updateData = {
         id: id,
         patient_id: formData.patient_id,
@@ -791,14 +787,14 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
 
       await updateProforma(updateData).unwrap();
       toast.success('Clinical proforma updated successfully!');
-      
+
       if (returnPath) {
         navigate(decodeURIComponent(returnPath));
       } else if (returnTab) {
         navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
-          } else {
+      } else {
         navigate(`/clinical/${id}`);
-          }
+      }
     } catch (err) {
       toast.error(err?.data?.message || 'Failed to update clinical proforma');
     }
@@ -827,15 +823,14 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
             <div className="flex gap-4 justify-center">
               <Button
                 onClick={() => navigate(-1)}
-                variant="outline"
-                className="flex items-center gap-2"
+                className="bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30 px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-200 hover:from-green-600 hover:to-green-700 hover:shadow-xl hover:shadow-green-500/40"
               >
                 <FiArrowLeft className="w-4 h-4" />
                 Go Back
               </Button>
               <Button
                 onClick={() => window.location.reload()}
-                variant="primary"
+                className="bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30 px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-200 hover:from-green-600 hover:to-green-700 hover:shadow-xl hover:shadow-green-500/40"
               >
                 Retry
               </Button>
@@ -870,7 +865,7 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
     mse_cognitive_function: ['Impaired', 'Not impaired'],
   };
 
-    // Determine if this is embedded (has initialData prop) or standalone page
+  // Determine if this is embedded (has initialData prop) or standalone page
   const isEmbedded = !!propInitialData;
 
   const formContent = (
@@ -884,7 +879,7 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
           <div className="flex items-center gap-4">
             <div className="p-3 bg-green-100 rounded-lg">
               <FiClipboard className="h-6 w-6 text-green-600" />
-          </div>
+            </div>
             <div>
               <h3 className="text-xl font-bold text-gray-900"> Walk-in Clinical Proforma</h3>
               {patient && (
@@ -892,7 +887,7 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
                   {patient.name || 'N/A'} - {patient.cr_no || 'N/A'}
                 </p>
               )}
-      </div>
+            </div>
           </div>
           {expandedCards.clinicalProforma ? (
             <FiChevronUp className="h-6 w-6 text-gray-500" />
@@ -904,129 +899,93 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
         {expandedCards.clinicalProforma && (
           <div className="p-6 space-y-6">
             {/* {!isEmbedded && <h1 className="text-3xl font-bold text-gray-900 mb-6">Edit Walk-in Clinical Proforma</h1>} */}
-              
-              {/* Basic Information Section */}
-              {/* <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Basic Information</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <Input
-                    label="Patient ID"
-                    name="patient_id"
-                    value={formData.patient_id}
-                    onChange={handleChange}
-                    disabled
-                    error={errors.patient_id}
-                  />
-                  {patient && (
-                    <>
-                      <Input
-                        label="Patient Name"
-                        value={patient.name || ''}
-                        disabled
-                      />
-                      <Input
-                        label="CR Number"
-                        value={patient.cr_no || ''}
-                        disabled
-                      />
-                      <Input
-                        label="Age"
-                        value={patient.age || ''}
-                        disabled
-                      />
-                      <Input
-                        label="Sex"
-                        value={patient.sex || ''}
-                        disabled
-                      />
-                    </>
-                  )}
-                  <Input
-                    label="Room Number / Ward"
-                    name="room_no"
-                    value={formData.room_no}
-                    onChange={handleChange}
-                  />
-                  <Select
-                    label="Assigned Doctor"
-                    name="assigned_doctor"
-                    value={formData.assigned_doctor}
-                    onChange={handleChange}
-                    options={[
-                      { value: '', label: 'Select Doctor' },
-                      ...doctors.map(doctor => ({
-                        value: doctor.id.toString(),
-                        label: `${doctor.name} (${doctor.email})`
-                      }))
-                    ]}
-                  />
-                  <Input
-                    label="Visit Date"
-                    name="visit_date"
-                    type="date"
-                    value={formData.visit_date}
-                    onChange={handleChange}
-                    required
-                    error={errors.visit_date}
-                  />
-                  <Select
-                    label="Visit Type"
-                    name="visit_type"
-                    value={formData.visit_type}
-                    onChange={handleChange}
-                    options={VISIT_TYPES}
-                  />
-                </div>
-              </div> */}
 
-              {/* Informant Section */}
-              
+            {/* Basic Information Section */}
+            <div className="space-y-4">
+              {/* <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Basic Information</h2> */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+
+                <DatePicker
+
+                  label="Date"
+                  name="date"
+                  value={formData.date || ''}
+                  onChange={handleChange}
+                  defaultToday={true}
+                />
+                <Input
+                  label="Patient Name"
+                  value={patient.name || ''}
+                  onChange={handleChange}
+
+                />
+
+                <Input
+                  label="Age"
+                  value={patient.age || ''}
+                  onChange={handleChange}
+
+                />
+                <Input
+                  label="Sex"
+                  value={patient.sex || ''}
+                  onChange={handleChange}
+
+                />
+              </div>
+
+
+            </div>
+
+            {/* Informant Section */}
+
+            <div className="space-y-4">
+
+              <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Informant</h2>
               <div className="space-y-4">
-                
-                <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Informant</h2>
-                <div className="space-y-4">
-                  <div className="flex flex-wrap gap-3">
-                    {[
-                      { v: true, t: 'Present' },
-                      { v: false, t: 'Absent' },
-                    ].map(({ v, t }) => (
-                      <label key={t} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
-                        formData.informant_present === v ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
+                <div className="flex flex-wrap gap-3">
+                  {[
+                    { v: true, t: 'Present' },
+                    { v: false, t: 'Absent' },
+                  ].map(({ v, t }) => (
+                    <label key={t} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${formData.informant_present === v ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
                       }`}>
-                        <input
-                          type="radio"
-                          name="informant_present"
-                          checked={formData.informant_present === v}
-                          onChange={() => handleChange({ target: { name: 'informant_present', value: v } })}
-                          className="h-4 w-4 text-primary-600"
-                        />
-                        <span className="font-medium">{t}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    {['Reliable', 'Unreliable', 'Adequate', 'Inadequate'].map((opt) => (
-                      <label key={opt} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
-                        formData.nature_of_information === opt ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
+                      <input
+                        type="radio"
+                        name="informant_present"
+                        checked={formData.informant_present === v}
+                        onChange={() => handleChange({ target: { name: 'informant_present', value: v } })}
+                        className="h-4 w-4 text-primary-600"
+                      />
+                      <span className="font-medium">{t}</span>
+                    </label>
+                  ))}
+                </div>
+                <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Nature of information</h2>
+                <div className="flex flex-wrap gap-3">
+                  {['Reliable', 'Unreliable', 'Adequate', 'Inadequate'].map((opt) => (
+                    <label key={opt} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${formData.nature_of_information === opt ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
                       }`}>
-                        <input
-                          type="radio"
-                          name="nature_of_information"
-                          value={opt}
-                          checked={formData.nature_of_information === opt}
-                          onChange={handleChange}
-                          className="h-4 w-4 text-primary-600"
-                        />
-                        <span className="font-medium">{opt}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex flex-col md:flex-row md:flex-wrap gap-3">
-                      {[{v:'<1_week',t:'1. < 1 week'}, {v:'1w_1m',t:'2. 1 week – 1 month'}, {v:'>1_month',t:'3. > 1 month'}, {v:'not_known',t:'4. Not known'}].map(({v,t}) => (
-                        <label key={v} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
-                          formData.onset_duration === v ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
-                        }`}>
+                      <input
+                        type="radio"
+                        name="nature_of_information"
+                        value={opt}
+                        checked={formData.nature_of_information === opt}
+                        onChange={handleChange}
+                        className="h-4 w-4 text-primary-600"
+                      />
+                      <span className="font-medium">{opt}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Onset Duration</h2>
+                    <div className="flex flex-wrap gap-3">
+                      {[{ v: '<1_week', t: '1. < 1 week' }, { v: '1w_1m', t: '2. 1 week – 1 month' }, { v: '>1_month', t: '3. > 1 month' }, { v: 'not_known', t: '4. Not known' }].map(({ v, t }) => (
+                        <label key={v} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${formData.onset_duration === v ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
+                          }`}>
                           <input
                             type="radio"
                             name="onset_duration"
@@ -1039,11 +998,13 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
                         </label>
                       ))}
                     </div>
-                    <div className="flex flex-col md:flex-row md:flex-wrap gap-3">
+                  </div>
+                  <div className="space-y-3">
+                    <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Course</h2>
+                    <div className="flex flex-wrap gap-3">
                       {['Continuous', 'Episodic', 'Fluctuating', 'Deteriorating', 'Improving'].map((opt) => (
-                        <label key={opt} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
-                          formData.course === opt ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
-                        }`}>
+                        <label key={opt} className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${formData.course === opt ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white hover:bg-gray-50'
+                          }`}>
                           <input
                             type="radio"
                             name="course"
@@ -1057,211 +1018,211 @@ const EditClinicalProforma = ({ initialData: propInitialData = null, onUpdate: p
                       ))}
                     </div>
                   </div>
-                  <Textarea
-                    label="Precipitating Factor"
-                    name="precipitating_factor"
-                    value={formData.precipitating_factor}
-                    onChange={handleChange}
-                    rows={3}
-                  />
-                  <Input
-                    label="Total Duration of Illness"
-                    name="illness_duration"
-                    value={formData.illness_duration}
-                    onChange={handleChange}
-                  />
-                  <Input
-                    label="Current Episode Duration / Worsening Since"
-                    name="current_episode_since"
-                    value={formData.current_episode_since}
-                    onChange={handleChange}
-                  />
                 </div>
-              </div>
-
-              {/* Complaints / History of Presenting Illness */}
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Complaints / History of Presenting Illness</h2>
-                <div className="space-y-6">
-                  <CheckboxGroup label="Mood" name="mood" value={formData.mood || []} onChange={handleChange} options={defaultOptions.mood} />
-                  <CheckboxGroup label="Behaviour" name="behaviour" value={formData.behaviour || []} onChange={handleChange} options={defaultOptions.behaviour} />
-                  <CheckboxGroup label="Speech" name="speech" value={formData.speech || []} onChange={handleChange} options={defaultOptions.speech} />
-                  <CheckboxGroup label="Thought" name="thought" value={formData.thought || []} onChange={handleChange} options={defaultOptions.thought} />
-                  <CheckboxGroup label="Perception" name="perception" value={formData.perception || []} onChange={handleChange} options={defaultOptions.perception} />
-                  <CheckboxGroup label="Somatic" name="somatic" value={formData.somatic || []} onChange={handleChange} options={defaultOptions.somatic} />
-                  <CheckboxGroup label="Bio-functions" name="bio_functions" value={formData.bio_functions || []} onChange={handleChange} options={defaultOptions.bio_functions} />
-                  <CheckboxGroup label="Adjustment" name="adjustment" value={formData.adjustment || []} onChange={handleChange} options={defaultOptions.adjustment} />
-                  <CheckboxGroup label="Cognitive Function" name="cognitive_function" value={formData.cognitive_function || []} onChange={handleChange} options={defaultOptions.cognitive_function} />
-                  <CheckboxGroup label="Fits" name="fits" value={formData.fits || []} onChange={handleChange} options={defaultOptions.fits} />
-                  <CheckboxGroup label="Sexual Problem" name="sexual_problem" value={formData.sexual_problem || []} onChange={handleChange} options={defaultOptions.sexual_problem} />
-                  <CheckboxGroup label="Substance Use" name="substance_use" value={formData.substance_use || []} onChange={handleChange} options={defaultOptions.substance_use} />
-                </div>
-              </div>
-
-              {/* Additional History */}
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Additional History</h2>
-                <div className="space-y-4">
-                  <Textarea
-                    label="Past Psychiatric History"
-                    name="past_history"
-                    value={formData.past_history}
-                    onChange={handleChange}
-                    rows={4}
-                  />
-                  <Textarea
-                    label="Family History"
-                    name="family_history"
-                    value={formData.family_history}
-                    onChange={handleChange}
-                    rows={4}
-                  />
-                  <CheckboxGroup 
-                    label="Associated Medical/Surgical Illness" 
-                    name="associated_medical_surgical" 
-                    value={formData.associated_medical_surgical || []} 
-                    onChange={handleChange} 
-                    options={defaultOptions.associated_medical_surgical} 
-                  />
-                </div>
-              </div>
-
-              {/* Mental State Examination (MSE) */}
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Mental State Examination (MSE)</h2>
-                <div className="space-y-6">
-                  <CheckboxGroup label="MSE - Behaviour" name="mse_behaviour" value={formData.mse_behaviour || []} onChange={handleChange} options={defaultOptions.mse_behaviour} />
-                  <CheckboxGroup label="MSE - Affect & Mood" name="mse_affect" value={formData.mse_affect || []} onChange={handleChange} options={defaultOptions.mse_affect} />
-                  <CheckboxGroup
-                    label="MSE - Thought (Flow, Form, Content)"
-                    name="mse_thought"
-                    value={formData.mse_thought || []}
-                    onChange={handleChange}
-                    options={[]}
-                    rightInlineExtra={
-                      <Input
-                        name="mse_delusions"
-                        value={formData.mse_delusions}
-                        onChange={handleChange}
-                        placeholder="Delusions / Ideas of (optional)"
-                        className="max-w-xs"
-                      />
-                    }
-                  />
-                  <CheckboxGroup label="MSE - Perception" name="mse_perception" value={formData.mse_perception || []} onChange={handleChange} options={defaultOptions.mse_perception} />
-                  <CheckboxGroup label="MSE - Cognitive Functions" name="mse_cognitive_function" value={formData.mse_cognitive_function || []} onChange={handleChange} options={defaultOptions.mse_cognitive_function} />
-                </div>
-              </div>
-
-              {/* General Physical Examination */}
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">General Physical Examination</h2>
-                <div className="space-y-4">
-                  <Textarea
-                    label="GPE Findings"
-                    name="gpe"
-                    value={formData.gpe}
-                    onChange={handleChange}
-                    rows={4}
-                    placeholder="BP, Pulse, Weight, BMI, General appearance, Systemic examination..."
-                  />
-                </div>
-              </div>
-
-              {/* Diagnosis & Management */}
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Diagnosis & Management</h2>
-                <div className="space-y-4">
-                  <Textarea
-                    label="Diagnosis"
-                    name="diagnosis"
-                    value={formData.diagnosis}
-                    onChange={handleChange}
-                    rows={3}
-                    placeholder="Primary and secondary diagnoses..."
-                  />
-                  <ICD11CodeSelector
-                    value={formData.icd_code}
-                    onChange={handleChange}
-                    error={errors.icd_code}
-                  />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Select
-                      label="Case Severity"
-                      name="case_severity"
-                      value={formData.case_severity}
-                      onChange={handleChange}
-                      options={CASE_SEVERITY}
-                    />
-                    <Select
-                      label="Doctor Decision"
-                      name="doctor_decision"
-                      value={formData.doctor_decision}
-                      onChange={handleChange}
-                      options={DOCTOR_DECISION}
-                      required
-                    />
-                  </div>
-                  <Textarea
-                    label="Disposal & Referral"
-                    name="disposal"
-                    value={formData.disposal}
-                    onChange={handleChange}
-                    rows={2}
-                    placeholder="Admission, discharge, follow-up..."
-                  />
-                  <Input
-                    label="Workup Appointment"
-                    type="date"
-                    name="workup_appointment"
-                    value={formData.workup_appointment}
-                    onChange={handleChange}
-                  />
-                  <Textarea
-                    label="Referred To"
-                    name="referred_to"
-                    value={formData.referred_to}
-                    onChange={handleChange}
-                    rows={2}
-                    placeholder="Other departments or specialists..."
-                  />
-                  <Textarea
-                    label="Treatment Prescribed"
-                    name="treatment_prescribed"
-                    value={formData.treatment_prescribed}
-                    onChange={handleChange}
-                    rows={4}
-                    placeholder="Treatment details..."
-                  />
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <div className="flex justify-end gap-3 pt-6 border-t">
-            <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate(-1)}
-                  className="flex items-center gap-2"
-            >
-              <FiArrowLeft className="w-4 h-4" />
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  loading={isUpdating}
-                  disabled={isUpdating}
-                  className="flex items-center gap-2 bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700"
-                >
-                  <FiSave className="w-4 h-4" />
-                  {isUpdating ? 'Updating...' : 'Update Clinical Proforma'}
-                </Button>
+                <Textarea
+                  label="Precipitating Factor"
+                  name="precipitating_factor"
+                  value={formData.precipitating_factor}
+                  onChange={handleChange}
+                  rows={3}
+                />
+                <Input
+                  label="Total Duration of Illness"
+                  name="illness_duration"
+                  value={formData.illness_duration}
+                  onChange={handleChange}
+                />
+                <Input
+                  label="Current Episode Duration / Worsening Since"
+                  name="current_episode_since"
+                  value={formData.current_episode_since}
+                  onChange={handleChange}
+                />
               </div>
             </div>
-          )}
-        </Card>
-      </form>
-    );
+
+            {/* Complaints / History of Presenting Illness */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Complaints / History of Presenting Illness</h2>
+              <div className="space-y-6">
+                <CheckboxGroup label="Mood" name="mood" value={formData.mood || []} onChange={handleChange} options={defaultOptions.mood} />
+                <CheckboxGroup label="Behaviour" name="behaviour" value={formData.behaviour || []} onChange={handleChange} options={defaultOptions.behaviour} />
+                <CheckboxGroup label="Speech" name="speech" value={formData.speech || []} onChange={handleChange} options={defaultOptions.speech} />
+                <CheckboxGroup label="Thought" name="thought" value={formData.thought || []} onChange={handleChange} options={defaultOptions.thought} />
+                <CheckboxGroup label="Perception" name="perception" value={formData.perception || []} onChange={handleChange} options={defaultOptions.perception} />
+                <CheckboxGroup label="Somatic" name="somatic" value={formData.somatic || []} onChange={handleChange} options={defaultOptions.somatic} />
+                <CheckboxGroup label="Bio-functions" name="bio_functions" value={formData.bio_functions || []} onChange={handleChange} options={defaultOptions.bio_functions} />
+                <CheckboxGroup label="Adjustment" name="adjustment" value={formData.adjustment || []} onChange={handleChange} options={defaultOptions.adjustment} />
+                <CheckboxGroup label="Cognitive Function" name="cognitive_function" value={formData.cognitive_function || []} onChange={handleChange} options={defaultOptions.cognitive_function} />
+                <CheckboxGroup label="Fits" name="fits" value={formData.fits || []} onChange={handleChange} options={defaultOptions.fits} />
+                <CheckboxGroup label="Sexual Problem" name="sexual_problem" value={formData.sexual_problem || []} onChange={handleChange} options={defaultOptions.sexual_problem} />
+                <CheckboxGroup label="Substance Use" name="substance_use" value={formData.substance_use || []} onChange={handleChange} options={defaultOptions.substance_use} />
+              </div>
+            </div>
+
+            {/* Additional History */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Additional History</h2>
+              <div className="space-y-4">
+                <Textarea
+                  label="Past Psychiatric History"
+                  name="past_history"
+                  value={formData.past_history}
+                  onChange={handleChange}
+                  rows={4}
+                />
+                <Textarea
+                  label="Family History"
+                  name="family_history"
+                  value={formData.family_history}
+                  onChange={handleChange}
+                  rows={4}
+                />
+                <CheckboxGroup
+                  label="Associated Medical/Surgical Illness"
+                  name="associated_medical_surgical"
+                  value={formData.associated_medical_surgical || []}
+                  onChange={handleChange}
+                  options={defaultOptions.associated_medical_surgical}
+                />
+              </div>
+            </div>
+
+            {/* Mental State Examination (MSE) */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Mental State Examination (MSE)</h2>
+              <div className="space-y-6">
+                <CheckboxGroup label="MSE - Behaviour" name="mse_behaviour" value={formData.mse_behaviour || []} onChange={handleChange} options={defaultOptions.mse_behaviour} />
+                <CheckboxGroup label="MSE - Affect & Mood" name="mse_affect" value={formData.mse_affect || []} onChange={handleChange} options={defaultOptions.mse_affect} />
+                <CheckboxGroup
+                  label="MSE - Thought (Flow, Form, Content)"
+                  name="mse_thought"
+                  value={formData.mse_thought || []}
+                  onChange={handleChange}
+                  options={[]}
+                  rightInlineExtra={
+                    <Input
+                      name="mse_delusions"
+                      value={formData.mse_delusions}
+                      onChange={handleChange}
+                      placeholder="Delusions / Ideas of (optional)"
+                      className="max-w-xs"
+                    />
+                  }
+                />
+                <CheckboxGroup label="MSE - Perception" name="mse_perception" value={formData.mse_perception || []} onChange={handleChange} options={defaultOptions.mse_perception} />
+                <CheckboxGroup label="MSE - Cognitive Functions" name="mse_cognitive_function" value={formData.mse_cognitive_function || []} onChange={handleChange} options={defaultOptions.mse_cognitive_function} />
+              </div>
+            </div>
+
+            {/* General Physical Examination */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">General Physical Examination</h2>
+              <div className="space-y-4">
+                <Textarea
+                  label="GPE Findings"
+                  name="gpe"
+                  value={formData.gpe}
+                  onChange={handleChange}
+                  rows={4}
+                  placeholder="BP, Pulse, Weight, BMI, General appearance, Systemic examination..."
+                />
+              </div>
+            </div>
+
+            {/* Diagnosis & Management */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Diagnosis & Management</h2>
+              <div className="space-y-4">
+                <Textarea
+                  label="Diagnosis"
+                  name="diagnosis"
+                  value={formData.diagnosis}
+                  onChange={handleChange}
+                  rows={3}
+                  placeholder="Primary and secondary diagnoses..."
+                />
+                <ICD11CodeSelector
+                  value={formData.icd_code}
+                  onChange={handleChange}
+                  error={errors.icd_code}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Select
+                    label="Case Severity"
+                    name="case_severity"
+                    value={formData.case_severity}
+                    onChange={handleChange}
+                    options={CASE_SEVERITY}
+                  />
+                  <Select
+                    label="Doctor Decision"
+                    name="doctor_decision"
+                    value={formData.doctor_decision}
+                    onChange={handleChange}
+                    options={DOCTOR_DECISION}
+                    required
+                  />
+                </div>
+                <Textarea
+                  label="Disposal & Referral"
+                  name="disposal"
+                  value={formData.disposal}
+                  onChange={handleChange}
+                  rows={2}
+                  placeholder="Admission, discharge, follow-up..."
+                />
+                <Input
+                  label="Workup Appointment"
+                  type="date"
+                  name="workup_appointment"
+                  value={formData.workup_appointment}
+                  onChange={handleChange}
+                />
+                <Textarea
+                  label="Referred To"
+                  name="referred_to"
+                  value={formData.referred_to}
+                  onChange={handleChange}
+                  rows={2}
+                  placeholder="Other departments or specialists..."
+                />
+                <Textarea
+                  label="Treatment Prescribed"
+                  name="treatment_prescribed"
+                  value={formData.treatment_prescribed}
+                  onChange={handleChange}
+                  rows={4}
+                  placeholder="Treatment details..."
+                />
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex justify-end gap-3 pt-6 border-t">
+              <Button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30 px-4 py-2 rounded-md transition-all duration-200 hover:from-green-600 hover:to-green-700 hover:shadow-xl hover:shadow-green-500/40"
+              >
+                <FiArrowLeft className="w-4 h-4" />
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                loading={isUpdating}
+                disabled={isUpdating}
+                className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30 px-4 py-2 rounded-md transition-all duration-200 hover:from-green-600 hover:to-green-700 hover:shadow-xl hover:shadow-green-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FiSave className="w-4 h-4" />
+                {isUpdating ? 'Updating...' : 'Update Clinical Proforma'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Card>
+    </form>
+  );
 
   // If embedded, return just the form without full page wrapper
   if (isEmbedded) {

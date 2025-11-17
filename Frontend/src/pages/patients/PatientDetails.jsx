@@ -60,15 +60,27 @@ const PatientDetails = () => {
     );
   }
 
-  // Check for edit query parameter on mount
+  // Check for edit query parameter on mount and when searchParams change
   useEffect(() => {
-    if (searchParams.get('edit') === 'true') {
+    const editParam = searchParams.get('edit');
+    if (editParam === 'true') {
       setIsEditing(true);
-      // Remove the edit parameter from URL
-      searchParams.delete('edit');
-      setSearchParams(searchParams, { replace: true });
+      // Store edit state in localStorage for persistence
+      localStorage.setItem(`patient_edit_${patientId}`, 'true');
+    } else if (editParam === 'false') {
+      setIsEditing(false);
+      localStorage.removeItem(`patient_edit_${patientId}`);
+    } else {
+      // Check localStorage for persisted edit state
+      const persistedEdit = localStorage.getItem(`patient_edit_${patientId}`);
+      if (persistedEdit === 'true') {
+        setIsEditing(true);
+        // Restore edit parameter in URL
+        searchParams.set('edit', 'true');
+        setSearchParams(searchParams, { replace: true });
+      }
     }
-  }, []);
+  }, [searchParams, patientId, setSearchParams]);
 
   // Ensure queries refetch when ID changes by using skip option if id is invalid
   const { data: patientData, isLoading: patientLoading } = useGetPatientByIdQuery(patientId, {
@@ -579,6 +591,11 @@ const PatientDetails = () => {
           userRole={user?.role}
           onSave={() => {
             setIsEditing(false);
+            // Clear edit state from localStorage
+            localStorage.removeItem(`patient_edit_${patientId}`);
+            // Remove edit parameter from URL
+            searchParams.delete('edit');
+            setSearchParams(searchParams, { replace: true });
             // Optionally refresh data or navigate
             if (returnTab) {
               navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
@@ -586,6 +603,11 @@ const PatientDetails = () => {
           }}
           onCancel={() => {
             setIsEditing(false);
+            // Clear edit state from localStorage
+            localStorage.removeItem(`patient_edit_${patientId}`);
+            // Remove edit parameter from URL
+            searchParams.delete('edit');
+            setSearchParams(searchParams, { replace: true });
             if (returnTab) {
               navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
             } else {
