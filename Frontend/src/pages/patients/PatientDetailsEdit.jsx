@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
@@ -6,7 +7,7 @@ import {
   FiCalendar, FiGlobe, FiFileText, FiHash, FiClock,
   FiHeart, FiBookOpen, FiTrendingUp, FiShield,
   FiNavigation, FiTruck, FiEdit3, FiSave, FiX, FiLayers, FiLoader,
-  FiFolder, FiChevronDown, FiChevronUp, FiPackage, FiEdit, FiPlus, FiTrash2
+  FiFolder, FiChevronDown, FiChevronUp, FiPackage, FiEdit, FiPlus, FiTrash2, FiCheck
 } from 'react-icons/fi';
 import { useUpdatePatientMutation, useAssignPatientMutation, useCheckCRNumberExistsQuery } from '../../features/patients/patientsApiSlice';
 import { useGetDoctorsQuery } from '../../features/users/usersApiSlice';
@@ -32,6 +33,309 @@ import EditADL from '../adl/EditADL';
 import medicinesData from '../../assets/psychiatric_meds_india.json';
 
 // Prescription Card Component for displaying prescriptions per proforma
+
+
+
+const SelectWithOther = ({
+  customValue,
+  setCustomValue,
+  showCustomInput,
+  formData,
+  customFieldName,
+  inputLabel = "Specify",
+  ...selectProps
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [customInputValue, setCustomInputValue] = useState(customValue || formData[customFieldName] || '');
+  const dropdownRef = useRef(null);
+  const triggerRef = useRef(null);
+  const customInputRef = useRef(null);
+  const [menuStyle, setMenuStyle] = useState({ top: 0, left: 0, width: 0 });
+
+  // Check if "others" or "other" is selected
+  const isOthersSelected = selectProps.value === 'others' || selectProps.value === 'other';
+
+  // Update custom input value when customValue changes
+  useEffect(() => {
+    setCustomInputValue(customValue || formData[customFieldName] || '');
+  }, [customValue, formData, customFieldName]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(event.target) &&
+        triggerRef.current && !triggerRef.current.contains(event.target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Update portal menu position when open/resize/scroll
+  useEffect(() => {
+    if (!isOpen || !triggerRef.current) return;
+    const updatePosition = () => {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setMenuStyle({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      });
+    };
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [isOpen]);
+
+  // Focus custom input when "Others" is selected and dropdown opens
+  useEffect(() => {
+    if (isOpen && showCustomInput && customInputRef.current) {
+      setTimeout(() => {
+        customInputRef.current?.focus();
+      }, 100);
+    }
+  }, [isOpen, showCustomInput]);
+
+  const selectedOption = selectProps.options.find(opt => opt.value === selectProps.value);
+
+  const handleSelect = (optionValue) => {
+    const event = {
+      target: {
+        name: selectProps.name,
+        value: optionValue
+      }
+    };
+    selectProps.onChange(event);
+
+    if (optionValue !== 'others' && optionValue !== 'other') {
+      setIsOpen(false);
+    }
+  };
+
+  const handleCustomInputChange = (e) => {
+    const value = e.target.value;
+    setCustomInputValue(value);
+    setCustomValue(value);
+
+    // Update form data
+    const event = {
+      target: {
+        name: customFieldName,
+        value: value
+      }
+    };
+    selectProps.onChange(event);
+  };
+
+  const handleCustomInputKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      setIsOpen(false);
+    }
+  };
+
+  const Menu = (
+    <div
+      className="bg-white border-2 border-primary-200 rounded-xl shadow-2xl overflow-hidden"
+      style={{
+        maxHeight: '300px',
+        zIndex: selectProps.dropdownZIndex || 999999,
+      }}
+    >
+      <div className="overflow-y-auto py-1" style={{ maxHeight: showCustomInput ? '200px' : '280px' }}>
+        {selectProps.options
+          .filter(opt => opt.value !== 'others' && opt.value !== 'other')
+          .map((option, index) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => handleSelect(option.value)}
+              className={`
+                w-full px-4 py-3 text-left
+                flex items-center justify-between
+                transition-colors duration-150
+                ${selectProps.value === option.value
+                  ? 'bg-primary-50 text-primary-700 font-semibold'
+                  : 'text-gray-700 hover:bg-gray-50'}
+                ${index !== 0 ? 'border-t border-gray-100' : ''}
+              `}
+            >
+              <span className="flex-1">{option.label}</span>
+              {selectProps.value === option.value && (
+                <FiCheck className="h-5 w-5 text-primary-600 flex-shrink-0 ml-2" />
+              )}
+            </button>
+          ))}
+
+        {/* "Others" or "Other" option(s) */}
+        {selectProps.options
+          .filter(opt => opt.value === 'others' || opt.value === 'other')
+          .map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => handleSelect(option.value)}
+              className={`
+                w-full px-4 py-3 text-left
+                flex items-center justify-between
+                transition-colors duration-150
+                ${isOthersSelected
+                  ? 'bg-primary-50 text-primary-700 font-semibold'
+                  : 'text-gray-700 hover:bg-gray-50'}
+                border-t border-gray-100
+              `}
+            >
+              <span className="flex-1">{option.label}</span>
+              {isOthersSelected && (
+                <FiCheck className="h-5 w-5 text-primary-600 flex-shrink-0 ml-2" />
+              )}
+            </button>
+          ))}
+
+        {/* Custom input field when "Others" is selected */}
+        {isOthersSelected && (
+          <div className="p-3 border-t border-gray-200 bg-gray-50">
+            <label className="block text-xs font-medium text-gray-700 mb-2">
+              {inputLabel}
+            </label>
+            <input
+              ref={customInputRef}
+              type="text"
+              value={customInputValue}
+              onChange={handleCustomInputChange}
+              onKeyDown={handleCustomInputKeyDown}
+              placeholder={`Enter ${inputLabel.toLowerCase()}`}
+              className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className={`w-full relative overflow-visible ${selectProps.containerClassName || ''}`}>
+      {selectProps.label && (
+        <label
+          htmlFor={selectProps.name}
+          className="block text-sm font-medium text-gray-700 mb-2"
+        >
+          {selectProps.label}
+          {selectProps.required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+      )}
+
+      <div className="relative">
+        {/* Hidden native select for form submission */}
+        <select
+          id={selectProps.name}
+          name={selectProps.name}
+          value={selectProps.value}
+          onChange={selectProps.onChange}
+          required={selectProps.required}
+          disabled={selectProps.disabled}
+          className="sr-only"
+          tabIndex={-1}
+        >
+          <option value="">{selectProps.placeholder}</option>
+          {selectProps.options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+
+        {/* Custom dropdown trigger */}
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={() => !selectProps.disabled && setIsOpen(!isOpen)}
+          disabled={selectProps.disabled}
+          className={`
+            w-full px-4 py-3 pr-10
+            bg-white border-2 rounded-xl
+            text-left font-medium
+            transition-all duration-200 ease-in-out
+            focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500
+            hover:border-primary-400
+            disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:border-gray-300
+            ${selectProps.error ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-300'}
+            ${!selectProps.value ? 'text-gray-500' : 'text-gray-900'}
+            ${isOpen ? 'border-primary-500 ring-2 ring-primary-500/20' : ''}
+            ${selectProps.className}
+          `}
+        >
+          {isOthersSelected && customInputValue
+            ? customInputValue
+            : selectedOption
+              ? selectedOption.label
+              : selectProps.placeholder}
+        </button>
+
+        {/* Custom dropdown arrow */}
+        <div className={`
+          absolute right-3 top-1/2 -translate-y-1/2
+          pointer-events-none
+          transition-all duration-200
+          ${isOpen ? 'rotate-180' : 'rotate-0'}
+          ${selectProps.disabled ? 'text-gray-400' : selectProps.error ? 'text-red-500' : 'text-primary-600'}
+        `}>
+          <FiChevronDown className="h-5 w-5" />
+        </div>
+
+        {/* Dropdown menu */}
+        {isOpen && !selectProps.disabled && (
+          (selectProps.usePortal !== false)
+            ? createPortal(
+              <div
+                ref={dropdownRef}
+                style={{
+                  position: 'fixed',
+                  top: menuStyle.top,
+                  left: menuStyle.left,
+                  width: menuStyle.width,
+                  zIndex: selectProps.dropdownZIndex || 999999,
+                }}
+              >
+                {Menu}
+              </div>,
+              document.body
+            )
+            : (
+              <div
+                ref={dropdownRef}
+                className="absolute"
+                style={{
+                  top: 'calc(100% + 8px)',
+                  left: 0,
+                  right: 0,
+                  zIndex: selectProps.dropdownZIndex || 999999,
+                }}
+              >
+                {Menu}
+              </div>
+            )
+        )}
+      </div>
+
+      {selectProps.error && (
+        <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+          <span className="inline-block w-1 h-1 rounded-full bg-red-600"></span>
+          {selectProps.error}
+        </p>
+      )}
+    </div>
+  );
+};
 const PrescriptionCard = ({ proforma, index, patientId }) => {
   const navigate = useNavigate();
   const { data: prescriptionsData, isLoading: loadingPrescriptions } = useGetPrescriptionsByProformaIdQuery(
@@ -41,12 +345,12 @@ const PrescriptionCard = ({ proforma, index, patientId }) => {
   const [createBulkPrescriptions, { isLoading: isSaving }] = useCreateBulkPrescriptionsMutation();
 
   const existingPrescriptions = prescriptionsData?.data?.prescriptions || [];
-  
+
   // Flatten medicines data for autocomplete
   const allMedicines = useMemo(() => {
     const medicines = [];
     const data = medicinesData.psychiatric_medications;
-    
+
     const extractMedicines = (obj) => {
       if (Array.isArray(obj)) {
         obj.forEach(med => {
@@ -75,7 +379,7 @@ const PrescriptionCard = ({ proforma, index, patientId }) => {
         });
       }
     };
-    
+
     extractMedicines(data);
     const uniqueMedicines = Array.from(
       new Map(medicines.map(m => [m.name.toLowerCase(), m])).values()
@@ -89,7 +393,7 @@ const PrescriptionCard = ({ proforma, index, patientId }) => {
   const [showSuggestions, setShowSuggestions] = useState({});
   const [suggestionPositions, setSuggestionPositions] = useState({});
   const inputRefs = useRef({});
-  
+
   // Initialize with empty row, will be populated when prescriptions load
   const [prescriptionRows, setPrescriptionRows] = useState([
     { medicine: '', dosage: '', when: '', frequency: '', duration: '', qty: '', details: '', notes: '' }
@@ -123,6 +427,9 @@ const PrescriptionCard = ({ proforma, index, patientId }) => {
     setPrescriptionRows(prev => [...prev, { medicine: '', dosage: '', when: '', frequency: '', duration: '', qty: '', details: '', notes: '' }]);
   };
 
+
+
+
   const removePrescriptionRow = (rowIdx) => {
     setPrescriptionRows(prev => prev.filter((_, i) => i !== rowIdx));
     // Clean up autocomplete state for removed row
@@ -140,12 +447,12 @@ const PrescriptionCard = ({ proforma, index, patientId }) => {
 
   const updatePrescriptionCell = (rowIdx, field, value) => {
     setPrescriptionRows(prev => prev.map((r, i) => i === rowIdx ? { ...r, [field]: value } : r));
-    
+
     // Handle medicine autocomplete
     if (field === 'medicine') {
       const searchTerm = value.toLowerCase().trim();
       if (searchTerm.length > 0) {
-        const filtered = allMedicines.filter(med => 
+        const filtered = allMedicines.filter(med =>
           med.name.toLowerCase().includes(searchTerm) ||
           med.displayName.toLowerCase().includes(searchTerm) ||
           (med.genericName && med.genericName.toLowerCase().includes(searchTerm))
@@ -153,7 +460,7 @@ const PrescriptionCard = ({ proforma, index, patientId }) => {
         setMedicineSuggestions(prev => ({ ...prev, [rowIdx]: filtered }));
         setShowSuggestions(prev => ({ ...prev, [rowIdx]: true }));
         setActiveSuggestionIndex(prev => ({ ...prev, [rowIdx]: -1 }));
-        
+
         // Calculate position for dropdown
         setTimeout(() => {
           const input = inputRefs.current[`medicine-${rowIdx}`];
@@ -163,7 +470,7 @@ const PrescriptionCard = ({ proforma, index, patientId }) => {
             const spaceAbove = rect.top;
             const spaceBelow = window.innerHeight - rect.bottom;
             const positionAbove = spaceAbove > dropdownHeight || spaceAbove > spaceBelow;
-            
+
             setSuggestionPositions(prev => ({
               ...prev,
               [rowIdx]: {
@@ -182,7 +489,7 @@ const PrescriptionCard = ({ proforma, index, patientId }) => {
   };
 
   const selectMedicine = (rowIdx, medicine) => {
-    setPrescriptionRows(prev => prev.map((r, i) => 
+    setPrescriptionRows(prev => prev.map((r, i) =>
       i === rowIdx ? { ...r, medicine: medicine.name } : r
     ));
     setShowSuggestions(prev => ({ ...prev, [rowIdx]: false }));
@@ -217,7 +524,7 @@ const PrescriptionCard = ({ proforma, index, patientId }) => {
 
     // Filter out empty prescriptions
     const validPrescriptions = prescriptionRows.filter(p => p.medicine && p.medicine.trim());
-    
+
     if (validPrescriptions.length === 0) {
       toast.error('Please add at least one medication with a valid medicine name');
       return;
@@ -241,7 +548,7 @@ const PrescriptionCard = ({ proforma, index, patientId }) => {
       }).unwrap();
 
       toast.success(`Prescription saved successfully! ${prescriptionsToSave.length} medication(s) recorded.`);
-      
+
       // The query will automatically refetch due to cache invalidation
       // Reset form to show one empty row for next entry
       setPrescriptionRows([{ medicine: '', dosage: '', when: '', frequency: '', duration: '', qty: '', details: '', notes: '' }]);
@@ -312,14 +619,14 @@ const PrescriptionCard = ({ proforma, index, patientId }) => {
                           onFocus={() => {
                             if (row.medicine && row.medicine.trim().length > 0) {
                               const searchTerm = row.medicine.toLowerCase().trim();
-                              const filtered = allMedicines.filter(med => 
+                              const filtered = allMedicines.filter(med =>
                                 med.name.toLowerCase().includes(searchTerm) ||
                                 med.displayName.toLowerCase().includes(searchTerm) ||
                                 (med.genericName && med.genericName.toLowerCase().includes(searchTerm))
                               ).slice(0, 10);
                               setMedicineSuggestions(prev => ({ ...prev, [idx]: filtered }));
                               setShowSuggestions(prev => ({ ...prev, [idx]: true }));
-                              
+
                               setTimeout(() => {
                                 const input = inputRefs.current[`medicine-${idx}`];
                                 if (input) {
@@ -328,7 +635,7 @@ const PrescriptionCard = ({ proforma, index, patientId }) => {
                                   const spaceAbove = rect.top;
                                   const spaceBelow = window.innerHeight - rect.bottom;
                                   const positionAbove = spaceAbove > dropdownHeight || spaceAbove > spaceBelow;
-                                  
+
                                   setSuggestionPositions(prev => ({
                                     ...prev,
                                     [idx]: {
@@ -351,9 +658,9 @@ const PrescriptionCard = ({ proforma, index, patientId }) => {
                           autoComplete="off"
                         />
                         {showSuggestions[idx] && medicineSuggestions[idx] && medicineSuggestions[idx].length > 0 && (
-                          <div 
+                          <div
                             className="fixed bg-white border border-gray-300 rounded-lg shadow-2xl max-h-60 overflow-y-auto z-50"
-                            style={{ 
+                            style={{
                               top: suggestionPositions[idx]?.top ? `${suggestionPositions[idx].top}px` : 'auto',
                               left: suggestionPositions[idx]?.left ? `${suggestionPositions[idx].left}px` : 'auto',
                               width: suggestionPositions[idx]?.width ? `${suggestionPositions[idx].width}px` : '300px',
@@ -366,11 +673,9 @@ const PrescriptionCard = ({ proforma, index, patientId }) => {
                                 key={`${med.name}-${medIdx}`}
                                 onClick={() => selectMedicine(idx, med)}
                                 onMouseDown={(e) => e.preventDefault()}
-                                className={`px-3 py-2 cursor-pointer hover:bg-amber-50 transition-colors ${
-                                  activeSuggestionIndex[idx] === medIdx ? 'bg-amber-100' : ''
-                                } ${medIdx === 0 ? 'rounded-t-lg' : ''} ${
-                                  medIdx === medicineSuggestions[idx].length - 1 ? 'rounded-b-lg' : ''
-                                }`}
+                                className={`px-3 py-2 cursor-pointer hover:bg-amber-50 transition-colors ${activeSuggestionIndex[idx] === medIdx ? 'bg-amber-100' : ''
+                                  } ${medIdx === 0 ? 'rounded-t-lg' : ''} ${medIdx === medicineSuggestions[idx].length - 1 ? 'rounded-b-lg' : ''
+                                  }`}
                               >
                                 <div className="font-medium text-gray-900">{med.name}</div>
                                 {med.displayName !== med.name && (
@@ -457,9 +762,9 @@ const PrescriptionCard = ({ proforma, index, patientId }) => {
                     </td>
                     <td className="px-3 py-2 text-right">
                       {prescriptionRows.length > 1 && (
-                        <button 
-                          type="button" 
-                          onClick={() => removePrescriptionRow(idx)} 
+                        <button
+                          type="button"
+                          onClick={() => removePrescriptionRow(idx)}
                           className="text-red-600 hover:text-red-800 hover:underline text-xs flex items-center gap-1"
                         >
                           <FiTrash2 className="w-3 h-3" />
@@ -648,10 +953,26 @@ const IconInput = ({ icon, label, loading = false, error, defaultValue, ...props
 const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, adlData, usersData, userRole, onSave, onCancel }) => {
   // Track current doctor_decision from EditClinicalProforma form
   const [currentDoctorDecision, setCurrentDoctorDecision] = useState(null);
+  const [occupationOther, setOccupationOther] = useState(''); // Custom occupation value
+  const [familyTypeOther, setFamilyTypeOther] = useState(''); // Custom family type value
+  const [localityOther, setLocalityOther] = useState(''); // Custom locality value
+  const [religionOther, setReligionOther] = useState(''); // Custom religion value
+  const [headRelationshipOther, setHeadRelationshipOther] = useState(''); // Custom head relationship value
+  const [mobilityOther, setMobilityOther] = useState(''); // Custom mobility value
+  const [referredByOther, setReferredByOther] = useState(''); // Custom referred by value
+  const [showOccupationOther, setShowOccupationOther] = useState(false);
+  const [showFamilyTypeOther, setShowFamilyTypeOther] = useState(false);
+  const [showLocalityOther, setShowLocalityOther] = useState(false);
+  const [showReligionOther, setShowReligionOther] = useState(false);
+  const [showHeadRelationshipOther, setShowHeadRelationshipOther] = useState(false);
+  const [showMobilityOther, setShowMobilityOther] = useState(false);
+  const [showReferredByOther, setShowReferredByOther] = useState(false);
   const navigate = useNavigate();
   const [updatePatient, { isLoading }] = useUpdatePatientMutation();
   const [assignPatient, { isLoading: isAssigning }] = useAssignPatientMutation();
   const { data: doctorsData } = useGetDoctorsQuery({ page: 1, limit: 100 });
+
+
 
   const [expandedCards, setExpandedCards] = useState({
     patient: true,
@@ -670,7 +991,7 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
   // Determine which sections to show based on CURRENT USER's role (userRole)
   // If current user is System Administrator, JR, or SR → Show all sections
   const canViewAllSections = userRole && (
-    isAdmin(userRole) || 
+    isAdmin(userRole) ||
     isJrSr(userRole)
   );
   const canViewClinicalProforma = canViewAllSections;
@@ -678,22 +999,22 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
 
   // ADL File: Show only if case is complex OR ADL file already exists
   const patientAdlFiles = adlData?.data?.adlFiles || [];
-  const patientProformas = Array.isArray(clinicalData?.data?.proformas) 
-    ? clinicalData.data.proformas 
+  const patientProformas = Array.isArray(clinicalData?.data?.proformas)
+    ? clinicalData.data.proformas
     : [];
-  
+
   // State for selected proforma to edit
   const [selectedProformaId, setSelectedProformaId] = useState(() => {
     // Default to the most recent proforma (first one in the array, assuming they're sorted by date)
-    return patientProformas.length > 0 && patientProformas[0]?.id 
-      ? patientProformas[0].id.toString() 
+    return patientProformas.length > 0 && patientProformas[0]?.id
+      ? patientProformas[0].id.toString()
       : null;
   });
 
   // Fetch selected proforma data for editing
-  const { 
-    data: selectedProformaData, 
-    isLoading: isLoadingSelectedProforma 
+  const {
+    data: selectedProformaData,
+    isLoading: isLoadingSelectedProforma
   } = useGetClinicalProformaByIdQuery(
     selectedProformaId,
     { skip: !selectedProformaId }
@@ -716,20 +1037,20 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
 
   // Check if case is complex
   // Check saved proformas, selected proforma being edited, current form data, or if ADL files exist
-  const isComplexCase = patient?.case_complexity === 'complex' || 
+  const isComplexCase = patient?.case_complexity === 'complex' ||
     patient?.has_adl_file === true ||
     patientAdlFiles.length > 0 ||
     patientProformas.some(p => p.doctor_decision === 'complex_case') ||
     selectedProforma?.doctor_decision === 'complex_case' ||
     currentDoctorDecision === 'complex_case';
-  
+
   const canViewADLFile = canViewAllSections && isComplexCase;
   const isSelectedComplexCase = selectedProforma?.doctor_decision === 'complex_case' && selectedProforma?.adl_file_id;
 
   // Fetch ADL file data if this is a complex case
-  const { 
-    data: selectedAdlFileData, 
-    isLoading: isLoadingSelectedADL 
+  const {
+    data: selectedAdlFileData,
+    isLoading: isLoadingSelectedADL
   } = useGetADLFileByIdQuery(
     selectedProforma?.adl_file_id,
     { skip: !isSelectedComplexCase }
@@ -737,7 +1058,7 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
 
   const selectedAdlFile = selectedAdlFileData?.data?.adlFile || selectedAdlFileData?.data?.file;
 
-  console.log(">>>>",patient)
+  console.log(">>>>", patient)
   // Initialize form data from patient and formData props
   const [formData, setFormData] = useState(() => {
     // Merge patient data with initialFormData, prioritizing patient data
@@ -751,14 +1072,14 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       special_clinic_no: patient?.special_clinic_no || initialFormData?.special_clinic_no || '',
       contact_number: patient?.contact_number || initialFormData?.contact_number || '',
       father_name: patient?.father_name || initialFormData?.father_name || '',
-     
+
       category: patient?.category || initialFormData?.category || '',
-      
+
       // Dates
       date: patient?.date || initialFormData?.date || '',
       seen_in_walk_in_on: patient?.seen_in_walk_in_on || initialFormData?.seen_in_walk_in_on || '',
       worked_up_on: patient?.worked_up_on || initialFormData?.worked_up_on || '',
-      
+
       // Quick Entry
       department: patient?.department || initialFormData?.department || '',
       unit_consit: patient?.unit_consit || initialFormData?.unit_consit || '',
@@ -766,35 +1087,42 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       serial_no: patient?.serial_no || initialFormData?.serial_no || '',
       file_no: patient?.file_no || initialFormData?.file_no || '',
       unit_days: patient?.unit_days || initialFormData?.unit_days || '',
-      
+
       // Personal Information
       age_group: patient?.age_group || initialFormData?.age_group || '',
       marital_status: patient?.marital_status || initialFormData?.marital_status || '',
       year_of_marriage: patient?.year_of_marriage || initialFormData?.year_of_marriage || '',
       no_of_children_male: patient?.no_of_children_male || initialFormData?.no_of_children_male || '',
       no_of_children_female: patient?.no_of_children_female || initialFormData?.no_of_children_female || '',
-      
+
       // Occupation & Education
       occupation: patient?.occupation || initialFormData?.occupation || '',
+      occupation_other: patient?.occupation_other || initialFormData?.occupation_other || '',
       education: patient?.education || initialFormData?.education || '',
       locality: patient?.locality || initialFormData?.locality || '',
+      locality_other: patient?.locality_other || initialFormData?.locality_other || '',
       income: patient?.income || initialFormData?.income || '',
       religion: patient?.religion || initialFormData?.religion || '',
+      religion_other: patient?.religion_other || initialFormData?.religion_other || '',
       family_type: patient?.family_type || initialFormData?.family_type || '',
-      
+      family_type_other: patient?.family_type_other || initialFormData?.family_type_other || '',
+
       // Head of Family
       head_name: patient?.head_name || initialFormData?.head_name || '',
       head_age: patient?.head_age || initialFormData?.head_age || '',
       head_relationship: patient?.head_relationship || initialFormData?.head_relationship || '',
+      head_relationship_other: patient?.head_relationship_other || initialFormData?.head_relationship_other || '',
       head_education: patient?.head_education || initialFormData?.head_education || '',
       head_occupation: patient?.head_occupation || initialFormData?.head_occupation || '',
       head_income: patient?.head_income || initialFormData?.head_income || '',
-      
+
       // Referral & Mobility
       distance_from_hospital: patient?.distance_from_hospital || initialFormData?.distance_from_hospital || '',
       mobility: patient?.mobility || initialFormData?.mobility || '',
+      mobility_other: patient?.mobility_other || initialFormData?.mobility_other || '',
       referred_by: patient?.referred_by || initialFormData?.referred_by || '',
-      
+      referred_by_other: patient?.referred_by_other || initialFormData?.referred_by_other || '',
+
       // Address
       address_line: patient?.address_line || initialFormData?.address_line || '',
       country: patient?.country || initialFormData?.country || '',
@@ -802,7 +1130,7 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
       district: patient?.district || initialFormData?.district || '',
       city: patient?.city || initialFormData?.city || '',
       pin_code: patient?.pin_code || initialFormData?.pin_code || '',
-      
+
       // Assignment
       assigned_doctor_id: patient?.assigned_doctor_id ? String(patient.assigned_doctor_id) : initialFormData?.assigned_doctor_id || '',
       assigned_doctor_name: patient?.assigned_doctor_name || initialFormData?.assigned_doctor_name || '',
@@ -821,6 +1149,84 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
     currentCRNumber,
     { skip: !currentCRNumber || currentCRNumber.length < 3 || currentCRNumber === patient?.cr_no }
   );
+
+  // Check if fields with "others"/"other" are selected to show custom inputs
+  useEffect(() => {
+    if (formData.occupation === 'others') {
+      setShowOccupationOther(true);
+      if (formData.occupation_other) {
+        setOccupationOther(formData.occupation_other);
+      }
+    } else {
+      setShowOccupationOther(false);
+    }
+  }, [formData.occupation, formData.occupation_other]);
+
+  useEffect(() => {
+    if (formData.family_type === 'others') {
+      setShowFamilyTypeOther(true);
+      if (formData.family_type_other) {
+        setFamilyTypeOther(formData.family_type_other);
+      }
+    } else {
+      setShowFamilyTypeOther(false);
+    }
+  }, [formData.family_type, formData.family_type_other]);
+
+  useEffect(() => {
+    if (formData.locality === 'other') {
+      setShowLocalityOther(true);
+      if (formData.locality_other) {
+        setLocalityOther(formData.locality_other);
+      }
+    } else {
+      setShowLocalityOther(false);
+    }
+  }, [formData.locality, formData.locality_other]);
+
+  useEffect(() => {
+    if (formData.religion === 'others') {
+      setShowReligionOther(true);
+      if (formData.religion_other) {
+        setReligionOther(formData.religion_other);
+      }
+    } else {
+      setShowReligionOther(false);
+    }
+  }, [formData.religion, formData.religion_other]);
+
+  useEffect(() => {
+    if (formData.head_relationship === 'other') {
+      setShowHeadRelationshipOther(true);
+      if (formData.head_relationship_other) {
+        setHeadRelationshipOther(formData.head_relationship_other);
+      }
+    } else {
+      setShowHeadRelationshipOther(false);
+    }
+  }, [formData.head_relationship, formData.head_relationship_other]);
+
+  useEffect(() => {
+    if (formData.mobility === 'others') {
+      setShowMobilityOther(true);
+      if (formData.mobility_other) {
+        setMobilityOther(formData.mobility_other);
+      }
+    } else {
+      setShowMobilityOther(false);
+    }
+  }, [formData.mobility, formData.mobility_other]);
+
+  useEffect(() => {
+    if (formData.referred_by === 'others') {
+      setShowReferredByOther(true);
+      if (formData.referred_by_other) {
+        setReferredByOther(formData.referred_by_other);
+      }
+    } else {
+      setShowReferredByOther(false);
+    }
+  }, [formData.referred_by, formData.referred_by_other]);
 
   // CR validation effect
   useEffect(() => {
@@ -855,6 +1261,82 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+
+    // Handle "Others"/"Other" selection for all fields
+    const handleOthersSelection = (fieldName, value, setShowState, customValueState, setCustomValueState, customFieldName) => {
+      if (value === 'others' || value === 'other') {
+        setShowState(true);
+        if (!customValueState) {
+          setCustomValueState('');
+        }
+      } else {
+        setShowState(false);
+        setCustomValueState('');
+        setFormData(prev => ({ ...prev, [customFieldName]: null }));
+      }
+    };
+
+    // Handle custom input values
+    const handleCustomInput = (fieldName, value, setCustomValueState, customFieldName) => {
+      setCustomValueState(value);
+      setFormData(prev => ({ ...prev, [customFieldName]: value }));
+    };
+
+    // Occupation
+    if (name === 'occupation') {
+      handleOthersSelection(name, value, setShowOccupationOther, occupationOther, setOccupationOther, 'occupation_other');
+    }
+    if (name === 'occupation_other') {
+      handleCustomInput(name, value, setOccupationOther, 'occupation_other');
+    }
+
+    // Family Type
+    if (name === 'family_type') {
+      handleOthersSelection(name, value, setShowFamilyTypeOther, familyTypeOther, setFamilyTypeOther, 'family_type_other');
+    }
+    if (name === 'family_type_other') {
+      handleCustomInput(name, value, setFamilyTypeOther, 'family_type_other');
+    }
+
+    // Locality
+    if (name === 'locality') {
+      handleOthersSelection(name, value, setShowLocalityOther, localityOther, setLocalityOther, 'locality_other');
+    }
+    if (name === 'locality_other') {
+      handleCustomInput(name, value, setLocalityOther, 'locality_other');
+    }
+
+    // Religion
+    if (name === 'religion') {
+      handleOthersSelection(name, value, setShowReligionOther, religionOther, setReligionOther, 'religion_other');
+    }
+    if (name === 'religion_other') {
+      handleCustomInput(name, value, setReligionOther, 'religion_other');
+    }
+
+    // Head Relationship
+    if (name === 'head_relationship') {
+      handleOthersSelection(name, value, setShowHeadRelationshipOther, headRelationshipOther, setHeadRelationshipOther, 'head_relationship_other');
+    }
+    if (name === 'head_relationship_other') {
+      handleCustomInput(name, value, setHeadRelationshipOther, 'head_relationship_other');
+    }
+
+    // Mobility
+    if (name === 'mobility') {
+      handleOthersSelection(name, value, setShowMobilityOther, mobilityOther, setMobilityOther, 'mobility_other');
+    }
+    if (name === 'mobility_other') {
+      handleCustomInput(name, value, setMobilityOther, 'mobility_other');
+    }
+
+    // Referred By
+    if (name === 'referred_by') {
+      handleOthersSelection(name, value, setShowReferredByOther, referredByOther, setReferredByOther, 'referred_by_other');
+    }
+    if (name === 'referred_by_other') {
+      handleCustomInput(name, value, setReferredByOther, 'referred_by_other');
+    }
 
     // Clear any existing CR number error when user starts typing
     if (name === 'cr_no') {
@@ -1026,27 +1508,43 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
         no_of_children_female: parseIntSafe(formData.no_of_children_female),
 
         // Occupation & Education
-        occupation: formData.occupation || null,
+        // If "others" is selected, use the custom occupation value, otherwise use the selected option
+        occupation: formData.occupation === 'others'
+          ? (formData.occupation_other || occupationOther || null)
+          : (formData.occupation || null),
         education: formData.education || null,
 
         // Financial Information
         income: parseFloatSafe(formData.income),
 
         // Family Information
-        religion: formData.religion || null,
-        family_type: formData.family_type || null,
-        locality: formData.locality || null,
+        // If "others"/"other" is selected, use the custom value, otherwise use the selected option
+        religion: formData.religion === 'others'
+          ? (formData.religion_other || religionOther || null)
+          : (formData.religion || null),
+        family_type: formData.family_type === 'others'
+          ? (formData.family_type_other || familyTypeOther || null)
+          : (formData.family_type || null),
+        locality: formData.locality === 'other'
+          ? (formData.locality_other || localityOther || null)
+          : (formData.locality || null),
         head_name: formData.head_name || formData.father_name || null,
         head_age: parseIntSafe(formData.head_age),
-        head_relationship: formData.head_relationship || null,
+        head_relationship: formData.head_relationship === 'other'
+          ? (formData.head_relationship_other || headRelationshipOther || null)
+          : (formData.head_relationship || null),
         head_education: formData.head_education || null,
         head_occupation: formData.head_occupation || null,
         head_income: parseFloatSafe(formData.head_income),
 
         // Referral & Mobility
         distance_from_hospital: formData.distance_from_hospital || null,
-        mobility: formData.mobility || null,
-        referred_by: formData.referred_by || null,
+        mobility: formData.mobility === 'others'
+          ? (formData.mobility_other || mobilityOther || null)
+          : (formData.mobility || null),
+        referred_by: formData.referred_by === 'others'
+          ? (formData.referred_by_other || referredByOther || null)
+          : (formData.referred_by || null),
 
         // Contact Information
         contact_number: formData.contact_number || null,
@@ -1109,842 +1607,858 @@ const PatientDetailsEdit = ({ patient, formData: initialFormData, clinicalData, 
   return (
     <div className="space-y-6">
 
-        {/* Patient Details Card - Collapsible */}
+      {/* Patient Details Card - Collapsible */}
+      <Card className="shadow-lg border-0 bg-white">
+        <div
+          className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
+          onClick={() => toggleCard('patient')}
+        >
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-100 rounded-lg">
+              <FiUser className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">Patient Details</h3>
+              <p className="text-sm text-gray-500 mt-1">{patient?.name || 'New Patient'} - {patient?.cr_no || 'N/A'}</p>
+            </div>
+          </div>
+          {expandedCards.patient ? (
+            <FiChevronUp className="h-6 w-6 text-gray-500" />
+          ) : (
+            <FiChevronDown className="h-6 w-6 text-gray-500" />
+          )}
+        </div>
+
+        {expandedCards.patient && (
+          <div className="p-6">
+            <form onSubmit={handleSubmit}>
+              {/* Quick Entry Section with Glassmorphism */}
+              <div className="relative mb-8">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-3xl blur-xl"></div>
+                <Card
+                  title={
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
+                        <FiEdit3 className="w-6 h-6 text-indigo-600" />
+                      </div>
+                      <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">OUT PATIENT CARD</span>
+                    </div>
+                  }
+                  className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl overflow-hidden">
+                  <div className="space-y-8">
+                    {/* First Row - Basic Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                      <IconInput
+                        icon={<FiHash className="w-4 h-4" />}
+                        label="CR No."
+                        name="cr_no"
+                        value={formData.cr_no || ''}
+                        onChange={handleChange}
+                        placeholder="Enter CR number"
+                        loading={isCheckingCR && formData.cr_no && formData.cr_no.length >= 3}
+                        disabled={true}
+                        className="disabled:bg-gray-200 disabled:cursor-not-allowed disabled:text-gray-900"
+                      />
+                      <DatePicker
+                        icon={<FiCalendar className="w-4 h-4" />}
+                        label="Date"
+                        name="date"
+                        value={formData.date || ''}
+                        onChange={handleChange}
+                        defaultToday={false}
+                      />
+                      <IconInput
+                        icon={<FiUser className="w-4 h-4" />}
+                        label="Name"
+                        name="name"
+                        value={formData.name || ''}
+                        onChange={handleChange}
+                        placeholder="Enter patient name"
+                        error={errors.patientName}
+                        className=""
+                      />
+                      <IconInput
+                        icon={<FiPhone className="w-4 h-4" />}
+                        label="Mobile No."
+                        name="contact_number"
+                        value={formData.contact_number || ''}
+                        onChange={handleChange}
+                        placeholder="Enter mobile number"
+                        className=""
+                      />
+                    </div>
+
+                    {/* Second Row - Age, Sex, Category, Father's Name */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                      <IconInput
+                        icon={<FiClock className="w-4 h-4" />}
+                        label="Age"
+                        name="age"
+                        value={formData.age || ''}
+                        onChange={handleChange}
+                        type="number"
+                        placeholder="Enter age"
+                        error={errors.patientAge}
+                        className=""
+                      />
+                      <div className="space-y-2">
+                        <Select
+                          label="Sex"
+                          name="sex"
+                          value={formData.sex || ''}
+                          onChange={handleChange}
+                          options={SEX_OPTIONS}
+                          placeholder="Select sex"
+                          error={errors.patientSex}
+                          searchable={true}
+                          className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                          <FiShield className="w-4 h-4 text-primary-600" />
+                          Category
+                        </label>
+                        <Select
+                          name="category"
+                          value={formData.category || ''}
+                          onChange={handleChange}
+                          options={CATEGORY_OPTIONS}
+                          placeholder="Select category"
+                          searchable={true}
+                          className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
+                        />
+                      </div>
+                      <IconInput
+                        icon={<FiUsers className="w-4 h-4" />}
+                        label="Father's Name"
+                        name="father_name"
+                        value={formData.father_name || ''}
+                        onChange={handleChange}
+                        placeholder="Enter father's name"
+                        className=""
+                      />
+                    </div>
+                    {/* Fourth Row - Department, Unit/Consit, Room No., Serial No. */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                      <IconInput
+                        icon={<FiLayers className="w-4 h-4" />}
+                        label="Department"
+                        name="department"
+                        value={formData.department || ''}
+                        onChange={handleChange}
+                        placeholder="Enter department"
+                        className=""
+                      />
+                      <IconInput
+                        icon={<FiUsers className="w-4 h-4" />}
+                        label="Unit/Consit"
+                        name="unit_consit"
+                        value={formData.unit_consit || ''}
+                        onChange={handleChange}
+                        placeholder="Enter unit/consit"
+                        className=""
+                      />
+                      <IconInput
+                        icon={<FiHome className="w-4 h-4" />}
+                        label="Room No."
+                        name="room_no"
+                        value={formData.room_no || ''}
+                        onChange={handleChange}
+                        placeholder="Enter room number"
+                        className=""
+                      />
+                      <IconInput
+                        icon={<FiHash className="w-4 h-4" />}
+                        label="Serial No."
+                        name="serial_no"
+                        value={formData.serial_no || ''}
+                        onChange={handleChange}
+                        placeholder="Enter serial number"
+                        className=""
+                      />
+                    </div>
+
+                    {/* Fifth Row - File No., Unit Days */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <IconInput
+                        icon={<FiFileText className="w-4 h-4" />}
+                        label="File No."
+                        name="file_no"
+                        value={formData.file_no || ''}
+                        onChange={handleChange}
+                        placeholder="Enter file number"
+                        className=""
+                      />
+                      <div className="space-y-2">
+                        <Select
+                          label="Unit Days"
+                          name="unit_days"
+                          value={formData.unit_days || ''}
+                          onChange={handleChange}
+                          options={UNIT_DAYS_OPTIONS}
+                          placeholder="Select unit days"
+                          searchable={true}
+                          className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Address Details */}
+                    <div className="space-y-6 pt-6 border-t border-white/30">
+                      <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                        <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-md">
+                          <FiMapPin className="w-5 h-5 text-blue-600" />
+                        </div>
+                        Address Details
+                      </h4>
+
+                      <div className="space-y-6">
+                        {/* Address Line */}
+                        <IconInput
+                          icon={<FiHome className="w-4 h-4" />}
+                          label="Address Line (House No., Street, Locality)"
+                          name="address_line"
+                          value={formData.address_line || ''}
+                          onChange={handleChange}
+                          placeholder="Enter house number, street, locality"
+                          required
+                          className=""
+                        />
+
+                        {/* Location Fields */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <IconInput
+                            icon={<FiGlobe className="w-4 h-4" />}
+                            label="Country"
+                            name="country"
+                            value={formData.country || ''}
+                            onChange={handleChange}
+                            placeholder="Enter country"
+                            className=""
+                          />
+                          <IconInput
+                            icon={<FiMapPin className="w-4 h-4" />}
+                            label="State"
+                            name="state"
+                            value={formData.state || ''}
+                            onChange={handleChange}
+                            placeholder="Enter state"
+                            required
+                            className=""
+                          />
+                          <IconInput
+                            icon={<FiLayers className="w-4 h-4" />}
+                            label="District"
+                            name="district"
+                            value={formData.district || ''}
+                            onChange={handleChange}
+                            placeholder="Enter district"
+                            required
+                            className=""
+                          />
+                          <IconInput
+                            icon={<FiHome className="w-4 h-4" />}
+                            label="City/Town/Village"
+                            name="city"
+                            value={formData.city || ''}
+                            onChange={handleChange}
+                            placeholder="Enter city, town or village"
+                            required
+                            className=""
+                          />
+                        </div>
+
+                        {/* Pin Code Row */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <IconInput
+                            icon={<FiHash className="w-4 h-4" />}
+                            label="Pin Code"
+                            name="pin_code"
+                            value={formData.pin_code || ''}
+                            onChange={handleChange}
+                            placeholder="Enter pin code"
+                            type="number"
+                            required
+                            className=""
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Basic Information with Glassmorphism */}
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 rounded-3xl blur-xl"></div>
+                <Card
+                  title={
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
+                        <FiUser className="w-6 h-6 text-emerald-600" />
+                      </div>
+                      <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">OUT-PATIENT RECORD</span>
+                    </div>
+                  }
+                  className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl overflow-visible"
+                >
+                  <div className="space-y-8">
+                    {/* Patient Identification */}
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <DatePicker
+                          icon={<FiCalendar className="w-4 h-4" />}
+                          label="Seen in Walk-in-on"
+                          name="seen_in_walk_in_on"
+                          value={formData.seen_in_walk_in_on}
+                          onChange={handleChange}
+                          defaultToday={true}
+                        />
+                        <DatePicker
+                          icon={<FiCalendar className="w-4 h-4" />}
+                          label="Worked up on"
+                          name="worked_up_on"
+                          value={formData.worked_up_on}
+                          onChange={handleChange}
+                          defaultToday={true}
+                        />
+
+                        <IconInput
+                          icon={<FiHash className="w-4 h-4" />}
+                          label="CR No."
+                          name="cr_no"
+                          value={formData.cr_no || ''}
+                          onChange={handleChange}
+                          placeholder="Enter CR number"
+                          // error={errors.patientCRNo}
+                          loading={isCheckingCR && formData.cr_no && formData.cr_no.length >= 3}
+                          // className={`${errors.patientCRNo
+                          //   ? 'border-red-400/50 focus:border-red-500 focus:ring-red-500/50 bg-red-50/30'
+                          //   : formData.cr_no && formData.cr_no.length >= 3 && !isCheckingCR && !errors.patientCRNo
+                          //     ? 'border-green-400/50 focus:border-green-500 focus:ring-green-500/50 bg-green-50/30'
+                          //     : ''
+                          //   }`}
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+
+                        <IconInput
+                          icon={<FiFileText className="w-4 h-4" />}
+                          label="Psy. No."
+                          name="psy_no"
+                          value={formData.psy_no}
+                          onChange={handlePatientChange}
+                          placeholder="Enter PSY number"
+                          error={errors.patientPSYNo}
+                          className=""
+                        />
+                        <IconInput
+                          icon={<FiHeart className="w-4 h-4" />}
+                          label="Special Clinic No."
+                          name="special_clinic_no"
+                          value={formData.special_clinic_no}
+                          onChange={handleChange}
+                          placeholder="Enter special clinic number"
+                          className=""
+                        />
+
+                        <IconInput
+                          icon={<FiUser className="w-4 h-4" />}
+                          label="Name"
+                          name="name"
+                          value={formData.name || ''}
+                          onChange={handleChange}
+                          placeholder="Enter patient name"
+                          disabled={true}
+                          className="disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        />
+
+                        <div className="space-y-2">
+                          <Select
+                            label="Sex"
+                            name="sex"
+                            value={formData.sex || ''}
+                            onChange={handleChange}
+                            options={SEX_OPTIONS}
+                            placeholder="Select sex"
+                            error={errors.patientSex}
+                            searchable={true}
+
+                            disabled={true}
+                            className="disabled:bg-gray-200 disabled:cursor-not-allowed disabled:text-gray-900"
+                          />
+                        </div>
+
+                        <Select
+                          label="Age Group"
+                          name="age_group"
+                          value={formData.age_group || ''}
+                          onChange={handleChange}
+                          options={AGE_GROUP_OPTIONS}
+                          placeholder="Select age group"
+                          searchable={true}
+                          className="bg-gradient-to-r from-blue-50 to-indigo-50"
+                        />
+                        <Select
+                          label="Marital Status"
+                          name="marital_status"
+                          value={formData.marital_status || ''}
+                          onChange={handleChange}
+                          options={MARITAL_STATUS}
+                          placeholder="Select marital status"
+                          searchable={true}
+                          className="bg-gradient-to-r from-pink-50 to-rose-50"
+                        />
+                        <IconInput
+                          icon={<FiCalendar className="w-4 h-4" />}
+                          label="Year of marriage"
+                          name="year_of_marriage"
+                          value={formData.year_of_marriage}
+                          onChange={handleChange}
+                          type="number"
+                          placeholder="Enter year of marriage"
+                          min="1900"
+                          max={new Date().getFullYear()}
+                          className="bg-gradient-to-r from-purple-50 to-pink-50"
+                        />
+
+
+                        <IconInput
+                          icon={<FiUsers className="w-4 h-4" />}
+                          label="No. of Children: M"
+                          name="no_of_children_male"
+                          value={formData.no_of_children_male}
+                          onChange={handleChange}
+                          type="number"
+                          placeholder="Male"
+                          min="0"
+                          max="20"
+                          className="bg-gradient-to-r from-blue-50 to-indigo-50"
+                        />
+                        <IconInput
+                          icon={<FiUsers className="w-4 h-4" />}
+                          label="No. of Children: F"
+                          name="no_of_children_female"
+                          value={formData.no_of_children_female}
+                          onChange={handleChange}
+                          type="number"
+                          placeholder="Female"
+                          min="0"
+                          max="20"
+                          className="bg-gradient-to-r from-pink-50 to-rose-50"
+                        />
+
+                        <SelectWithOther
+                          icon={<FiBriefcase className="w-4 h-4" />}
+                          label=" Occupation"
+                          name="occupation"
+                          value={formData.occupation}
+                          onChange={handleChange}
+                          options={OCCUPATION_OPTIONS}
+                          placeholder="Select Occupation"
+                          searchable={true}
+                          className="bg-gradient-to-r from-green-50 to-emerald-50"
+                          customValue={occupationOther}
+                          setCustomValue={setOccupationOther}
+                          showCustomInput={showOccupationOther}
+                          formData={formData}
+                          customFieldName="occupation_other"
+                          inputLabel="Specify Occupation"
+                        />
+
+                        <Select
+                          icon={<FiBookOpen className="w-4 h-4" />}
+                          label="Education"
+                          name="education"
+                          value={formData.education}
+                          onChange={handleChange}
+                          options={EDUCATION_OPTIONS}
+                          placeholder="Select education"
+                          searchable={true}
+                          className="bg-gradient-to-r from-green-50 to-emerald-50"
+                        />
+
+                        <IconInput
+                          icon={<FiTrendingUp className="w-4 h-4" />}
+                          label="Income (₹)"
+                          name="income"
+                          value={formData.income}
+                          onChange={handleChange}
+                          type="number"
+                          placeholder="Monthly income"
+                          min="0"
+                          className="bg-gradient-to-r from-teal-50 to-cyan-50"
+                        />
+
+                        <SelectWithOther
+                          label="Religion"
+                          name="religion"
+                          value={formData.religion || ''}
+                          onChange={handleChange}
+                          options={RELIGION_OPTIONS}
+                          placeholder="Select religion"
+                          searchable={true}
+                          className="bg-gradient-to-r from-teal-50 to-cyan-50"
+                          customValue={religionOther}
+                          setCustomValue={setReligionOther}
+                          showCustomInput={showReligionOther}
+                          formData={formData}
+                          customFieldName="religion_other"
+                          inputLabel="Specify Religion"
+                        />
+                        <SelectWithOther
+                          label="Family Type"
+                          name="family_type"
+                          value={formData.family_type || ''}
+                          onChange={handleChange}
+                          options={FAMILY_TYPE_OPTIONS}
+                          placeholder="Select family type"
+                          searchable={true}
+                          className="bg-gradient-to-r from-teal-50 to-cyan-50"
+                          customValue={familyTypeOther}
+                          setCustomValue={setFamilyTypeOther}
+                          showCustomInput={showFamilyTypeOther}
+                          formData={formData}
+                          customFieldName="family_type_other"
+                          inputLabel="Specify Family Type"
+                        />
+                        <SelectWithOther
+                          label="Locality"
+                          name="locality"
+                          value={formData.locality || ''}
+                          onChange={handleChange}
+                          options={LOCALITY_OPTIONS}
+                          placeholder="Select locality"
+                          searchable={true}
+                          className="bg-gradient-to-r from-teal-50 to-cyan-50"
+                          customValue={localityOther}
+                          setCustomValue={setLocalityOther}
+                          showCustomInput={showLocalityOther}
+                          formData={formData}
+                          customFieldName="locality_other"
+                          inputLabel="Specify Locality"
+                        />
+
+                        <Select
+                          name="assigned_doctor_id"
+                          label="Assigned Doctor"
+                          value={formData.assigned_doctor_id}
+                          onChange={handlePatientChange}
+                          options={(usersData?.data?.users || [])
+                            .map(u => ({
+                              value: String(u.id),
+                              label: `${u.name} (${isJR(u.role) ? 'JR' : isSR(u.role) ? 'SR' : u.role})`
+                            }))}
+                          placeholder="Select doctor (optional)"
+                          searchable={true}
+                          className="bg-gradient-to-r from-violet-50 to-purple-50"
+                          containerClassName="relative z-[9999]"
+                          dropdownZIndex={2147483647}
+                        />
+
+
+                        <IconInput
+                          icon={<FiHome className="w-4 h-4" />}
+                          label="Assigned Room"
+                          name="assigned_room"
+                          value={formData.assigned_room || ''}
+                          onChange={handleChange}
+                          placeholder="Enter assigned room"
+                          className="bg-gradient-to-r from-teal-50 to-cyan-50"
+                        />
+
+                        <IconInput
+                          icon={<FiUser className="w-4 h-4" />}
+                          label="Family Head Name"
+                          name="head_name"
+                          value={formData.head_name}
+                          onChange={handleChange}
+                          placeholder="Enter head of family name"
+                          className="bg-gradient-to-r from-blue-50 to-indigo-50"
+                        />
+                        <IconInput
+                          icon={<FiClock className="w-4 h-4" />}
+                          label=" Family Head  Age"
+                          name="head_age"
+                          value={formData.head_age}
+                          onChange={handleChange}
+                          type="number"
+                          placeholder="Enter age"
+                          min="0"
+                          max="150"
+                          className="bg-gradient-to-r from-orange-50 to-yellow-50"
+                        />
+
+                        <SelectWithOther
+                          label="Relationship With Family Head"
+                          name="head_relationship"
+                          value={formData.head_relationship || ''}
+                          onChange={handleChange}
+                          options={HEAD_RELATIONSHIP_OPTIONS}
+                          placeholder="Select relationship"
+                          searchable={true}
+                          className="bg-gradient-to-r from-green-50 to-emerald-50"
+                          customValue={headRelationshipOther}
+                          setCustomValue={setHeadRelationshipOther}
+                          showCustomInput={showHeadRelationshipOther}
+                          formData={formData}
+                          customFieldName="head_relationship_other"
+                          inputLabel="Specify Relationship"
+                        />
+
+
+                        <Select
+                          icon={<FiBookOpen className="w-4 h-4" />}
+                          label="Family Head Education"
+                          name="head_education"
+                          value={formData.head_education}
+                          onChange={handleChange}
+                          options={EDUCATION_OPTIONS}
+                          placeholder="Select education"
+                          searchable={true}
+                          className="bg-gradient-to-r from-green-50 to-emerald-50"
+                        />
+
+                        <Select
+                          icon={<FiBriefcase className="w-4 h-4" />}
+                          label=" Family Head Occupation"
+                          name="head_occupation"
+                          value={formData.head_occupation}
+                          onChange={handleChange}
+                          options={OCCUPATION_OPTIONS}
+                          placeholder="Select education"
+                          searchable={true}
+                          className="bg-gradient-to-r from-green-50 to-emerald-50"
+                        />
+                        <IconInput
+                          icon={<FiTrendingUp className="w-4 h-4" />}
+                          label="Family Head Income (₹)"
+                          name="head_income"
+                          value={formData.head_income}
+                          onChange={handleChange}
+                          type="number"
+                          placeholder="Monthly income"
+                          min="0"
+                          className="bg-gradient-to-r from-amber-50 to-orange-50"
+                        />
+
+                        <IconInput
+                          icon={<FiNavigation className="w-4 h-4" />}
+                          label="Exact distance from hospital"
+                          name="distance_from_hospital"
+                          value={formData.distance_from_hospital}
+                          onChange={handleChange}
+                          placeholder="Enter distance from hospital"
+                          className=""
+                        />
+
+                        <SelectWithOther
+                          label="Mobility of the patient"
+                          name="mobility"
+                          value={formData.mobility || ''}
+                          onChange={handleChange}
+                          options={MOBILITY_OPTIONS}
+                          placeholder="Select mobility"
+                          searchable={true}
+                          className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
+                          customValue={mobilityOther}
+                          setCustomValue={setMobilityOther}
+                          showCustomInput={showMobilityOther}
+                          formData={formData}
+                          customFieldName="mobility_other"
+                          inputLabel="Specify Mobility"
+                        />
+
+                        <SelectWithOther
+                          label="Referred by"
+                          name="referred_by"
+                          value={formData.referred_by || ''}
+                          onChange={handleChange}
+                          options={REFERRED_BY_OPTIONS}
+                          placeholder="Select referred by"
+                          searchable={true}
+                          className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
+                          customValue={referredByOther}
+                          setCustomValue={setReferredByOther}
+                          showCustomInput={showReferredByOther}
+                          formData={formData}
+                          customFieldName="referred_by_other"
+                          inputLabel="Specify Referred By"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="border-t border-white/30 my-6"></div>
+
+                    <div className="flex flex-col sm:flex-row justify-end gap-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={onCancel || (() => navigate('/patients'))}
+                        className="px-6 lg:px-8 py-3 bg-white/60 backdrop-blur-md border border-white/30 hover:bg-white/80 hover:border-gray-300/50 text-gray-800 font-semibold shadow-sm hover:shadow-md transition-all duration-200"
+                      >
+                        <FiX className="mr-2" />
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        loading={isLoading || isAssigning}
+                        disabled={isLoading || isAssigning}
+                        className="px-6 lg:px-8 py-3 bg-gradient-to-r from-primary-600 via-indigo-600 to-blue-600 hover:from-primary-700 hover:via-indigo-700 hover:to-blue-700 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                      >
+                        <FiSave className="mr-2" />
+                        {isLoading || isAssigning ? 'Updating Record...' : 'Update Patient'}
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            </form>
+          </div>
+        )}
+      </Card>
+
+      {/* Additional Sections: Clinical Proforma, ADL File, Prescriptions */}
+      {/* Card 1: Clinical Proforma - Show only if current user is Admin, JR, or SR */}
+      {canViewClinicalProforma && (
+        <EditClinicalProforma
+          initialData={{
+            patient_id: patient?.id?.toString() || '',
+            visit_date: new Date().toISOString().split('T')[0],
+            visit_type: 'first_visit',
+            // Pre-fill at least 3 basic fields to make them visible
+            room_no: patient?.room_no || '',
+            assigned_doctor: patient?.assigned_doctor_id?.toString() || '',
+            informant_present: true,
+            doctor_decision: 'simple_case', // Default to simple_case
+          }}
+          onFormDataChange={(formData) => {
+            // Track doctor_decision changes to show/hide ADL card
+            if (formData?.doctor_decision !== undefined) {
+              setCurrentDoctorDecision(formData.doctor_decision);
+            }
+          }}
+        />
+      )}
+
+      {/* Card 2: Additional Details (ADL File) - Show only if case is complex OR ADL file exists */}
+      {canViewADLFile && (
         <Card className="shadow-lg border-0 bg-white">
           <div
             className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
-            onClick={() => toggleCard('patient')}
+            onClick={() => toggleCard('adl')}
           >
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <FiUser className="h-6 w-6 text-blue-600" />
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <FiFolder className="h-6 w-6 text-purple-600" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-900">Patient Details</h3>
-                <p className="text-sm text-gray-500 mt-1">{patient?.name || 'New Patient'} - {patient?.cr_no || 'N/A'}</p>
+                <h3 className="text-xl font-bold text-gray-900">Additional Details (ADL File)</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {patientAdlFiles.length > 0
+                    ? `${patientAdlFiles.length} file${patientAdlFiles.length > 1 ? 's' : ''} found`
+                    : 'No ADL files'}
+                </p>
               </div>
             </div>
-            {expandedCards.patient ? (
+            {expandedCards.adl ? (
               <FiChevronUp className="h-6 w-6 text-gray-500" />
             ) : (
               <FiChevronDown className="h-6 w-6 text-gray-500" />
             )}
           </div>
 
-          {expandedCards.patient && (
+          {expandedCards.adl && (
             <div className="p-6">
-              <form onSubmit={handleSubmit}>
-                {/* Quick Entry Section with Glassmorphism */}
-                <div className="relative mb-8">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-3xl blur-xl"></div>
-                  <Card
-                    title={
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
-                          <FiEdit3 className="w-6 h-6 text-indigo-600" />
-                        </div>
-                        <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">OUT-PATIENT RECORD</span>
-                      </div>
-                    }
-                    className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl overflow-hidden">
-            <div className="space-y-8">
-              {/* First Row - Basic Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <IconInput
-                  icon={<FiHash className="w-4 h-4" />}
-                  label="CR No."
-                  name="cr_no"
-                  value={formData.cr_no || ''}
-                  onChange={handleChange}
-                  placeholder="Enter CR number"
-                  error={errors.patientCRNo}
-                  loading={isCheckingCR && formData.cr_no && formData.cr_no.length >= 3}
-                  className={`${errors.patientCRNo
-                    ? 'border-red-400/50 focus:border-red-500 focus:ring-red-500/50 bg-red-50/30'
-                    : formData.cr_no && formData.cr_no.length >= 3 && !isCheckingCR && !errors.patientCRNo
-                      ? 'border-green-400/50 focus:border-green-500 focus:ring-green-500/50 bg-green-50/30'
-                      : ''
-                    }`}
-                />
-                <DatePicker
-                  icon={<FiCalendar className="w-4 h-4" />}
-                  label="Date"
-                  name="date"
-                  value={formData.date || ''}
-                  onChange={handleChange}
-                  defaultToday={false}
-                />
-                <IconInput
-                  icon={<FiUser className="w-4 h-4" />}
-                  label="Name"
-                  name="name"
-                  value={formData.name || ''}
-                  onChange={handleChange}
-                  placeholder="Enter patient name"
-                  error={errors.patientName}
-                  className=""
-                />
-                <IconInput
-                  icon={<FiPhone className="w-4 h-4" />}
-                  label="Mobile No."
-                  name="contact_number"
-                  value={formData.contact_number || ''}
-                  onChange={handleChange}
-                  placeholder="Enter mobile number"
-                  className=""
-                />
-              </div>
-
-              {/* Second Row - Age, Sex, Category, Father's Name */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <IconInput
-                  icon={<FiClock className="w-4 h-4" />}
-                  label="Age"
-                  name="age"
-                  value={formData.age || ''}
-                  onChange={handleChange}
-                  type="number"
-                  placeholder="Enter age"
-                  error={errors.patientAge}
-                  className=""
-                />
-                <div className="space-y-2">
-                  <Select
-                    label="Sex"
-                    name="sex"
-                    value={formData.sex || ''}
-                    onChange={handleChange}
-                    options={SEX_OPTIONS}
-                    placeholder="Select sex"
-                    error={errors.patientSex}
-                    searchable={true}
-                    className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
-                    <FiShield className="w-4 h-4 text-primary-600" />
-                    Category
-                  </label>
-                  <Select
-                    name="category"
-                    value={formData.category || ''}
-                    onChange={handleChange}
-                    options={CATEGORY_OPTIONS}
-                    placeholder="Select category"
-                    searchable={true}
-                    className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
-                  />
-                </div>
-                <IconInput
-                  icon={<FiUsers className="w-4 h-4" />}
-                  label="Father's Name"
-                  name="father_name"
-                  value={formData.father_name || ''}
-                  onChange={handleChange}
-                  placeholder="Enter father's name"
-                  className=""
-                />
-              </div>
-              {/* Fourth Row - Department, Unit/Consit, Room No., Serial No. */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <IconInput
-                  icon={<FiLayers className="w-4 h-4" />}
-                  label="Department"
-                  name="department"
-                  value={formData.department || ''}
-                  onChange={handleChange}
-                  placeholder="Enter department"
-                  className=""
-                />
-                <IconInput
-                  icon={<FiUsers className="w-4 h-4" />}
-                  label="Unit/Consit"
-                  name="unit_consit"
-                  value={formData.unit_consit || ''}
-                  onChange={handleChange}
-                  placeholder="Enter unit/consit"
-                  className=""
-                />
-                <IconInput
-                  icon={<FiHome className="w-4 h-4" />}
-                  label="Room No."
-                  name="room_no"
-                  value={formData.room_no || ''}
-                  onChange={handleChange}
-                  placeholder="Enter room number"
-                  className=""
-                />
-                <IconInput
-                  icon={<FiHash className="w-4 h-4" />}
-                  label="Serial No."
-                  name="serial_no"
-                  value={formData.serial_no || ''}
-                  onChange={handleChange}
-                  placeholder="Enter serial number"
-                  className=""
-                />
-              </div>
-
-              {/* Fifth Row - File No., Unit Days */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <IconInput
-                  icon={<FiFileText className="w-4 h-4" />}
-                  label="File No."
-                  name="file_no"
-                  value={formData.file_no || ''}
-                  onChange={handleChange}
-                  placeholder="Enter file number"
-                  className=""
-                />
-                <div className="space-y-2">
-                  <Select
-                    label="Unit Days"
-                    name="unit_days"
-                    value={formData.unit_days || ''}
-                    onChange={handleChange}
-                    options={UNIT_DAYS_OPTIONS}
-                    placeholder="Select unit days"
-                    searchable={true}
-                    className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
-                  />
-                </div>
-              </div>
-
-              {/* Address Details */}
-              <div className="space-y-6 pt-6 border-t border-white/30">
-                <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                  <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-md">
-                    <FiMapPin className="w-5 h-5 text-blue-600" />
-                  </div>
-                  Address Details
-                </h4>
-
+              {patientAdlFiles.length > 0 ? (
                 <div className="space-y-6">
-                  {/* Address Line */}
-                  <IconInput
-                    icon={<FiHome className="w-4 h-4" />}
-                    label="Address Line (House No., Street, Locality)"
-                    name="address_line"
-                    value={formData.address_line || ''}
-                    onChange={handleChange}
-                    placeholder="Enter house number, street, locality"
-                    required
-                    className=""
-                  />
-
-                  {/* Location Fields */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <IconInput
-                      icon={<FiGlobe className="w-4 h-4" />}
-                      label="Country"
-                      name="country"
-                      value={formData.country || ''}
-                      onChange={handleChange}
-                      placeholder="Enter country"
-                      className=""
-                    />
-                    <IconInput
-                      icon={<FiMapPin className="w-4 h-4" />}
-                      label="State"
-                      name="state"
-                      value={formData.state || ''}
-                      onChange={handleChange}
-                      placeholder="Enter state"
-                      required
-                      className=""
-                    />
-                    <IconInput
-                      icon={<FiLayers className="w-4 h-4" />}
-                      label="District"
-                      name="district"
-                      value={formData.district || ''}
-                      onChange={handleChange}
-                      placeholder="Enter district"
-                      required
-                      className=""
-                    />
-                    <IconInput
-                      icon={<FiHome className="w-4 h-4" />}
-                      label="City/Town/Village"
-                      name="city"
-                      value={formData.city || ''}
-                      onChange={handleChange}
-                      placeholder="Enter city, town or village"
-                      required
-                      className=""
-                    />
-                  </div>
-
-                  {/* Pin Code Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <IconInput
-                      icon={<FiHash className="w-4 h-4" />}
-                      label="Pin Code"
-                      name="pin_code"
-                      value={formData.pin_code || ''}
-                      onChange={handleChange}
-                      placeholder="Enter pin code"
-                      type="number"
-                      required
-                      className=""
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-          {/* Basic Information with Glassmorphism */}
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 rounded-3xl blur-xl"></div>
-            <Card
-              title={
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
-                    <FiUser className="w-6 h-6 text-emerald-600" />
-                  </div>
-                  <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Basic Information</span>
-                </div>
-              }
-              className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl overflow-visible"
-            >
-              <div className="space-y-8">
-                {/* Patient Identification */}
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <IconInput
-                      icon={<FiFileText className="w-4 h-4" />}
-                      label="Psy. No."
-                      name="psy_no"
-                      value={formData.psy_no || ''}
-                      onChange={handlePatientChange}
-                      placeholder="Enter PSY number"
-                      className=""
-                    />
-                    <IconInput
-                      icon={<FiHeart className="w-4 h-4" />}
-                      label="Special Clinic No."
-                      name="special_clinic_no"
-                      value={formData.special_clinic_no || ''}
-                      onChange={handleChange}
-                      placeholder="Enter special clinic number"
-                      className=""
-                    />
-                    <Select
-                      label="Age Group"
-                      name="age_group"
-                      value={formData.age_group || ''}
-                      onChange={handleChange}
-                      options={AGE_GROUP_OPTIONS}
-                      placeholder="Select age group"
-                      searchable={true}
-                      className="bg-gradient-to-r from-blue-50 to-indigo-50"
-                    />
-                    <Select
-                      label="Family Type"
-                      name="family_type"
-                      value={formData.family_type || ''}
-                      onChange={handleChange}
-                      options={FAMILY_TYPE_OPTIONS}
-                      placeholder="Select family type"
-                      searchable={true}
-                      className="bg-gradient-to-r from-teal-50 to-cyan-50"
-                    />
-                    <Select
-                      label="Locality"
-                      name="locality"
-                      value={formData.locality || ''}
-                      onChange={handleChange}
-                      options={LOCALITY_OPTIONS}
-                      placeholder="Select locality"
-                      searchable={true}
-                      className="bg-gradient-to-r from-teal-50 to-cyan-50"
-                    />
-                    <Select
-                      label="Religion"
-                      name="religion"
-                      value={formData.religion || ''}
-                      onChange={handleChange}
-                      options={RELIGION_OPTIONS}
-                      placeholder="Select religion"
-                      searchable={true}
-                      className="bg-gradient-to-r from-teal-50 to-cyan-50"
-                    />
-                    <IconInput
-                      icon={<FiTrendingUp className="w-4 h-4" />}
-                      label="Income (₹)"
-                      name="head_income"
-                      value={formData.head_income || ''}
-                      onChange={handleChange}
-                      type="number"
-                      placeholder="Monthly income"
-                      min="0"
-                      className="bg-gradient-to-r from-teal-50 to-cyan-50"
-                    />
-                    <Select
-                      icon={<FiBriefcase className="w-4 h-4" />}
-                      label=" Occupation"
-                      name="occupation"
-                      value={formData.occupation || ''}
-                      onChange={handleChange}
-                      options={OCCUPATION_OPTIONS}
-                      placeholder="Select occupation"
-                      searchable={true}
-                      className="bg-gradient-to-r from-green-50 to-emerald-50"
-                    />
-                    <Select
-                      icon={<FiBookOpen className="w-4 h-4" />}
-                      label="Education"
-                      name="education"
-                      value={formData.education || ''}
-                      onChange={handleChange}
-                      options={EDUCATION_OPTIONS}
-                      placeholder="Select education"
-                      searchable={true}
-                      className="bg-gradient-to-r from-green-50 to-emerald-50"
-                    />
-                  </div>
-                </div>
-
-                {/* Divider */}
-                <div className="border-t border-white/30 my-6"></div>
-
-                <div className="space-y-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full"></div>
-                    <h4 className="text-xl font-bold text-gray-900">Appointment & Assignment</h4>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <DatePicker
-                      icon={<FiCalendar className="w-4 h-4" />}
-                      label="Seen in Walk-in-on"
-                      name="seen_in_walk_in_on"
-                      value={formData.seen_in_walk_in_on || ''}
-                      onChange={handleChange}
-                      defaultToday={false}
-                    />
-                    <DatePicker
-                      icon={<FiCalendar className="w-4 h-4" />}
-                      label="Worked up on"
-                      name="worked_up_on"
-                      value={formData.worked_up_on || ''}
-                      onChange={handleChange}
-                      defaultToday={false}
-                    />
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                        <FiUser className="w-4 h-4 text-primary-600" />
-                        Assigned Doctor
-                      </label>
-                      <Select
-                        name="assigned_doctor_id"
-                        value={formData.assigned_doctor_id || ''}
-                        onChange={handlePatientChange}
-                        options={(doctorsData?.data?.users || [])
-                          .map(u => ({
-                            value: String(u.id),
-                            label: `${u.name} (${isJR(u.role) ? 'JR' : isSR(u.role) ? 'SR' : u.role})`
-                          }))}
-                        placeholder="Select doctor (optional)"
-                        searchable={true}
-                        className="bg-gradient-to-r from-violet-50 to-purple-50"
-                        containerClassName="relative z-[9999]"
-                        dropdownZIndex={2147483647}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <IconInput
-                        icon={<FiHome className="w-4 h-4" />}
-                        label="Assigned Room"
-                        name="assigned_room"
-                        value={formData.assigned_room || ''}
-                        onChange={handleChange}
-                        placeholder="Enter assigned room"
-                        className="bg-gradient-to-r from-teal-50 to-cyan-50"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full"></div>
-                    <h4 className="text-xl font-bold text-gray-900">Marital Status</h4>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <Select
-                      label="Marital Status"
-                      name="marital_status"
-                      value={formData.marital_status || ''}
-                      onChange={handleChange}
-                      options={MARITAL_STATUS}
-                      placeholder="Select marital status"
-                      searchable={true}
-                      className="bg-gradient-to-r from-pink-50 to-rose-50"
-                    />
-                    <IconInput
-                      icon={<FiCalendar className="w-4 h-4" />}
-                      label="Year of marriage"
-                      name="year_of_marriage"
-                      value={formData.year_of_marriage || ''}
-                      onChange={handleChange}
-                      type="number"
-                      placeholder="Enter year of marriage"
-                      min="1900"
-                      max={new Date().getFullYear()}
-                      className="bg-gradient-to-r from-purple-50 to-pink-50"
-                    />
-                    <IconInput
-                      icon={<FiUsers className="w-4 h-4" />}
-                      label="No. of Children: M"
-                      name="no_of_children_male"
-                      value={formData.no_of_children_male || ''}
-                      onChange={handleChange}
-                      type="number"
-                      placeholder="Male"
-                      min="0"
-                      max="20"
-                      className="bg-gradient-to-r from-blue-50 to-indigo-50"
-                    />
-                    <IconInput
-                      icon={<FiUsers className="w-4 h-4" />}
-                      label="No. of Children: F"
-                      name="no_of_children_female"
-                      value={formData.no_of_children_female || ''}
-                      onChange={handleChange}
-                      type="number"
-                      placeholder="Female"
-                      min="0"
-                      max="20"
-                      className="bg-gradient-to-r from-pink-50 to-rose-50"
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          {/* Family Information with Glassmorphism */}
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-violet-500/10 to-fuchsia-500/10 rounded-3xl blur-xl"></div>
-            <Card
-              title={
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-gradient-to-br from-purple-500/20 to-violet-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
-                    <FiHome className="w-6 h-6 text-purple-600" />
-                  </div>
-                  <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Family Information</span>
-                </div>
-              }
-              className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl">
-              <div className="space-y-8">
-                <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                  <FiUsers className="w-6 h-6 text-primary-600" />
-                  Head of the Family
-                </h4>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <IconInput
-                      icon={<FiUser className="w-4 h-4" />}
-                      label="Family Head Name"
-                      name="head_name"
-                      value={formData.head_name || ''}
-                      onChange={handleChange}
-                      placeholder="Enter head of family name"
-                      className="bg-gradient-to-r from-blue-50 to-indigo-50"
-                    />
-                    <IconInput
-                      icon={<FiClock className="w-4 h-4" />}
-                      label=" Family Head  Age"
-                      name="head_age"
-                      value={formData.head_age || ''}
-                      onChange={handleChange}
-                      type="number"
-                      placeholder="Enter age"
-                      min="0"
-                      max="150"
-                      className="bg-gradient-to-r from-orange-50 to-yellow-50"
-                    />
-                    <div className="space-y-2">
-                      <Select
-                        label="Relationship With Family Head"
-                        name="head_relationship"
-                        value={formData.head_relationship || ''}
-                        onChange={handleChange}
-                        options={HEAD_RELATIONSHIP_OPTIONS}
-                        placeholder="Select relationship"
-                        searchable={true}
-                        className="bg-gradient-to-r from-green-50 to-emerald-50"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Select
-                        icon={<FiBookOpen className="w-4 h-4" />}
-                        label="Family Head Education"
-                        name="head_education"
-                        value={formData.head_education || ''}
-                        onChange={handleChange}
-                        options={EDUCATION_OPTIONS}
-                        placeholder="Select education"
-                        searchable={true}
-                        className="bg-gradient-to-r from-green-50 to-emerald-50"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Select
-                      icon={<FiBriefcase className="w-4 h-4" />}
-                      label=" Family Head Occupation"
-                      name="head_occupation"
-                      value={formData.head_occupation || ''}
-                      onChange={handleChange}
-                      options={OCCUPATION_OPTIONS}
-                      placeholder="Select occupation"
-                      searchable={true}
-                      className="bg-gradient-to-r from-green-50 to-emerald-50"
-                    />
-                    <IconInput
-                      icon={<FiTrendingUp className="w-4 h-4" />}
-                      label="Income (₹)"
-                      name="head_income"
-                      value={formData.head_income || ''}
-                      onChange={handleChange}
-                      type="number"
-                      placeholder="Monthly income"
-                      min="0"
-                      className="bg-gradient-to-r from-amber-50 to-orange-50"
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          {/* Referral & Mobility with Glassmorphism */}
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-sky-500/10 to-blue-500/10 rounded-3xl blur-xl"></div>
-            <Card
-              title={
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-gradient-to-br from-cyan-500/20 to-sky-500/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-lg">
-                    <FiMapPin className="w-6 h-6 text-cyan-600" />
-                  </div>
-                  <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Referral & Mobility</span>
-                </div>
-              }
-              className="relative mb-8 shadow-2xl border border-white/30 bg-white/70 backdrop-blur-xl rounded-3xl">
-              <div className="space-y-6">
-                <IconInput
-                  icon={<FiNavigation className="w-4 h-4" />}
-                  label="Exact distance from hospital"
-                  name="distance_from_hospital"
-                  value={formData.distance_from_hospital || ''}
-                  onChange={handleChange}
-                  placeholder="Enter distance from hospital"
-                  className=""
-                />
-
-                <div className="space-y-2">
-                  <Select
-                    label="Mobility of the patient"
-                    name="mobility"
-                    value={formData.mobility || ''}
-                    onChange={handleChange}
-                    options={MOBILITY_OPTIONS}
-                    placeholder="Select mobility"
-                    searchable={true}
-                    className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Select
-                    label="Referred by"
-                    name="referred_by"
-                    value={formData.referred_by || ''}
-                    onChange={handleChange}
-                    options={REFERRED_BY_OPTIONS}
-                    placeholder="Select referred by"
-                    searchable={true}
-                    className="bg-white/60 backdrop-blur-md border-2 border-gray-300/60"
-                  />
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          {/* Submit Button with Glassmorphism */}
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 via-indigo-500/20 to-blue-500/20 rounded-3xl blur-xl"></div>
-            <div className="relative bg-white/70 backdrop-blur-xl rounded-3xl p-6 lg:p-8 shadow-2xl border border-white/30">
-              <div className="flex flex-col sm:flex-row justify-end gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onCancel || (() => navigate('/patients'))}
-                  className="px-6 lg:px-8 py-3 bg-white/60 backdrop-blur-md border border-white/30 hover:bg-white/80 hover:border-gray-300/50 text-gray-800 font-semibold shadow-sm hover:shadow-md transition-all duration-200"
-                >
-                  <FiX className="mr-2" />
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  loading={isLoading || isAssigning}
-                  disabled={isLoading || isAssigning}
-                  className="px-6 lg:px-8 py-3 bg-gradient-to-r from-primary-600 via-indigo-600 to-blue-600 hover:from-primary-700 hover:via-indigo-700 hover:to-blue-700 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                >
-                  <FiSave className="mr-2" />
-                  {isLoading || isAssigning ? 'Updating Record...' : 'Update Patient'}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </form>
-            </div>
-          )}
-        </Card>
-
-        {/* Additional Sections: Clinical Proforma, ADL File, Prescriptions */}
-        {/* Card 1: Clinical Proforma - Show only if current user is Admin, JR, or SR */}
-        {canViewClinicalProforma && (
-          <EditClinicalProforma
-            initialData={{
-              patient_id: patient?.id?.toString() || '',
-              visit_date: new Date().toISOString().split('T')[0],
-              visit_type: 'first_visit',
-              // Pre-fill at least 3 basic fields to make them visible
-              room_no: patient?.room_no || '',
-              assigned_doctor: patient?.assigned_doctor_id?.toString() || '',
-              informant_present: true,
-              doctor_decision: 'simple_case', // Default to simple_case
-            }}
-            onFormDataChange={(formData) => {
-              // Track doctor_decision changes to show/hide ADL card
-              if (formData?.doctor_decision !== undefined) {
-                setCurrentDoctorDecision(formData.doctor_decision);
-              }
-            }}
-          />
-        )}
-
-          {/* Card 2: Additional Details (ADL File) - Show only if case is complex OR ADL file exists */}
-          {canViewADLFile && (
-            <Card className="shadow-lg border-0 bg-white">
-              <div
-                className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
-                onClick={() => toggleCard('adl')}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-purple-100 rounded-lg">
-                    <FiFolder className="h-6 w-6 text-purple-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900">Additional Details (ADL File)</h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {patientAdlFiles.length > 0
-                        ? `${patientAdlFiles.length} file${patientAdlFiles.length > 1 ? 's' : ''} found`
-                        : 'No ADL files'}
-                    </p>
-                  </div>
-                </div>
-                {expandedCards.adl ? (
-                  <FiChevronUp className="h-6 w-6 text-gray-500" />
-                ) : (
-                  <FiChevronDown className="h-6 w-6 text-gray-500" />
-                )}
-              </div>
-
-              {expandedCards.adl && (
-                <div className="p-6">
-                  {patientAdlFiles.length > 0 ? (
-                    <div className="space-y-6">
-                      {patientAdlFiles.map((file, index) => (
-                        <EditADL 
-                          key={file.id || index} 
-                          adlFileId={file.id} 
-                          isEmbedded={true}
-                          patientId={patient?.id?.toString()}
-                          clinicalProformaId={selectedProforma?.id?.toString()}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <EditADL 
+                  {patientAdlFiles.map((file, index) => (
+                    <EditADL
+                      key={file.id || index}
+                      adlFileId={file.id}
                       isEmbedded={true}
                       patientId={patient?.id?.toString()}
                       clinicalProformaId={selectedProforma?.id?.toString()}
                     />
-                  )}
+                  ))}
                 </div>
+              ) : (
+                <EditADL
+                  isEmbedded={true}
+                  patientId={patient?.id?.toString()}
+                  clinicalProformaId={selectedProforma?.id?.toString()}
+                />
               )}
-            </Card>
+            </div>
           )}
+        </Card>
+      )}
 
-          {/* Card 3: Prescription History - Show only if current user is Admin, JR, or SR */}
-          {canViewPrescriptions && (
-            <Card className="shadow-lg border-0 bg-white">
-              <div
-                className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
-                onClick={() => toggleCard('prescriptions')}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-amber-100 rounded-lg">
-                    <FiPackage className="h-6 w-6 text-amber-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900">Prescription History</h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {patientProformas.length > 0
-                        ? `View prescriptions for ${patientProformas.length} visit${patientProformas.length > 1 ? 's' : ''}`
-                        : 'No prescriptions found'}
+      {/* Card 3: Prescription History - Show only if current user is Admin, JR, or SR */}
+      {canViewPrescriptions && (
+        <Card className="shadow-lg border-0 bg-white">
+          <div
+            className="flex items-center justify-between cursor-pointer p-6 border-b border-gray-200 hover:bg-gray-50 transition-colors"
+            onClick={() => toggleCard('prescriptions')}
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-amber-100 rounded-lg">
+                <FiPackage className="h-6 w-6 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Prescription History</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {patientProformas.length > 0
+                    ? `View prescriptions for ${patientProformas.length} visit${patientProformas.length > 1 ? 's' : ''}`
+                    : 'No prescriptions found'}
+                </p>
+              </div>
+            </div>
+            {expandedCards.prescriptions ? (
+              <FiChevronUp className="h-6 w-6 text-gray-500" />
+            ) : (
+              <FiChevronDown className="h-6 w-6 text-gray-500" />
+            )}
+          </div>
+
+          {expandedCards.prescriptions && (
+            <div className="p-6">
+              {patientProformas.length > 0 ? (
+                <div className="space-y-6">
+                  {patientProformas.map((proforma, index) => (
+                    <PrescriptionCard
+                      key={proforma.id || index}
+                      proforma={proforma}
+                      index={index}
+                      patientId={patient?.id}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 max-w-2xl mx-auto">
+                    <FiPackage className="h-12 w-12 mx-auto mb-4 text-amber-500" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      No Clinical Proforma Found
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      To add prescriptions, you need to create a clinical proforma first.
+                      Please create a clinical proforma in the "Clinical Proforma" section above,
+                      and then you'll be able to add prescriptions for that visit.
+                    </p>
+                    <p className="text-xs text-gray-500 italic">
+                      Once a clinical proforma is created, prescription fields will appear here automatically.
                     </p>
                   </div>
                 </div>
-                {expandedCards.prescriptions ? (
-                  <FiChevronUp className="h-6 w-6 text-gray-500" />
-                ) : (
-                  <FiChevronDown className="h-6 w-6 text-gray-500" />
-                )}
-              </div>
-
-              {expandedCards.prescriptions && (
-                <div className="p-6">
-                  {patientProformas.length > 0 ? (
-                    <div className="space-y-6">
-                      {patientProformas.map((proforma, index) => (
-                        <PrescriptionCard 
-                          key={proforma.id || index} 
-                          proforma={proforma} 
-                          index={index}
-                          patientId={patient?.id}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 max-w-2xl mx-auto">
-                        <FiPackage className="h-12 w-12 mx-auto mb-4 text-amber-500" />
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                          No Clinical Proforma Found
-                        </h3>
-                        <p className="text-sm text-gray-600 mb-4">
-                          To add prescriptions, you need to create a clinical proforma first. 
-                          Please create a clinical proforma in the "Clinical Proforma" section above, 
-                          and then you'll be able to add prescriptions for that visit.
-                        </p>
-                        <p className="text-xs text-gray-500 italic">
-                          Once a clinical proforma is created, prescription fields will appear here automatically.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
               )}
-            </Card>
+            </div>
           )}
-        
+        </Card>
+      )}
+
     </div>
   );
 };
