@@ -1554,15 +1554,33 @@ class ClinicalProforma {
   // Find clinical proforma by ID
   static async findById(id) {
     try {
-      const result = await db.query(
-        `SELECT cp.*, p.name as patient_name, p.cr_no, p.psy_no, 
+      // Check if id is a UUID (contains hyphens and is 36 chars) or integer
+      const isUUID = typeof id === 'string' && id.includes('-') && id.length === 36;
+      
+      let query;
+      let queryParam;
+      
+      if (isUUID) {
+        // For UUID, use UUID type casting
+        query = `SELECT cp.*, p.name as patient_name, p.cr_no, p.psy_no, 
                 u.name as doctor_name, u.role as doctor_role
          FROM clinical_proforma cp
-         LEFT JOIN patients p ON cp.patient_id = p.id
+         LEFT JOIN registered_patient p ON cp.patient_id::text = p.id::text
          LEFT JOIN users u ON cp.filled_by = u.id
-         WHERE cp.id = $1`,
-        [id]
-      );
+         WHERE cp.id::text = $1`;
+        queryParam = String(id);
+      } else {
+        // For integer, use integer comparison
+        query = `SELECT cp.*, p.name as patient_name, p.cr_no, p.psy_no, 
+                u.name as doctor_name, u.role as doctor_role
+         FROM clinical_proforma cp
+         LEFT JOIN registered_patient p ON cp.patient_id::text = p.id::text
+         LEFT JOIN users u ON cp.filled_by = u.id
+         WHERE cp.id = $1`;
+        queryParam = typeof id === 'number' ? id : parseInt(id, 10);
+      }
+
+      const result = await db.query(query, [queryParam]);
 
       if (result.rows.length === 0) {
         return null;
@@ -1775,6 +1793,15 @@ class ClinicalProforma {
       const isComplexCase = updateData.doctor_decision === 'complex_case' || this.doctor_decision === 'complex_case';
       const complexCaseData = updateData.complexCaseData;
 
+      // Define fields that should be integers (to handle empty strings)
+      const integerFields = ['assigned_doctor']; // Add any other integer fields if needed
+      
+      // CRITICAL: Remove fields that should never be updated
+      // These fields are set during creation and should remain constant
+      delete updateData.patient_id;
+      delete updateData.id;
+      delete updateData.filled_by;
+      
       for (const [key, value] of Object.entries(updateData)) {
         if (allowedFields.includes(key) && value !== undefined && key !== 'complexCaseData') {
           paramCount++;
@@ -1784,8 +1811,25 @@ class ClinicalProforma {
             updates.push(`${key} = $${paramCount}::jsonb`);
             values.push(jsonValue);
           } else {
-          updates.push(`${key} = $${paramCount}`);
-          values.push(value);
+            // Sanitize value: convert empty strings to null to prevent PostgreSQL type errors
+            // PostgreSQL doesn't accept empty strings for integer/numeric fields
+            let sanitizedValue = value;
+            
+            // Convert empty strings to null (PostgreSQL handles null better than empty strings)
+            if (value === '' || (typeof value === 'string' && value.trim() === '')) {
+              sanitizedValue = null;
+            } else if (integerFields.includes(key)) {
+              // For integer fields, ensure we have a valid integer or null
+              const intValue = parseInt(value, 10);
+              if (isNaN(intValue) || intValue <= 0) {
+                sanitizedValue = null;
+              } else {
+                sanitizedValue = intValue;
+              }
+            }
+            
+            updates.push(`${key} = $${paramCount}`);
+            values.push(sanitizedValue);
           }
         }
       }

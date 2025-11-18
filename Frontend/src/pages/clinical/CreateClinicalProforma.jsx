@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { useCreateClinicalProformaMutation } from '../../features/clinical/clinicalApiSlice';
-import { useGetADLFileByIdQuery, useUpdateADLFileMutation } from '../../features/adl/adlApiSlice';
+import { useCreateClinicalProformaMutation, useUpdateClinicalProformaMutation,useGetAllClinicalProformasQuery } from '../../features/clinical/clinicalApiSlice';
+import { useGetADLFileByIdQuery, useUpdateADLFileMutation, useCreateADLFileMutation } from '../../features/adl/adlApiSlice';
 import { useSearchPatientsQuery, useGetPatientByIdQuery } from '../../features/patients/patientsApiSlice';
 import { useGetDoctorsQuery } from '../../features/users/usersApiSlice';
 import Card from '../../components/Card';
@@ -405,11 +405,53 @@ const ICD11CodeSelector = ({ value, onChange, error }) => {
 
 const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaId = null }) => {
   const navigate = useNavigate();
+  const { id } = useParams(); // Get id from route params
   const [searchParams] = useSearchParams();
   const patientIdFromQuery = searchParams.get('patient_id');
   const returnTab = searchParams.get('returnTab'); // Get returnTab from URL
+  console.log("patientIdFromQuery",patientIdFromQuery);
+  // Use route param id if available, otherwise use prop proformaId
+
+  // Fetch all clinical proformas to find matching patient_id
+  // Use a high limit to get all records
+  const { 
+    data: getClinicalProformasData, 
+    isLoading: isLoadingProformas,
+    isError: isErrorProformas,
+    error: errorProformas
+  } = useGetAllClinicalProformasQuery(
+    { page: 1, limit: 1000 }, // High limit to get all records
+    {
+      // Always fetch to have data available for matching
+      refetchOnMountOrArgChange: true,
+    }
+  );
+
+// Extract all clinical proformas
+const clinicalProformas = getClinicalProformasData?.data?.proformas || [];
+
+// Find proforma where patient_id (UUID) matches query parameter (UUID)
+// Ensure both are treated as UUIDs for proper comparison
+const matchedProforma = patientIdFromQuery
+  ? clinicalProformas.find((p) => {
+      // Normalize both UUIDs to strings and compare
+      const proformaPatientId = p.patient_id ? String(p.patient_id).toLowerCase().trim() : null;
+      const queryPatientId = String(patientIdFromQuery).toLowerCase().trim();
+      return proformaPatientId === queryPatientId;
+    })
+  : null;
+
+// Extract clinical proforma ID (UUID) from matched proforma
+// This is the actual clinical_proforma.id (UUID), not patient_id (UUID)
+const matchedProformaId = matchedProforma?.id || null;
+
+// Use the matched proforma ID, route param id, or prop proformaId
+// Note: id from route params should be the clinical proforma ID (UUID), not patient_id (UUID)
+const clinicalProformaId = matchedProformaId || id || proformaId;
 
   const [createProforma, { isLoading: isCreating }] = useCreateClinicalProformaMutation();
+  const [updateProforma, { isLoading: isUpdating }] = useUpdateClinicalProformaMutation();
+  const [createADLFile, { isLoading: isCreatingADL }] = useCreateADLFileMutation();
 
   // Track created proforma ID for step-wise saving
   // If proformaId is provided (edit mode), use it
@@ -423,6 +465,8 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
   // Fetch doctors list for assignment by MWO
   const { data: doctorsData } = useGetDoctorsQuery({ page: 1, limit: 100 });
   // Initialize form data with initialData if provided (for edit mode)
+
+  
   const getInitialFormData = () => {
     if (initialData) {
       // Ensure array fields are properly initialized
@@ -900,7 +944,7 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
     const join = (arr) => Array.isArray(arr) ? arr.join(', ') : arr;
 
     const baseData = {
-      patient_id: parseInt(formData.patient_id),
+      patient_id: formData.patient_id, // Keep as UUID string, don't parse to integer
       visit_date: formData.visit_date,
       visit_type: formData.visit_type,
       room_no: formData.room_no,
@@ -1354,6 +1398,187 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
       case 2: return 'Clinical Proforma';
       case 3: return 'Additional Detail (ADL)';
       default: return '';
+    }
+  };
+
+  // Function to save only Clinical Proforma fields (lines 1520-1868)
+  const handleSaveClinicalProforma = async () => {
+    debugger
+    // Validate required fields
+    // Ensure patient_id is valid (not empty string)
+    const patientId = formData.patient_id || patientIdFromQuery;
+    if (!patientId || patientId === '') {
+      toast.error('Patient is required');
+      return;
+    }
+    if (!formData.diagnosis) {
+      toast.error('Diagnosis is required');
+      return;
+    }
+
+    try {
+      const join = (arr) => Array.isArray(arr) ? arr.join(', ') : arr;
+
+      // Prepare data with only Clinical Proforma fields (from lines 1520-1868)
+
+      const clinicalProformaData = {
+        patient_id: patientId,
+        visit_date: formData.visit_date || new Date().toISOString().split('T')[0],
+        visit_type: formData.visit_type || 'first_visit',
+        room_no: formData.room_no || '',
+        assigned_doctor: formData.assigned_doctor_name || '',
+        // Informant section
+        informant_present: formData.informant_present,
+        nature_of_information: formData.nature_of_information || '',
+        // Present Illness
+        onset_duration: formData.onset_duration || '',
+        course: formData.course || '',
+        precipitating_factor: formData.precipitating_factor || '',
+        illness_duration: formData.illness_duration || '',
+        current_episode_since: formData.current_episode_since || '',
+        // Complaints / History of Presenting Illness
+        mood: join(formData.mood || []),
+        behaviour: join(formData.behaviour || []),
+        speech: join(formData.speech || []),
+        thought: join(formData.thought || []),
+        perception: join(formData.perception || []),
+        somatic: join(formData.somatic || []),
+        bio_functions: join(formData.bio_functions || []),
+        adjustment: join(formData.adjustment || []),
+        cognitive_function: join(formData.cognitive_function || []),
+        fits: join(formData.fits || []),
+        sexual_problem: join(formData.sexual_problem || []),
+        substance_use: join(formData.substance_use || []),
+        // Mental State Examination
+        mse_behaviour: join(formData.mse_behaviour || []),
+        mse_affect: join(formData.mse_affect || []),
+        mse_thought: join(formData.mse_thought || []),
+        mse_delusions: formData.mse_delusions || '',
+        mse_perception: join(formData.mse_perception || []),
+        mse_cognitive_function: join(formData.mse_cognitive_function || []),
+        // Additional History
+        past_history: formData.past_history || '',
+        family_history: formData.family_history || '',
+        associated_medical_surgical: join(formData.associated_medical_surgical || []),
+        // General Physical Examination
+        gpe: formData.gpe || '',
+        // Diagnosis & Management
+        diagnosis: formData.diagnosis || '',
+        icd_code: formData.icd_code || '',
+        case_severity: formData.case_severity || 'mild',
+        doctor_decision: formData.doctor_decision || 'simple_case',
+        disposal: formData.disposal || '',
+        workup_appointment: formData.workup_appointment || '',
+        referred_to: formData.referred_to || '',
+        requires_adl_file: formData.requires_adl_file || false,
+        adl_reasoning: formData.adl_reasoning || '',
+      };
+
+      // If clinicalProformaId exists, update existing proforma
+      // clinicalProformaId is now a UUID (string), not an integer
+      let proformaIdForUpdate = null;
+      
+      if (clinicalProformaId) {
+        // Validate it's a valid UUID format (36 chars with hyphens)
+        const isUUID = typeof clinicalProformaId === 'string' && 
+                      clinicalProformaId.includes('-') && 
+                      clinicalProformaId.length === 36;
+        
+        if (isUUID) {
+          proformaIdForUpdate = clinicalProformaId; // Use UUID as-is
+        } else if (typeof clinicalProformaId === 'string' && clinicalProformaId.trim() !== '') {
+          // If it's a non-empty string but not a UUID, still try to use it
+          // (might be a legacy integer ID that was converted to string)
+          proformaIdForUpdate = clinicalProformaId;
+        }
+      }
+
+      if (proformaIdForUpdate) {
+        if (onUpdate) {
+          // Use callback if provided
+          await onUpdate({ id: proformaIdForUpdate, ...clinicalProformaData });
+        } else {
+          // Use update mutation - ID is now UUID (string)
+          await updateProforma({ id: proformaIdForUpdate, ...clinicalProformaData }).unwrap();
+        }
+        toast.success('Clinical proforma updated successfully!');
+        
+        // Navigate after update
+        if (returnTab) {
+          navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
+        } else {
+          navigate(`/clinical/${proformaIdForUpdate}`);
+        }
+      } else {
+        // Create new proforma
+        const result = await createProforma(clinicalProformaData).unwrap();
+        const proforma = result.data?.clinical_proforma || result.data?.proforma || result.data?.clinical;
+        
+        if (proforma?.id) {
+          setSavedProformaId(proforma.id);
+        }
+
+        toast.success('Clinical proforma created successfully!');
+
+        // Check doctor's decision and create ADL file if complex case
+        const doctorDecision = clinicalProformaData.doctor_decision || formData.doctor_decision;
+        if (doctorDecision === 'complex_case') {
+          try {
+            // Ensure we have both patient_id and clinical_proforma_id
+            if (!patientId || patientId === '') {
+              toast.warning('Patient ID is required to create ADL file');
+            } else if (!proforma?.id) {
+              toast.warning('Clinical Proforma ID is required to create ADL file');
+            } else {
+              // Prepare ADL file data - ensure all UUID fields are valid
+              const adlFileData = {
+                patient_id: patientId, // UUID string
+                clinical_proforma_id: proforma.id, // UUID string
+              };
+
+              // Validate that clinical_proforma_id is a valid UUID
+              const isUUID = typeof adlFileData.clinical_proforma_id === 'string' && 
+                            adlFileData.clinical_proforma_id.includes('-') && 
+                            adlFileData.clinical_proforma_id.length === 36;
+              
+              if (!isUUID && !adlFileData.clinical_proforma_id) {
+                toast.error('Invalid Clinical Proforma ID');
+                return;
+              }
+
+              // Create ADL file
+              const adlResult = await createADLFile(adlFileData).unwrap();
+              const createdADLFile = adlResult.data?.adl_file || adlResult.data?.file;
+              
+              if (createdADLFile) {
+                toast.success(`ADL File created successfully: ${createdADLFile.adl_no || 'ADL-XXXXXX'}`);
+                // Store ADL file ID for potential future use
+                if (createdADLFile.id) {
+                  setAdlFileId(createdADLFile.id);
+                }
+              }
+            }
+          } catch (adlError) {
+            console.error('Failed to create ADL file:', adlError);
+            toast.error(adlError?.data?.message || 'Clinical proforma created, but failed to create ADL file');
+          }
+        }
+
+        // Handle existing ADL file creation from backend response (if any)
+        const adlFile = result.data?.adl_file || result.data?.adl;
+        if (adlFile && (adlFile.adl_no || adlFile.created)) {
+          toast.info(`ADL File created: ${adlFile.adl_no || 'ADL-XXXXXX'}`);
+        }
+
+        // Navigate to proforma details, or back to Today Patients if returnTab exists
+        if (returnTab) {
+          navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
+        } else if (proforma?.id) {
+          navigate(`/clinical/${proforma.id}`);
+        }
+      }
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to save clinical proforma');
     }
   };
 
@@ -1865,6 +2090,33 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
                       />
                     </div>
                   </div>
+
+                  {/* Submit Button - Inside Clinical Proforma Card */}
+                  <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 mt-6">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        if (returnTab) {
+                          navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
+                        } else {
+                          navigate('/clinical-today-patients');
+                        }
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleSaveClinicalProforma}
+                      loading={isCreating || isUpdating}
+                      disabled={isCreating || isUpdating}
+                      className="flex items-center gap-2 bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700"
+                    >
+                      <FiSave className="w-4 h-4" />
+                      {(isCreating || isUpdating) ? 'Saving...' : (clinicalProformaId ? 'Update Clinical Proforma' : 'Create Clinical Proforma')}
+                    </Button>
+                  </div>
                 </div>
               )}
             </Card>
@@ -1953,33 +2205,6 @@ const CreateClinicalProforma = ({ initialData = null, onUpdate = null, proformaI
               )}
             </Card>
 
-            {/* Submit Button */}
-            <Card className="mt-6 bg-white/80 backdrop-blur-sm border-0 shadow-xl">
-              <div className="flex justify-end gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    if (returnTab) {
-                      navigate(`/clinical-today-patients${returnTab === 'existing' ? '?tab=existing' : ''}`);
-                    } else {
-                      navigate('/clinical-today-patients');
-                    }
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  loading={isCreating}
-                  disabled={isCreating}
-                  className="flex items-center gap-2 bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700"
-                >
-                  <FiSave className="w-4 h-4" />
-                  {isCreating ? 'Saving...' : (proformaId ? 'Update Clinical Proforma' : 'Create Clinical Proforma')}
-                </Button>
-              </div>
-            </Card>
           </div>
         </form>
       </div>

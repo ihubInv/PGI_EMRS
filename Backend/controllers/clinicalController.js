@@ -496,7 +496,27 @@ class ClinicalController {
   static async updateClinicalProforma(req, res) {
     try {
       const { id } = req.params;
-      const proforma = await ClinicalProforma.findById(id);
+      
+      // Validate that id is a valid UUID (clinical proforma IDs are now UUIDs)
+      // Check if it's a valid UUID format (36 chars with hyphens)
+      const isUUID = typeof id === 'string' && id.includes('-') && id.length === 36;
+      
+      let proforma;
+      if (!isUUID && id) {
+        // If it's not a UUID, try to parse as integer (for backward compatibility)
+        const idNum = parseInt(id, 10);
+        if (isNaN(idNum) || idNum <= 0) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid clinical proforma ID format. ID must be a valid UUID (36 characters with hyphens).'
+          });
+        }
+        // Use integer ID for backward compatibility
+        proforma = await ClinicalProforma.findById(idNum);
+      } else {
+        // Use UUID ID
+        proforma = await ClinicalProforma.findById(id);
+      }
 
       if (!proforma) {
         return res.status(404).json({
@@ -594,8 +614,43 @@ class ClinicalController {
       // Remove complexCaseData from updateData to prevent model from trying to handle it
       delete proformaUpdateData.complexCaseData;
       
+      // CRITICAL: Remove patient_id from update data - it should never be updated
+      // patient_id is set during creation and should remain constant
+      delete proformaUpdateData.patient_id;
+      delete proformaUpdateData.id; // Also remove id if present
+      delete proformaUpdateData.filled_by; // filled_by should not be updated via this endpoint
+      
+      // Define fields that are integers in the database (to handle empty strings properly)
+      const integerFields = ['assigned_doctor']; // Add any other integer fields here
+      
+      // Sanitize update data: convert empty strings to null for fields that might cause issues
+      // This prevents "invalid input syntax for type integer" errors
+      const sanitizedUpdateData = {};
+      for (const [key, value] of Object.entries(proformaUpdateData)) {
+        // Skip undefined values (they won't be updated)
+        if (value === undefined) {
+          continue;
+        }
+        
+        // Convert empty strings to null (PostgreSQL handles null better than empty strings)
+        // This is especially important for integer/numeric fields
+        if (value === '' || (typeof value === 'string' && value.trim() === '')) {
+          sanitizedUpdateData[key] = null;
+        } else if (integerFields.includes(key)) {
+          // For integer fields, ensure we have a valid integer or null
+          const intValue = parseInt(value, 10);
+          if (isNaN(intValue) || intValue <= 0) {
+            sanitizedUpdateData[key] = null;
+          } else {
+            sanitizedUpdateData[key] = intValue;
+          }
+        } else {
+          sanitizedUpdateData[key] = value;
+        }
+      }
+      
       // Update the clinical proforma (without ADL data)
-      await proforma.update(proformaUpdateData);
+      await proforma.update(sanitizedUpdateData);
 
       // ✅ Handle ADL file creation/update if complex case
       let adlFile = null;
